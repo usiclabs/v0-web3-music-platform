@@ -32,18 +32,17 @@ export async function GET() {
         return sum + (Number.parseFloat(stream.total_paid?.toString() || "0") || 0)
       }, 0) || 0
 
-    // Format numbers for display
     const formatNumber = (num: number): string => {
-      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M+`
+      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M+`
       if (num >= 1000) return `${(num / 1000).toFixed(0)}K+`
       return `${num}+`
     }
 
     const formatCurrency = (num: number): string => {
-      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M+`
-      if (num >= 1000) return `$${(num / 1000).toFixed(0)}K+`
-      if (num >= 1) return `$${num.toFixed(0)}+`
-      return `$${num.toFixed(2)}+`
+      if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`
+      if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`
+      if (num >= 1) return `$${num.toFixed(0)}`
+      return `$${num.toFixed(2)}`
     }
 
     return NextResponse.json({

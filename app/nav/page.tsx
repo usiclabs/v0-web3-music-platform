@@ -194,7 +194,7 @@ export default function NavPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="container max-w-6xl px-4 py-8 sm:py-12">
+      <div className="container max-w-6xl px-4 py-8 sm:py-12 mx-auto flex flex-col items-center">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
@@ -210,7 +210,7 @@ export default function NavPage() {
         </div>
 
         {/* Navigation Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full max-w-7xl mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const isDisabled = item.requiresAuth && !isConnected

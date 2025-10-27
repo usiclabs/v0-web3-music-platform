@@ -66,9 +66,10 @@ export function HomepageHero() {
 
   const formatStat = (value: number, type: "tracks" | "artists" | "paidOut") => {
     if (type === "paidOut") {
-      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M+`
-      if (value >= 1000) return `$${(value / 1000).toFixed(1)}K+`
-      return `$${value}+`
+      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`
+      if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`
+      if (value >= 1) return `$${value.toFixed(0)}`
+      return `$${value.toFixed(2)}`
     }
     if (value >= 1000) return `${(value / 1000).toFixed(1)}K+`
     return `${value}+`
@@ -155,12 +156,12 @@ export function HomepageHero() {
             <Button
               size="lg"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full shadow-2xl shadow-accent/30 hover:shadow-accent/50 hover:scale-105 transition-all duration-300 group relative overflow-hidden"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 hover:scale-105 transition-all duration-300 group relative overflow-hidden text-white shadow-2xl shadow-white/10"
             >
               <Link href="/explore">
-                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10" />
-                <span className="relative z-10">Listen Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-none stroke-2" />
+                <span className="relative z-10 font-semibold">Listen Now</span>
               </Link>
             </Button>
             <Button
@@ -178,7 +179,7 @@ export function HomepageHero() {
           </div>
 
           <div
-            className={`grid grid-cols-3 gap-8 max-w-3xl mx-auto transition-all duration-700 delay-500 ${
+            className={`grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto transition-all duration-700 delay-500 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -204,19 +205,19 @@ export function HomepageHero() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
+                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
               >
                 <stat.icon
-                  className={`h-6 w-6 text-${stat.color} mx-auto mb-3 group-hover:scale-110 transition-transform`}
+                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
                 />
                 <div
-                  className={`md:text-5xl font-bold text-${stat.color} text-3xl mb-2 group-hover:scale-110 transition-transform duration-300 ${
+                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
                     isLoading ? "animate-pulse" : ""
                   }`}
                 >
                   {stat.value}
                 </div>
-                <div className="text-sm text-foreground/60 font-medium">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-foreground/60 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
