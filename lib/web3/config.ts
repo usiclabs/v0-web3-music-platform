@@ -1,0 +1,77 @@
+import { http, createConfig } from "wagmi"
+import { base, baseSepolia } from "wagmi/chains"
+import { walletConnect, injected, coinbaseWallet } from "wagmi/connectors"
+
+// Get WalletConnect project ID from environment
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ""
+
+if (!projectId) {
+  console.warn("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set. WalletConnect will not work.")
+}
+
+if (typeof window !== "undefined") {
+  const originalFetch = window.fetch
+  window.fetch = async (...args) => {
+    try {
+      // Suppress analytics errors from WalletConnect/Reown
+      if (args[0]?.toString().includes("pulse.walletconnect.org")) {
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      return await originalFetch(...args)
+    } catch (error) {
+      // Silently fail for analytics endpoints
+      if (args[0]?.toString().includes("pulse.walletconnect.org")) {
+        return new Response(JSON.stringify({ success: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw error
+    }
+  }
+}
+
+// Configure wagmi
+export const config = createConfig({
+  chains: [base, baseSepolia],
+  connectors: [
+    injected({
+      shimDisconnect: true,
+      // Target specific mobile wallets
+      target() {
+        return {
+          id: "injected",
+          name: "Injected Wallet",
+          provider: typeof window !== "undefined" ? window.ethereum : undefined,
+        }
+      },
+    }),
+    coinbaseWallet({
+      appName: "USI",
+      appLogoUrl: typeof window !== "undefined" ? `${window.location.origin}/images/logo.png` : undefined,
+    }),
+    walletConnect({
+      projectId,
+      metadata: {
+        name: "USI",
+        description: "Web3 Music Streaming Platform",
+        url: typeof window !== "undefined" ? window.location.origin : "https://usi.app",
+        icons: [typeof window !== "undefined" ? `${window.location.origin}/images/logo.png` : ""],
+      },
+      showQrModal: true,
+    }),
+  ],
+  transports: {
+    [base.id]: http(),
+    [baseSepolia.id]: http(),
+  },
+})
+
+declare module "wagmi" {
+  interface Register {
+    config: typeof config
+  }
+}
