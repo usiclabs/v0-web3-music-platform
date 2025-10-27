@@ -27,6 +27,7 @@ import {
   Coins,
   Wallet,
   Gift,
+  UserCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +68,14 @@ const navItems: NavItem[] = [
     icon: Search,
     description: "Search all tracks",
     gradient: "from-blue-500 to-cyan-500",
+  },
+  {
+    title: "Following",
+    href: "/following",
+    icon: UserCheck,
+    description: "Tracks from artists you follow",
+    gradient: "from-indigo-500 to-purple-500",
+    requiresAuth: true,
   },
   {
     title: "Artists",
