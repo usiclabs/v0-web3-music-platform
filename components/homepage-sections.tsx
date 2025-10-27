@@ -228,7 +228,7 @@ export function HomepageSections() {
             >
               <div className="rounded-3xl border border-border/50 bg-card/20 backdrop-blur-2xl p-12 shadow-2xl hover:shadow-accent/10 transition-shadow duration-500 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="aspect-square rounded-2xl bg-gradient-to-br from-accent/20 to-primary/20 flex items-center justify-center relative overflow-hidden">
+                <div className="aspect-square rounded-2xl bg-transparent flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
                   <div className="text-center relative z-10 bg-transparent">
                     <BarChart3 className="h-24 w-24 text-accent mx-auto mb-6 animate-pulse" />
