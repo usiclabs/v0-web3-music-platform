@@ -46,7 +46,13 @@ export default function WatchStreamPage() {
           playback_id: data.playback_id,
           is_live: data.is_live,
         })
-        setStream(data)
+
+        if (data.error) {
+          setError(data.error)
+          setStream(data)
+        } else {
+          setStream(data)
+        }
       } catch (error: any) {
         console.error("[v0] Error loading stream:", error)
         setError(error.message)
@@ -66,8 +72,10 @@ export default function WatchStreamPage() {
   useEffect(() => {
     if (playbackSrc) {
       console.log("[v0] Playback source generated:", playbackSrc)
+    } else if (stream) {
+      console.log("[v0] No playback source - playback_id:", stream.playback_id)
     }
-  }, [playbackSrc])
+  }, [playbackSrc, stream])
 
   if (loading) {
     return (
@@ -127,6 +135,7 @@ export default function WatchStreamPage() {
                               ? "Waiting for broadcast to start. The broadcaster needs to start streaming from their studio."
                               : "This stream is currently offline"}
                           </p>
+                          <p className="text-xs text-muted-foreground mt-2">Playback ID: {stream.playback_id}</p>
                           {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
                         </div>
                       </Player.LoadingIndicator>

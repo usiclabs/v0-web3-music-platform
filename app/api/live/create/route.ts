@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     let livepeerStream
     try {
       livepeerStream = await createLivepeerStream(title)
-      console.log("[v0] Livepeer stream created:", JSON.stringify(livepeerStream, null, 2))
+      console.log("[v0] Livepeer stream created - Full response:", JSON.stringify(livepeerStream, null, 2))
     } catch (livepeerError: any) {
       console.error("[v0] Livepeer API error:", livepeerError)
       return NextResponse.json(
@@ -37,11 +37,31 @@ export async function POST(request: NextRequest) {
     }
 
     const streamKey = livepeerStream.streamKey || livepeerStream.stream_key
-    const playbackId = livepeerStream.playbackId || livepeerStream.playback_id || livepeerStream.id
 
-    if (!streamKey || !playbackId) {
-      console.error("[v0] Invalid Livepeer response structure:", livepeerStream)
-      return NextResponse.json({ error: "Invalid response from streaming service" }, { status: 500 })
+    // Try multiple possible locations for playbackId
+    let playbackId = livepeerStream.playbackId || livepeerStream.playback_id || livepeerStream.id
+
+    // If playbackId is an object (some API versions return it as an object), extract the ID
+    if (playbackId && typeof playbackId === "object") {
+      playbackId = playbackId.id || playbackId.playbackId
+    }
+
+    console.log("[v0] Extracted values - streamKey:", streamKey, "playbackId:", playbackId)
+
+    if (!streamKey) {
+      console.error("[v0] Missing streamKey in Livepeer response:", livepeerStream)
+      return NextResponse.json(
+        { error: "Invalid response from streaming service: missing stream key" },
+        { status: 500 },
+      )
+    }
+
+    if (!playbackId) {
+      console.error("[v0] Missing playbackId in Livepeer response:", livepeerStream)
+      return NextResponse.json(
+        { error: "Invalid response from streaming service: missing playback ID" },
+        { status: 500 },
+      )
     }
 
     // Save to database
@@ -64,7 +84,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create live stream" }, { status: 500 })
     }
 
-    console.log("[v0] Live stream created successfully:", liveStream.id)
+    console.log("[v0] Live stream created successfully:", {
+      id: liveStream.id,
+      playback_id: liveStream.playback_id,
+      stream_key: liveStream.stream_key ? "present" : "missing",
+    })
 
     return NextResponse.json(liveStream)
   } catch (error: any) {

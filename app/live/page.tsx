@@ -38,18 +38,34 @@ export default function LivePage() {
 
         // Fetch live streams
         const liveRes = await fetch("/api/live/streams?live=true")
-        const liveData = await liveRes.json()
-        console.log("[v0] Live streams loaded:", liveData.length)
-        setLiveStreams(liveData)
+        if (!liveRes.ok) {
+          console.error("[v0] Live streams fetch failed:", liveRes.status)
+          setLiveStreams([])
+        } else {
+          const liveData = await liveRes.json()
+          // Ensure we have an array
+          const liveArray = Array.isArray(liveData) ? liveData : []
+          console.log("[v0] Live streams loaded:", liveArray.length)
+          setLiveStreams(liveArray)
+        }
 
         // Fetch all recent streams
         const allRes = await fetch("/api/live/streams")
-        const allData = await allRes.json()
-        console.log("[v0] All streams loaded:", allData.length)
-        const recentStreams = allData.filter((stream: LiveStream) => !stream.is_live)
-        setAllStreams(recentStreams)
+        if (!allRes.ok) {
+          console.error("[v0] All streams fetch failed:", allRes.status)
+          setAllStreams([])
+        } else {
+          const allData = await allRes.json()
+          // Ensure we have an array
+          const allArray = Array.isArray(allData) ? allData : []
+          console.log("[v0] All streams loaded:", allArray.length)
+          const recentStreams = allArray.filter((stream: LiveStream) => !stream.is_live)
+          setAllStreams(recentStreams)
+        }
       } catch (error) {
         console.error("[v0] Error loading streams:", error)
+        setLiveStreams([])
+        setAllStreams([])
       } finally {
         setLoading(false)
       }

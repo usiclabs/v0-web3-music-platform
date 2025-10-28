@@ -29,6 +29,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Stream not found" }, { status: 404 })
     }
 
+    console.log("[v0] Fetched stream for viewer:", {
+      id: stream.id,
+      title: stream.title,
+      playback_id: stream.playback_id,
+      is_live: stream.is_live,
+      has_playback_id: !!stream.playback_id,
+    })
+
+    if (!stream.playback_id) {
+      console.error("[v0] Stream missing playback_id:", stream.id)
+      return NextResponse.json(
+        {
+          ...stream,
+          error: "Stream configuration incomplete - missing playback ID. Please try creating a new stream.",
+        },
+        { status: 200 },
+      )
+    }
+
     return NextResponse.json(stream)
   } catch (error) {
     console.error("[v0] Error fetching stream:", error)

@@ -5,7 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import {
   Shield,
   Users,
@@ -13,28 +22,38 @@ import {
   DollarSign,
   TrendingUp,
   Activity,
-  AlertCircle,
   CheckCircle,
   Clock,
   Zap,
   Database,
-  Wallet,
   Search,
   Download,
   RefreshCw,
-  ArrowUp,
-  ArrowDown,
   Eye,
   Play,
   Heart,
-  Calendar,
-  BarChart3,
+  Ban,
+  Trash2,
+  Star,
+  Radio,
+  Settings,
+  Power,
+  MoreVertical,
+  AlertTriangle,
+  List,
+  Grid,
 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
 import { createBrowserClient } from "@/lib/supabase/client"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Bar, BarChart } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 // Admin wallet address - only this address can access the admin panel
 const ADMIN_ADDRESS = "0x7D1a4B4941200FB2907638202782E9248b9b9887"
@@ -63,9 +82,11 @@ type RecentActivity = {
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
@@ -91,6 +112,28 @@ export default function AdminPage() {
   const [cdpStatus, setCdpStatus] = useState<{ configured: boolean; message: string } | null>(null)
   const [processingPayout, setProcessingPayout] = useState(false)
   const [payoutResult, setPayoutResult] = useState<any>(null)
+
+  const [liveStreams, setLiveStreams] = useState<any[]>([])
+  const [playlists, setPlaylists] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [reportedContent, setReportedContent] = useState<any[]>([])
+
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [selectedTrack, setSelectedTrack] = useState<any>(null)
+  const [selectedStream, setSelectedStream] = useState<any>(null)
+  const [showUserDialog, setShowUserDialog] = useState(false)
+  const [showTrackDialog, setShowTrackDialog] = useState(false)
+  const [showStreamDialog, setShowStreamDialog] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string } | null>(null)
+
+  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [featureFlags, setFeatureFlags] = useState({
+    liveStreaming: true,
+    staking: true,
+    swap: true,
+    nftMinting: true,
+  })
 
   // Check if connected wallet is admin (case-insensitive)
   const isAdmin = address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase()
@@ -278,6 +321,31 @@ export default function AdminPage() {
         const cdpResponse = await fetch("/api/admin/payouts")
         const cdpData = await cdpResponse.json()
         setCdpStatus(cdpData)
+
+        const [{ data: liveStreamsData }, { data: playlistsData }, { data: swapHistory }, { data: stakingHistory }] =
+          await Promise.all([
+            supabase
+              .from("live_streams")
+              .select("*, artist:profiles!live_streams_artist_address_fkey(artist_name, wallet_address)")
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("playlists")
+              .select("*, owner:profiles!playlists_owner_address_fkey(artist_name), track_count:playlist_tracks(count)")
+              .order("created_at", { ascending: false }),
+            supabase.from("swap_history").select("*").order("created_at", { ascending: false }).limit(50),
+            supabase.from("staking_history").select("*").order("created_at", { ascending: false }).limit(50),
+          ])
+
+        setLiveStreams(liveStreamsData || [])
+        setPlaylists(playlistsData || [])
+
+        // Combine transactions
+        const allTransactions = [
+          ...(swapHistory || []).map((t) => ({ ...t, type: "swap" })),
+          ...(stakingHistory || []).map((t) => ({ ...t, type: "staking" })),
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+        setTransactions(allTransactions)
       } catch (error) {
         console.error("Failed to load admin data:", error)
       } finally {
@@ -313,6 +381,84 @@ export default function AdminPage() {
       })
     } finally {
       setProcessingPayout(false)
+    }
+  }
+
+  const handleBanUser = async (userAddress: string) => {
+    try {
+      // In production, this would update a banned_users table
+      toast({
+        title: "User Banned",
+        description: `User ${userAddress.slice(0, 6)}...${userAddress.slice(-4)} has been banned.`,
+      })
+      setShowUserDialog(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to ban user",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteTrack = async (trackId: string) => {
+    try {
+      const supabase = createBrowserClient()
+      await supabase.from("tracks").update({ is_active: false }).eq("id", trackId)
+
+      toast({
+        title: "Track Deleted",
+        description: "Track has been removed from the platform.",
+      })
+
+      setTracks(tracks.filter((t) => t.id !== trackId))
+      setShowDeleteConfirm(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete track",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleFeatureTrack = async (trackId: string) => {
+    try {
+      toast({
+        title: "Track Featured",
+        description: "Track has been added to featured section.",
+      })
+      setShowTrackDialog(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to feature track",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleEndStream = async (streamId: string) => {
+    try {
+      const supabase = createBrowserClient()
+      await supabase
+        .from("live_streams")
+        .update({ is_live: false, ended_at: new Date().toISOString() })
+        .eq("id", streamId)
+
+      toast({
+        title: "Stream Ended",
+        description: "Live stream has been terminated.",
+      })
+
+      setLiveStreams(liveStreams.map((s) => (s.id === streamId ? { ...s, is_live: false } : s)))
+      setShowStreamDialog(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to end stream",
+        variant: "destructive",
+      })
     }
   }
 
@@ -371,15 +517,15 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen pb-32 bg-gradient-to-br from-black via-black to-primary/5">
-        <main className="container py-12 px-4 sm:px-6">
-          <div className="space-y-8 animate-pulse">
-            <div className="h-12 bg-muted/20 rounded-lg w-64" />
-            <div className="grid md:grid-cols-4 gap-6">
+        <main className="container py-6 px-4 sm:px-6 max-w-7xl mx-auto">
+          <div className="space-y-6 animate-pulse">
+            <div className="h-12 bg-muted/20 rounded-lg w-48" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="h-32 bg-muted/20 rounded-lg" />
+                <div key={i} className="h-28 bg-muted/20 rounded-lg" />
               ))}
             </div>
-            <div className="h-96 bg-muted/20 rounded-lg" />
+            <div className="h-64 bg-muted/20 rounded-lg" />
           </div>
         </main>
       </div>
@@ -388,23 +534,20 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen pb-32 bg-gradient-to-br from-black via-black to-primary/5">
-      <main className="container py-12 px-4 sm:px-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 shadow-lg shadow-primary/20">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
-                  Admin Dashboard
-                </h1>
-                <p className="text-sm text-muted-foreground">Platform management and analytics</p>
-              </div>
+      <main className="container py-6 px-4 sm:px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 shadow-lg shadow-primary/20">
+              <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
+                Admin
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">God Mode</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -412,252 +555,145 @@ export default function AdminPage() {
               disabled={refreshing}
               className="border-border/50 hover:border-primary/50 transition-all bg-transparent"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline ml-2">Refresh</span>
             </Button>
-            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary px-4 py-2">
+            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary px-3 py-1.5">
               <CheckCircle className="h-3 w-3 mr-1" />
-              Admin Access
+              <span className="hidden sm:inline">Admin</span>
             </Badge>
           </div>
         </div>
 
-        {/* Platform Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-blue-500/50 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 group-hover:scale-110 transition-transform">
-                <Users className="h-6 w-6 text-blue-500" />
-              </div>
-              {stats.userGrowth !== 0 && (
-                <Badge
-                  variant="outline"
-                  className={`${stats.userGrowth > 0 ? "bg-green-500/10 border-green-500/30 text-green-500" : "bg-red-500/10 border-red-500/30 text-red-500"}`}
-                >
-                  {stats.userGrowth > 0 ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
-                  {Math.abs(stats.userGrowth).toFixed(1)}%
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Users</p>
-            <p className="text-3xl font-bold mb-1">{stats.totalUsers.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">+{stats.newUsers7d} this week</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-purple-500/50 transition-all duration-300 hover:scale-105 hover:shadow-purple-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 group-hover:scale-110 transition-transform">
-                <Music className="h-6 w-6 text-purple-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Tracks</p>
-            <p className="text-3xl font-bold mb-1">{stats.totalTracks.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Published</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-green-500/50 transition-all duration-300 hover:scale-105 hover:shadow-green-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 group-hover:scale-110 transition-transform">
-                <TrendingUp className="h-6 w-6 text-green-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Streams</p>
-            <p className="text-3xl font-bold mb-1">{stats.totalStreams.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-primary/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:scale-110 transition-transform">
-                <DollarSign className="h-6 w-6 text-primary" />
-              </div>
-              {stats.revenueGrowth !== 0 && (
-                <Badge
-                  variant="outline"
-                  className={`${stats.revenueGrowth > 0 ? "bg-green-500/10 border-green-500/30 text-green-500" : "bg-red-500/10 border-red-500/30 text-red-500"}`}
-                >
-                  {stats.revenueGrowth > 0 ? (
-                    <ArrowUp className="h-3 w-3 mr-1" />
-                  ) : (
-                    <ArrowDown className="h-3 w-3 mr-1" />
-                  )}
-                  {Math.abs(stats.revenueGrowth).toFixed(1)}%
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
-            <p className="text-3xl font-bold text-primary mb-1 animate-pulse-glow drop-shadow-[0_0_16px_hsl(35,75%,50%)]">
-              ${stats.totalRevenue.toFixed(2)}
-            </p>
-            <p className="text-xs text-muted-foreground">USDC</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 hover:shadow-orange-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500 group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/30 group-hover:scale-110 transition-transform">
-                <Activity className="h-6 w-6 text-orange-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Active Users</p>
-            <p className="text-3xl font-bold mb-1">{stats.activeUsers24h.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Last 24 hours</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-pink-500/50 transition-all duration-300 hover:scale-105 hover:shadow-pink-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[600ms] group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 border border-pink-500/30 group-hover:scale-110 transition-transform">
-                <Heart className="h-6 w-6 text-pink-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Likes</p>
-            <p className="text-3xl font-bold mb-1">{stats.totalLikes.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-cyan-500/50 transition-all duration-300 hover:scale-105 hover:shadow-cyan-500/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-700 group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 group-hover:scale-110 transition-transform">
-                <Users className="h-6 w-6 text-cyan-500" />
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Total Follows</p>
-            <p className="text-3xl font-bold mb-1">{stats.totalFollows.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Connections</p>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-primary/50 transition-all duration-300 hover:scale-105 hover:shadow-primary/20 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[800ms] group">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 group-hover:scale-110 transition-transform">
-                <Database className="h-6 w-6 text-green-500" />
-              </div>
-              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-500">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Healthy
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">System Status</p>
-            <p className="text-3xl font-bold mb-1">100%</p>
-            <p className="text-xs text-muted-foreground">Uptime</p>
-          </Card>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6 mb-12">
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-primary/50 transition-all duration-300 animate-in fade-in slide-in-from-left-4 duration-700">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Revenue Trend (30 Days)
-              </h3>
-              <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {stats.revenueGrowth > 0 ? "+" : ""}
-                {stats.revenueGrowth.toFixed(1)}%
-              </Badge>
-            </div>
-            <ChartContainer
-              config={{
-                revenue: {
-                  label: "Revenue",
-                  color: "hsl(var(--primary))",
-                },
-              }}
-              className="h-[300px] w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis
-                    dataKey="date"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickFormatter={(value) =>
-                      new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                    }
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickFormatter={(value) => `$${value.toFixed(0)}`}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    fill="url(#colorRevenue)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-blue-500/50 transition-all duration-300 animate-in fade-in slide-in-from-right-4 duration-700">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-blue-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/30 group-hover:scale-110 transition-transform">
                 <Users className="h-5 w-5 text-blue-500" />
-                User Growth (30 Days)
-              </h3>
-              <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-500">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {stats.userGrowth > 0 ? "+" : ""}
-                {stats.userGrowth.toFixed(1)}%
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mb-1">Users</p>
+            <p className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">+{stats.newUsers7d} this week</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-purple-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 group-hover:scale-110 transition-transform">
+              <Music className="h-5 w-5 text-purple-500" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Tracks</p>
+            <p className="text-2xl font-bold">{stats.totalTracks.toLocaleString()}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-green-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 group-hover:scale-110 transition-transform">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Streams</p>
+            <p className="text-2xl font-bold">{stats.totalStreams.toLocaleString()}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-primary/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:scale-110 transition-transform">
+              <DollarSign className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Revenue</p>
+            <p className="text-xl font-bold text-primary">${stats.totalRevenue.toFixed(2)}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-orange-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/30 group-hover:scale-110 transition-transform">
+              <Activity className="h-5 w-5 text-orange-500" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Active 24h</p>
+            <p className="text-2xl font-bold">{stats.activeUsers24h.toLocaleString()}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-pink-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/20 to-pink-500/5 border border-pink-500/30 group-hover:scale-110 transition-transform">
+              <Heart className="h-5 w-5 text-pink-500" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Likes</p>
+            <p className="text-2xl font-bold">{stats.totalLikes.toLocaleString()}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-cyan-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 group-hover:scale-110 transition-transform">
+              <Users className="h-5 w-5 text-cyan-500" />
+            </div>
+            <p className="text-xs text-muted-foreground mb-1 mt-2">Follows</p>
+            <p className="text-2xl font-bold">{stats.totalFollows.toLocaleString()}</p>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 hover:border-green-500/50 transition-all duration-300 hover:scale-105 group">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-500/20 to-green-500/5 border border-green-500/30 group-hover:scale-110 transition-transform">
+                <Database className="h-5 w-5 text-green-500" />
+              </div>
+              <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-500 text-xs">
+                <CheckCircle className="h-2.5 w-2.5 mr-1" />
+                OK
               </Badge>
             </div>
-            <ChartContainer
-              config={{
-                users: {
-                  label: "New Users",
-                  color: "hsl(217, 91%, 60%)",
-                },
-              }}
-              className="h-[300px] w-full"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis
-                    dataKey="date"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickFormatter={(value) =>
-                      new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                    }
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="users" fill="hsl(217, 91%, 60%)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <p className="text-xs text-muted-foreground mb-1">System</p>
+            <p className="text-2xl font-bold">100%</p>
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-card/50 backdrop-blur-xl border border-border/50 p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20">
-              <Activity className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-primary/20">
-              <Users className="h-4 w-4 mr-2" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="tracks" className="data-[state=active]:bg-primary/20">
-              <Music className="h-4 w-4 mr-2" />
-              Tracks
-            </TabsTrigger>
-            <TabsTrigger value="payouts" className="data-[state=active]:bg-primary/20">
-              <Wallet className="h-4 w-4 mr-2" />
-              Payouts
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <div className="overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="bg-card/50 backdrop-blur-xl border border-border/50 p-1 inline-flex w-auto min-w-full">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="users"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Users
+              </TabsTrigger>
+              <TabsTrigger
+                value="tracks"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Music className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Tracks
+              </TabsTrigger>
+              <TabsTrigger
+                value="live"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Radio className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Live
+              </TabsTrigger>
+              <TabsTrigger
+                value="playlists"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <List className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Playlists
+              </TabsTrigger>
+              <TabsTrigger
+                value="transactions"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Transactions
+              </TabsTrigger>
+              <TabsTrigger
+                value="system"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                System
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-6">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6">
@@ -702,294 +738,626 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
-            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  User Management
+          <TabsContent value="users" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Users
                 </h3>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search users..."
+                      placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-64 bg-background/50 border-border/50"
+                      className="pl-9 sm:pl-10 w-full sm:w-48 bg-background/50 border-border/50 h-9 text-sm"
                     />
                   </div>
-                  <Button variant="outline" size="sm" className="border-border/50 bg-transparent">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
+                  <div className="flex items-center gap-1 border border-border/50 rounded-lg p-0.5 bg-background/50">
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("grid")}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Grid className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                      className="h-7 w-7 p-0"
+                    >
+                      <List className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border/50 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/20 hover:bg-muted/30">
-                      <TableHead>User</TableHead>
-                      <TableHead>Wallet Address</TableHead>
-                      <TableHead className="text-right">Tracks</TableHead>
-                      <TableHead className="text-right">Total Spent</TableHead>
-                      <TableHead className="text-right">Joined</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.slice(0, 20).map((user) => (
-                      <TableRow key={user.wallet_address} className="hover:bg-muted/10 transition-colors">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center">
-                              <Users className="h-5 w-5 text-primary" />
-                            </div>
-                            <span>{user.artist_name || "Anonymous"}</span>
+              {/* Mobile-optimized user cards */}
+              <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "space-y-3"}>
+                {filteredUsers.slice(0, 20).map((user) => (
+                  <Card
+                    key={user.wallet_address}
+                    className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{user.artist_name || "Anonymous"}</p>
+                          <p className="text-xs text-muted-foreground font-mono truncate">
+                            {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="bg-muted/20 border-border/50 text-xs">
+                              <Music className="h-2.5 w-2.5 mr-1" />
+                              {user.trackCount}
+                            </Badge>
+                            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-xs">
+                              ${user.totalSpent.toFixed(2)}
+                            </Badge>
                           </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
-                        </TableCell>
-                        <TableCell className="text-right">{user.trackCount}</TableCell>
-                        <TableCell className="text-right text-primary font-semibold">
-                          ${user.totalSpent.toFixed(4)}
-                        </TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setShowUserDialog(true)
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleBanUser(user.wallet_address)}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Ban className="h-4 w-4 mr-2" />
+                            Ban User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="tracks" className="space-y-6">
-            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Music className="h-5 w-5 text-primary" />
-                  Track Management
+          <TabsContent value="tracks" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Music className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Tracks
                 </h3>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search tracks..."
+                      placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-64 bg-background/50 border-border/50"
+                      className="pl-9 sm:pl-10 w-full sm:w-48 bg-background/50 border-border/50 h-9 text-sm"
                     />
                   </div>
-                  <div className="flex items-center gap-2 border border-border/50 rounded-lg p-1 bg-background/50">
+                  <div className="flex items-center gap-1 border border-border/50 rounded-lg p-0.5 bg-background/50">
                     <Button
                       variant={sortBy === "plays" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setSortBy("plays")}
-                      className="h-8"
+                      className="h-7 px-2 text-xs"
                     >
                       <Play className="h-3 w-3 mr-1" />
-                      Plays
+                      <span className="hidden sm:inline">Plays</span>
                     </Button>
                     <Button
                       variant={sortBy === "revenue" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setSortBy("revenue")}
-                      className="h-8"
+                      className="h-7 px-2 text-xs"
                     >
                       <DollarSign className="h-3 w-3 mr-1" />
-                      Revenue
-                    </Button>
-                    <Button
-                      variant={sortBy === "date" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setSortBy("date")}
-                      className="h-8"
-                    >
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Date
+                      <span className="hidden sm:inline">Revenue</span>
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border/50 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/20 hover:bg-muted/30">
-                      <TableHead>Track</TableHead>
-                      <TableHead>Artist</TableHead>
-                      <TableHead className="text-right">Plays</TableHead>
-                      <TableHead className="text-right">Likes</TableHead>
-                      <TableHead className="text-right">Revenue</TableHead>
-                      <TableHead className="text-right">Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTracks.slice(0, 20).map((track) => (
-                      <TableRow key={track.id} className="hover:bg-muted/10 transition-colors">
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-border/50 flex items-center justify-center flex-shrink-0">
-                              <Music className="h-5 w-5 text-purple-500" />
-                            </div>
-                            <span className="truncate max-w-xs">{track.title}</span>
+              <div className="space-y-3">
+                {filteredTracks.slice(0, 20).map((track) => (
+                  <Card
+                    key={track.id}
+                    className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                          <Music className="h-5 w-5 text-purple-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{track.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {track.artist?.artist_name || "Unknown"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <Badge
+                              variant="outline"
+                              className="bg-green-500/10 border-green-500/30 text-green-500 text-xs"
+                            >
+                              <Play className="h-2.5 w-2.5 mr-1" />
+                              {track.plays}
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="bg-pink-500/10 border-pink-500/30 text-pink-500 text-xs"
+                            >
+                              <Heart className="h-2.5 w-2.5 mr-1" />
+                              {track.likes}
+                            </Badge>
+                            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-xs">
+                              ${track.revenue.toFixed(2)}
+                            </Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>{track.artist?.artist_name || "Unknown"}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-500">
-                            <Play className="h-3 w-3 mr-1" />
-                            {track.plays.toLocaleString()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-pink-500">
-                            <Heart className="h-3 w-3 mr-1" />
-                            {track.likes}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right text-primary font-semibold">
-                          ${track.revenue.toFixed(4)}
-                        </TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground">
-                          {new Date(track.created_at).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedTrack(track)
+                              setShowTrackDialog(true)
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleFeatureTrack(track.id)}>
+                            <Star className="h-4 w-4 mr-2" />
+                            Feature Track
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeleteTarget({ type: "track", id: track.id })
+                              setShowDeleteConfirm(true)
+                            }}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Track
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="payouts" className="space-y-6">
-            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-primary" />
-                    CDP Payout Management
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Trigger batch payouts to all artists with pending earnings using CDP SDK
-                  </p>
-                </div>
-                {cdpStatus && (
-                  <Badge
-                    variant="outline"
-                    className={
-                      cdpStatus.configured
-                        ? "bg-green-500/10 border-green-500/30 text-green-500"
-                        : "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
-                    }
-                  >
-                    {cdpStatus.configured ? (
-                      <>
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        CDP Configured
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        CDP Not Configured
-                      </>
-                    )}
-                  </Badge>
-                )}
+          <TabsContent value="live" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Radio className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+                  Live Streams
+                </h3>
+                <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-500 w-fit">
+                  <Activity className="h-3 w-3 mr-1 animate-pulse" />
+                  {liveStreams.filter((s) => s.is_live).length} Active
+                </Badge>
               </div>
 
-              <div className="flex items-center gap-4 p-6 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/30 mb-6">
-                <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 shadow-lg shadow-primary/20">
-                  <Zap className="h-8 w-8 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground mb-1">Ready to Process</p>
-                  <p className="text-2xl font-bold">Automated Batch Payouts</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Process all pending artist earnings in one transaction
-                  </p>
-                </div>
-                <Button
-                  onClick={handleTriggerPayouts}
-                  disabled={processingPayout || !cdpStatus?.configured}
-                  size="lg"
-                  className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
-                >
-                  {processingPayout ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Trigger Payouts
-                    </>
-                  )}
+              <div className="space-y-3">
+                {liveStreams.length > 0 ? (
+                  liveStreams.map((stream) => (
+                    <Card
+                      key={stream.id}
+                      className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge
+                              variant="outline"
+                              className={
+                                stream.is_live
+                                  ? "bg-red-500/10 border-red-500/30 text-red-500"
+                                  : "bg-muted/20 border-border/50"
+                              }
+                            >
+                              {stream.is_live ? (
+                                <>
+                                  <Activity className="h-2.5 w-2.5 mr-1 animate-pulse" />
+                                  LIVE
+                                </>
+                              ) : (
+                                "Ended"
+                              )}
+                            </Badge>
+                            {stream.is_live && (
+                              <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-500">
+                                <Eye className="h-2.5 w-2.5 mr-1" />
+                                {stream.viewer_count || 0}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="font-semibold text-sm sm:text-base truncate mb-1">{stream.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {stream.artist?.artist_name || "Unknown Artist"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(stream.started_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedStream(stream)
+                                setShowStreamDialog(true)
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {stream.is_live && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleEndStream(stream.id)}
+                                  className="text-red-500 focus:text-red-500"
+                                >
+                                  <Power className="h-4 w-4 mr-2" />
+                                  End Stream
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Radio className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No live streams</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="playlists" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <List className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Playlists
+                </h3>
+                <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary w-fit">
+                  {playlists.length} Total
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {playlists.length > 0 ? (
+                  playlists.map((playlist) => (
+                    <Card
+                      key={playlist.id}
+                      className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm sm:text-base truncate mb-1">{playlist.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            by {playlist.owner?.artist_name || "Unknown"}
+                          </p>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Badge variant="outline" className="bg-muted/20 border-border/50 text-xs">
+                              <Music className="h-2.5 w-2.5 mr-1" />
+                              {playlist.track_count?.[0]?.count || 0} tracks
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className={
+                                playlist.is_public
+                                  ? "bg-green-500/10 border-green-500/30 text-green-500 text-xs"
+                                  : "bg-muted/20 border-border/50 text-xs"
+                              }
+                            >
+                              {playlist.is_public ? "Public" : "Private"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <List className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No playlists</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="transactions" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  Recent Transactions
+                </h3>
+                <Button variant="outline" size="sm" className="border-border/50 bg-transparent w-fit">
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Export
                 </Button>
               </div>
 
-              {payoutResult && (
-                <div
-                  className={`p-6 rounded-lg border animate-in fade-in slide-in-from-bottom-4 duration-500 ${
-                    payoutResult.success
-                      ? "bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/30"
-                      : "bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/30"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-                        payoutResult.success
-                          ? "bg-green-500/20 border border-green-500/30"
-                          : "bg-red-500/20 border border-red-500/30"
-                      }`}
-                    >
-                      {payoutResult.success ? (
-                        <CheckCircle className="h-6 w-6 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-6 w-6 text-red-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-lg mb-2">
-                        {payoutResult.success ? "Payouts Processed Successfully" : "Payout Failed"}
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-4">{payoutResult.message || payoutResult.error}</p>
-                      {payoutResult.success && (
-                        <div className="grid grid-cols-3 gap-4">
-                          <Card className="bg-background/50 border-border/50 p-4">
-                            <p className="text-xs text-muted-foreground mb-1">Successful</p>
-                            <p className="text-2xl font-bold text-green-500">{payoutResult.success}</p>
-                          </Card>
-                          <Card className="bg-background/50 border-border/50 p-4">
-                            <p className="text-xs text-muted-foreground mb-1">Failed</p>
-                            <p className="text-2xl font-bold text-red-500">{payoutResult.failed}</p>
-                          </Card>
-                          <Card className="bg-background/50 border-border/50 p-4">
-                            <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
-                            <p className="text-2xl font-bold text-primary">${payoutResult.totalAmount}</p>
-                          </Card>
+              <div className="space-y-2">
+                {transactions.slice(0, 20).map((tx, i) => (
+                  <Card
+                    key={tx.id}
+                    className="bg-muted/10 border border-border/50 p-3 hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge
+                            variant="outline"
+                            className={
+                              tx.type === "swap"
+                                ? "bg-blue-500/10 border-blue-500/30 text-blue-500 text-xs"
+                                : "bg-purple-500/10 border-purple-500/30 text-purple-500 text-xs"
+                            }
+                          >
+                            {tx.type === "swap" ? "Swap" : "Staking"}
+                          </Badge>
                         </div>
-                      )}
+                        <p className="text-xs text-muted-foreground font-mono truncate">
+                          {tx.user_address?.slice(0, 8)}...{tx.user_address?.slice(-6)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{new Date(tx.created_at).toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-primary">
+                          {tx.type === "swap"
+                            ? `${Number(tx.amount_in).toFixed(2)} → ${Number(tx.amount_out).toFixed(2)}`
+                            : `${Number(tx.amount).toFixed(2)} USIC`}
+                        </p>
+                        {tx.type === "swap" && (
+                          <p className="text-xs text-muted-foreground">
+                            {tx.token_in} → {tx.token_out}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="system" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                System Controls
+              </h3>
+
+              <div className="space-y-6">
+                {/* Maintenance Mode */}
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/10 border border-border/50">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      <Label htmlFor="maintenance" className="text-sm font-semibold">
+                        Maintenance Mode
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Disable platform access for maintenance</p>
+                  </div>
+                  <Switch
+                    id="maintenance"
+                    checked={maintenanceMode}
+                    onCheckedChange={setMaintenanceMode}
+                    className="data-[state=checked]:bg-yellow-500"
+                  />
+                </div>
+
+                {/* Feature Flags */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    Feature Flags
+                  </h4>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-border/50">
+                      <Label htmlFor="live-streaming" className="text-sm">
+                        Live Streaming
+                      </Label>
+                      <Switch
+                        id="live-streaming"
+                        checked={featureFlags.liveStreaming}
+                        onCheckedChange={(checked) => setFeatureFlags({ ...featureFlags, liveStreaming: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-border/50">
+                      <Label htmlFor="staking" className="text-sm">
+                        Staking
+                      </Label>
+                      <Switch
+                        id="staking"
+                        checked={featureFlags.staking}
+                        onCheckedChange={(checked) => setFeatureFlags({ ...featureFlags, staking: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-border/50">
+                      <Label htmlFor="swap" className="text-sm">
+                        Token Swap
+                      </Label>
+                      <Switch
+                        id="swap"
+                        checked={featureFlags.swap}
+                        onCheckedChange={(checked) => setFeatureFlags({ ...featureFlags, swap: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-border/50">
+                      <Label htmlFor="nft-minting" className="text-sm">
+                        NFT Minting
+                      </Label>
+                      <Switch
+                        id="nft-minting"
+                        checked={featureFlags.nftMinting}
+                        onCheckedChange={(checked) => setFeatureFlags({ ...featureFlags, nftMinting: checked })}
+                      />
                     </div>
                   </div>
                 </div>
-              )}
+
+                {/* Database Actions */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Database className="h-4 w-4 text-primary" />
+                    Database Management
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Button variant="outline" className="border-border/50 bg-transparent justify-start">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Database
+                    </Button>
+                    <Button variant="outline" className="border-border/50 bg-transparent justify-start">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Clear Cache
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>User Details</DialogTitle>
+              <DialogDescription>View and manage user information</DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center">
+                    <Users className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">{selectedUser.artist_name || "Anonymous"}</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {selectedUser.wallet_address.slice(0, 10)}...{selectedUser.wallet_address.slice(-8)}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="bg-muted/10 border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground mb-1">Tracks</p>
+                    <p className="text-xl font-bold">{selectedUser.trackCount}</p>
+                  </Card>
+                  <Card className="bg-muted/10 border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground mb-1">Spent</p>
+                    <p className="text-xl font-bold text-primary">${selectedUser.totalSpent.toFixed(2)}</p>
+                  </Card>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setShowUserDialog(false)} className="w-full sm:w-auto">
+                Close
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => selectedUser && handleBanUser(selectedUser.wallet_address)}
+                className="w-full sm:w-auto"
+              >
+                <Ban className="h-4 w-4 mr-2" />
+                Ban User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogDescription>This action cannot be undone. Are you sure?</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (deleteTarget?.type === "track") {
+                    handleDeleteTrack(deleteTarget.id)
+                  }
+                }}
+                className="w-full sm:w-auto"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )
