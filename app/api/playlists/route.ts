@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Creating playlist:", { name, ownerAddress })
 
-    const supabase = await createServerClient()
+    const supabase = createAdminClient()
 
     const { data: playlist, error } = await supabase
       .from("playlists")

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings } from "lucide-react"
+import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
 import Image from "next/image"
@@ -18,6 +18,7 @@ export function MobileMenu() {
   // Pages that are NOT in the bottom nav bar
   const menuItems = [
     { href: "/discover", icon: BarChart3, label: "Discover" },
+    { href: "/live", icon: Radio, label: "Live" },
     { href: "/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/staking", icon: Coins, label: "Staking" },
     { href: "/swap", icon: ArrowLeftRight, label: "Swap" },

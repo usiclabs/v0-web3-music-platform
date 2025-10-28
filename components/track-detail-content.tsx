@@ -109,8 +109,25 @@ export function TrackDetailContent({
   }
 
   return (
-    <div className="min-h-screen pb-32 overflow-x-hidden">
-      <main className="container py-6 px-4 sm:py-12 sm:px-6">
+    <div className="min-h-screen pb-32 overflow-x-hidden relative">
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `url(${track.cover_url || "/abstract-soundscape.png"})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
+        {/* Blur layer */}
+        <div className="absolute inset-0 backdrop-blur-[100px]" style={{ filter: "blur(80px)" }} />
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/70" />
+        {/* Gradient overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
+      </div>
+
+      <main className="container py-6 px-4 sm:py-12 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-6 lg:gap-8">
           <div
             className={`space-y-6 transition-all duration-700 ${

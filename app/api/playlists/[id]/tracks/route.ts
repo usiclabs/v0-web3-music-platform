@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const { id: playlistId } = params
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     console.log("[v0] Adding track to playlist:", { playlistId, trackId })
 
-    const supabase = await createServerClient()
+    const supabase = createAdminClient()
 
     // Get current max position
     const { data: existingTracks } = await supabase
@@ -65,7 +65,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   console.log("[v0] Removing track from playlist:", { playlistId, trackId })
 
   try {
-    const supabase = await createServerClient()
+    const supabase = createAdminClient()
 
     const { error } = await supabase
       .from("playlist_tracks")

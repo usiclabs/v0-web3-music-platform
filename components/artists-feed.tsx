@@ -198,9 +198,8 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                 >
                   <Button
                     size="lg"
-                    className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-2xl shadow-primary/50 text-base md:text-lg font-semibold w-full md:w-auto relative group"
+                    className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-black/40 hover:bg-black/60 hover:scale-105 active:scale-95 backdrop-blur-xl border border-white/10 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] text-base md:text-lg font-semibold text-white w-full md:w-auto relative group"
                   >
-                    <div className="absolute inset-0 rounded-full bg-primary/50 blur-xl group-hover:blur-2xl transition-all" />
                     <span className="relative z-10">View Profile</span>
                   </Button>
                 </Link>

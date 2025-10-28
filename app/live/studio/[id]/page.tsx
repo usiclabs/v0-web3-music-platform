@@ -95,6 +95,31 @@ export default function StudioPage() {
     }
   }
 
+  async function handleBroadcastChange(enabled: boolean) {
+    setIsBroadcasting(enabled)
+
+    // If broadcast stops and stream is live, automatically end the stream
+    if (!enabled && isLive) {
+      try {
+        const res = await fetch(`/api/live/${params.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            is_live: false,
+            ended_at: new Date().toISOString(),
+          }),
+        })
+
+        if (res.ok) {
+          setIsLive(false)
+          console.log("[v0] Stream automatically ended when broadcast stopped")
+        }
+      } catch (error) {
+        console.error("[v0] Error auto-ending stream:", error)
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
@@ -179,7 +204,7 @@ export default function StudioPage() {
                           <div className="flex gap-2">
                             <Broadcast.EnabledTrigger
                               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors"
-                              onEnabledChange={(enabled) => setIsBroadcasting(enabled)}
+                              onEnabledChange={handleBroadcastChange}
                             >
                               <Broadcast.EnabledIndicator matcher={false}>Start Broadcast</Broadcast.EnabledIndicator>
                               <Broadcast.EnabledIndicator matcher={true}>Stop Broadcast</Broadcast.EnabledIndicator>

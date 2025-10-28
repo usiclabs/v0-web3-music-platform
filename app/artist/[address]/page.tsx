@@ -121,8 +121,30 @@ export default async function ArtistPage({ params }: { params: { address: string
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <main className="container py-12 px-4 sm:px-6">
+    <div className="min-h-screen relative">
+      {/* Blurred Background Layer */}
+      <div className="fixed inset-0 z-0">
+        {/* Avatar Background Image */}
+        {artist.avatar_url && (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${artist.avatar_url})`,
+              filter: "blur(80px) brightness(0.4)",
+              transform: "scale(1.2)",
+            }}
+          />
+        )}
+        {/* Fallback gradient if no avatar */}
+        {!artist.avatar_url && (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+        )}
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      </div>
+
+      {/* Content Layer */}
+      <main className="relative z-10 container py-12 px-4 sm:px-6">
         {/* Artist Header */}
         <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 sm:p-8 mb-8">
           <div className="flex flex-col md:flex-row items-start gap-6">

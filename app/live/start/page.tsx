@@ -24,13 +24,17 @@ export default function StartLivePage() {
     trackCount: number
     requiredTracks: number
   } | null>(null)
-  const [checkingEligibility, setCheckingEligibility] = useState(true)
+  const [checkingEligibility, setCheckingEligibility] = useState(false)
   const [eligibilityError, setEligibilityError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log("[v0] StartLivePage mounted, address:", address, "isConnected:", isConnected)
+  }, [])
+
+  useEffect(() => {
     async function checkEligibility() {
-      if (!address) {
-        console.log("[v0] No address, skipping eligibility check")
+      if (!isConnected || !address) {
+        console.log("[v0] Skipping eligibility check - not connected or no address")
         setCheckingEligibility(false)
         return
       }
@@ -40,10 +44,15 @@ export default function StartLivePage() {
       setEligibilityError(null)
 
       try {
-        const res = await fetch(`/api/live/check-eligibility?address=${address}`)
+        const url = `/api/live/check-eligibility?address=${address}`
+        console.log("[v0] Fetching eligibility from:", url)
+
+        const res = await fetch(url)
         console.log("[v0] Eligibility check response status:", res.status)
 
         if (!res.ok) {
+          const errorText = await res.text()
+          console.error("[v0] Eligibility check failed:", errorText)
           throw new Error(`Failed to check eligibility: ${res.status}`)
         }
 
@@ -54,13 +63,13 @@ export default function StartLivePage() {
         console.error("[v0] Error checking eligibility:", error)
         setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
       } finally {
-        console.log("[v0] Eligibility check complete, setting checkingEligibility to false")
+        console.log("[v0] Eligibility check complete")
         setCheckingEligibility(false)
       }
     }
 
     checkEligibility()
-  }, [address])
+  }, [address, isConnected])
 
   async function handleCreateStream() {
     if (!address || !title.trim()) return
@@ -102,6 +111,7 @@ export default function StartLivePage() {
   }
 
   if (!isConnected) {
+    console.log("[v0] Rendering wallet connect prompt")
     return (
       <div className="min-h-screen pb-32 bg-black">
         <main className="container py-12 px-4 sm:px-6">
@@ -116,6 +126,7 @@ export default function StartLivePage() {
   }
 
   if (eligibilityError) {
+    console.log("[v0] Rendering eligibility error:", eligibilityError)
     return (
       <div className="min-h-screen pb-32 bg-black">
         <main className="container py-12 px-4 sm:px-6 max-w-3xl mx-auto">
@@ -137,7 +148,7 @@ export default function StartLivePage() {
   }
 
   if (checkingEligibility) {
-    console.log("[v0] Rendering loading state, checkingEligibility:", checkingEligibility)
+    console.log("[v0] Rendering loading state")
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
         <div className="text-center">
@@ -152,6 +163,7 @@ export default function StartLivePage() {
 
   if (eligibility && !eligibility.eligible) {
     const tracksNeeded = eligibility.requiredTracks - eligibility.trackCount
+    console.log("[v0] User not eligible, tracks needed:", tracksNeeded)
 
     return (
       <div className="min-h-screen pb-32 bg-black">
@@ -218,6 +230,7 @@ export default function StartLivePage() {
     )
   }
 
+  console.log("[v0] Rendering stream creation form")
   return (
     <div className="min-h-screen pb-32 bg-black">
       <main className="container py-12 px-4 sm:px-6 max-w-2xl mx-auto">

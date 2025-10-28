@@ -69,6 +69,19 @@ export function Header() {
             />
           </Link>
           <Link
+            href="/live"
+            className={`text-sm font-medium transition-all relative group ${
+              isActive("/live") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Live
+            <span
+              className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                isActive("/live") ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
+          </Link>
+          <Link
             href="/artists"
             className={`text-sm font-medium transition-all relative group ${
               isActive("/artists") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
