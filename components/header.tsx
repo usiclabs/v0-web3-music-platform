@@ -145,7 +145,7 @@ export function Header() {
             >
               <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Connect</span>
-              <span className="xs:hidden">Wallet</span>
+              <span className="xs:hidden">Connect</span>
             </Button>
           )}
 

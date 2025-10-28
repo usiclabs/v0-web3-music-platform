@@ -313,7 +313,19 @@
   }
 }
 
-/* Added new premium animation keyframes for airdrop page */
+/* Added icon pulse animation for mobile menu */
+@keyframes icon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
 @keyframes flip-number {
   0% {
     transform: rotateX(0deg);
@@ -582,4 +594,8 @@
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+.animate-icon-pulse {
+  animation: icon-pulse 2s ease-in-out infinite;
 }
