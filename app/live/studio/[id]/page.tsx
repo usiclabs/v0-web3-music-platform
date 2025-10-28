@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Radio, Eye, Loader2, AlertCircle, X, CheckCircle, Wifi, WifiOff, Video, VideoOff } from "lucide-react"
 import * as Broadcast from "@livepeer/react/broadcast"
 import { useBroadcastContext } from "@livepeer/react/broadcast"
-import { getIngest } from "@livepeer/react/external"
 
 function BroadcastStateTracker({ onStateChange }: { onStateChange: (enabled: boolean) => void }) {
   const broadcast = useBroadcastContext()
@@ -125,10 +124,9 @@ export default function StudioPage() {
 
   console.log("[v0] Stream key:", stream?.stream_key)
 
-  const ingestUrl = stream?.stream_key ? getIngest(stream.stream_key) : null
+  const ingestUrl = stream?.stream_key ? `https://playback.livepeer.studio/webrtc/${stream.stream_key}` : null
 
   console.log("[v0] Ingest URL:", ingestUrl)
-  // </CHANGE>
 
   if (loading) {
     return (
@@ -288,7 +286,6 @@ export default function StudioPage() {
                     </div>
                   </div>
                 )}
-                {/* </CHANGE> */}
               </div>
 
               <div className="p-4 flex items-center justify-between flex-wrap gap-4">
