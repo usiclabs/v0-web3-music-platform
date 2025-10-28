@@ -83,19 +83,19 @@ export function AudioPlayer() {
   }
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-card/80 backdrop-blur-2xl animate-slide-up">
+    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-black/60 backdrop-blur-3xl animate-slide-up shadow-2xl">
       <div className="container py-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsMinimized(true)}
-          className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-white/10 transition-all z-10"
+          className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-white/10 hover:scale-110 transition-all z-10 rounded-full"
         >
           <ChevronDown className="h-4 w-4" />
         </Button>
 
         {error && (
-          <div className="mb-3 flex items-center justify-between gap-2 text-sm bg-destructive/10 px-3 py-2 rounded-lg animate-slide-in-right border border-destructive/20">
+          <div className="mb-3 flex items-center justify-between gap-2 text-sm bg-destructive/20 backdrop-blur-xl px-4 py-3 rounded-xl animate-slide-in-right border border-destructive/40 shadow-lg">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0 text-destructive animate-pulse" />
               <span className="text-foreground">{error}</span>
@@ -115,7 +115,7 @@ export function AudioPlayer() {
         )}
 
         {paymentRequired && (
-          <div className="mb-3 flex items-center justify-between gap-2 text-sm bg-primary/10 px-3 py-2 rounded-lg animate-slide-in-right border border-primary/30 animate-pulse-glow">
+          <div className="mb-3 flex items-center justify-between gap-2 text-sm bg-primary/20 backdrop-blur-xl px-4 py-3 rounded-xl animate-slide-in-right border border-primary/40 shadow-lg animate-pulse-glow">
             <div className="flex items-center gap-2">
               <Coins className="h-4 w-4 flex-shrink-0 text-primary animate-glow" />
               <span className="text-foreground">
@@ -135,14 +135,13 @@ export function AudioPlayer() {
         )}
 
         <div className="flex items-center gap-4">
-          {/* Track Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="relative h-14 w-14 rounded-lg overflow-hidden flex-shrink-0 group">
+            <div className="relative h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 group shadow-lg">
               <Image
                 src={currentTrack.cover_url || "/placeholder.svg?height=56&width=56&query=music"}
                 alt={currentTrack.title}
                 fill
-                className="object-cover transition-transform group-hover:scale-110"
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -167,31 +166,40 @@ export function AudioPlayer() {
             </Button>
           </div>
 
-          {/* Controls */}
           <div className="flex flex-col items-center gap-2 flex-1 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:scale-110 transition-transform">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 hover:scale-110 hover:bg-white/10 transition-all rounded-full"
+              >
                 <SkipBack className="h-4 w-4" />
               </Button>
               <Button
                 size="sm"
-                className="h-10 w-10 rounded-full p-0 hover:scale-110 transition-transform shadow-lg shadow-primary/30"
+                className="h-12 w-12 rounded-full p-0 hover:scale-110 transition-all shadow-2xl shadow-primary/50 hover:shadow-primary/70 bg-primary hover:bg-primary/90"
                 onClick={isPlaying ? pause : resume}
                 disabled={paymentRequired}
               >
                 {isPlaying ? (
-                  <Pause className="h-5 w-5 fill-current" />
+                  <Pause className="h-6 w-6 fill-current" />
                 ) : (
-                  <Play className="h-5 w-5 fill-current ml-0.5" />
+                  <Play className="h-6 w-6 fill-current ml-0.5" />
                 )}
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:scale-110 transition-transform">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 hover:scale-110 hover:bg-white/10 transition-all rounded-full"
+              >
                 <SkipForward className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 w-full">
-              <span className="text-xs text-muted-foreground w-10 text-right font-mono">{formatTime(currentTime)}</span>
+            <div className="flex items-center gap-3 w-full">
+              <span className="text-xs text-muted-foreground w-10 text-right font-mono font-semibold">
+                {formatTime(currentTime)}
+              </span>
               <Slider
                 value={[currentTime]}
                 max={duration || 100}
@@ -199,16 +207,15 @@ export function AudioPlayer() {
                 onValueChange={([value]) => seek(value)}
                 className="flex-1"
               />
-              <span className="text-xs text-muted-foreground w-10 font-mono">{formatTime(duration)}</span>
+              <span className="text-xs text-muted-foreground w-10 font-mono font-semibold">{formatTime(duration)}</span>
             </div>
           </div>
 
-          {/* Volume */}
-          <div className="hidden md:flex items-center gap-2 flex-1 justify-end">
+          <div className="hidden md:flex items-center gap-3 flex-1 justify-end">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 hover:scale-110 transition-transform"
+              className="h-9 w-9 p-0 hover:scale-110 hover:bg-white/10 transition-all rounded-full"
               onClick={handleVolumeToggle}
             >
               {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}

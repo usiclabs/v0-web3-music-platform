@@ -363,6 +363,94 @@
   }
 }
 
+/* Adding advanced $1T-level animations and effects */
+@keyframes aurora {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-blur {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes morph {
+  0%,
+  100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  50% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ping-large {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
 .animate-slide-up {
   animation: slide-up 0.6s ease-out;
 }
@@ -442,6 +530,39 @@
   animation: count-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.animate-aurora {
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+}
+
+.animate-spotlight {
+  animation: spotlight 3s ease-in-out infinite;
+}
+
+.animate-ripple {
+  animation: ripple 1s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.animate-slide-in-blur {
+  animation: slide-in-blur 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-morph {
+  animation: morph 8s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-ping-large {
+  animation: ping-large 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -460,6 +581,29 @@
 .hover-lift-premium:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 20px 40px -10px rgba(229, 62, 62, 0.4);
+}
+
+/* Premium interaction effects */
+.hover-3d {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-style: preserve-3d;
+}
+
+.hover-3d:hover {
+  transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateZ(20px);
+}
+
+.hover-glow-intense {
+  transition: all 0.3s ease;
+}
+
+.hover-glow-intense:hover {
+  box-shadow: 0 0 30px rgba(229, 62, 62, 0.6), 0 0 60px rgba(229, 62, 62, 0.4), 0 0 90px rgba(229, 62, 62, 0.2);
+  filter: brightness(1.2);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(229, 62, 62, 0.5), 0 0 20px rgba(229, 62, 62, 0.3), 0 0 30px rgba(229, 62, 62, 0.1);
 }
 
 .hover-scale {
@@ -526,6 +670,35 @@
   display: none;
 }
 
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Advanced gradient backgrounds */
+.bg-aurora {
+  background: linear-gradient(
+    135deg,
+    rgba(229, 62, 62, 0.1) 0%,
+    rgba(220, 38, 38, 0.1) 25%,
+    rgba(239, 68, 68, 0.1) 50%,
+    rgba(220, 38, 38, 0.1) 75%,
+    rgba(229, 62, 62, 0.1) 100%
+  );
+}
+
+.bg-mesh-gradient {
+  background: radial-gradient(at 0% 0%, rgba(229, 62, 62, 0.2) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(220, 38, 38, 0.2) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.2) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(229, 62, 62, 0.2) 0px, transparent 50%);
+}
+
 /* Added safe area padding for iOS devices with notches */
 @supports (padding: max(0px)) {
   .pb-safe {
@@ -557,6 +730,12 @@
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(229, 62, 62, 0.1);
+}
+
+/* Advanced backdrop blur */
+.backdrop-blur-ultra {
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
 }
 
 .btn-press {

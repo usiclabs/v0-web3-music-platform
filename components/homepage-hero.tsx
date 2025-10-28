@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Play, Music, Sparkles, ArrowDown, Zap } from "lucide-react"
+import { Play, Music, Sparkles, ArrowDown, Zap, TrendingUp } from "lucide-react"
 import useSWR from "swr"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -79,61 +79,64 @@ export function HomepageHero() {
     <section className="relative overflow-hidden min-h-screen flex items-center px-4 sm:px-6">
       <div className="absolute inset-0">
         <div
-          className="absolute inset-0 opacity-40 transition-all duration-300"
+          className="absolute inset-0 opacity-60 transition-all duration-500 ease-out"
           style={{
-            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(229, 62, 62, 0.2), transparent 50%)`,
+            background: `radial-gradient(circle 1000px at ${mousePosition.x}px ${mousePosition.y}px, rgba(229, 62, 62, 0.2), transparent 60%)`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-primary/10 animate-gradient" />
+        <div className="absolute inset-0 bg-mesh-gradient animate-aurora" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(229,62,62,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(220,38,38,0.1),transparent_50%)]" />
       </div>
 
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(229,62,62,0.1),transparent_50%)] animate-pulse-slow" />
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
       </div>
 
-      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] animate-pulse-slow" />
-
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-float animate-morph" />
       <div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float"
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/15 rounded-full blur-3xl animate-float animate-morph"
         style={{ animationDelay: "2s", animationDuration: "8s" }}
       />
       <div
-        className="absolute top-1/2 left-1/2 w-64 h-64 bg-chart-3/10 rounded-full blur-3xl animate-float"
+        className="absolute top-1/2 left-1/2 w-64 h-64 bg-chart-3/15 rounded-full blur-3xl animate-float animate-morph"
         style={{ animationDelay: "4s", animationDuration: "10s" }}
       />
       <div
-        className="absolute top-1/3 right-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl animate-float"
+        className="absolute top-1/3 right-1/3 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-float animate-morph"
         style={{ animationDelay: "1s", animationDuration: "12s" }}
       />
 
       <div className="container relative py-24 md:py-32 z-10">
         <div className="mx-auto max-w-5xl text-center">
           <div
-            className={`mb-8 inline-flex items-center gap-2 rounded-full bg-card/30 backdrop-blur-2xl border border-accent/30 px-6 py-3 text-sm shadow-2xl shadow-accent/10 transition-all duration-700 hover:shadow-accent/30 hover:scale-105 hover:border-accent/50 ${
+            className={`mb-8 inline-flex items-center gap-2 rounded-full bg-black/50 backdrop-blur-ultra border border-accent/50 px-6 py-3 text-sm shadow-2xl shadow-accent/30 transition-all duration-700 hover:shadow-accent/50 hover:scale-105 hover:border-accent/70 hover:bg-black/60 animate-glow-pulse ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             <Sparkles className="h-4 w-4 text-accent animate-pulse" />
-            <span className="font-medium bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="font-semibold bg-gradient-to-r from-white via-white/90 to-white/80 bg-clip-text text-transparent">
               Built on Base • Powered by X402 • $USI Ecosystem
             </span>
             <Zap className="h-4 w-4 text-accent animate-pulse" style={{ animationDelay: "0.5s" }} />
           </div>
 
           <h1
-            className={`md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 text-5xl ${
+            className={`text-6xl md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             Music without{" "}
-            <span className="bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(229,62,62,0.3)]">
-              middlemen
+            <span className="relative inline-block">
+              <span className="absolute inset-0 bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient blur-3xl opacity-60" />
+              <span className="relative bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent text-glow">
+                middlemen
+              </span>
             </span>
           </h1>
 
           <p
-            className={`text-2xl md:text-3xl text-foreground/90 mb-6 text-pretty leading-relaxed max-w-3xl mx-auto transition-all duration-700 delay-200 font-medium ${
+            className={`text-2xl md:text-3xl text-foreground/90 mb-6 text-pretty leading-relaxed max-w-3xl mx-auto transition-all duration-700 delay-200 font-semibold ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -156,23 +159,24 @@ export function HomepageHero() {
             <Button
               size="lg"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 hover:scale-105 transition-all duration-300 group relative overflow-hidden text-white shadow-2xl shadow-white/10"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white hover:bg-white/90 text-black hover:scale-110 hover-glow-intense transition-all duration-300 group relative overflow-hidden shadow-2xl shadow-white/30 hover:shadow-white/50 font-semibold"
             >
               <Link href="/explore">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-none stroke-2" />
-                <span className="relative z-10 font-semibold">Listen Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 animate-ripple opacity-0 group-hover:opacity-20 bg-white rounded-full" />
+                <Play className="h-5 w-5 group-hover:scale-125 transition-transform relative z-10 fill-current" />
+                <span className="relative z-10">Listen Now</span>
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-card/20 hover:bg-card/40 backdrop-blur-2xl border-2 border-border hover:scale-105 hover:border-accent/50 transition-all duration-300 group relative overflow-hidden"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-ultra border-2 border-white/20 hover:border-accent/60 hover:scale-110 hover-glow-intense transition-all duration-300 group relative overflow-hidden font-semibold"
             >
               <Link href="/dashboard">
-                <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Music className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Music className="h-5 w-5 group-hover:rotate-12 group-hover:scale-110 transition-transform relative z-10" />
                 <span className="relative z-10">Upload Your Music</span>
               </Link>
             </Button>
@@ -200,19 +204,19 @@ export function HomepageHero() {
                 value: isLoading ? "..." : formatStat(animatedStats.paidOut, "paidOut"),
                 label: "Paid Out",
                 color: "chart-3",
-                icon: Zap,
+                icon: TrendingUp,
               },
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
+                className="text-center group cursor-default bg-black/50 backdrop-blur-ultra rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300 hover-3d hover-glow-intense hover:bg-black/60"
               >
                 <stat.icon
-                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
+                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-125 transition-transform duration-300`}
                 />
                 <div
                   className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
-                    isLoading ? "animate-pulse" : ""
+                    isLoading ? "animate-pulse" : "animate-count-up"
                   }`}
                 >
                   {stat.value}
@@ -225,10 +229,13 @@ export function HomepageHero() {
       </div>
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer group">
-        <div className="w-6 h-10 rounded-full border-2 border-foreground/20 flex items-start justify-center p-2 group-hover:border-accent/50 transition-colors">
-          <div className="w-1 h-2 bg-accent/60 rounded-full animate-pulse" />
+        <div className="relative">
+          <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl animate-ping-large" />
+          <div className="relative w-6 h-10 rounded-full border-2 border-foreground/20 flex items-start justify-center p-2 group-hover:border-accent/60 transition-colors backdrop-blur-sm bg-black/20">
+            <div className="w-1 h-2 bg-accent/80 rounded-full animate-pulse" />
+          </div>
         </div>
-        <ArrowDown className="h-4 w-4 text-foreground/40 group-hover:text-accent/60 mx-auto mt-2 transition-colors" />
+        <ArrowDown className="h-4 w-4 text-foreground/40 group-hover:text-accent/80 mx-auto mt-2 transition-colors" />
       </div>
     </section>
   )
