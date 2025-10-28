@@ -25,21 +25,36 @@ export default function StartLivePage() {
     requiredTracks: number
   } | null>(null)
   const [checkingEligibility, setCheckingEligibility] = useState(true)
+  const [eligibilityError, setEligibilityError] = useState<string | null>(null)
 
   useEffect(() => {
     async function checkEligibility() {
       if (!address) {
+        console.log("[v0] No address, skipping eligibility check")
         setCheckingEligibility(false)
         return
       }
 
+      console.log("[v0] Starting eligibility check for:", address)
+      setCheckingEligibility(true)
+      setEligibilityError(null)
+
       try {
         const res = await fetch(`/api/live/check-eligibility?address=${address}`)
+        console.log("[v0] Eligibility check response status:", res.status)
+
+        if (!res.ok) {
+          throw new Error(`Failed to check eligibility: ${res.status}`)
+        }
+
         const data = await res.json()
+        console.log("[v0] Eligibility data received:", data)
         setEligibility(data)
       } catch (error) {
         console.error("[v0] Error checking eligibility:", error)
+        setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
       } finally {
+        console.log("[v0] Eligibility check complete, setting checkingEligibility to false")
         setCheckingEligibility(false)
       }
     }
@@ -100,7 +115,29 @@ export default function StartLivePage() {
     )
   }
 
+  if (eligibilityError) {
+    return (
+      <div className="min-h-screen pb-32 bg-black">
+        <main className="container py-12 px-4 sm:px-6 max-w-3xl mx-auto">
+          <Card className="bg-card/50 backdrop-blur-xl border border-red-500/50 p-8">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-4">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Unable to Check Eligibility</h2>
+              <p className="text-muted-foreground">{eligibilityError}</p>
+            </div>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Try Again
+            </Button>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
   if (checkingEligibility) {
+    console.log("[v0] Rendering loading state, checkingEligibility:", checkingEligibility)
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
         <div className="text-center">
@@ -110,6 +147,8 @@ export default function StartLivePage() {
       </div>
     )
   }
+
+  console.log("[v0] Rendering main content, eligibility:", eligibility)
 
   if (eligibility && !eligibility.eligible) {
     const tracksNeeded = eligibility.requiredTracks - eligibility.trackCount

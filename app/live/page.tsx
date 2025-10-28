@@ -46,7 +46,8 @@ export default function LivePage() {
         const allRes = await fetch("/api/live/streams")
         const allData = await allRes.json()
         console.log("[v0] All streams loaded:", allData.length)
-        setAllStreams(allData)
+        const recentStreams = allData.filter((stream: LiveStream) => !stream.is_live)
+        setAllStreams(recentStreams)
       } catch (error) {
         console.error("[v0] Error loading streams:", error)
       } finally {

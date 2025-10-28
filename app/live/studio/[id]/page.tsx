@@ -19,6 +19,7 @@ export default function StudioPage() {
   const [isLive, setIsLive] = useState(false)
   const [isBroadcasting, setIsBroadcasting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [goingLive, setGoingLive] = useState(false)
 
   useEffect(() => {
     async function loadStream() {
@@ -48,8 +49,11 @@ export default function StudioPage() {
   }, [params.id, address, router])
 
   async function handleGoLive() {
+    if (goingLive) return
+
+    setGoingLive(true)
     try {
-      await fetch(`/api/live/${params.id}`, {
+      const res = await fetch(`/api/live/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -57,9 +61,15 @@ export default function StudioPage() {
           started_at: new Date().toISOString(),
         }),
       })
+
+      if (!res.ok) throw new Error("Failed to go live")
+
       setIsLive(true)
     } catch (error) {
-      console.error("Error going live:", error)
+      console.error("[v0] Error going live:", error)
+      alert("Failed to go live. Please try again.")
+    } finally {
+      setGoingLive(false)
     }
   }
 
@@ -67,7 +77,7 @@ export default function StudioPage() {
     if (!confirm("Are you sure you want to end this stream?")) return
 
     try {
-      await fetch(`/api/live/${params.id}`, {
+      const res = await fetch(`/api/live/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,9 +85,13 @@ export default function StudioPage() {
           ended_at: new Date().toISOString(),
         }),
       })
+
+      if (!res.ok) throw new Error("Failed to end stream")
+
       router.push("/live")
     } catch (error) {
-      console.error("Error ending stream:", error)
+      console.error("[v0] Error ending stream:", error)
+      alert("Failed to end stream. Please try again.")
     }
   }
 
@@ -194,9 +208,18 @@ export default function StudioPage() {
 
                 <div className="flex gap-2">
                   {!isLive ? (
-                    <Button onClick={handleGoLive} className="bg-red-500 hover:bg-red-600" disabled={!isBroadcasting}>
-                      <Radio className="h-4 w-4 mr-2" />
-                      Go Live
+                    <Button onClick={handleGoLive} className="bg-red-500 hover:bg-red-600" disabled={goingLive}>
+                      {goingLive ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Going Live...
+                        </>
+                      ) : (
+                        <>
+                          <Radio className="h-4 w-4 mr-2" />
+                          Go Live
+                        </>
+                      )}
                     </Button>
                   ) : (
                     <Button onClick={handleEndStream} variant="destructive">
@@ -206,6 +229,16 @@ export default function StudioPage() {
                 </div>
               </div>
             </Card>
+
+            {!isLive && !isBroadcasting && (
+              <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-sm">
+                  <strong>Ready to go live?</strong> Click "Start Broadcast" above to begin streaming, then click "Go
+                  Live" to make your stream public.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -222,6 +255,16 @@ export default function StudioPage() {
                     <p className="font-medium">{stream.description}</p>
                   </div>
                 )}
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <p className="font-medium">
+                    {isLive ? (
+                      <span className="text-red-500">Live</span>
+                    ) : (
+                      <span className="text-muted-foreground">Not Live</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </Card>
 

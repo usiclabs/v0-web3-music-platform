@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Radio, Eye, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import * as Player from "@livepeer/react/player"
+import { getSrc } from "@livepeer/react/external"
 
 export default function WatchStreamPage() {
   const params = useParams()
@@ -16,6 +17,7 @@ export default function WatchStreamPage() {
   const [stream, setStream] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [playerError, setPlayerError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadStream() {
@@ -38,8 +40,15 @@ export default function WatchStreamPage() {
         if (!res.ok) throw new Error("Stream not found")
 
         const data = await res.json()
+        console.log("[v0] Watch stream data loaded:", {
+          id: data.id,
+          title: data.title,
+          playback_id: data.playback_id,
+          is_live: data.is_live,
+        })
         setStream(data)
       } catch (error: any) {
+        console.error("[v0] Error loading stream:", error)
         setError(error.message)
       } finally {
         setLoading(false)
@@ -52,14 +61,13 @@ export default function WatchStreamPage() {
     return () => clearInterval(interval)
   }, [params.id, router])
 
-  const playbackSrc = stream?.playback_id
-    ? [
-        {
-          src: `https://livepeercdn.studio/hls/${stream.playback_id}/index.m3u8`,
-          type: "application/vnd.apple.mpegurl" as const,
-        },
-      ]
-    : null
+  const playbackSrc = stream?.playback_id ? getSrc(stream.playback_id) : null
+
+  useEffect(() => {
+    if (playbackSrc) {
+      console.log("[v0] Playback source generated:", playbackSrc)
+    }
+  }, [playbackSrc])
 
   if (loading) {
     return (
@@ -99,7 +107,14 @@ export default function WatchStreamPage() {
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
                 {playbackSrc ? (
-                  <Player.Root src={playbackSrc} autoPlay>
+                  <Player.Root
+                    src={playbackSrc}
+                    autoPlay
+                    onError={(error) => {
+                      console.error("[v0] Livepeer Player error:", error)
+                      setPlayerError(error?.message || "Failed to load stream")
+                    }}
+                  >
                     <Player.Container className="h-full w-full">
                       <Player.Video className="h-full w-full" />
 
@@ -108,8 +123,11 @@ export default function WatchStreamPage() {
                           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                           <p className="text-sm">Connecting to stream...</p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {stream.is_live ? "Waiting for broadcast to start" : "This stream is currently offline"}
+                            {stream.is_live
+                              ? "Waiting for broadcast to start. The broadcaster needs to start streaming from their studio."
+                              : "This stream is currently offline"}
                           </p>
+                          {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
                         </div>
                       </Player.LoadingIndicator>
 
@@ -185,7 +203,9 @@ export default function WatchStreamPage() {
                     <div className="text-center">
                       <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
                       <p className="text-lg font-semibold">Stream Not Available</p>
-                      <p className="text-sm text-muted-foreground mt-2">This stream is not properly configured</p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        This stream is not properly configured (missing playback ID)
+                      </p>
                     </div>
                   </div>
                 )}
