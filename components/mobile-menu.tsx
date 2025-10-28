@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
@@ -10,10 +9,23 @@ import Image from "next/image"
 
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { address, isConnected, connect } = useWallet()
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + "/")
+
+  const handleNavigation = (href: string) => {
+    setIsClosing(true)
+
+    // Wait for menu close animation before navigating
+    setTimeout(() => {
+      setIsOpen(false)
+      setIsClosing(false)
+      router.push(href)
+    }, 300)
+  }
 
   const menuItems = [
     { href: "/discover", icon: BarChart3, label: "Discover", color: "text-blue-400", pulseColor: "bg-blue-400" },
@@ -44,25 +56,49 @@ export function MobileMenu() {
 
       {/* Full Screen Overlay Menu */}
       {isOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] h-screen flex flex-col animate-in fade-in slide-in-from-right duration-300">
+        <div
+          className={`md:hidden fixed inset-0 z-[100] h-screen flex flex-col transition-all duration-300 ${
+            isClosing ? "animate-out fade-out slide-out-to-right" : "animate-in fade-in slide-in-from-right"
+          }`}
+        >
           {/* Backdrop with blur - covers entire screen */}
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={() => setIsOpen(false)} />
+          <div
+            className={`absolute inset-0 bg-black/90 backdrop-blur-2xl transition-opacity duration-300 ${
+              isClosing ? "opacity-0" : "opacity-100"
+            }`}
+            onClick={() => {
+              setIsClosing(true)
+              setTimeout(() => {
+                setIsOpen(false)
+                setIsClosing(false)
+              }, 300)
+            }}
+          />
 
           {/* Menu content container - positioned relative to sit above backdrop */}
-          <div className="relative flex flex-col h-screen w-full">
+          <div
+            className={`relative flex flex-col h-screen w-full transition-transform duration-300 ${
+              isClosing ? "translate-x-full" : "translate-x-0"
+            }`}
+          >
             <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-              <Link
-                href="/"
+              <button
+                onClick={() => handleNavigation("/")}
                 className="flex items-center gap-2 transition-transform hover:scale-110 active:scale-95"
-                onClick={() => setIsOpen(false)}
               >
                 <div className="relative h-10 w-10">
                   <Image src="/images/usic-logo.png" alt="USIC Logo" fill className="object-contain" />
                 </div>
-              </Link>
+              </button>
 
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsClosing(true)
+                  setTimeout(() => {
+                    setIsOpen(false)
+                    setIsClosing(false)
+                  }, 300)
+                }}
                 className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
                 aria-label="Close menu"
               >
@@ -77,18 +113,17 @@ export function MobileMenu() {
                   const active = isActive(item.href)
 
                   return (
-                    <Link
+                    <button
                       key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 ${
+                      onClick={() => handleNavigation(item.href)}
+                      className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-95 ${
                         active
                           ? "bg-white/10 backdrop-blur-xl border border-white/20 text-white shadow-lg"
                           : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                       }`}
                       style={{
                         animationDelay: `${index * 50}ms`,
-                        animation: "slide-in-right 0.3s ease-out forwards",
+                        animation: isClosing ? "none" : "slide-in-right 0.3s ease-out forwards",
                       }}
                     >
                       <div className="relative">
@@ -109,21 +144,20 @@ export function MobileMenu() {
                         )}
                       </div>
                       <span className="text-base font-medium">{item.label}</span>
-                    </Link>
+                    </button>
                   )
                 })}
               </div>
             </div>
 
             <div className="flex-shrink-0 border-t border-white/10 p-4 bg-black/80 backdrop-blur-xl absolute bottom-20 left-0 right-0">
-              <Link
-                href="/settings"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+              <button
+                onClick={() => handleNavigation("/settings")}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-300 hover:scale-[1.02] active:scale-95"
               >
                 <Settings className="h-5 w-5" />
                 <span className="text-base font-medium">Settings</span>
-              </Link>
+              </button>
 
               <div className="mt-3">
                 {isConnected && address ? (
@@ -139,7 +173,11 @@ export function MobileMenu() {
                     className="w-full gap-2 bg-accent hover:bg-accent/90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-accent/25 text-white h-10 px-4"
                     onClick={() => {
                       connect()
-                      setIsOpen(false)
+                      setIsClosing(true)
+                      setTimeout(() => {
+                        setIsOpen(false)
+                        setIsClosing(false)
+                      }, 300)
                     }}
                   >
                     Connect Wallet

@@ -351,7 +351,7 @@ export default function StakingPage() {
           </div>
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-              <Link href="/nav">Explore Platform</Link>
+              <Link href="/">Explore Platform</Link>
             </Button>
             <Button asChild>
               <Link href="/about">Learn More</Link>

@@ -12,6 +12,7 @@ import { Header } from "@/components/header"
 import { BlockchainTicker } from "@/components/blockchain-ticker"
 import { OnboardingModal } from "@/components/onboarding-modal"
 import { RealtimeNotifications } from "@/components/realtime-notifications"
+import { PageTransition } from "@/components/page-transition"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -36,7 +37,7 @@ export default function RootLayout({
             <ToastProvider>
               <Header />
               <BlockchainTicker />
-              {children}
+              <PageTransition>{children}</PageTransition>
               <AudioPlayer />
               <X402PaymentModal />
               <MobileBottomNav />
