@@ -2,19 +2,24 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
+  console.log("[v0] === ELIGIBILITY CHECK API CALLED ===")
+
   try {
     const { searchParams } = new URL(request.url)
     const address = searchParams.get("address")
+
+    console.log("[v0] Eligibility check request for address:", address)
 
     if (!address) {
       console.error("[v0] Eligibility check: Missing address parameter")
       return NextResponse.json({ error: "Address required" }, { status: 400 })
     }
 
-    console.log("[v0] Checking live stream eligibility for:", address)
-
+    console.log("[v0] Creating Supabase client...")
     const supabase = await createClient()
+    console.log("[v0] Supabase client created")
 
+    console.log("[v0] Querying tracks for artist:", address)
     const { data: tracks, error } = await supabase
       .from("tracks")
       .select("id")

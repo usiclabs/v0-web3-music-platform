@@ -122,9 +122,9 @@ export default function StudioPage() {
     }
   }
 
-  const ingestUrl = stream?.stream_key ? `https://playback.livepeer.studio/webrtc/${stream.stream_key}` : null
+  const ingestUrl = stream?.playback_id ? `https://livepeercdn.studio/webrtc/${stream.playback_id}` : null
 
-  console.log("[v0] Stream key:", stream?.stream_key)
+  console.log("[v0] Playback ID:", stream?.playback_id)
   console.log("[v0] Ingest URL generated:", ingestUrl)
 
   if (loading) {

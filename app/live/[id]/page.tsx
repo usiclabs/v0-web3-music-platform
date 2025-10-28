@@ -19,6 +19,22 @@ export default function WatchStreamPage() {
   const [playerError, setPlayerError] = useState<string | null>(null)
 
   useEffect(() => {
+    const originalError = console.error
+    console.error = (...args: any[]) => {
+      // Filter out Livepeer analytics SDK errors
+      const message = args[0]?.toString() || ""
+      if (message.includes("Analytics SDK") || message.includes("AnalyticsSDKApiError")) {
+        return // Suppress this error
+      }
+      originalError.apply(console, args)
+    }
+
+    return () => {
+      console.error = originalError
+    }
+  }, [])
+
+  useEffect(() => {
     async function loadStream() {
       const id = params.id as string
 

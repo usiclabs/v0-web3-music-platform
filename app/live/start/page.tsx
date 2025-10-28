@@ -42,18 +42,24 @@ export default function StartLivePage() {
       setEligibilityError(null)
 
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => {
+        console.log("[v0] Eligibility check timeout - aborting request")
+        controller.abort()
+      }, 10000) // 10 second timeout
 
       try {
         console.log("[v0] Checking eligibility for address:", address)
+        const url = `/api/live/check-eligibility?address=${address}`
+        console.log("[v0] Fetching from URL:", url)
 
-        const res = await fetch(`/api/live/check-eligibility?address=${address}`, {
+        const res = await fetch(url, {
           signal: controller.signal,
         })
 
         clearTimeout(timeoutId)
-
+        console.log("[v0] Eligibility check response received")
         console.log("[v0] Eligibility check response status:", res.status)
+        console.log("[v0] Eligibility check response ok:", res.ok)
 
         if (!res.ok) {
           const errorText = await res.text()
@@ -61,15 +67,20 @@ export default function StartLivePage() {
           throw new Error(`Failed to check eligibility: ${res.status}`)
         }
 
+        console.log("[v0] Parsing eligibility response...")
         const data = await res.json()
-        console.log("[v0] Eligibility data received:", data)
+        console.log("[v0] Eligibility data received:", JSON.stringify(data))
+        console.log("[v0] Setting eligibility state to:", data)
         setEligibility(data)
-        console.log("[v0] Eligibility state updated")
+        console.log("[v0] Eligibility state updated successfully")
       } catch (error) {
         clearTimeout(timeoutId)
         console.error("[v0] Error checking eligibility:", error)
+        console.error("[v0] Error type:", error instanceof Error ? error.constructor.name : typeof error)
+        console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
 
         if (error instanceof Error && error.name === "AbortError") {
+          console.log("[v0] Request was aborted due to timeout")
           setEligibilityError("Request timed out. Please check your connection and try again.")
         } else {
           setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
