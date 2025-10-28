@@ -33,24 +33,26 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all active:scale-95"
+              className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all duration-300 ease-out active:scale-95"
+              style={{ willChange: "transform" }}
             >
               <div
-                className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
+                className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ease-out ${
                   active
-                    ? "bg-accent/20 text-accent scale-110 animate-pulse-glow"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-accent/20 text-accent scale-110"
+                    : "text-muted-foreground hover:text-foreground hover:scale-105"
                 }`}
+                style={{ willChange: active ? "transform, background-color" : "auto" }}
               >
                 <Icon
-                  className={`h-5 w-5 transition-all ${
-                    active ? "scale-110 drop-shadow-[0_0_8px_rgba(255,82,82,0.6)]" : ""
+                  className={`h-5 w-5 transition-all duration-300 ${
+                    active ? "scale-110 drop-shadow-[0_0_8px_rgba(229,62,62,0.6)]" : ""
                   }`}
                 />
               </div>
               <span
-                className={`text-[10px] font-medium transition-all ${
-                  active ? "text-accent drop-shadow-[0_0_4px_rgba(255,82,82,0.4)]" : "text-muted-foreground"
+                className={`text-[10px] font-medium transition-all duration-300 ${
+                  active ? "text-accent drop-shadow-[0_0_4px_rgba(229,62,62,0.4)]" : "text-muted-foreground"
                 }`}
               >
                 {item.label}

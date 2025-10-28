@@ -65,6 +65,8 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState("dark")
   const [compactMode, setCompactMode] = useState(false)
 
+  const [activeTab, setActiveTab] = useState("profile")
+
   useEffect(() => {
     loadSettings()
   }, [address])
@@ -291,7 +293,7 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <Tabs defaultValue="profile" className="w-full">
+          <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="mb-6 sm:mb-8 relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none sm:hidden" />
               <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none sm:hidden" />
@@ -300,42 +302,42 @@ export default function SettingsPage() {
                 <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-4xl sm:grid-cols-6 h-auto sm:h-10 p-1 gap-1">
                   <TabsTrigger
                     value="profile"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <User className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Profile</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="privacy"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Privacy</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="notifications"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Notifications</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="audio"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <Music className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Audio</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="display"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Display</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="account"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2 transition-all duration-300"
                   >
                     <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Account</span>
@@ -345,7 +347,11 @@ export default function SettingsPage() {
             </div>
 
             {/* Profile Settings */}
-            <TabsContent value="profile" className="space-y-6">
+            <TabsContent
+              value="profile"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "profile" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Profile Picture</h2>
                 <div className="flex items-center gap-6">
@@ -418,7 +424,11 @@ export default function SettingsPage() {
             </TabsContent>
 
             {/* Privacy Settings */}
-            <TabsContent value="privacy" className="space-y-6">
+            <TabsContent
+              value="privacy"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "privacy" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Profile Visibility</h2>
                 <div className="space-y-4">
@@ -453,7 +463,11 @@ export default function SettingsPage() {
             </TabsContent>
 
             {/* Notification Settings */}
-            <TabsContent value="notifications" className="space-y-6">
+            <TabsContent
+              value="notifications"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "notifications" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Notification Preferences</h2>
                 <div className="space-y-4">
@@ -495,7 +509,11 @@ export default function SettingsPage() {
             </TabsContent>
 
             {/* Audio Settings */}
-            <TabsContent value="audio" className="space-y-6">
+            <TabsContent
+              value="audio"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "audio" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Playback Settings</h2>
                 <div className="space-y-4">
@@ -543,7 +561,11 @@ export default function SettingsPage() {
             </TabsContent>
 
             {/* Display Settings */}
-            <TabsContent value="display" className="space-y-6">
+            <TabsContent
+              value="display"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "display" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Appearance</h2>
                 <div className="space-y-4">
@@ -580,7 +602,11 @@ export default function SettingsPage() {
             </TabsContent>
 
             {/* Account Settings */}
-            <TabsContent value="account" className="space-y-6">
+            <TabsContent
+              value="account"
+              className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ willChange: activeTab === "account" ? "opacity, transform" : "auto" }}
+            >
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h2 className="text-xl font-semibold mb-6">Wallet Information</h2>
                 <div className="space-y-4">

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -11,20 +10,28 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   useEffect(() => {
-    // Start transition
     setIsTransitioning(true)
 
-    // Update children after fade out
     const timer = setTimeout(() => {
       setDisplayChildren(children)
-      setIsTransitioning(false)
-    }, 150)
+      // Small delay before fade in for smoother transition
+      requestAnimationFrame(() => {
+        setIsTransitioning(false)
+      })
+    }, 200)
 
     return () => clearTimeout(timer)
   }, [pathname, children])
 
   return (
-    <div className={`transition-opacity duration-300 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+    <div
+      className={`transition-all duration-300 ease-out ${
+        isTransitioning ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
+      }`}
+      style={{
+        willChange: isTransitioning ? "opacity, transform" : "auto",
+      }}
+    >
       {displayChildren}
     </div>
   )
