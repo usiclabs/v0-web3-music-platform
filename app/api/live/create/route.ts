@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Creating live stream for:", address)
 
-    // Check eligibility (at least 3 tracks)
     const { data: tracks } = await supabase
       .from("tracks")
       .select("id")
@@ -55,6 +54,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         is_live: false,
+        viewer_count: 0,
       })
       .select()
       .single()

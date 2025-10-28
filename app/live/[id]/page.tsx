@@ -16,8 +16,6 @@ export default function WatchStreamPage() {
   const [stream, setStream] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isStreamActive, setIsStreamActive] = useState(false)
-  const [streamError, setStreamError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadStream() {
@@ -29,7 +27,6 @@ export default function WatchStreamPage() {
       }
 
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
       if (!uuidRegex.test(id)) {
         setError("Invalid stream ID")
         setLoading(false)
@@ -41,16 +38,8 @@ export default function WatchStreamPage() {
         if (!res.ok) throw new Error("Stream not found")
 
         const data = await res.json()
-        console.log("[v0] Stream data loaded:", {
-          id: data.id,
-          title: data.title,
-          playback_id: data.playback_id,
-          is_live: data.is_live,
-          stream_key: data.stream_key ? "present" : "missing",
-        })
         setStream(data)
       } catch (error: any) {
-        console.error("[v0] Error loading stream:", error)
         setError(error.message)
       } finally {
         setLoading(false)
@@ -110,35 +99,16 @@ export default function WatchStreamPage() {
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
                 {playbackSrc ? (
-                  <Player.Root
-                    src={playbackSrc}
-                    autoPlay
-                    onCanPlay={() => {
-                      console.log("[v0] Stream can play - video data available")
-                      setIsStreamActive(true)
-                      setStreamError(null)
-                    }}
-                    onError={(error) => {
-                      console.error("[v0] Livepeer Player error:", error)
-                      if (error?.type === "offline") {
-                        setStreamError("Stream is offline - waiting for broadcast to start")
-                      } else {
-                        setStreamError("Unable to load stream")
-                      }
-                      setIsStreamActive(false)
-                    }}
-                    onWaiting={() => {
-                      console.log("[v0] Stream waiting for data...")
-                    }}
-                  >
+                  <Player.Root src={playbackSrc} autoPlay>
                     <Player.Container className="h-full w-full">
                       <Player.Video className="h-full w-full" />
+
                       <Player.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/80">
                         <div className="text-center text-white">
                           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                          <p className="text-sm">{streamError || "Waiting for broadcast to start..."}</p>
+                          <p className="text-sm">Connecting to stream...</p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            The artist needs to start broadcasting from their studio
+                            {stream.is_live ? "Waiting for broadcast to start" : "This stream is currently offline"}
                           </p>
                         </div>
                       </Player.LoadingIndicator>
@@ -214,8 +184,8 @@ export default function WatchStreamPage() {
                   <div className="absolute inset-0 flex items-center justify-center text-white">
                     <div className="text-center">
                       <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
-                      <p className="text-lg font-semibold">No playback ID available</p>
-                      <p className="text-sm text-muted-foreground mt-2">This stream may not be properly configured</p>
+                      <p className="text-lg font-semibold">Stream Not Available</p>
+                      <p className="text-sm text-muted-foreground mt-2">This stream is not properly configured</p>
                     </div>
                   </div>
                 )}
@@ -256,7 +226,7 @@ export default function WatchStreamPage() {
                   {stream.is_live && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Eye className="h-4 w-4" />
-                      <span className="text-sm font-medium">{stream.viewer_count} watching</span>
+                      <span className="text-sm font-medium">{stream.viewer_count || 0} watching</span>
                     </div>
                   )}
                 </div>
@@ -266,17 +236,13 @@ export default function WatchStreamPage() {
 
           <div>
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4">
-              <h3 className="font-semibold mb-3">About this stream</h3>
+              <h3 className="font-semibold mb-3">Stream Info</h3>
               <div className="space-y-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Status:</span>
                   <p className="font-medium">
                     {stream.is_live ? (
-                      isStreamActive ? (
-                        <span className="text-green-500">Broadcasting Live</span>
-                      ) : (
-                        <span className="text-yellow-500">Waiting for broadcast...</span>
-                      )
+                      <span className="text-green-500">Live</span>
                     ) : (
                       <span className="text-muted-foreground">Offline</span>
                     )}
