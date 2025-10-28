@@ -34,14 +34,18 @@ export default function LivePage() {
   useEffect(() => {
     async function loadStreams() {
       try {
+        console.log("[v0] Loading streams...")
+
         // Fetch live streams
         const liveRes = await fetch("/api/live/streams?live=true")
         const liveData = await liveRes.json()
+        console.log("[v0] Live streams loaded:", liveData.length)
         setLiveStreams(liveData)
 
         // Fetch all recent streams
         const allRes = await fetch("/api/live/streams")
         const allData = await allRes.json()
+        console.log("[v0] All streams loaded:", allData.length)
         setAllStreams(allData)
       } catch (error) {
         console.error("[v0] Error loading streams:", error)

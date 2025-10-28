@@ -99,8 +99,11 @@ export default function StudioPage() {
     )
   }
 
-  const ingestUrl = `rtmp://rtmp.livepeer.com/live/${stream.stream_key}`
-  console.log("[v0] Broadcast ingest URL:", ingestUrl)
+  const ingestUrl = stream?.stream_key ? `rtmp://rtmp.livepeer.com/live/${stream.stream_key}` : null
+
+  if (ingestUrl) {
+    console.log("[v0] Broadcast ingest URL:", ingestUrl)
+  }
 
   return (
     <div className="min-h-screen pb-32 bg-black">
@@ -134,38 +137,48 @@ export default function StudioPage() {
           <div className="lg:col-span-2">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
-                <Broadcast.Root ingestUrl={ingestUrl}>
-                  <Broadcast.Container className="h-full w-full">
-                    <Broadcast.Video className="h-full w-full" />
+                {ingestUrl ? (
+                  <Broadcast.Root ingestUrl={ingestUrl}>
+                    <Broadcast.Container className="h-full w-full">
+                      <Broadcast.Video className="h-full w-full" />
 
-                    <Broadcast.Controls className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                      <div className="flex items-center justify-between">
-                        <Broadcast.EnabledIndicator
-                          matcher={false}
-                          className="flex items-center gap-2 text-sm text-white"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-gray-400" />
-                          <span>Ready to broadcast</span>
-                        </Broadcast.EnabledIndicator>
+                      <Broadcast.Controls className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                        <div className="flex items-center justify-between">
+                          <Broadcast.EnabledIndicator
+                            matcher={false}
+                            className="flex items-center gap-2 text-sm text-white"
+                          >
+                            <div className="h-2 w-2 rounded-full bg-gray-400" />
+                            <span>Ready to broadcast</span>
+                          </Broadcast.EnabledIndicator>
 
-                        <Broadcast.EnabledIndicator
-                          matcher={true}
-                          className="flex items-center gap-2 text-sm text-white"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                          <span>Broadcasting</span>
-                        </Broadcast.EnabledIndicator>
+                          <Broadcast.EnabledIndicator
+                            matcher={true}
+                            className="flex items-center gap-2 text-sm text-white"
+                          >
+                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                            <span>Broadcasting</span>
+                          </Broadcast.EnabledIndicator>
 
-                        <div className="flex gap-2">
-                          <Broadcast.EnabledTrigger className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors">
-                            <Broadcast.EnabledIndicator matcher={false}>Start Broadcast</Broadcast.EnabledIndicator>
-                            <Broadcast.EnabledIndicator matcher={true}>Stop Broadcast</Broadcast.EnabledIndicator>
-                          </Broadcast.EnabledTrigger>
+                          <div className="flex gap-2">
+                            <Broadcast.EnabledTrigger className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors">
+                              <Broadcast.EnabledIndicator matcher={false}>Start Broadcast</Broadcast.EnabledIndicator>
+                              <Broadcast.EnabledIndicator matcher={true}>Stop Broadcast</Broadcast.EnabledIndicator>
+                            </Broadcast.EnabledTrigger>
+                          </div>
                         </div>
-                      </div>
-                    </Broadcast.Controls>
-                  </Broadcast.Container>
-                </Broadcast.Root>
+                      </Broadcast.Controls>
+                    </Broadcast.Container>
+                  </Broadcast.Root>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-white">
+                    <div className="text-center">
+                      <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
+                      <p className="text-lg font-semibold">No stream key available</p>
+                      <p className="text-sm text-muted-foreground mt-2">Unable to start broadcast</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Controls */}
