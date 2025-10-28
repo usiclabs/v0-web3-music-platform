@@ -176,9 +176,8 @@ export function UploadForm() {
       })
     } catch (err) {
       console.error("[v0] Failed to create Zora coin:", err)
-      setError(
-        `Track uploaded successfully, but coin creation failed: ${err instanceof Error ? err.message : "Unknown error"}. You can create a coin later from your dashboard.`,
-      )
+      const errorMessage = err instanceof Error ? err.message : "Unknown error"
+      setError(`✅ Track uploaded successfully! However, coin creation failed: ${errorMessage}`)
       setCoinCreationStarted(false)
 
       confetti({
@@ -191,7 +190,7 @@ export function UploadForm() {
       setTimeout(() => {
         setIsLoading(false)
         router.push("/dashboard")
-      }, 2000)
+      }, 3000)
     }
   }
 

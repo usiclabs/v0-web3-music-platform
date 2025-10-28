@@ -21,11 +21,14 @@ export async function POST(request: Request) {
 
     setApiKey(zoraApiKey)
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://usi-platform.vercel.app"
+    const imageUrl = coverImageUrl || `${baseUrl}/music-coin.jpg`
+
     const coinMetadata = {
       name: name,
       description: metadata.description,
-      image: coverImageUrl || "/music-coin.jpg",
-      external_url: `https://usi-platform.vercel.app/track/${trackId}`,
+      image: imageUrl,
+      external_url: `${baseUrl}/track/${trackId}`,
     }
 
     // For production, this should be uploaded to IPFS or a permanent storage
@@ -50,9 +53,10 @@ export async function POST(request: Request) {
       txCalls = await createCoinCall(coinArgs)
     } catch (sdkError) {
       console.error("[v0] Zora SDK error:", sdkError)
+      const errorMessage = sdkError instanceof Error ? sdkError.message : "Unknown error"
       return NextResponse.json(
         {
-          error: `Zora API error: ${sdkError instanceof Error ? sdkError.message : "Unknown error"}. This may be because you need to create a creator coin on Zora first. Visit https://zora.co to create your creator profile.`,
+          error: `Coin creation failed: ${errorMessage}. This feature is optional - your track was uploaded successfully. You can create a coin later from your dashboard or visit https://zora.co to set up your creator profile first.`,
         },
         { status: 500 },
       )
