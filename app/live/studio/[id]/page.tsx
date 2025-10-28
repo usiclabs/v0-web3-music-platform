@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Button } from "@/components/ui/button"
@@ -44,6 +44,63 @@ export default function StudioPage() {
   const [goingLive, setGoingLive] = useState(false)
   const [connectionHealth, setConnectionHealth] = useState<"good" | "poor" | "disconnected">("disconnected")
   const [permissionError, setPermissionError] = useState<string | null>(null)
+
+  const shouldCleanupRef = useRef(false)
+  const cleanupInProgressRef = useRef(false)
+
+  const endStreamCleanup = useCallback(async () => {
+    if (cleanupInProgressRef.current || !shouldCleanupRef.current) return
+
+    cleanupInProgressRef.current = true
+    console.log("[v0] Cleaning up stream on unmount/leave")
+
+    try {
+      await fetch(`/api/live/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          is_live: false,
+          ended_at: new Date().toISOString(),
+        }),
+      })
+      console.log("[v0] Stream cleanup successful")
+    } catch (error) {
+      console.error("[v0] Error during stream cleanup:", error)
+    } finally {
+      cleanupInProgressRef.current = false
+    }
+  }, [params.id])
+
+  useEffect(() => {
+    return () => {
+      if (shouldCleanupRef.current) {
+        endStreamCleanup()
+      }
+    }
+  }, [endStreamCleanup])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (shouldCleanupRef.current) {
+        // Use sendBeacon for reliable cleanup on page unload
+        const data = JSON.stringify({
+          is_live: false,
+          ended_at: new Date().toISOString(),
+        })
+
+        navigator.sendBeacon(`/api/live/${params.id}`, data)
+
+        // Show confirmation dialog if stream is live
+        if (isLive) {
+          e.preventDefault()
+          e.returnValue = ""
+        }
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [params.id, isLive])
 
   useEffect(() => {
     async function loadStream() {
@@ -91,6 +148,7 @@ export default function StudioPage() {
       if (!res.ok) throw new Error("Failed to go live")
 
       setIsLive(true)
+      shouldCleanupRef.current = true
       console.log("[v0] Successfully went live")
     } catch (error) {
       console.error("[v0] Error going live:", error)
@@ -102,6 +160,8 @@ export default function StudioPage() {
 
   async function handleEndStream() {
     if (!confirm("Are you sure you want to end this stream?")) return
+
+    shouldCleanupRef.current = false
 
     try {
       const res = await fetch(`/api/live/${params.id}`, {

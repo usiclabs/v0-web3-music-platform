@@ -8,14 +8,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Plus, X, Upload, Loader2, Music, Video, Coins } from "lucide-react"
+import { Plus, X, Upload, Loader2, Music, Video, Coins, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { ensureProfile } from "@/lib/supabase/helpers"
 import confetti from "canvas-confetti"
-import { useSendTransaction, useWaitForTransactionReceipt, usePublicClient } from "wagmi"
+import { useSendTransaction, useWaitForTransactionReceipt, usePublicClient, useReadContract, useChainId } from "wagmi"
 import type { Address } from "viem"
+import { formatUnits } from "viem"
+import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
 
 interface RoyaltySplit {
   address: string
@@ -26,6 +28,7 @@ export function UploadForm() {
   const router = useRouter()
   const { address } = useWallet()
   const publicClient = usePublicClient()
+  const chainId = useChainId()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<string>("")
@@ -54,6 +57,20 @@ export function UploadForm() {
   } = useWaitForTransactionReceipt({
     hash: txHash,
   })
+
+  const { data: usiBalance } = useReadContract({
+    address: chainId ? USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] : undefined,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && !!chainId,
+    },
+  })
+
+  const REQUIRED_USI_BALANCE = BigInt("1000000000000000000000000") // 1,000,000 * 10^18
+  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_USI_BALANCE : false
+  const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
 
   useEffect(() => {
     if (isCoinCreated && receipt && createdTrackId && coinCreationStarted) {
@@ -631,8 +648,46 @@ export function UploadForm() {
               </p>
             </div>
           </div>
-          <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} />
+          <div className="flex items-center gap-2">
+            {!hasRequiredUSI && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                <span>Requires 1M $USI</span>
+              </div>
+            )}
+            <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} disabled={!hasRequiredUSI} />
+          </div>
         </div>
+
+        {!hasRequiredUSI && (
+          <div className="bg-muted/30 border border-border/50 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm mb-1">Token-Gated Feature</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  This feature requires holding at least{" "}
+                  <span className="font-semibold text-accent">1,000,000 $USI</span> tokens to access.
+                </p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Your balance:</span>
+                  <span className="font-mono font-semibold">
+                    {Number.parseFloat(usiBalanceFormatted).toLocaleString()} $USI
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/swap")}
+                  className="mt-3 w-full bg-transparent"
+                >
+                  Get $USI Tokens →
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {tokenizeTrack && (
           <div className="space-y-4 pt-4 border-t border-border/50">
@@ -755,7 +810,7 @@ export function UploadForm() {
       {uploadProgress && (
         <div className="bg-card/80 backdrop-blur-2xl border border-accent/50 p-4 rounded-lg">
           <div className="flex items-center gap-3">
-            {(isLoading || isCoinCreating) && <Loader2 className="h-4 w-4 animate-spin text-accent" />}
+            {(isLoading || isCoinCreating) && <Loader2 className="h-4 w-4 mr-2 animate-spin text-accent" />}
             <p className="text-sm text-accent">{uploadProgress}</p>
           </div>
           {txHash && isCoinCreating && (

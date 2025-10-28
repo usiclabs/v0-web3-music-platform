@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { notFound } from "next/navigation"
 import type { TrackWithArtist } from "@/types/database"
-import { DollarSign, Music, Play, Users } from "lucide-react"
+import { DollarSign, Music, Play, Users, Radio } from "lucide-react"
 import { FollowButton } from "@/components/follow-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListeningHistory } from "@/components/listening-history"
 import { FollowersList } from "@/components/followers-list"
 import { FollowingList } from "@/components/following-list"
+import Link from "next/link"
 
 export default async function ArtistPage({ params }: { params: { address: string } }) {
   const { address } = params
@@ -69,6 +70,15 @@ export default async function ArtistPage({ params }: { params: { address: string
     .eq("listener_address", address.toLowerCase())
     .order("last_played_at", { ascending: false })
     .limit(50)
+
+  const { data: liveStreams } = await supabase
+    .from("live_streams")
+    .select("*")
+    .eq("artist_address", address.toLowerCase())
+    .order("created_at", { ascending: false })
+    .limit(10)
+
+  const isCurrentlyLive = liveStreams?.some((stream) => stream.is_live) || false
 
   const { data: followersData } = await supabase
     .from("follows")
@@ -157,7 +167,18 @@ export default async function ArtistPage({ params }: { params: { address: string
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold mb-2">{artist.artist_name || "Anonymous Artist"}</h1>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-3xl md:text-4xl font-bold">{artist.artist_name || "Anonymous Artist"}</h1>
+                    {isCurrentlyLive && (
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full">
+                        <div className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </div>
+                        <span className="text-xs font-semibold text-red-500 uppercase">Live</span>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-muted-foreground mb-2">{formatAddress(artist.wallet_address)}</p>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
@@ -279,10 +300,20 @@ export default async function ArtistPage({ params }: { params: { address: string
         </div>
 
         <Tabs defaultValue="tracks" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 mb-8">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5 mb-8">
             <TabsTrigger value="tracks" className="flex items-center gap-2">
               <Music className="h-4 w-4" />
               Tracks
+            </TabsTrigger>
+            <TabsTrigger value="live" className="flex items-center gap-2">
+              <Radio className="h-4 w-4" />
+              Live
+              {isCurrentlyLive && (
+                <span className="ml-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <Play className="h-4 w-4" />
@@ -309,6 +340,63 @@ export default async function ArtistPage({ params }: { params: { address: string
               <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
                 <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No tracks uploaded yet</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="live">
+            {liveStreams && liveStreams.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {liveStreams.map((stream) => (
+                  <Link
+                    key={stream.id}
+                    href={`/live/${stream.id}`}
+                    className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Radio className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
+                          {stream.title || "Untitled Stream"}
+                        </h3>
+                      </div>
+                      {stream.is_live && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/20 border border-red-500/50 rounded-full">
+                          <div className="relative flex h-1.5 w-1.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                          </div>
+                          <span className="text-xs font-semibold text-red-500 uppercase">Live</span>
+                        </div>
+                      )}
+                    </div>
+                    {stream.description && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{stream.description}</p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        {stream.viewer_count !== null && (
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span>{stream.viewer_count} watching</span>
+                          </div>
+                        )}
+                      </div>
+                      <span>
+                        {stream.is_live
+                          ? "Live now"
+                          : stream.ended_at
+                            ? new Date(stream.ended_at).toLocaleDateString()
+                            : new Date(stream.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+                <Radio className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No live streams yet</p>
               </div>
             )}
           </TabsContent>
