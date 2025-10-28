@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Radio, Eye, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import * as Player from "@livepeer/react/player"
-import { getSrc } from "@livepeer/react/external"
 
 export default function WatchStreamPage() {
   const params = useParams()
@@ -67,7 +66,14 @@ export default function WatchStreamPage() {
     return () => clearInterval(interval)
   }, [params.id, router])
 
-  const playbackSrc = stream?.playback_id ? getSrc(stream.playback_id) : null
+  const playbackSrc = stream?.playback_id
+    ? [
+        {
+          src: `https://livepeercdn.studio/hls/${stream.playback_id}/index.m3u8`,
+          type: "application/vnd.apple.mpegurl" as const,
+        },
+      ]
+    : null
 
   useEffect(() => {
     if (playbackSrc) {
@@ -135,7 +141,6 @@ export default function WatchStreamPage() {
                               ? "Waiting for broadcast to start. The broadcaster needs to start streaming from their studio."
                               : "This stream is currently offline"}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">Playback ID: {stream.playback_id}</p>
                           {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
                         </div>
                       </Player.LoadingIndicator>
