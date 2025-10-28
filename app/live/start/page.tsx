@@ -32,26 +32,50 @@ export default function StartLivePage() {
   useEffect(() => {
     async function checkEligibility() {
       if (!isConnected || !address) {
+        console.log("[v0] Skipping eligibility check - not connected")
         setCheckingEligibility(false)
         return
       }
 
+      console.log("[v0] Starting eligibility check for:", address)
       setCheckingEligibility(true)
       setEligibilityError(null)
 
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
       try {
-        const res = await fetch(`/api/live/check-eligibility?address=${address}`)
+        console.log("[v0] Checking eligibility for address:", address)
+
+        const res = await fetch(`/api/live/check-eligibility?address=${address}`, {
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        console.log("[v0] Eligibility check response status:", res.status)
 
         if (!res.ok) {
+          const errorText = await res.text()
+          console.error("[v0] Eligibility check failed:", res.status, errorText)
           throw new Error(`Failed to check eligibility: ${res.status}`)
         }
 
         const data = await res.json()
+        console.log("[v0] Eligibility data received:", data)
         setEligibility(data)
+        console.log("[v0] Eligibility state updated")
       } catch (error) {
+        clearTimeout(timeoutId)
         console.error("[v0] Error checking eligibility:", error)
-        setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
+
+        if (error instanceof Error && error.name === "AbortError") {
+          setEligibilityError("Request timed out. Please check your connection and try again.")
+        } else {
+          setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
+        }
       } finally {
+        console.log("[v0] Eligibility check complete, setting checkingEligibility to false")
         setCheckingEligibility(false)
       }
     }
@@ -59,36 +83,52 @@ export default function StartLivePage() {
     checkEligibility()
   }, [address, isConnected])
 
-  async function handleCreateStream() {
-    if (!address || !title.trim()) return
+  console.log("[v0] Render state:", {
+    isConnected,
+    checkingEligibility,
+    eligibilityError,
+    eligibility,
+  })
 
+  const handleCreateStream = async () => {
+    if (!title.trim()) {
+      return
+    }
+
+    console.log("[v0] Create stream button clicked")
     setLoading(true)
+
     try {
+      console.log("[v0] Creating stream with:", { address, title, description })
+
       const res = await fetch("/api/live/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           address,
           title: title.trim(),
-          description: description.trim(),
+          description: description.trim() || undefined,
         }),
       })
 
-      const contentType = res.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned an invalid response. Please try again.")
+      console.log("[v0] Create stream response status:", res.status)
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        console.error("[v0] Create stream failed:", errorData)
+        throw new Error(errorData.error || "Failed to create stream")
       }
 
       const data = await res.json()
+      console.log("[v0] Stream created successfully:", data)
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create stream")
-      }
-
+      // Navigate to the studio page
       router.push(`/live/studio/${data.id}`)
-    } catch (error: any) {
+    } catch (error) {
       console.error("[v0] Error creating stream:", error)
-      alert(error.message || "Failed to create stream. Please try again.")
+      alert(error instanceof Error ? error.message : "Failed to create stream. Please try again.")
     } finally {
       setLoading(false)
     }

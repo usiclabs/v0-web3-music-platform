@@ -9,7 +9,28 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Radio, Eye, Loader2, AlertCircle, X, CheckCircle, Wifi, WifiOff, Video, VideoOff } from "lucide-react"
 import * as Broadcast from "@livepeer/react/broadcast"
-import { getIngest } from "@livepeer/react/broadcast"
+import { useBroadcastContext } from "@livepeer/react/broadcast"
+
+function BroadcastStateTracker({ onStateChange }: { onStateChange: (enabled: boolean) => void }) {
+  const broadcast = useBroadcastContext()
+
+  useEffect(() => {
+    if (broadcast?.enabled !== undefined) {
+      console.log("[v0] Broadcast enabled state:", broadcast.enabled)
+      onStateChange(broadcast.enabled)
+    }
+  }, [broadcast?.enabled, onStateChange])
+
+  useEffect(() => {
+    console.log("[v0] Full broadcast context:", {
+      enabled: broadcast?.enabled,
+      status: broadcast?.status,
+      error: broadcast?.error,
+    })
+  }, [broadcast])
+
+  return null
+}
 
 export default function StudioPage() {
   const params = useParams()
@@ -52,6 +73,8 @@ export default function StudioPage() {
   }, [params.id, address, router])
 
   async function handleGoLive() {
+    console.log("[v0] Go Live button clicked, current state:", { goingLive, isBroadcasting, isLive })
+
     if (goingLive) return
 
     setGoingLive(true)
@@ -68,6 +91,7 @@ export default function StudioPage() {
       if (!res.ok) throw new Error("Failed to go live")
 
       setIsLive(true)
+      console.log("[v0] Successfully went live")
     } catch (error) {
       console.error("[v0] Error going live:", error)
       alert("Failed to go live. Please try again.")
@@ -98,49 +122,19 @@ export default function StudioPage() {
     }
   }
 
-  async function handleBroadcastChange(enabled: boolean) {
-    console.log("[v0] Broadcast state changed:", enabled)
-    setIsBroadcasting(enabled)
-    setPermissionError(null)
+  const ingestUrl = stream?.stream_key ? `https://playback.livepeer.studio/webrtc/${stream.stream_key}` : null
 
-    if (enabled) {
-      setConnectionHealth("good")
-    } else {
-      setConnectionHealth("disconnected")
-    }
-
-    // If broadcast stops and stream is live, automatically end the stream
-    if (!enabled && isLive) {
-      try {
-        const res = await fetch(`/api/live/${params.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            is_live: false,
-            ended_at: new Date().toISOString(),
-          }),
-        })
-
-        if (res.ok) {
-          setIsLive(false)
-          console.log("[v0] Stream automatically ended when broadcast stopped")
-        }
-      } catch (error) {
-        console.error("[v0] Error auto-ending stream:", error)
-      }
-    }
-  }
-
-  function handleBroadcastError(error: Error) {
-    console.error("[v0] Broadcast error:", error)
-    setPermissionError(error.message)
-    setConnectionHealth("disconnected")
-  }
+  console.log("[v0] Stream key:", stream?.stream_key)
+  console.log("[v0] Ingest URL generated:", ingestUrl)
 
   if (loading) {
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-lg font-semibold">Loading broadcast studio...</p>
+          <p className="text-sm text-muted-foreground mt-2">Please wait</p>
+        </div>
       </div>
     )
   }
@@ -148,19 +142,15 @@ export default function StudioPage() {
   if (error || !stream) {
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
-        <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-8 text-center max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Stream Not Found</h2>
-          <p className="text-sm text-muted-foreground mb-6">{error || "This stream does not exist"}</p>
-          <Button onClick={() => router.push("/live")}>Back to Live</Button>
-        </Card>
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+          <h2 className="text-xl font-bold mb-2">Stream Not Found</h2>
+          <p className="text-muted-foreground mb-6">{error || "Unable to load stream data"}</p>
+          <Button onClick={() => router.push("/live")}>Back to Live Streams</Button>
+        </div>
       </div>
     )
   }
-
-  const ingestUrl = stream?.stream_key ? getIngest(stream.stream_key) : null
-
-  console.log("[v0] Ingest URL generated:", ingestUrl)
 
   return (
     <div className="min-h-screen pb-32 bg-black">
@@ -169,7 +159,7 @@ export default function StudioPage() {
           <div className="flex items-center gap-3">
             <Radio className="h-6 w-6 text-red-500" />
             <div>
-              <h1 className="text-2xl font-bold">{stream.title}</h1>
+              <h1 className="text-2xl font-bold">{stream?.title || "Untitled Stream"}</h1>
               <p className="text-sm text-muted-foreground">Broadcast Studio</p>
             </div>
           </div>
@@ -217,6 +207,20 @@ export default function StudioPage() {
               <div className="aspect-video bg-black relative">
                 {ingestUrl ? (
                   <Broadcast.Root ingestUrl={ingestUrl}>
+                    <BroadcastStateTracker
+                      onStateChange={(enabled) => {
+                        console.log("[v0] Broadcast state changed:", enabled)
+                        setIsBroadcasting(enabled)
+                        setPermissionError(null)
+
+                        if (enabled) {
+                          setConnectionHealth("good")
+                        } else {
+                          setConnectionHealth("disconnected")
+                        }
+                      }}
+                    />
+
                     <Broadcast.Container className="h-full w-full">
                       <Broadcast.Video className="h-full w-full object-cover" />
 
@@ -241,10 +245,7 @@ export default function StudioPage() {
                           </Broadcast.EnabledIndicator>
 
                           <div className="flex gap-2">
-                            <Broadcast.EnabledTrigger
-                              className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white text-sm font-medium transition-all hover:scale-105 active:scale-95"
-                              onEnabledChange={handleBroadcastChange}
-                            >
+                            <Broadcast.EnabledTrigger className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white text-sm font-medium transition-all hover:scale-105 active:scale-95">
                               <Broadcast.EnabledIndicator matcher={false}>
                                 <div className="flex items-center gap-2">
                                   <Video className="h-4 w-4" />
@@ -294,23 +295,31 @@ export default function StudioPage() {
 
                 <div className="flex gap-2">
                   {!isLive ? (
-                    <Button
-                      onClick={handleGoLive}
-                      className="bg-red-500 hover:bg-red-600"
-                      disabled={goingLive || !isBroadcasting}
-                    >
-                      {goingLive ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Going Live...
-                        </>
-                      ) : (
-                        <>
-                          <Radio className="h-4 w-4 mr-2" />
-                          Go Live
-                        </>
+                    <div className="relative group">
+                      <Button
+                        onClick={handleGoLive}
+                        className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={goingLive || !isBroadcasting}
+                      >
+                        {goingLive ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Going Live...
+                          </>
+                        ) : (
+                          <>
+                            <Radio className="h-4 w-4 mr-2" />
+                            Go Live
+                          </>
+                        )}
+                      </Button>
+                      {!isBroadcasting && !goingLive && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          Start broadcasting first
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-black/90" />
+                        </div>
                       )}
-                    </Button>
+                    </div>
                   ) : (
                     <Button onClick={handleEndStream} variant="destructive">
                       End Stream

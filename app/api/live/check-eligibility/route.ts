@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,10 +7,13 @@ export async function GET(request: NextRequest) {
     const address = searchParams.get("address")
 
     if (!address) {
+      console.error("[v0] Eligibility check: Missing address parameter")
       return NextResponse.json({ error: "Address required" }, { status: 400 })
     }
 
     console.log("[v0] Checking live stream eligibility for:", address)
+
+    const supabase = await createClient()
 
     const { data: tracks, error } = await supabase
       .from("tracks")
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const trackCount = tracks?.length || 0
     const isEligible = trackCount >= 3
 
-    console.log("[v0] Eligibility check result:", { address, trackCount, isEligible, tracksFound: tracks?.length })
+    console.log("[v0] Eligibility check result:", { address, trackCount, isEligible })
 
     return NextResponse.json({
       eligible: isEligible,
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Error in eligibility check:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }

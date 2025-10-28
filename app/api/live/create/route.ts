@@ -1,78 +1,81 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createLivepeerStream } from "@/lib/livepeer/client"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
 export async function POST(request: NextRequest) {
+  console.log("[v0] Create stream API called")
+
   try {
-    const { address, title, description } = await request.json()
+    const body = await request.json()
+    const { address, title, description } = body
+
+    console.log("[v0] Stream creation request:", { address, title, description })
 
     if (!address || !title) {
+      console.log("[v0] Missing required fields")
       return NextResponse.json({ error: "Address and title required" }, { status: 400 })
     }
 
-    console.log("[v0] Creating live stream for:", address)
+    const supabase = await createClient()
+    console.log("[v0] Supabase client created")
 
-    const { data: tracks } = await supabase
+    // Check eligibility
+    console.log("[v0] Checking eligibility for:", address)
+    const { data: tracks, error: tracksError } = await supabase
       .from("tracks")
       .select("id")
       .ilike("artist_id", address)
       .eq("is_active", true)
 
+    if (tracksError) {
+      console.error("[v0] Error fetching tracks:", tracksError)
+      return NextResponse.json({ error: "Failed to verify eligibility" }, { status: 500 })
+    }
+
+    console.log("[v0] Found tracks:", tracks?.length || 0)
+
     if (!tracks || tracks.length < 3) {
+      console.log("[v0] Not enough tracks")
       return NextResponse.json({ error: "You need at least 3 published tracks to go live" }, { status: 403 })
     }
 
+    // Create Livepeer stream
+    console.log("[v0] Creating Livepeer stream...")
     let livepeerStream
     try {
       livepeerStream = await createLivepeerStream(title)
-      console.log("[v0] Livepeer stream created - Full response:", JSON.stringify(livepeerStream, null, 2))
+      console.log("[v0] Livepeer stream created:", livepeerStream)
     } catch (livepeerError: any) {
       console.error("[v0] Livepeer API error:", livepeerError)
-      return NextResponse.json(
-        { error: `Failed to create stream on Livepeer: ${livepeerError.message}` },
-        { status: 500 },
-      )
+      return NextResponse.json({ error: `Failed to create stream: ${livepeerError.message}` }, { status: 500 })
     }
 
+    // Extract stream key and playback ID
     const streamKey = livepeerStream.streamKey || livepeerStream.stream_key
-
-    // Try multiple possible locations for playbackId
     let playbackId = livepeerStream.playbackId || livepeerStream.playback_id || livepeerStream.id
 
-    // If playbackId is an object (some API versions return it as an object), extract the ID
     if (playbackId && typeof playbackId === "object") {
       playbackId = playbackId.id || playbackId.playbackId
     }
 
-    console.log("[v0] Extracted values - streamKey:", streamKey, "playbackId:", playbackId)
+    console.log("[v0] Stream credentials:", { streamKey: !!streamKey, playbackId: !!playbackId })
 
-    if (!streamKey) {
-      console.error("[v0] Missing streamKey in Livepeer response:", livepeerStream)
-      return NextResponse.json(
-        { error: "Invalid response from streaming service: missing stream key" },
-        { status: 500 },
-      )
+    if (!streamKey || !playbackId) {
+      console.error("[v0] Missing stream data:", { streamKey, playbackId, fullResponse: livepeerStream })
+      return NextResponse.json({ error: "Invalid response from streaming service" }, { status: 500 })
     }
 
-    if (!playbackId) {
-      console.error("[v0] Missing playbackId in Livepeer response:", livepeerStream)
-      return NextResponse.json(
-        { error: "Invalid response from streaming service: missing playback ID" },
-        { status: 500 },
-      )
-    }
-
-    // Save to database
-    const { data: liveStream, error } = await supabase
+    console.log("[v0] Saving stream to database with admin client...")
+    const adminClient = createAdminClient()
+    const { data: liveStream, error } = await adminClient
       .from("live_streams")
       .insert({
         artist_address: address.toLowerCase(),
         stream_key: streamKey,
         playback_id: playbackId,
         title,
-        description,
+        description: description || "",
         is_live: false,
         viewer_count: 0,
       })
@@ -80,19 +83,21 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error("[v0] Error saving live stream:", error)
+      console.error("[v0] Error saving stream:", error)
       return NextResponse.json({ error: "Failed to create live stream" }, { status: 500 })
     }
 
-    console.log("[v0] Live stream created successfully:", {
-      id: liveStream.id,
-      playback_id: liveStream.playback_id,
-      stream_key: liveStream.stream_key ? "present" : "missing",
-    })
+    console.log("[v0] Stream created successfully:", liveStream.id)
 
-    return NextResponse.json(liveStream)
+    return NextResponse.json({
+      id: liveStream.id,
+      streamKey: liveStream.stream_key,
+      playbackId: liveStream.playback_id,
+      title: liveStream.title,
+      description: liveStream.description,
+    })
   } catch (error: any) {
-    console.error("[v0] Error creating live stream:", error)
+    console.error("[v0] Error creating stream:", error)
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
   }
 }

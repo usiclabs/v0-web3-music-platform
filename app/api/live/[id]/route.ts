@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+import { createClient } from "@/lib/supabase/server"
 
 function isValidUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -10,45 +8,38 @@ function isValidUUID(id: string): boolean {
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = await createClient()
     const { id } = params
 
     if (!isValidUUID(id)) {
       return NextResponse.json({ error: "Invalid stream ID format" }, { status: 400 })
     }
 
-    const { data: stream, error } = await supabase
-      .from("live_streams")
-      .select(`
-        *,
-        artist:profiles!live_streams_artist_address_fkey(*)
-      `)
-      .eq("id", id)
-      .single()
+    const { data: stream, error } = await supabase.from("live_streams").select("*").eq("id", id).single()
 
     if (error || !stream) {
+      console.error("[v0] Stream not found:", id)
       return NextResponse.json({ error: "Stream not found" }, { status: 404 })
     }
 
-    console.log("[v0] Fetched stream for viewer:", {
-      id: stream.id,
-      title: stream.title,
-      playback_id: stream.playback_id,
-      is_live: stream.is_live,
-      has_playback_id: !!stream.playback_id,
-    })
+    // Fetch artist profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("wallet_address, artist_name, avatar_url")
+      .eq("wallet_address", stream.artist_address)
+      .single()
 
-    if (!stream.playback_id) {
-      console.error("[v0] Stream missing playback_id:", stream.id)
-      return NextResponse.json(
-        {
-          ...stream,
-          error: "Stream configuration incomplete - missing playback ID. Please try creating a new stream.",
-        },
-        { status: 200 },
-      )
+    const streamWithArtist = {
+      ...stream,
+      artist: profile || {
+        wallet_address: stream.artist_address,
+        artist_name: null,
+        avatar_url: null,
+      },
     }
 
-    return NextResponse.json(stream)
+    console.log("[v0] Fetched stream:", stream.id)
+    return NextResponse.json(streamWithArtist)
   } catch (error) {
     console.error("[v0] Error fetching stream:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -57,6 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = await createClient()
     const { id } = params
 
     if (!isValidUUID(id)) {
@@ -64,7 +56,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const updates = await request.json()
-
     console.log("[v0] Updating stream:", id, updates)
 
     const { data: stream, error } = await supabase.from("live_streams").update(updates).eq("id", id).select().single()
@@ -83,6 +74,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = await createClient()
     const { id } = params
 
     if (!isValidUUID(id)) {

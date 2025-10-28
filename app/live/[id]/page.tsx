@@ -240,22 +240,34 @@ export default function WatchStreamPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Link
-                    href={`/artist/${stream.artist.wallet_address}`}
-                    className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={stream.artist.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback>{stream.artist.artist_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">
-                        {stream.artist.artist_name ||
-                          `${stream.artist.wallet_address.slice(0, 6)}...${stream.artist.wallet_address.slice(-4)}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Artist</p>
+                  {stream.artist ? (
+                    <Link
+                      href={`/artist/${stream.artist.wallet_address}`}
+                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={stream.artist.avatar_url || "/placeholder.svg"} />
+                        <AvatarFallback>{stream.artist.artist_name?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">
+                          {stream.artist.artist_name ||
+                            `${stream.artist.wallet_address.slice(0, 6)}...${stream.artist.wallet_address.slice(-4)}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Artist</p>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">Unknown Artist</p>
+                        <p className="text-xs text-muted-foreground">Artist</p>
+                      </div>
                     </div>
-                  </Link>
+                  )}
 
                   {stream.is_live && (
                     <div className="flex items-center gap-2 text-muted-foreground">

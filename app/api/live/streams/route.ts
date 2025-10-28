@@ -1,14 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createAdminClient()
+    console.log("[v0] Streams API called")
+
+    const supabase = await createClient()
+    console.log("[v0] Supabase client created successfully")
 
     const { searchParams } = new URL(request.url)
     const liveOnly = searchParams.get("live") === "true"
 
-    console.log("[v0] Fetching live streams, liveOnly:", liveOnly)
+    console.log("[v0] Fetching streams, liveOnly:", liveOnly)
 
     let query = supabase
       .from("live_streams")
@@ -52,7 +55,6 @@ export async function GET(request: NextRequest) {
         console.error("[v0] Error fetching profiles:", profilesError)
       }
 
-      // Map profiles to streams
       const profileMap = new Map(profiles?.map((p) => [p.wallet_address, p]) || [])
 
       const streamsWithArtists = streams.map((stream) => ({
@@ -64,13 +66,17 @@ export async function GET(request: NextRequest) {
         },
       }))
 
-      console.log("[v0] Streams with artists:", streamsWithArtists.length)
+      console.log("[v0] Returning streams with artists:", streamsWithArtists.length)
       return NextResponse.json(streamsWithArtists)
     }
 
+    console.log("[v0] No streams found, returning empty array")
     return NextResponse.json([])
   } catch (error) {
     console.error("[v0] Error in streams route:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }

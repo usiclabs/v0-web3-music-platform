@@ -266,10 +266,7 @@ export default function AirdropPage() {
             <h1
               className={`relative mb-6 text-5xl font-bold sm:text-7xl lg:text-8xl ${mounted ? "animate-slide-up" : "opacity-0"}`}
             >
-              <span className="relative z-10 text-white drop-shadow-[0_0_30px_rgba(229,62,62,0.5)]">
-                $USI Airdrop
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-text-shimmer bg-[length:200%_100%]" />
-              </span>
+              <span className="relative z-10 text-white drop-shadow-[0_0_30px_rgba(229,62,62,0.5)]">$USI Airdrop</span>
             </h1>
 
             <p
