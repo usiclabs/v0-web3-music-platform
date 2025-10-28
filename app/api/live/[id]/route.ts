@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 function isValidUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -48,7 +49,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const supabase = await createClient()
     const { id } = params
 
     if (!isValidUUID(id)) {
@@ -58,13 +58,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const updates = await request.json()
     console.log("[v0] Updating stream:", id, updates)
 
+    const supabase = createAdminClient()
+
     const { data: stream, error } = await supabase.from("live_streams").update(updates).eq("id", id).select().single()
 
     if (error) {
-      console.error("[v0] Error updating stream:", error)
-      return NextResponse.json({ error: "Failed to update stream" }, { status: 500 })
+      console.error("[v0] Error updating stream:", error.message)
+      return NextResponse.json({ error: error.message || "Failed to update stream" }, { status: 500 })
     }
 
+    if (!stream) {
+      console.error("[v0] Stream not found after update:", id)
+      return NextResponse.json({ error: "Stream not found" }, { status: 404 })
+    }
+
+    console.log("[v0] Stream updated successfully:", stream.id)
     return NextResponse.json(stream)
   } catch (error) {
     console.error("[v0] Error in update route:", error)

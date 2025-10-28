@@ -299,7 +299,7 @@ export default function StudioPage() {
                       <Button
                         onClick={handleGoLive}
                         className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={goingLive || !isBroadcasting}
+                        disabled={goingLive}
                       >
                         {goingLive ? (
                           <>
@@ -340,21 +340,41 @@ export default function StudioPage() {
             )}
 
             {!isLive && !isBroadcasting && !permissionError && (
-              <Alert className="border-yellow-500/50 bg-yellow-500/10">
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <Alert className="border-blue-500/50 bg-blue-500/10">
+                <AlertCircle className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Ready to go live?</strong> Click "Start Broadcast" above to begin streaming, then click "Go
-                  Live" to make your stream public.
+                  <strong>Ready to go live?</strong> Click "Go Live" to make your stream public, then click "Start
+                  Broadcast" to begin streaming your camera and audio.
                 </AlertDescription>
               </Alert>
             )}
 
             {isBroadcasting && !isLive && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-sm">
+                  <strong>Broadcasting but not live!</strong> Your camera is streaming but viewers can't see you yet.
+                  Click "Go Live" to make your stream public.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isLive && !isBroadcasting && (
               <Alert className="border-green-500/50 bg-green-500/10">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Broadcast Active!</strong> Your camera is streaming. Click "Go Live" to make your stream
-                  visible to viewers.
+                  <strong>Stream is live!</strong> Click "Start Broadcast" above to begin streaming your camera and
+                  audio to viewers.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isLive && isBroadcasting && (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <AlertDescription className="text-sm">
+                  <strong>You're live!</strong> Your stream is public and broadcasting. Viewers can now see and hear
+                  you.
                 </AlertDescription>
               </Alert>
             )}
@@ -400,10 +420,10 @@ export default function StudioPage() {
               <AlertDescription className="text-xs">
                 <strong>How to go live:</strong>
                 <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>Click "Go Live" to make your stream public</li>
                   <li>Click "Start Broadcast" to begin streaming</li>
                   <li>Allow camera and microphone access</li>
-                  <li>Wait for "Broadcast Active" confirmation</li>
-                  <li>Click "Go Live" to make your stream public</li>
+                  <li>Viewers can now see and hear you</li>
                   <li>Click "End Stream" when finished</li>
                 </ol>
               </AlertDescription>
