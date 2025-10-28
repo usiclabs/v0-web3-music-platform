@@ -18,7 +18,7 @@ const geistSans = Geist({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "USI - Web3 Music Streaming",
+  title: "USIC - Web3 Music Streaming",
   description: "Blockchain-powered music streaming with micropayments and NFTs",
   generator: "v0.app",
 }

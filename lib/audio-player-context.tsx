@@ -126,6 +126,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       paymentJustSucceededRef.current = false
       console.log("[v0] Requesting payment for chunk", chunkIndex)
 
+      const walletType = detectWalletType()
+      console.log("[v0] Detected wallet type:", walletType)
+
       const mobile = isMobile()
       const maxVerifyAttempts = mobile ? 8 : 3
       const maxSettleAttempts = mobile ? 8 : 3
@@ -144,7 +147,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       const nonce = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`
       const validAfter = Math.floor(Date.now() / 1000)
-      const validBefore = validAfter + (mobile ? 14400 : 3600) // 4 hours for mobile, 1 hour for desktop
+      const validBefore = validAfter + (walletType === "coinbase" ? 86400 : mobile ? 14400 : 3600)
       const valueInUSDC = Math.floor(Number.parseFloat(paymentInstructions.amount) * 1e6)
 
       const domain = {
@@ -155,12 +158,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
 
       const types = {
-        EIP712Domain: [
-          { name: "name", type: "string" },
-          { name: "version", type: "string" },
-          { name: "chainId", type: "uint256" },
-          { name: "verifyingContract", type: "address" },
-        ],
         TransferWithAuthorization: [
           { name: "from", type: "address" },
           { name: "to", type: "address" },
@@ -180,6 +177,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         nonce: nonce as `0x${string}`,
       }
 
+      console.log("[v0] EIP-712 Domain:", domain)
       console.log("[v0] Message to sign:", {
         from: message.from,
         to: message.to,
@@ -192,17 +190,23 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       onProgress?.("signing")
       console.log("[v0] Requesting signature from wallet...")
 
-      if (mobile) {
+      if (mobile || walletType === "coinbase") {
         console.log(
-          "[v0] Mobile wallet detected - signature request may take longer. Please be patient and approve the request in your wallet app.",
+          "[v0] Mobile/Coinbase wallet detected - signature request may take longer. Please be patient and approve the request in your wallet app.",
         )
       }
 
       const signature = await signTypedData(domain, types, message)
 
-      console.log("[v0] Signature received:", signature)
+      console.log("[v0] Raw signature received:", signature)
+      console.log("[v0] Signature length:", signature.length)
 
-      const { v, r, s } = splitSignature(signature)
+      const { v, r, s } = splitSignature(signature, walletType)
+
+      console.log("[v0] Parsed signature components:")
+      console.log("[v0]   r:", r)
+      console.log("[v0]   s:", s)
+      console.log("[v0]   v:", v)
 
       const paymentPayload: X402PaymentPayload = {
         scheme: paymentInstructions.scheme,
@@ -556,73 +560,145 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   )
 }
 
-function splitSignature(signature: string): { v: number; r: string; s: string } {
+const detectWalletType = (): "coinbase" | "metamask" | "walletconnect" | "unknown" => {
+  if (typeof window === "undefined") return "unknown"
+
+  // Check for Coinbase Wallet
+  if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) {
+    return "coinbase"
+  }
+
+  // Check for MetaMask
+  if (window.ethereum?.isMetaMask) {
+    return "metamask"
+  }
+
+  // Check for WalletConnect
+  if (window.ethereum?.isWalletConnect) {
+    return "walletconnect"
+  }
+
+  return "unknown"
+}
+
+function splitSignature(signature: string, walletType?: string): { v: number; r: string; s: string } {
   const sig = signature.startsWith("0x") ? signature.slice(2) : signature
 
   console.log("[v0] Processing signature of length:", sig.length)
+  console.log("[v0] Wallet type:", walletType)
   console.log("[v0] Raw signature:", signature)
 
   let r: string
   let s: string
   let v: number
 
+  // Standard format: 130 characters (65 bytes)
   if (sig.length === 130) {
     r = `0x${sig.slice(0, 64)}`
     s = `0x${sig.slice(64, 128)}`
     v = Number.parseInt(sig.slice(128, 130), 16)
     console.log("[v0] Standard signature format (130 chars)")
-  } else if (sig.length === 128) {
+  }
+  // Compact format: 128 characters (64 bytes) - missing v
+  else if (sig.length === 128) {
     r = `0x${sig.slice(0, 64)}`
     s = `0x${sig.slice(64, 128)}`
+    // Infer v from s value
     const sValue = BigInt(s)
     const secp256k1N = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141")
     v = sValue > secp256k1N / 2n ? 28 : 27
     console.log("[v0] Compact signature format (128 chars), inferred v:", v)
-  } else if (sig.length > 130) {
+  }
+  // Coinbase Wallet sometimes adds extra bytes
+  else if (sig.length > 130) {
     console.log("[v0] Extended signature format detected:", sig.length, "chars")
 
+    // Try standard extraction first
     try {
       r = `0x${sig.slice(0, 64)}`
       s = `0x${sig.slice(64, 128)}`
       v = Number.parseInt(sig.slice(128, 130), 16)
 
+      // Validate r and s are valid hex
       if (!/^0x[0-9a-fA-F]{64}$/.test(r) || !/^0x[0-9a-fA-F]{64}$/.test(s)) {
-        throw new Error("Invalid r or s format")
+        throw new Error("Invalid r or s format in first 130 chars")
       }
 
-      console.log("[v0] Extracted signature from first 130 chars of extended format")
+      console.log("[v0] Successfully extracted from first 130 chars")
     } catch (e) {
       console.log("[v0] First 130 chars failed, trying last 130 chars")
+
+      // Try from the end (some wallets append data)
       const offset = sig.length - 130
       r = `0x${sig.slice(offset, offset + 64)}`
       s = `0x${sig.slice(offset + 64, offset + 128)}`
       v = Number.parseInt(sig.slice(offset + 128, offset + 130), 16)
 
+      // Validate
       if (!/^0x[0-9a-fA-F]{64}$/.test(r) || !/^0x[0-9a-fA-F]{64}$/.test(s)) {
-        console.log("[v0] Last 130 chars failed, trying middle section")
-        const prefixLength = Math.floor((sig.length - 130) / 2)
-        r = `0x${sig.slice(prefixLength, prefixLength + 64)}`
-        s = `0x${sig.slice(prefixLength + 64, prefixLength + 128)}`
-        v = Number.parseInt(sig.slice(prefixLength + 128, prefixLength + 130), 16)
+        console.log("[v0] Last 130 chars failed, trying to find signature in middle")
+
+        // Some wallets prepend metadata - try to find the actual signature
+        // Look for patterns that indicate start of r value
+        let found = false
+        for (let i = 0; i < sig.length - 130; i += 2) {
+          const testR = `0x${sig.slice(i, i + 64)}`
+          const testS = `0x${sig.slice(i + 64, i + 128)}`
+
+          if (/^0x[0-9a-fA-F]{64}$/.test(testR) && /^0x[0-9a-fA-F]{64}$/.test(testS)) {
+            r = testR
+            s = testS
+            v = Number.parseInt(sig.slice(i + 128, i + 130), 16)
+            console.log("[v0] Found valid signature at offset:", i)
+            found = true
+            break
+          }
+        }
+
+        if (!found) {
+          throw new Error("Could not find valid signature components in extended format")
+        }
       }
     }
-  } else {
+  }
+  // Signature too short
+  else {
     console.error("[v0] Signature too short:", sig.length, "chars")
     console.error("[v0] Full signature:", signature)
-    throw new Error(`Invalid signature format: signature too short (${sig.length} chars, need at least 128)`)
+    throw new Error(
+      `Invalid signature format: signature too short (${sig.length} chars, need at least 128). ` +
+        `This may be a wallet compatibility issue. Please try using MetaMask, Trust Wallet, or Rainbow Wallet.`,
+    )
   }
 
+  // Normalize v value
   if (v < 27) {
     console.log("[v0] Normalizing v from", v, "to", v + 27)
     v = v + 27
   }
 
+  // Ensure v is 27 or 28
   if (v !== 27 && v !== 28) {
     console.warn("[v0] Unusual v value:", v, "- attempting to normalize")
     v = v % 2 === 0 ? 28 : 27
+    console.log("[v0] Normalized v to:", v)
   }
 
-  console.log("[v0] Successfully parsed signature - r:", r.slice(0, 10) + "...", "s:", s.slice(0, 10) + "...", "v:", v)
+  // Final validation
+  if (!/^0x[0-9a-fA-F]{64}$/.test(r)) {
+    throw new Error(`Invalid r component: ${r}`)
+  }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(s)) {
+    throw new Error(`Invalid s component: ${s}`)
+  }
+  if (v !== 27 && v !== 28) {
+    throw new Error(`Invalid v component: ${v} (must be 27 or 28)`)
+  }
+
+  console.log("[v0] Successfully parsed signature:")
+  console.log("[v0]   r:", r.slice(0, 10) + "...")
+  console.log("[v0]   s:", s.slice(0, 10) + "...")
+  console.log("[v0]   v:", v)
 
   return { v, r, s }
 }

@@ -9,6 +9,7 @@ import type { TrackWithArtist } from "@/types/database"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useState, useEffect } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
+import { AddToPlaylistModal } from "./add-to-playlist-modal"
 
 interface TrackCardProps {
   track: TrackWithArtist & {
@@ -175,20 +176,23 @@ export function TrackCard({ track, queue }: TrackCardProps) {
               ? `${track.price_per_chunk} USDC to unlock`
               : `${track.price_per_chunk} USDC/play`}
           </span>
-          {likesAvailable && (
-            <div className="flex items-center gap-1">
-              {likeCount > 0 && <span className="text-xs text-muted-foreground">{likeCount}</span>}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:scale-110 transition-transform"
-                onClick={toggleLike}
-                disabled={!address || isLiking}
-              >
-                <Heart className={`h-4 w-4 transition-all ${isLiked ? "fill-red-500 text-red-500 scale-110" : ""}`} />
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <AddToPlaylistModal trackId={track.id} trackTitle={track.title} />
+            {likesAvailable && (
+              <>
+                {likeCount > 0 && <span className="text-xs text-muted-foreground">{likeCount}</span>}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:scale-110 transition-transform"
+                  onClick={toggleLike}
+                  disabled={!address || isLiking}
+                >
+                  <Heart className={`h-4 w-4 transition-all ${isLiked ? "fill-red-500 text-red-500 scale-110" : ""}`} />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </Card>
