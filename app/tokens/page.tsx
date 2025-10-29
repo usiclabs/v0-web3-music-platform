@@ -326,7 +326,9 @@ export default function TokensPage() {
   }
 
   const handleSwapClick = (track: TokenizedTrack) => {
+    console.log("[v0] Swap button clicked for track:", track.title)
     if (!isConnected) {
+      console.log("[v0] Wallet not connected, prompting connection")
       addToast({
         title: "Wallet Required",
         description: "Please connect your wallet to swap tokens",
@@ -335,7 +337,34 @@ export default function TokensPage() {
       connect()
       return
     }
+    console.log("[v0] Opening swap modal")
     setSelectedTrack(track)
+  }
+
+  const handleLiquidityClick = (track: TokenizedTrack) => {
+    console.log("[v0] Add Liquidity button clicked for track:", track.title)
+    if (!isConnected) {
+      console.log("[v0] Wallet not connected, prompting connection")
+      addToast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to add liquidity",
+        variant: "default",
+      })
+      connect()
+      return
+    }
+    console.log("[v0] Opening liquidity drawer")
+    setSelectedLiquidityToken(track)
+    setLiquidityDrawerOpen(true)
+  }
+
+  const handleLiquidityDrawerChange = (open: boolean) => {
+    console.log("[v0] Liquidity drawer state changing to:", open)
+    setLiquidityDrawerOpen(open)
+    if (!open) {
+      console.log("[v0] Clearing selected liquidity token")
+      setSelectedLiquidityToken(null)
+    }
   }
 
   const filteredTracks = useMemo(() => {
@@ -636,19 +665,7 @@ export default function TokensPage() {
                       variant="outline"
                       size="icon"
                       className="bg-background/50 hover:bg-background border-border/50"
-                      onClick={() => {
-                        if (!isConnected) {
-                          addToast({
-                            title: "Wallet Required",
-                            description: "Please connect your wallet to add liquidity",
-                            variant: "default",
-                          })
-                          connect()
-                          return
-                        }
-                        setSelectedLiquidityToken(track)
-                        setLiquidityDrawerOpen(true)
-                      }}
+                      onClick={() => handleLiquidityClick(track)}
                       title="Add Liquidity"
                     >
                       <Droplet className="h-4 w-4" />
@@ -661,35 +678,35 @@ export default function TokensPage() {
         )}
 
         {selectedTrack && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md bg-gradient-to-br from-card to-card/50 backdrop-blur-xl border-border/50 shadow-2xl">
-              <CardHeader className="border-b border-border/50">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300">
+            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-gradient-to-br from-card to-card/50 backdrop-blur-xl border-border/50 shadow-2xl">
+              <CardHeader className="border-b border-border/50 p-4 sm:p-6">
                 <CardTitle className="flex items-center gap-2">
-                  <div className="bg-gradient-to-br from-primary to-primary/50 p-2 rounded-lg">
-                    <Zap className="h-5 w-5 text-white" />
+                  <div className="bg-gradient-to-br from-primary to-primary/50 p-1.5 sm:p-2 rounded-lg">
+                    <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-lg">Swap for {selectedTrack.title}</div>
-                    <div className="text-sm font-normal text-muted-foreground">
+                    <div className="text-base sm:text-lg">Swap for {selectedTrack.title}</div>
+                    <div className="text-xs sm:text-sm font-normal text-muted-foreground">
                       Exchange ETH for track tokens via Uniswap V3
                     </div>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-6">
+              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:pt-6">
                 {isCheckingPool ? (
-                  <div className="flex items-center gap-3 text-sm bg-muted/50 rounded-xl p-4 border border-border/50">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="flex items-center gap-3 text-xs sm:text-sm bg-muted/50 rounded-xl p-3 sm:p-4 border border-border/50">
+                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-primary" />
                     <span>Checking Uniswap V3 pools...</span>
                   </div>
                 ) : poolInfo ? (
-                  <div className="flex items-center gap-3 text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                  <div className="flex items-center gap-3 text-xs sm:text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="font-medium">Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
                   </div>
                 ) : quoteError ? (
-                  <div className="flex items-start gap-3 text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-                    <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 text-xs sm:text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <p className="font-medium">{quoteError}</p>
                       <p className="text-xs">
@@ -708,7 +725,7 @@ export default function TokensPage() {
                 ) : null}
 
                 <div className="space-y-2">
-                  <Label htmlFor="swap-amount" className="text-sm font-medium">
+                  <Label htmlFor="swap-amount" className="text-xs sm:text-sm font-medium">
                     Amount (ETH)
                   </Label>
                   <Input
@@ -717,22 +734,24 @@ export default function TokensPage() {
                     placeholder="0.0"
                     value={swapAmount}
                     onChange={(e) => setSwapAmount(e.target.value)}
-                    className="text-lg h-14 bg-background/50 border-border/50 focus:border-primary/50"
+                    className="text-base sm:text-lg h-12 sm:h-14 bg-background/50 border-border/50 focus:border-primary/50"
                     disabled={!poolInfo}
                   />
                 </div>
 
                 {swapOutput && (
-                  <div className="space-y-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20">
-                    <Label className="text-sm font-medium text-muted-foreground">You will receive (estimated)</Label>
-                    <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  <div className="space-y-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-3 sm:p-4 border border-primary/20">
+                    <Label className="text-xs sm:text-sm font-medium text-muted-foreground">
+                      You will receive (estimated)
+                    </Label>
+                    <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                       {Number.parseFloat(swapOutput).toFixed(2)} tokens
                     </div>
                   </div>
                 )}
 
                 {poolInfo && swapOutput && (
-                  <div className="rounded-xl bg-muted/50 p-4 space-y-3 text-sm border border-border/50">
+                  <div className="rounded-xl bg-muted/50 p-3 sm:p-4 space-y-2 sm:space-y-3 text-xs sm:text-sm border border-border/50">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Rate</span>
                       <span className="font-medium">
@@ -746,13 +765,13 @@ export default function TokensPage() {
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-2 sm:gap-3 pt-2">
                   <Button
                     onClick={() => handleSwap(selectedTrack)}
                     disabled={
                       !swapAmount || !poolInfo || !swapOutput || Number.parseFloat(swapAmount) <= 0 || isSwapping
                     }
-                    className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
+                    className="flex-1 h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
                   >
                     {isSwapping ? (
                       <>
@@ -781,14 +800,14 @@ export default function TokensPage() {
                       setQuoteError(null)
                     }}
                     disabled={isSwapping}
-                    className="h-12 bg-background/50"
+                    className="h-10 sm:h-12 text-sm sm:text-base bg-background/50"
                   >
                     Cancel
                   </Button>
                 </div>
 
-                <div className="flex items-start gap-3 text-xs text-muted-foreground bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                  <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 sm:p-4">
+                  <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
                   <p>
                     Swaps use Uniswap V3 on Base network with live on-chain pricing. The system automatically detects
                     available pools across all fee tiers.
@@ -805,7 +824,7 @@ export default function TokensPage() {
         {selectedLiquidityToken && (
           <AddLiquidityDrawer
             open={liquidityDrawerOpen}
-            onOpenChange={setLiquidityDrawerOpen}
+            onOpenChange={handleLiquidityDrawerChange}
             tokenAddress={selectedLiquidityToken.coin_address}
             tokenName={selectedLiquidityToken.title}
             tokenSymbol={selectedLiquidityToken.title.substring(0, 6).toUpperCase()}
