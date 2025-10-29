@@ -11,6 +11,7 @@ import { TokenDetailModal } from "@/components/token-detail-modal"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AddLiquidityDrawer } from "@/components/add-liquidity-drawer"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import {
   Play,
   Pause,
@@ -341,6 +342,18 @@ export default function TokensPage() {
     setSelectedTrack(track)
   }
 
+  const handleSwapSheetChange = (open: boolean) => {
+    console.log("[v0] Swap sheet state changing to:", open)
+    if (!open) {
+      console.log("[v0] Clearing swap state")
+      setSelectedTrack(null)
+      setPoolInfo(null)
+      setSwapAmount("")
+      setSwapOutput("")
+      setQuoteError(null)
+    }
+  }
+
   const handleLiquidityClick = (track: TokenizedTrack) => {
     console.log("[v0] Add Liquidity button clicked for track:", track.title)
     if (!isConnected) {
@@ -549,7 +562,7 @@ export default function TokensPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 pb-24 sm:pb-8">
             {filteredTracks.map((track) => (
               <Card
                 key={track.id}
@@ -677,147 +690,6 @@ export default function TokensPage() {
           </div>
         )}
 
-        {selectedTrack && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-gradient-to-br from-card to-card/50 backdrop-blur-xl border-border/50 shadow-2xl">
-              <CardHeader className="border-b border-border/50 p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="bg-gradient-to-br from-primary to-primary/50 p-1.5 sm:p-2 rounded-lg">
-                    <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-base sm:text-lg">Swap for {selectedTrack.title}</div>
-                    <div className="text-xs sm:text-sm font-normal text-muted-foreground">
-                      Exchange ETH for track tokens via Uniswap V3
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:pt-6">
-                {isCheckingPool ? (
-                  <div className="flex items-center gap-3 text-xs sm:text-sm bg-muted/50 rounded-xl p-3 sm:p-4 border border-border/50">
-                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-primary" />
-                    <span>Checking Uniswap V3 pools...</span>
-                  </div>
-                ) : poolInfo ? (
-                  <div className="flex items-center gap-3 text-xs sm:text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
-                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="font-medium">Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
-                  </div>
-                ) : quoteError ? (
-                  <div className="flex items-start gap-3 text-xs sm:text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 sm:p-4">
-                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="font-medium">{quoteError}</p>
-                      <p className="text-xs">
-                        Add liquidity on{" "}
-                        <a
-                          href="https://app.uniswap.org/add"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline hover:text-amber-700 font-medium"
-                        >
-                          Uniswap
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="space-y-2">
-                  <Label htmlFor="swap-amount" className="text-xs sm:text-sm font-medium">
-                    Amount (ETH)
-                  </Label>
-                  <Input
-                    id="swap-amount"
-                    type="number"
-                    placeholder="0.0"
-                    value={swapAmount}
-                    onChange={(e) => setSwapAmount(e.target.value)}
-                    className="text-base sm:text-lg h-12 sm:h-14 bg-background/50 border-border/50 focus:border-primary/50"
-                    disabled={!poolInfo}
-                  />
-                </div>
-
-                {swapOutput && (
-                  <div className="space-y-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-3 sm:p-4 border border-primary/20">
-                    <Label className="text-xs sm:text-sm font-medium text-muted-foreground">
-                      You will receive (estimated)
-                    </Label>
-                    <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                      {Number.parseFloat(swapOutput).toFixed(2)} tokens
-                    </div>
-                  </div>
-                )}
-
-                {poolInfo && swapOutput && (
-                  <div className="rounded-xl bg-muted/50 p-3 sm:p-4 space-y-2 sm:space-y-3 text-xs sm:text-sm border border-border/50">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Rate</span>
-                      <span className="font-medium">
-                        1 ETH ≈ {(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Pool Fee</span>
-                      <span className="font-medium">{(poolInfo.fee / 10000).toFixed(2)}%</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2 sm:gap-3 pt-2">
-                  <Button
-                    onClick={() => handleSwap(selectedTrack)}
-                    disabled={
-                      !swapAmount || !poolInfo || !swapOutput || Number.parseFloat(swapAmount) <= 0 || isSwapping
-                    }
-                    className="flex-1 h-10 sm:h-12 text-sm sm:text-base bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
-                  >
-                    {isSwapping ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Swapping...
-                      </>
-                    ) : !poolInfo ? (
-                      <>
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        No Pool Available
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 mr-2" />
-                        Swap Now
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedTrack(null)
-                      setPoolInfo(null)
-                      setSwapAmount("")
-                      setSwapOutput("")
-                      setQuoteError(null)
-                    }}
-                    disabled={isSwapping}
-                    className="h-10 sm:h-12 text-sm sm:text-base bg-background/50"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-
-                <div className="flex items-start gap-2 sm:gap-3 text-xs sm:text-sm bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 sm:p-4">
-                  <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <p>
-                    Swaps use Uniswap V3 on Base network with live on-chain pricing. The system automatically detects
-                    available pools across all fee tiers.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Token Detail Modal */}
         {detailToken && <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} />}
 
@@ -832,6 +704,205 @@ export default function TokensPage() {
           />
         )}
       </div>
+
+      {/* Swap Sheet */}
+      <Sheet open={!!selectedTrack} onOpenChange={handleSwapSheetChange}>
+        <SheetContent
+          side="bottom"
+          className="h-[92vh] sm:h-auto sm:max-w-lg sm:mx-auto sm:my-8 sm:rounded-2xl overflow-hidden p-0 border-t-4 border-primary/50"
+        >
+          {selectedTrack && (
+            <div className="h-full flex flex-col">
+              <SheetHeader className="border-b border-border/50 pb-5 pt-6 px-6 bg-gradient-to-b from-card/50 to-transparent backdrop-blur-sm">
+                <SheetTitle className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/30 blur-lg rounded-lg animate-pulse" />
+                    <div className="relative bg-gradient-to-br from-primary via-primary to-primary/70 p-2.5 rounded-xl shadow-lg shadow-primary/30">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Swap for {selectedTrack.title}
+                    </div>
+                    <SheetDescription className="text-sm mt-1">
+                      Exchange ETH for track tokens via Uniswap V3
+                    </SheetDescription>
+                  </div>
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                {isCheckingPool ? (
+                  <div className="flex items-center gap-3 text-sm bg-gradient-to-r from-muted/80 to-muted/40 rounded-2xl p-4 border border-border/50 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="relative">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <div className="absolute inset-0 bg-primary/20 blur-md rounded-full animate-pulse" />
+                    </div>
+                    <span className="font-medium">Checking Uniswap V3 pools...</span>
+                  </div>
+                ) : poolInfo ? (
+                  <div className="flex items-center gap-3 text-sm text-green-600 bg-gradient-to-r from-green-500/20 to-green-500/10 border border-green-500/30 rounded-2xl p-4 shadow-lg shadow-green-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="relative">
+                      <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+                      <div className="absolute inset-0 bg-green-500/50 blur-sm rounded-full animate-pulse" />
+                    </div>
+                    <span className="font-semibold">Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
+                  </div>
+                ) : quoteError ? (
+                  <div className="flex items-start gap-3 text-sm text-amber-600 bg-gradient-to-r from-amber-500/20 to-amber-500/10 border border-amber-500/30 rounded-2xl p-4 shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1.5">
+                      <p className="font-semibold">{quoteError}</p>
+                      <p className="text-xs">
+                        Add liquidity on{" "}
+                        <a
+                          href="https://app.uniswap.org/add"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-amber-700 font-semibold transition-colors"
+                        >
+                          Uniswap
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="space-y-4">
+                  <Label htmlFor="swap-amount" className="text-sm font-semibold text-foreground/90">
+                    Amount (ETH)
+                  </Label>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSwapAmount("0.001")}
+                      disabled={!poolInfo}
+                      className="h-12 bg-gradient-to-br from-[#B87333] via-[#CD7F32] to-[#B87333] hover:from-[#A0632C] hover:via-[#B87333] hover:to-[#A0632C] text-white border-0 shadow-lg hover:shadow-xl hover:shadow-[#B87333]/30 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 group"
+                    >
+                      <span className="text-xs font-bold group-hover:scale-110 transition-transform duration-300">
+                        0.001 ETH
+                      </span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSwapAmount("0.01")}
+                      disabled={!poolInfo}
+                      className="h-12 bg-gradient-to-br from-[#C0C0C0] via-[#E8E8E8] to-[#A8A9AD] hover:from-[#B0B0B0] hover:via-[#D8D8D8] hover:to-[#989999] text-gray-900 border-0 shadow-lg hover:shadow-xl hover:shadow-gray-400/30 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 group"
+                    >
+                      <span className="text-xs font-bold group-hover:scale-110 transition-transform duration-300">
+                        0.01 ETH
+                      </span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSwapAmount("0.1")}
+                      disabled={!poolInfo}
+                      className="h-12 bg-gradient-to-br from-[#FFD700] via-[#FFED4E] to-[#FFA500] hover:from-[#F0C800] hover:via-[#FFE838] hover:to-[#FF9500] text-gray-900 border-0 shadow-lg hover:shadow-xl hover:shadow-yellow-400/30 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 group"
+                    >
+                      <span className="text-xs font-bold group-hover:scale-110 transition-transform duration-300">
+                        0.1 ETH
+                      </span>
+                    </Button>
+                  </div>
+
+                  <div className="relative">
+                    <Input
+                      id="swap-amount"
+                      type="number"
+                      placeholder="0.0"
+                      value={swapAmount}
+                      onChange={(e) => setSwapAmount(e.target.value)}
+                      className="text-xl h-16 bg-gradient-to-br from-background to-background/50 border-2 border-border/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all duration-300 rounded-xl shadow-inner"
+                      disabled={!poolInfo}
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                      ETH
+                    </div>
+                  </div>
+                </div>
+
+                {swapOutput && (
+                  <div className="space-y-3 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 rounded-2xl p-5 border-2 border-primary/30 shadow-xl shadow-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <Label className="text-sm font-semibold text-muted-foreground">You will receive (estimated)</Label>
+                    <div className="text-4xl font-bold bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent animate-in zoom-in duration-700">
+                      {Number.parseFloat(swapOutput).toFixed(2)} tokens
+                    </div>
+                  </div>
+                )}
+
+                {poolInfo && swapOutput && (
+                  <div className="rounded-2xl bg-gradient-to-r from-muted/80 to-muted/40 p-5 space-y-4 text-sm border border-border/50 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-medium">Rate</span>
+                      <span className="font-bold text-foreground">
+                        1 ETH ≈ {(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens
+                      </span>
+                    </div>
+                    <div className="h-px bg-border/50" />
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground font-medium">Pool Fee</span>
+                      <span className="font-bold text-foreground">{(poolInfo.fee / 10000).toFixed(2)}%</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-3 text-sm bg-gradient-to-r from-blue-500/15 to-blue-500/10 border border-blue-500/30 rounded-2xl p-4 shadow-lg shadow-blue-500/10">
+                  <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-foreground/80 leading-relaxed">
+                    Swaps use Uniswap V3 on Base network with live on-chain pricing. The system automatically detects
+                    available pools across all fee tiers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-border/50 p-6 bg-gradient-to-t from-card/50 to-transparent backdrop-blur-sm">
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleSwap(selectedTrack)}
+                    disabled={
+                      !swapAmount || !poolInfo || !swapOutput || Number.parseFloat(swapAmount) <= 0 || isSwapping
+                    }
+                    className="flex-1 h-14 text-base font-bold bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    {isSwapping ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Swapping...
+                      </>
+                    ) : !poolInfo ? (
+                      <>
+                        <AlertCircle className="h-5 w-5 mr-2" />
+                        No Pool Available
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-5 w-5 mr-2" />
+                        Swap Now
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSwapSheetChange(false)}
+                    disabled={isSwapping}
+                    className="h-14 px-8 text-base font-semibold bg-background/50 hover:bg-background border-2 border-border/50 hover:border-border transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
