@@ -20,6 +20,7 @@ import {
   Check,
 } from "lucide-react"
 import { createBrowserClient } from "@supabase/ssr"
+import useSWR from "swr"
 
 interface AirdropScore {
   streamActivity: number
@@ -43,6 +44,8 @@ interface UserStats {
   accountAge: number
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function AirdropPage() {
   const { address, isConnected, connect } = useWallet()
   const [score, setScore] = useState<AirdropScore | null>(null)
@@ -52,7 +55,13 @@ export default function AirdropPage() {
   const [copied, setCopied] = useState(false)
   const [mounted, setMounted] = useState(false)
 
-  // Countdown to 1/1/2026
+  const { data: tokenMetrics } = useSWR("/api/token/metrics", fetcher, {
+    refreshInterval: 30000, // Refresh every 30 seconds
+    revalidateOnFocus: true,
+  })
+
+  const tokenPrice = tokenMetrics?.price || 0
+
   useEffect(() => {
     const targetDate = new Date("2026-01-01T00:00:00Z")
 
@@ -75,7 +84,6 @@ export default function AirdropPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch user's airdrop eligibility
   useEffect(() => {
     if (!address || !isConnected) return
 
@@ -89,28 +97,23 @@ export default function AirdropPage() {
 
         const userAddress = address.toLowerCase()
 
-        // Fetch stream activity
         const { data: streams } = await supabase
           .from("streams")
           .select("*, tracks!inner(id, title, artist_id)")
           .eq("listener_address", userAddress)
 
-        // Fetch artist uploads
         const { data: uploads } = await supabase.from("tracks").select("*, streams(count)").eq("artist_id", userAddress)
 
-        // Fetch engagement (likes and follows)
         const { data: likes } = await supabase.from("likes").select("*").eq("user_address", userAddress)
 
         const { data: follows } = await supabase.from("follows").select("*").eq("follower_address", userAddress)
 
-        // Fetch profile for account age
         const { data: profile } = await supabase
           .from("profiles")
           .select("created_at")
           .eq("wallet_address", userAddress)
           .single()
 
-        // Calculate stats
         const totalStreams = streams?.length || 0
         const uniqueArtists = new Set(streams?.map((s) => s.tracks?.artist_id)).size
         const fullTracksCompleted = streams?.filter((s) => s.chunks_played >= 10).length || 0
@@ -133,32 +136,23 @@ export default function AirdropPage() {
           accountAge,
         })
 
-        // Calculate airdrop scores based on the framework
-        // Category 1: Stream Activity (30%)
-        let streamScore = totalStreams // +1 per stream
-        streamScore += fullTracksCompleted * 10 // +10 for full tracks
-        if (uniqueArtists > 10) streamScore += 25 // +25 for 10+ unique artists
+        let streamScore = totalStreams
+        streamScore += fullTracksCompleted * 10
+        if (uniqueArtists > 10) streamScore += 25
 
-        // Category 2: Artist Uploads (20%)
-        const uploadScore = tracksUploaded * 100 // +100 per track
+        const uploadScore = tracksUploaded * 100
 
-        // Category 3: Music Sales & Revenue (25%)
-        const revenueScore = totalRevenue // +1 per USDC earned
+        const revenueScore = totalRevenue
 
-        // Category 4: Engagement (10%)
         const engagementScore = likesGiven * 5 + followsGiven * 10
 
-        // Category 5: Early Users (10%)
         let earlyUserScore = 0
-        if (accountAge > 180) earlyUserScore = 500 // 6+ months = early user bonus
+        if (accountAge > 180) earlyUserScore = 500
 
-        // Category 6: Referrals (5%) - placeholder for now
         const referralScore = 0
 
         const totalScore = streamScore + uploadScore + revenueScore + engagementScore + earlyUserScore + referralScore
 
-        // Estimate tokens (simplified - in production would need total pool calculation)
-        // Assuming 5B tokens and 10,000 active users for demo
         const estimatedTokens = ((totalScore / 10000) * 5000000000).toFixed(0)
 
         setScore({
@@ -240,14 +234,12 @@ export default function AirdropPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Animated background particles */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 w-64 h-64 bg-accent/10 rounded-full blur-3xl animate-float" />
         <div className="absolute top-40 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float animation-delay-2000" />
         <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-float animation-delay-4000" />
       </div>
 
-      {/* Hero Section */}
       <div className="relative border-b border-border/50 bg-gradient-to-b from-accent/10 via-accent/5 to-background">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(229,62,62,0.15),transparent)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(220,38,38,0.1),transparent)]" />
@@ -316,7 +308,6 @@ export default function AirdropPage() {
         </div>
       </div>
 
-      {/* Eligibility Section */}
       {isConnected && (
         <div className="container relative mx-auto px-4 py-16">
           {loading ? (
@@ -392,7 +383,18 @@ export default function AirdropPage() {
                       {Number(score.estimatedTokens).toLocaleString()} <span className="text-accent">$USI</span>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      ≈ ${(Number(score.estimatedTokens) * 0.01).toLocaleString()} USD
+                      {tokenPrice > 0 ? (
+                        <>
+                          ≈ $
+                          {(Number(score.estimatedTokens) * tokenPrice).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          USD
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground/50">Loading price...</span>
+                      )}
                     </div>
                   </div>
 
@@ -424,7 +426,7 @@ export default function AirdropPage() {
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {categories.map((category, index) => {
                     const Icon = category.icon
-                    const maxScore = 1000 // Adjust based on category
+                    const maxScore = 1000
                     const percentage = Math.min((category.score / maxScore) * 100, 100)
 
                     return (

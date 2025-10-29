@@ -127,6 +127,8 @@ export default function AdminPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string } | null>(null)
 
+  const [showHiddenTracks, setShowHiddenTracks] = useState(false)
+
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [featureFlags, setFeatureFlags] = useState({
     liveStreaming: true,
@@ -160,7 +162,7 @@ export default function AdminPage() {
           { data: recentStreams },
         ] = await Promise.all([
           supabase.from("profiles").select("*", { count: "exact", head: true }),
-          supabase.from("tracks").select("*", { count: "exact", head: true }),
+          supabase.from("tracks").select("*", { count: "exact", head: true }).eq("is_active", true),
           supabase.from("likes").select("*", { count: "exact", head: true }),
           supabase.from("follows").select("*", { count: "exact", head: true }),
           supabase.from("streams").select("chunks_played, total_paid, created_at, listener_address"),
@@ -462,6 +464,31 @@ export default function AdminPage() {
     }
   }
 
+  const handleToggleTrackVisibility = async (trackId: string, currentStatus: boolean) => {
+    try {
+      const supabase = createBrowserClient()
+      const newStatus = !currentStatus
+
+      await supabase.from("tracks").update({ is_active: newStatus }).eq("id", trackId)
+
+      toast({
+        title: newStatus ? "Track Restored" : "Track Hidden",
+        description: newStatus ? "Track is now visible on the platform." : "Track has been hidden from public view.",
+      })
+
+      // Update local state
+      setTracks(tracks.map((t) => (t.id === trackId ? { ...t, is_active: newStatus } : t)))
+      setShowDeleteConfirm(false)
+      setShowTrackDialog(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update track visibility",
+        variant: "destructive",
+      })
+    }
+  }
+
   const filteredUsers = useMemo(() => {
     return users.filter(
       (user) =>
@@ -471,18 +498,23 @@ export default function AdminPage() {
   }, [users, searchQuery])
 
   const filteredTracks = useMemo(() => {
-    const filtered = tracks.filter(
+    let filtered = tracks.filter(
       (track) =>
         track.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         track.artist?.artist_name?.toLowerCase().includes(searchQuery.toLowerCase()),
     )
+
+    // Filter by visibility status
+    if (!showHiddenTracks) {
+      filtered = filtered.filter((track) => track.is_active !== false)
+    }
 
     return filtered.sort((a, b) => {
       if (sortBy === "plays") return b.plays - a.plays
       if (sortBy === "revenue") return b.revenue - a.revenue
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [tracks, searchQuery, sortBy])
+  }, [tracks, searchQuery, sortBy, showHiddenTracks])
 
   // Access denied screen
   if (!isConnected || !isAdmin) {
@@ -854,6 +886,15 @@ export default function AdminPage() {
                       className="pl-9 sm:pl-10 w-full sm:w-48 bg-background/50 border-border/50 h-9 text-sm"
                     />
                   </div>
+                  <Button
+                    variant={showHiddenTracks ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowHiddenTracks(!showHiddenTracks)}
+                    className="h-9 px-3 text-xs whitespace-nowrap"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    {showHiddenTracks ? "Hide Removed" : "Show Removed"}
+                  </Button>
                   <div className="flex items-center gap-1 border border-border/50 rounded-lg p-0.5 bg-background/50">
                     <Button
                       variant={sortBy === "plays" ? "default" : "ghost"}
@@ -881,7 +922,9 @@ export default function AdminPage() {
                 {filteredTracks.slice(0, 20).map((track) => (
                   <Card
                     key={track.id}
-                    className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                    className={`bg-muted/10 border p-4 hover:border-primary/30 transition-all ${
+                      track.is_active === false ? "border-red-500/30 opacity-60" : "border-border/50"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -889,7 +932,15 @@ export default function AdminPage() {
                           <Music className="h-5 w-5 text-purple-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{track.title}</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm truncate">{track.title}</p>
+                            {track.is_active === false && (
+                              <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-500 text-xs">
+                                <Ban className="h-2.5 w-2.5 mr-1" />
+                                Hidden
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {track.artist?.artist_name || "Unknown"}
                           </p>
@@ -938,12 +989,26 @@ export default function AdminPage() {
                           <DropdownMenuItem
                             onClick={() => {
                               setDeleteTarget({ type: "track", id: track.id })
+                              setSelectedTrack(track)
                               setShowDeleteConfirm(true)
                             }}
-                            className="text-red-500 focus:text-red-500"
+                            className={
+                              track.is_active === false
+                                ? "text-green-500 focus:text-green-500"
+                                : "text-red-500 focus:text-red-500"
+                            }
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Track
+                            {track.is_active === false ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Restore Track
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="h-4 w-4 mr-2" />
+                                Hide Track
+                              </>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1336,24 +1401,52 @@ export default function AdminPage() {
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
-              <DialogDescription>This action cannot be undone. Are you sure?</DialogDescription>
+              <DialogTitle>{selectedTrack?.is_active === false ? "Restore Track" : "Hide Track"}</DialogTitle>
+              <DialogDescription>
+                {selectedTrack?.is_active === false
+                  ? "This will make the track visible on the platform again."
+                  : "This will hide the track from public view. You can restore it later."}
+              </DialogDescription>
             </DialogHeader>
+            {selectedTrack && (
+              <div className="py-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-border/50">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                    <Music className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{selectedTrack.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {selectedTrack.artist?.artist_name || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
               <Button
-                variant="destructive"
+                variant={selectedTrack?.is_active === false ? "default" : "destructive"}
                 onClick={() => {
-                  if (deleteTarget?.type === "track") {
-                    handleDeleteTrack(deleteTarget.id)
+                  if (deleteTarget?.type === "track" && selectedTrack) {
+                    handleToggleTrackVisibility(deleteTarget.id, selectedTrack.is_active)
                   }
                 }}
                 className="w-full sm:w-auto"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                {selectedTrack?.is_active === false ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Restore
+                  </>
+                ) : (
+                  <>
+                    <Ban className="h-4 w-4 mr-2" />
+                    Hide
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

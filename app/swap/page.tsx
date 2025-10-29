@@ -198,14 +198,25 @@ export default function SwapPage() {
       setRealQuote(amountOut)
       setQuoteError(null)
 
-      // Calculate price impact
-      if (inputAmount && Number.parseFloat(inputAmount) > 0) {
+      if (inputAmount && Number.parseFloat(inputAmount) > 0 && availablePool) {
+        // Base price impact is the pool fee
+        const poolFeePercent = availablePool.fee / 10000 // Convert basis points to percentage
+
+        // For larger trades, estimate additional impact based on trade size
+        // This is a simplified approximation - real impact depends on pool liquidity
         const inputValue = Number.parseFloat(inputAmount)
-        const outputValue = Number.parseFloat(formattedOutput)
-        const expectedRate = activeTab === "eth" ? 4000 : 2 // Expected market rate
-        const actualRate = outputValue / inputValue
-        const impact = Math.abs(((actualRate - expectedRate) / expectedRate) * 100)
-        setPriceImpact(impact.toFixed(2))
+        let additionalImpact = 0
+
+        if (activeTab === "eth" && inputValue > 1) {
+          // For ETH swaps > 1 ETH, add ~0.1% per ETH
+          additionalImpact = (inputValue - 1) * 0.1
+        } else if (activeTab === "usdc" && inputValue > 1000) {
+          // For USDC swaps > 1000 USDC, add ~0.1% per 1000 USDC
+          additionalImpact = ((inputValue - 1000) / 1000) * 0.1
+        }
+
+        const totalImpact = poolFeePercent + additionalImpact
+        setPriceImpact(totalImpact.toFixed(2))
       }
 
       console.log("[v0] Quote successful:", {
