@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { Info } from "lucide-react" // Declared the Info variable here
 
 import Link from "next/link"
 import { useWallet } from "@/lib/web3/wallet-context"
@@ -19,7 +20,6 @@ import {
   BookOpen,
   FileText,
   Shield,
-  Info,
   Zap,
   BarChart3,
   DollarSign,
@@ -45,7 +45,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Home",
-    href: "/",
+    href: "/landing", // Updated href to navigate to /landing instead of /
     icon: Home,
     description: "Back to homepage",
     gradient: "from-[#FF6B6B] to-[#FF5252]",

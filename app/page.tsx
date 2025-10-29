@@ -20,7 +20,6 @@ import {
   BookOpen,
   FileText,
   Shield,
-  Info,
   Zap,
   BarChart3,
   DollarSign,
@@ -31,6 +30,7 @@ import {
   UserCheck,
   Droplets,
   Radio,
+  Info,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -46,7 +46,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Home",
-    href: "/",
+    href: "/landing",
     icon: Home,
     description: "Back to homepage",
     gradient: "from-[#FF6B6B] to-[#FF5252]",
