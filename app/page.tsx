@@ -28,6 +28,9 @@ import {
   Wallet,
   Gift,
   UserCheck,
+  Sparkles,
+  Radio,
+  TrendingDown as TrendingUpDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +52,13 @@ const navItems: NavItem[] = [
     gradient: "from-[#FF6B6B] to-[#FF5252]",
   },
   {
+    title: "AI Create",
+    href: "/create",
+    icon: Sparkles,
+    description: "Generate music with AI",
+    gradient: "from-violet-500 to-fuchsia-500",
+  },
+  {
     title: "Discover",
     href: "/discover",
     icon: Compass,
@@ -61,6 +71,13 @@ const navItems: NavItem[] = [
     icon: TrendingUp,
     description: "What's hot now",
     gradient: "from-orange-500 to-red-500",
+  },
+  {
+    title: "Live",
+    href: "/live",
+    icon: Radio,
+    description: "Watch live streams",
+    gradient: "from-red-500 to-rose-500",
   },
   {
     title: "Explore",
@@ -114,6 +131,14 @@ const navItems: NavItem[] = [
     icon: Wallet,
     description: "Balances & history",
     gradient: "from-amber-500 to-orange-500",
+    requiresAuth: true,
+  },
+  {
+    title: "Auto-Invest",
+    href: "/auto-invest",
+    icon: TrendingUpDown,
+    description: "Automated investments",
+    gradient: "from-emerald-500 to-teal-500",
     requiresAuth: true,
   },
   {

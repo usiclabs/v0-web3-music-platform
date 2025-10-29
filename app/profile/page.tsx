@@ -1,7 +1,7 @@
 "use client"
 
 import { ProfileForm } from "@/components/profile-form"
-import { User, History, Heart, Users, ListMusic } from "lucide-react"
+import { User, History, Heart, Users, ListMusic, Sparkles } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEffect, useState } from "react"
 import { ensureProfile } from "@/lib/supabase/helpers"
@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null)
   const [listeningHistory, setListeningHistory] = useState<any[]>([])
   const [likedTracks, setLikedTracks] = useState<TrackWithArtist[]>([])
+  const [aiTracks, setAiTracks] = useState<TrackWithArtist[]>([])
   const [followers, setFollowers] = useState<any[]>([])
   const [following, setFollowing] = useState<any[]>([])
   const [playlists, setPlaylists] = useState<any[]>([])
@@ -119,6 +120,20 @@ export default function ProfilePage() {
         const playlistsData = await playlistsResponse.json()
         setPlaylists(playlistsData)
       }
+
+      const { data: aiTracksData } = await supabase
+        .from("tracks")
+        .select(`
+          *,
+          artist:profiles!tracks_artist_id_fkey(*)
+        `)
+        .eq("artist_id", address.toLowerCase())
+        .eq("ai_generated", true)
+        .order("created_at", { ascending: false })
+
+      if (aiTracksData) {
+        setAiTracks(aiTracksData as TrackWithArtist[])
+      }
     } catch (error) {
       console.error("Failed to load profile:", error)
     } finally {
@@ -173,13 +188,20 @@ export default function ProfilePage() {
               <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none sm:hidden" />
 
               <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-                <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-4xl sm:grid-cols-6 h-auto sm:h-10 p-1 gap-1">
+                <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-4xl sm:grid-cols-7 h-auto sm:h-10 p-1 gap-1">
                   <TabsTrigger
                     value="settings"
                     className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
                   >
                     <User className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span>Settings</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ai-creations"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
+                  >
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span>AI Creations</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="liked"
@@ -222,6 +244,42 @@ export default function ProfilePage() {
 
             <TabsContent value="settings">
               <ProfileForm profile={profile} walletAddress={address} />
+            </TabsContent>
+
+            <TabsContent value="ai-creations">
+              {aiTracks.length > 0 ? (
+                <div>
+                  <div className="mb-4 sm:mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-6 w-6 text-accent" />
+                      <h2 className="text-xl sm:text-2xl font-bold">Your AI Creations</h2>
+                    </div>
+                    <p className="text-sm sm:text-base text-muted-foreground">
+                      {aiTracks.length} AI-generated {aiTracks.length === 1 ? "track" : "tracks"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                    {aiTracks.map((track) => (
+                      <TrackCard key={track.id} track={track} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-8 sm:p-12 text-center">
+                  <Sparkles className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2">No AI creations yet</h3>
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4">
+                    Create your first AI-generated track
+                  </p>
+                  <Link
+                    href="/create"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg transition-colors"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Create with AI
+                  </Link>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="liked">

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { notFound } from "next/navigation"
 import type { TrackWithArtist } from "@/types/database"
-import { DollarSign, Music, Play, Users, Radio } from "lucide-react"
+import { DollarSign, Music, Play, Users, Radio, Sparkles } from "lucide-react"
 import { FollowButton } from "@/components/follow-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListeningHistory } from "@/components/listening-history"
@@ -129,6 +129,16 @@ export default async function ArtistPage({ params }: { params: { address: string
       },
     }))
   }
+
+  const { data: aiTracks } = await supabase
+    .from("tracks")
+    .select(`
+      *,
+      artist:profiles!tracks_artist_id_fkey(*)
+    `)
+    .eq("artist_id", address.toLowerCase())
+    .eq("ai_generated", true)
+    .order("created_at", { ascending: false })
 
   return (
     <div className="min-h-screen relative">
@@ -300,10 +310,14 @@ export default async function ArtistPage({ params }: { params: { address: string
         </div>
 
         <Tabs defaultValue="tracks" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-5 mb-8">
+          <TabsList className="grid w-full max-w-2xl grid-cols-6 mb-8">
             <TabsTrigger value="tracks" className="flex items-center gap-2">
               <Music className="h-4 w-4" />
               Tracks
+            </TabsTrigger>
+            <TabsTrigger value="ai-creations" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              AI
             </TabsTrigger>
             <TabsTrigger value="live" className="flex items-center gap-2">
               <Radio className="h-4 w-4" />
@@ -340,6 +354,32 @@ export default async function ArtistPage({ params }: { params: { address: string
               <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
                 <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No tracks uploaded yet</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ai-creations">
+            {aiTracks && aiTracks.length > 0 ? (
+              <div>
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-6 w-6 text-accent" />
+                    <h2 className="text-2xl font-bold">AI Creations</h2>
+                  </div>
+                  <p className="text-muted-foreground">
+                    {aiTracks.length} AI-generated {aiTracks.length === 1 ? "track" : "tracks"}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {aiTracks.map((track) => (
+                    <TrackCard key={track.id} track={track as TrackWithArtist} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+                <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No AI-generated tracks yet</p>
               </div>
             )}
           </TabsContent>

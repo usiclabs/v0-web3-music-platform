@@ -30,6 +30,19 @@ export function Header() {
 
         <nav className="hidden md:flex items-center gap-4 lg:gap-6">
           <Link
+            href="/create"
+            className={`text-sm font-medium transition-all relative group ${
+              isActive("/create") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            AI Create
+            <span
+              className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                isActive("/create") ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
+          </Link>
+          <Link
             href="/discover"
             className={`text-sm font-medium transition-all relative group ${
               isActive("/discover") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
