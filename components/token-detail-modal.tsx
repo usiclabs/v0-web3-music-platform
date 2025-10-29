@@ -82,7 +82,7 @@ const tokenDataCache = new Map<
   }
 >()
 
-const CACHE_DURATION = 60000 // 1 minute cache
+const CACHE_DURATION = 30000 // 30 seconds cache
 
 export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
   const { chainId } = useWallet()
@@ -120,9 +120,11 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
       setIsLoadingData(true)
       setError(null)
 
+      console.log("[v0] Fetching live blockchain data for token:", token.coin_address)
+
       try {
         const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
-        const feeTiers = [500, 3000, 10000]
+        const feeTiers = [3000, 500, 10000]
 
         let foundPool = null
         let foundPrice = null
@@ -130,6 +132,10 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
 
         for (const fee of feeTiers) {
           try {
+            console.log(`[v0] Checking pool for fee tier: ${fee}`)
+
+            await new Promise((resolve) => setTimeout(resolve, 800))
+
             const poolAddress = await publicClient.readContract({
               address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
               abi: UNISWAP_V3_FACTORY_ABI,
@@ -137,11 +143,15 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
               args: [wethAddress as `0x${string}`, token.coin_address as `0x${string}`, fee],
             })
 
+            console.log(`[v0] Pool address for fee ${fee}:`, poolAddress)
+
             if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
               foundPool = { address: poolAddress as string, fee }
+              console.log("[v0] Found active pool:", foundPool)
 
               try {
-                await new Promise((resolve) => setTimeout(resolve, 100)) // Small delay between calls
+                await new Promise((resolve) => setTimeout(resolve, 800))
+                console.log("[v0] Fetching price quote...")
 
                 const quoteData = await publicClient.readContract({
                   address: UNISWAP_V3_QUOTER[chainId as keyof typeof UNISWAP_V3_QUOTER] as `0x${string}`,
@@ -162,16 +172,15 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                   const tokensPerEth = formatUnits(quoteData[0] as bigint, 18)
                   const priceInEth = 1 / Number.parseFloat(tokensPerEth)
                   foundPrice = priceInEth.toFixed(8)
+                  console.log("[v0] Current price:", foundPrice, "ETH")
                 }
               } catch (priceError: any) {
-                console.error("[v0] Failed to fetch price:", priceError)
-                if (priceError?.message?.includes("rate limit")) {
-                  setError("Rate limit reached. Please wait a moment and try again.")
-                }
+                console.error("[v0] Failed to fetch price:", priceError.message)
               }
 
               try {
-                await new Promise((resolve) => setTimeout(resolve, 100))
+                await new Promise((resolve) => setTimeout(resolve, 800))
+                console.log("[v0] Fetching pool liquidity...")
 
                 const liquidityData = await publicClient.readContract({
                   address: poolAddress as `0x${string}`,
@@ -181,21 +190,19 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
 
                 if (liquidityData) {
                   foundLiquidity = formatUnits(liquidityData as bigint, 18)
+                  console.log("[v0] Pool liquidity:", foundLiquidity)
                 }
               } catch (liquidityError: any) {
-                console.error("[v0] Failed to fetch liquidity:", liquidityError)
-                if (liquidityError?.message?.includes("rate limit")) {
-                  setError("Rate limit reached. Please wait a moment and try again.")
-                }
+                console.error("[v0] Failed to fetch liquidity:", liquidityError.message)
               }
 
               break
             }
           } catch (poolError: any) {
-            console.error(`[v0] Failed to check pool for fee ${fee}:`, poolError)
+            console.error(`[v0] Failed to check pool for fee ${fee}:`, poolError.message)
             if (poolError?.message?.includes("rate limit")) {
-              setError("Rate limit reached. Please wait a moment and try again.")
-              break
+              setError("Rate limit reached. Waiting before retrying...")
+              await new Promise((resolve) => setTimeout(resolve, 2000))
             }
           }
         }
@@ -206,7 +213,8 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
 
         let foundSupply = null
         try {
-          await new Promise((resolve) => setTimeout(resolve, 200)) // Longer delay before supply call
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          console.log("[v0] Fetching total supply...")
 
           const supplyData = await publicClient.readContract({
             address: token.coin_address as `0x${string}`,
@@ -224,11 +232,12 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
 
           if (supplyData) {
             foundSupply = formatUnits(supplyData as bigint, 18)
+            console.log("[v0] Total supply:", foundSupply)
           }
         } catch (supplyError: any) {
-          console.error("[v0] Failed to fetch total supply:", supplyError)
-          if (supplyError?.message?.includes("rate limit")) {
-            setError("Rate limit reached. Data may be incomplete. Please wait and refresh.")
+          console.error("[v0] Failed to fetch total supply:", supplyError.message)
+          if (!error) {
+            setError("Some data could not be loaded. Token supply unavailable.")
           }
         }
 
@@ -241,13 +250,15 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
           poolLiquidity: foundLiquidity,
           timestamp: Date.now(),
         })
+
+        console.log("[v0] Successfully fetched all blockchain data")
+
+        if (foundPool || foundSupply) {
+          setError(null)
+        }
       } catch (error: any) {
         console.error("[v0] Failed to fetch live data:", error)
-        if (error?.message?.includes("rate limit")) {
-          setError("Rate limit reached. Please wait a moment and try again.")
-        } else {
-          setError("Failed to load token data. Please try again later.")
-        }
+        setError("Failed to load token data. Please refresh and try again.")
       } finally {
         setIsLoadingPool(false)
         setIsLoadingData(false)
@@ -311,9 +322,22 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
           <CardContent className="p-6 space-y-6">
             {error && (
               <Card className="bg-amber-500/10 border-amber-500/20">
-                <CardContent className="flex items-center gap-3 py-4">
-                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
-                  <div className="text-sm text-amber-200">{error}</div>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                    <div className="text-sm text-amber-200">{error}</div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      hasFetched.current = false
+                      setError(null)
+                      window.location.reload()
+                    }}
+                  >
+                    Retry
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -325,14 +349,17 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                 </CardHeader>
                 <CardContent>
                   {isLoadingPool ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Loading...</span>
+                    </div>
                   ) : currentPrice ? (
                     <div>
                       <div className="text-2xl font-bold text-primary">{currentPrice} ETH</div>
                       <div className="text-xs text-muted-foreground mt-1">per token</div>
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">No pool</div>
+                    <div className="text-sm text-muted-foreground">No pool found</div>
                   )}
                 </CardContent>
               </Card>
@@ -343,7 +370,10 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                 </CardHeader>
                 <CardContent>
                   {isLoadingData ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Calculating...</span>
+                    </div>
                   ) : marketCap ? (
                     <div>
                       <div className="text-2xl font-bold">{marketCap} ETH</div>
@@ -361,7 +391,10 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                 </CardHeader>
                 <CardContent>
                   {isLoadingData ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Loading...</span>
+                    </div>
                   ) : totalSupply ? (
                     <div>
                       <div className="text-2xl font-bold">{Number.parseFloat(totalSupply).toFixed(0)}</div>
@@ -374,7 +407,6 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
               </Card>
             </div>
 
-            {/* Tabs */}
             <Tabs defaultValue="liquidity" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="liquidity">
@@ -387,7 +419,6 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Liquidity Tab */}
               <TabsContent value="liquidity" className="space-y-4">
                 {isLoadingPool ? (
                   <Card className="bg-muted/30">
@@ -497,7 +528,6 @@ export function TokenDetailModal({ token, onClose }: TokenDetailModalProps) {
                 )}
               </TabsContent>
 
-              {/* Info Tab */}
               <TabsContent value="info" className="space-y-4">
                 <Card className="bg-muted/30">
                   <CardHeader>

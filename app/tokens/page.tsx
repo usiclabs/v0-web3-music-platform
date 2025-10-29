@@ -16,7 +16,6 @@ import {
   Pause,
   Coins,
   TrendingUp,
-  Wallet,
   ExternalLink,
   Search,
   Loader2,
@@ -361,81 +360,66 @@ export default function TokensPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/20 p-8 backdrop-blur-xl">
-          <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
-          <div className="relative space-y-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                    <div className="relative bg-gradient-to-br from-primary to-primary/50 p-3 rounded-2xl">
-                      <Coins className="h-8 w-8 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                      Tokenized Music
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                      Stream, trade, and provide liquidity for tokenized songs on Base
-                    </p>
-                  </div>
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl space-y-6 sm:space-y-8">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                <div className="relative bg-gradient-to-br from-primary to-primary/50 p-2 sm:p-3 rounded-xl sm:rounded-2xl">
+                  <Coins className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
               </div>
-              {!isConnected && (
-                <Button
-                  onClick={connect}
-                  size="lg"
-                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
-                >
-                  <Wallet className="h-5 w-5" />
-                  Connect Wallet
-                </Button>
-              )}
+              <div>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent text-balance">
+                  Tokenized Music
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                  Stream, trade, and provide liquidity for tokenized songs on Base
+                </p>
+              </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <Music className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.totalTokens}</p>
-                    <p className="text-sm text-muted-foreground">Total Tokens</p>
-                  </div>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-card/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div className="bg-primary/10 p-1.5 sm:p-2 rounded-lg">
+                  <Music className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.totalTokens}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Tokens</p>
                 </div>
               </div>
-              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-red-500/10 p-2 rounded-lg">
-                    <Heart className="h-5 w-5 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.totalFavorites}</p>
-                    <p className="text-sm text-muted-foreground">Favorites</p>
-                  </div>
+            </div>
+            <div className="bg-card/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div className="bg-red-500/10 p-1.5 sm:p-2 rounded-lg">
+                  <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.totalFavorites}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Favorites</p>
                 </div>
               </div>
-              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-500/10 p-2 rounded-lg">
-                    <Sparkles className="h-5 w-5 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.recentlyAdded}</p>
-                    <p className="text-sm text-muted-foreground">Added 24h</p>
-                  </div>
+            </div>
+            <div className="bg-card/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div className="bg-green-500/10 p-1.5 sm:p-2 rounded-lg">
+                  <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.recentlyAdded}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Added 24h</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search tracks or artists..."
@@ -444,49 +428,52 @@ export default function TokensPage() {
               className="pl-12 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
             />
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant={sortBy === "trending" ? "default" : "outline"}
-              onClick={() => setSortBy("trending")}
-              className="gap-2 h-12"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Trending
-            </Button>
-            <Button
-              variant={sortBy === "recent" ? "default" : "outline"}
-              onClick={() => setSortBy("recent")}
-              className="gap-2 h-12"
-            >
-              <Activity className="h-4 w-4" />
-              Recent
-            </Button>
-            <Button
-              variant={sortBy === "popular" ? "default" : "outline"}
-              onClick={() => setSortBy("popular")}
-              className="gap-2 h-12"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Popular
-            </Button>
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              onClick={() => setShowFilters(!showFilters)}
-              className="gap-2 h-12"
-            >
-              <Heart className="h-4 w-4" />
-              Favorites
-              {favorites.size > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1">
-                  {favorites.size}
-                </Badge>
-              )}
-            </Button>
+
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            <div className="flex gap-2 min-w-max sm:min-w-0">
+              <Button
+                variant={sortBy === "trending" ? "default" : "outline"}
+                onClick={() => setSortBy("trending")}
+                className="gap-2 h-10 sm:h-12 whitespace-nowrap"
+              >
+                <TrendingUp className="h-4 w-4" />
+                Trending
+              </Button>
+              <Button
+                variant={sortBy === "recent" ? "default" : "outline"}
+                onClick={() => setSortBy("recent")}
+                className="gap-2 h-10 sm:h-12 whitespace-nowrap"
+              >
+                <Activity className="h-4 w-4" />
+                Recent
+              </Button>
+              <Button
+                variant={sortBy === "popular" ? "default" : "outline"}
+                onClick={() => setSortBy("popular")}
+                className="gap-2 h-10 sm:h-12 whitespace-nowrap"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Popular
+              </Button>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2 h-10 sm:h-12 whitespace-nowrap"
+              >
+                <Heart className="h-4 w-4" />
+                Favorites
+                {favorites.size > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1">
+                    {favorites.size}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <Skeleton className="aspect-square w-full" />
@@ -502,15 +489,15 @@ export default function TokensPage() {
           </div>
         ) : filteredTracks.length === 0 ? (
           <Card className="border-dashed border-2">
-            <CardContent className="flex flex-col items-center justify-center py-20">
-              <div className="relative mb-6">
+            <CardContent className="flex flex-col items-center justify-center py-12 sm:py-20">
+              <div className="relative mb-4 sm:mb-6">
                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-8 rounded-full">
-                  <Music className="h-16 w-16 text-primary" />
+                <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-6 sm:p-8 rounded-full">
+                  <Music className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold mb-2">No Tokens Found</h3>
-              <p className="text-muted-foreground text-center max-w-md mb-6">
+              <h3 className="text-xl sm:text-2xl font-bold mb-2">No Tokens Found</h3>
+              <p className="text-sm sm:text-base text-muted-foreground text-center max-w-md mb-4 sm:mb-6 px-4">
                 {searchQuery
                   ? "No tracks match your search. Try different keywords."
                   : showFilters
@@ -533,11 +520,11 @@ export default function TokensPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredTracks.map((track) => (
               <Card
                 key={track.id}
-                className="group relative overflow-hidden bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1"
+                className="group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1"
               >
                 <div className="relative aspect-square overflow-hidden bg-muted">
                   {!imagesLoaded.has(track.id) && <Skeleton className="absolute inset-0" />}
@@ -579,7 +566,7 @@ export default function TokensPage() {
                     />
                   </Button>
 
-                  <div className="absolute top-3 left-3 bg-gradient-to-r from-primary to-primary/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
+                  <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Coins className="h-3.5 w-3.5" />
                       Tokenized

@@ -575,6 +575,12 @@
   display: none;
 }
 
+/* Added smooth horizontal scrolling for mobile filter buttons */
+.scroll-smooth-x {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Added safe area padding for iOS devices with notches */
 @supports (padding: max(0px)) {
   .pb-safe {
