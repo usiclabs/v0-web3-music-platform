@@ -69,6 +69,19 @@ export function Header() {
             />
           </Link>
           <Link
+            href="/tokens"
+            className={`text-sm font-medium transition-all relative group ${
+              isActive("/tokens") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Tokens
+            <span
+              className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                isActive("/tokens") ? "w-full" : "w-0 group-hover:w-full"
+              }`}
+            />
+          </Link>
+          <Link
             href="/explore"
             className={`text-sm font-medium transition-all relative group ${
               isActive("/explore") ? "text-foreground" : "text-muted-foreground hover:text-foreground"

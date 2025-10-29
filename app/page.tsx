@@ -73,6 +73,14 @@ const navItems: NavItem[] = [
     gradient: "from-orange-500 to-red-500",
   },
   {
+    title: "Tokens",
+    href: "/tokens",
+    icon: Coins,
+    description: "Trade tokenized music",
+    gradient: "from-[#E53E3E] to-[#DC2626]",
+    requiresAuth: true,
+  },
+  {
     title: "Live",
     href: "/live",
     icon: Radio,
