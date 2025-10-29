@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import { useAccount, useConnect, useDisconnect, useSwitchChain, useSignTypedData } from "wagmi"
 import { base } from "wagmi/chains"
 import type { Address } from "viem"
@@ -13,6 +13,8 @@ interface WalletContextType {
   disconnect: () => void
   switchChain: (chainId: number) => Promise<void>
   signTypedData: (domain: any, types: any, value: any) => Promise<string>
+  showMobileWalletModal: boolean
+  setShowMobileWalletModal: (show: boolean) => void
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -23,20 +25,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const { disconnectAsync } = useDisconnect()
   const { switchChainAsync } = useSwitchChain()
   const { signTypedDataAsync } = useSignTypedData()
+  const [showMobileWalletModal, setShowMobileWalletModal] = useState(false)
 
   useEffect(() => {
     const autoConnectInjected = async () => {
-      // Check if we're in a mobile wallet in-app browser
       const isMobileWallet =
         typeof window !== "undefined" && window.ethereum && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
 
-      // If already connected or no injected provider, skip
       if (isConnected || !isMobileWallet) return
 
       console.log("[v0] Detected mobile wallet environment, attempting auto-connect...")
 
       try {
-        // Find the injected connector (should be first in the list)
         const injectedConnector = connectors.find((c) => c.type === "injected")
 
         if (injectedConnector) {
@@ -45,7 +45,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           console.log("[v0] Auto-connect successful")
         }
       } catch (error) {
-        // Silent fail for auto-connect - user can manually connect if needed
         console.log("[v0] Auto-connect failed (this is normal if user hasn't approved):", error)
       }
     }
@@ -61,14 +60,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         connectors.map((c) => ({ name: c.name, type: c.type })),
       )
 
-      let connector = connectors.find((c) => c.type === "injected")
-
-      // If no injected connector or not in mobile environment, use first available
-      if (!connector) {
-        connector = connectors[0]
+      if (isMobileSafariWithoutWallet()) {
+        console.log("[v0] Mobile Safari without wallet detected - showing wallet selection modal")
+        setShowMobileWalletModal(true)
+        return
       }
 
+      const connector = connectors.find((c) => c.type === "injected")
+
       if (!connector) {
+        if (typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+          setShowMobileWalletModal(true)
+          return
+        }
         alert(
           "No wallet connector available. Please install a Web3 wallet like MetaMask, Base Wallet, or Trust Wallet.",
         )
@@ -83,7 +87,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       if (error instanceof Error) {
         if (error.message.includes("User rejected")) {
-          // User cancelled, no need to show error
           return
         }
         if (error.message.includes("Already processing")) {
@@ -91,9 +94,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           return
         }
         if (error.message.includes("Connector not found")) {
+          if (typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            setShowMobileWalletModal(true)
+            return
+          }
           alert("Wallet not detected. Please make sure you're using a Web3-enabled browser or wallet app.")
           return
         }
+      }
+
+      if (typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        setShowMobileWalletModal(true)
+        return
       }
 
       alert("Failed to connect wallet. Please try again or use a different wallet.")
@@ -143,12 +155,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 : "Unknown",
         )
 
-        // Check if the method exists
         const hasSignTypedData = typeof provider.request === "function"
         console.log("[v0] Provider has request method:", hasSignTypedData)
       }
 
-      const timeoutMs = isMobile ? 120000 : 60000 // 2 minutes for mobile, 1 minute for desktop
+      const timeoutMs = isMobile ? 120000 : 60000
       console.log("[v0] Using timeout:", timeoutMs, "ms")
 
       const signaturePromise = signTypedDataAsync({
@@ -221,6 +232,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const isMobileSafariWithoutWallet = () => {
+    if (typeof window === "undefined") return false
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
+    const hasWallet = !!window.ethereum
+    const isSafari = /Safari/i.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent)
+    return isMobile && !hasWallet && isSafari
+  }
+
   return (
     <WalletContext.Provider
       value={{
@@ -231,6 +250,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         disconnect,
         switchChain,
         signTypedData,
+        showMobileWalletModal,
+        setShowMobileWalletModal,
       }}
     >
       {children}
