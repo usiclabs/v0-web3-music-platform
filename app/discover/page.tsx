@@ -368,11 +368,11 @@ export default function DiscoverPage() {
                 </Button>
               </Link>
             </div>
-            <div className="relative group">
+            <div className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(newReleasesRef, "left")}
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -387,7 +387,7 @@ export default function DiscoverPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(newReleasesRef, "right")}
               >
                 <ChevronRight className="h-6 w-6" />
@@ -417,11 +417,11 @@ export default function DiscoverPage() {
                 </Button>
               </Link>
             </div>
-            <div className="relative group">
+            <div className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(trendingRef, "left")}
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -436,7 +436,7 @@ export default function DiscoverPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(trendingRef, "right")}
               >
                 <ChevronRight className="h-6 w-6" />
@@ -460,11 +460,11 @@ export default function DiscoverPage() {
                 <p className="text-foreground/70 mt-1">Personalized picks just for you</p>
               </div>
             </div>
-            <div className="relative group">
+            <div className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(forYouRef, "left")}
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -479,7 +479,7 @@ export default function DiscoverPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                 onClick={() => scroll(forYouRef, "right")}
               >
                 <ChevronRight className="h-6 w-6" />

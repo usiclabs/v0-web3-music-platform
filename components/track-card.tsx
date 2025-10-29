@@ -119,7 +119,7 @@ export function TrackCard({ track, queue }: TrackCardProps) {
       : track.cover_url || "/abstract-soundscape.png"
 
   return (
-    <Card className="bg-card/50 backdrop-blur-xl border border-border/50 group overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/30 hover-lift">
+    <Card className="bg-card/50 backdrop-blur-xl border border-border/50 group overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/30">
       <div className="relative aspect-square overflow-hidden">
         {track.content_type === "video" && (
           <div className="absolute top-2 right-2 z-10 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1">

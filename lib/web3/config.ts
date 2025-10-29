@@ -34,6 +34,8 @@ if (typeof window !== "undefined") {
   }
 }
 
+const BLAST_API_RPC = "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"
+
 // Configure wagmi
 export const config = createConfig({
   chains: [base, baseSepolia],
@@ -65,7 +67,7 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [base.id]: http(),
+    [base.id]: http(BLAST_API_RPC),
     [baseSepolia.id]: http(),
   },
 })

@@ -353,10 +353,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     console.log("[v0] Audio player received track:", {
       id: track.id,
       title: track.title,
-      audioUrl: track.audioUrl,
-      audioUrl_type: typeof track.audioUrl,
-      audioUrl_length: track.audioUrl?.length,
-      audioUrl_valid: track.audioUrl && track.audioUrl.startsWith("http"),
+      audio_url: track.audio_url,
+      audio_url_type: typeof track.audio_url,
+      audio_url_length: track.audio_url?.length,
+      audio_url_valid: track.audio_url && track.audio_url.startsWith("http"),
     })
 
     setError(null)
@@ -377,23 +377,23 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }
 
     if (currentTrack?.id !== track.id) {
-      if (!track.audioUrl || track.audioUrl.trim() === "") {
+      if (!track.audio_url || track.audio_url.trim() === "") {
         console.error("[v0] Invalid audio URL - empty or null")
         setError("This track has no audio file. Please upload an audio file for this track.")
         setIsPlaying(false)
         return
       }
 
-      if (!track.audioUrl.startsWith("http")) {
-        console.error("[v0] Invalid audio URL - not a valid URL:", track.audioUrl)
+      if (!track.audio_url.startsWith("http")) {
+        console.error("[v0] Invalid audio URL - not a valid URL:", track.audio_url)
         setError("This track has an invalid audio URL. Please check the audio file URL.")
         setIsPlaying(false)
         return
       }
 
-      console.log("[v0] Setting audio source to:", track.audioUrl)
+      console.log("[v0] Setting audio source to:", track.audio_url)
 
-      audioRef.current.src = track.audioUrl
+      audioRef.current.src = track.audio_url
       setCurrentTrack(track)
       setCurrentTime(0)
       setCurrentChunk(0)
