@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Compass, User, TrendingUp, Sparkles, Coins } from "lucide-react"
+import { Home, Compass, User, TrendingUp, Coins, Users } from "lucide-react"
 
 export function MobileBottomNav() {
   const pathname = usePathname()
@@ -11,7 +11,7 @@ export function MobileBottomNav() {
 
   const navItems = [
     { href: "/", icon: Home, label: "Home" },
-    { href: "/create", icon: Sparkles, label: "Create" },
+    { href: "/artists", icon: Users, label: "Artists" },
     { href: "/tokens", icon: Coins, label: "Tokens" },
     { href: "/trending", icon: TrendingUp, label: "Trending" },
     { href: "/explore", icon: Compass, label: "Explore" },

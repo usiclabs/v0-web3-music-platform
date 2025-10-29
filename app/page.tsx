@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useWallet } from "@/lib/web3/wallet-context"
 import {
@@ -28,9 +29,8 @@ import {
   Wallet,
   Gift,
   UserCheck,
-  Sparkles,
+  Droplets,
   Radio,
-  TrendingDown as TrendingUpDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -46,17 +46,10 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     title: "Home",
-    href: "/landing",
+    href: "/",
     icon: Home,
     description: "Back to homepage",
     gradient: "from-[#FF6B6B] to-[#FF5252]",
-  },
-  {
-    title: "AI Create",
-    href: "/create",
-    icon: Sparkles,
-    description: "Generate music with AI",
-    gradient: "from-violet-500 to-fuchsia-500",
   },
   {
     title: "Discover",
@@ -71,21 +64,6 @@ const navItems: NavItem[] = [
     icon: TrendingUp,
     description: "What's hot now",
     gradient: "from-orange-500 to-red-500",
-  },
-  {
-    title: "Tokens",
-    href: "/tokens",
-    icon: Coins,
-    description: "Trade tokenized music",
-    gradient: "from-[#E53E3E] to-[#DC2626]",
-    requiresAuth: true,
-  },
-  {
-    title: "Live",
-    href: "/live",
-    icon: Radio,
-    description: "Watch live streams",
-    gradient: "from-red-500 to-rose-500",
   },
   {
     title: "Explore",
@@ -108,6 +86,20 @@ const navItems: NavItem[] = [
     icon: Users,
     description: "Browse creators",
     gradient: "from-green-500 to-emerald-500",
+  },
+  {
+    title: "Live",
+    href: "/live",
+    icon: Radio,
+    description: "Live streaming now",
+    gradient: "from-red-500 to-rose-500",
+  },
+  {
+    title: "Tokens",
+    href: "/tokens",
+    icon: Coins,
+    description: "Tokenized music",
+    gradient: "from-amber-500 to-yellow-500",
   },
   {
     title: "Dashboard",
@@ -142,14 +134,6 @@ const navItems: NavItem[] = [
     requiresAuth: true,
   },
   {
-    title: "Auto-Invest",
-    href: "/auto-invest",
-    icon: TrendingUpDown,
-    description: "Automated investments",
-    gradient: "from-emerald-500 to-teal-500",
-    requiresAuth: true,
-  },
-  {
     title: "Airdrop",
     href: "/airdrop",
     icon: Gift,
@@ -177,6 +161,13 @@ const navItems: NavItem[] = [
     icon: ArrowLeftRight,
     description: "Swap tokens",
     gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    title: "LP Manager",
+    href: "/lp-manager",
+    icon: Droplets,
+    description: "Manage liquidity pools",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     title: "Staking",
@@ -233,6 +224,15 @@ const navItems: NavItem[] = [
 
 export default function HomePage() {
   const { isConnected } = useWallet()
+  const router = useRouter()
+
+  useEffect(() => {
+    const hasVisited = localStorage.getItem("hasVisitedBefore")
+
+    if (!hasVisited) {
+      router.push("/landing")
+    }
+  }, [router])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">

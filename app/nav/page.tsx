@@ -28,6 +28,8 @@ import {
   Wallet,
   Gift,
   UserCheck,
+  Droplets,
+  Radio,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -83,6 +85,20 @@ const navItems: NavItem[] = [
     icon: Users,
     description: "Browse creators",
     gradient: "from-green-500 to-emerald-500",
+  },
+  {
+    title: "Live",
+    href: "/live",
+    icon: Radio,
+    description: "Live streaming now",
+    gradient: "from-red-500 to-rose-500",
+  },
+  {
+    title: "Tokens",
+    href: "/tokens",
+    icon: Coins,
+    description: "Tokenized music",
+    gradient: "from-amber-500 to-yellow-500",
   },
   {
     title: "Dashboard",
@@ -144,6 +160,13 @@ const navItems: NavItem[] = [
     icon: ArrowLeftRight,
     description: "Swap tokens",
     gradient: "from-cyan-500 to-blue-500",
+  },
+  {
+    title: "LP Manager",
+    href: "/lp-manager",
+    icon: Droplets,
+    description: "Manage liquidity pools",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     title: "Staking",

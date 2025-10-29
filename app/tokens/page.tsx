@@ -22,6 +22,7 @@ import {
   Zap,
   Info,
   AlertCircle,
+  Droplet,
 } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
@@ -299,33 +300,24 @@ export default function TokensPage() {
     }
   }
 
+  const handleSwapClick = (track: TokenizedTrack) => {
+    if (!isConnected) {
+      addToast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to swap tokens",
+        variant: "default",
+      })
+      connect()
+      return
+    }
+    setSelectedTrack(track)
+  }
+
   const filteredTracks = tracks.filter(
     (track) =>
       track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       track.artist_name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
-
-  if (!isConnected) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-          <div className="rounded-full bg-primary/10 p-6">
-            <Wallet className="h-12 w-12 text-primary" />
-          </div>
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">Connect Your Wallet</h1>
-            <p className="text-muted-foreground max-w-md">
-              Connect your wallet to view and trade tokenized music on the platform.
-            </p>
-          </div>
-          <Button onClick={connect} size="lg" className="gap-2">
-            <Wallet className="h-5 w-5" />
-            Connect Wallet
-          </Button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
@@ -339,6 +331,12 @@ export default function TokensPage() {
             </h1>
             <p className="text-muted-foreground">Stream and trade tokenized songs on Base network</p>
           </div>
+          {!isConnected && (
+            <Button onClick={connect} variant="outline" className="gap-2 bg-transparent">
+              <Wallet className="h-4 w-4" />
+              Connect Wallet
+            </Button>
+          )}
         </div>
 
         {/* Search and Filters */}
@@ -442,7 +440,7 @@ export default function TokensPage() {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Token Address</span>
+                  <span className="text-muted-foreground">Token Details</span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -467,9 +465,28 @@ export default function TokensPage() {
                       </>
                     )}
                   </Button>
-                  <Button className="flex-1" onClick={() => setSelectedTrack(track)}>
+                  <Button className="flex-1" onClick={() => handleSwapClick(track)}>
                     <Zap className="h-4 w-4 mr-2" />
                     Swap
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (!isConnected) {
+                        addToast({
+                          title: "Wallet Required",
+                          description: "Please connect your wallet to add liquidity",
+                          variant: "default",
+                        })
+                        connect()
+                        return
+                      }
+                      window.location.href = `/lp-manager?token=${track.coin_address}`
+                    }}
+                    title="Add Liquidity"
+                  >
+                    <Droplet className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
