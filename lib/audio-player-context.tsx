@@ -350,6 +350,15 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const playTrack = (track: TrackWithArtist, newQueue?: TrackWithArtist[]) => {
     if (!audioRef.current) return
 
+    console.log("[v0] Audio player received track:", {
+      id: track.id,
+      title: track.title,
+      audioUrl: track.audioUrl,
+      audioUrl_type: typeof track.audioUrl,
+      audioUrl_length: track.audioUrl?.length,
+      audioUrl_valid: track.audioUrl && track.audioUrl.startsWith("http"),
+    })
+
     setError(null)
     setPaymentRequired(false)
 
@@ -358,24 +367,38 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const trackIndex = newQueue.findIndex((t) => t.id === track.id)
       setCurrentTrackIndex(trackIndex >= 0 ? trackIndex : 0)
     } else if (queue.length > 0) {
-      // If queue already exists, find track in existing queue
       const trackIndex = queue.findIndex((t) => t.id === track.id)
       if (trackIndex >= 0) {
         setCurrentTrackIndex(trackIndex)
       }
     } else {
-      // No queue provided, create single-track queue
       setQueue([track])
       setCurrentTrackIndex(0)
     }
 
     if (currentTrack?.id !== track.id) {
-      audioRef.current.src = track.audio_url
+      if (!track.audioUrl || track.audioUrl.trim() === "") {
+        console.error("[v0] Invalid audio URL - empty or null")
+        setError("This track has no audio file. Please upload an audio file for this track.")
+        setIsPlaying(false)
+        return
+      }
+
+      if (!track.audioUrl.startsWith("http")) {
+        console.error("[v0] Invalid audio URL - not a valid URL:", track.audioUrl)
+        setError("This track has an invalid audio URL. Please check the audio file URL.")
+        setIsPlaying(false)
+        return
+      }
+
+      console.log("[v0] Setting audio source to:", track.audioUrl)
+
+      audioRef.current.src = track.audioUrl
       setCurrentTrack(track)
       setCurrentTime(0)
       setCurrentChunk(0)
 
-      const isOwnTrack = address && track.artist_id.toLowerCase() === address.toLowerCase()
+      const isOwnTrack = address && track.artist_id && track.artist_id.toLowerCase() === address.toLowerCase()
 
       if (isOwnTrack) {
         const totalChunks = Math.ceil(track.duration / X402_CONFIG.CHUNK_DURATION)

@@ -38,7 +38,18 @@ export function X402PaymentModal() {
 
   useEffect(() => {
     if (currentTrack && balance !== undefined && address) {
-      const requiredAmount = BigInt(Math.floor(Number.parseFloat(currentTrack.price_per_chunk) * 1_000_000)) // Convert to USDC units (6 decimals)
+      // Validate and parse price_per_chunk
+      const priceString = currentTrack.price_per_chunk?.toString() || "0"
+      const priceFloat = Number.parseFloat(priceString)
+
+      // Check if price is valid
+      if (Number.isNaN(priceFloat) || priceFloat < 0) {
+        console.error("[v0] Invalid price_per_chunk:", currentTrack.price_per_chunk)
+        setHasInsufficientBalance(false)
+        return
+      }
+
+      const requiredAmount = BigInt(Math.floor(priceFloat * 1_000_000)) // Convert to USDC units (6 decimals)
       const userBalance = balance as bigint
       setHasInsufficientBalance(userBalance < requiredAmount)
 
@@ -55,6 +66,11 @@ export function X402PaymentModal() {
 
   if (!currentTrack) return null
 
+  const priceString = currentTrack.price_per_chunk?.toString() || "0"
+  const priceFloat = Number.parseFloat(priceString)
+  const isValidPrice = !Number.isNaN(priceFloat) && priceFloat >= 0
+  const requiredAmount = isValidPrice ? priceFloat : 0
+
   const isFullUnlock = currentTrack.unlock_type === "full_song"
   const displayDuration = isFullUnlock ? formatDuration(currentTrack.duration) : `${X402_CONFIG.CHUNK_DURATION} seconds`
   const isAfterFreePreview = currentChunk > 0
@@ -63,9 +79,18 @@ export function X402PaymentModal() {
   const segmentNumber = currentChunk + 1
 
   const formattedBalance = balance !== undefined ? formatUnits(balance as bigint, 6) : "0"
-  const requiredAmount = Number.parseFloat(currentTrack.price_per_chunk)
 
   const handlePayment = async () => {
+    if (!isValidPrice) {
+      addToast({
+        title: "Invalid Price",
+        description: "This track has an invalid price. Please contact support.",
+        variant: "error",
+        duration: 5000,
+      })
+      return
+    }
+
     if (!isConnected) {
       try {
         await connect()
@@ -285,7 +310,7 @@ export function X402PaymentModal() {
                       </>
                     )}
                   </div>
-                  <span className="text-sm font-bold">{currentTrack.price_per_chunk} USDC</span>
+                  <span className="text-sm font-bold">{isValidPrice ? currentTrack.price_per_chunk : "0"} USDC</span>
                 </div>
 
                 {isConnected && address && (
@@ -341,7 +366,7 @@ export function X402PaymentModal() {
                   disabled={isProcessing || (isConnected && hasInsufficientBalance)}
                 >
                   <Coins className="h-4 w-4 mr-2" />
-                  {!isConnected ? "Connect Wallet" : `Pay ${currentTrack.price_per_chunk} USDC`}
+                  {!isConnected ? "Connect Wallet" : `Pay ${isValidPrice ? currentTrack.price_per_chunk : "0"} USDC`}
                 </Button>
               </div>
             </>

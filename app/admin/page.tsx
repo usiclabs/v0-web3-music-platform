@@ -42,6 +42,8 @@ import {
   AlertTriangle,
   List,
   Grid,
+  Coins,
+  Plus,
 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
@@ -136,6 +138,21 @@ export default function AdminPage() {
     swap: true,
     nftMinting: true,
   })
+
+  const [tokenizedSongs, setTokenizedSongs] = useState<any[]>([])
+  const [showAddTokenDialog, setShowAddTokenDialog] = useState(false)
+  const [tokenFormData, setTokenFormData] = useState({
+    title: "",
+    artist_id: "",
+    audio_url: "",
+    cover_url: "",
+    coin_address: "",
+    token_id: "",
+    nft_contract_address: "",
+    price_per_chunk: "0.001",
+    duration: 180,
+  })
+  const [submittingToken, setSubmittingToken] = useState(false)
 
   // Check if connected wallet is admin (case-insensitive)
   const isAdmin = address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase()
@@ -348,6 +365,14 @@ export default function AdminPage() {
         ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
         setTransactions(allTransactions)
+
+        const { data: tokenizedTracksData } = await supabase
+          .from("tracks")
+          .select("*, artist:profiles!tracks_artist_id_fkey(artist_name, wallet_address)")
+          .or("coin_address.not.is.null,nft_contract_address.not.is.null")
+          .order("created_at", { ascending: false })
+
+        setTokenizedSongs(tokenizedTracksData || [])
       } catch (error) {
         console.error("Failed to load admin data:", error)
       } finally {
@@ -486,6 +511,75 @@ export default function AdminPage() {
         description: "Failed to update track visibility",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleCreateTokenizedSong = async () => {
+    if (!tokenFormData.title || !tokenFormData.artist_id || !tokenFormData.audio_url) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSubmittingToken(true)
+
+    try {
+      const response = await fetch("/api/tracks/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...tokenFormData,
+          content_type: "audio",
+          unlock_type: "token",
+          price_per_chunk: Number(tokenFormData.price_per_chunk),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create tokenized song")
+      }
+
+      toast({
+        title: "Success",
+        description: "Tokenized song created successfully",
+      })
+
+      // Reset form and close dialog
+      setTokenFormData({
+        title: "",
+        artist_id: "",
+        audio_url: "",
+        cover_url: "",
+        coin_address: "",
+        token_id: "",
+        nft_contract_address: "",
+        price_per_chunk: "0.001",
+        duration: 180,
+      })
+      setShowAddTokenDialog(false)
+
+      // Refresh tokenized songs list
+      const supabase = createBrowserClient()
+      const { data: tokenizedTracksData } = await supabase
+        .from("tracks")
+        .select("*, artist:profiles!tracks_artist_id_fkey(artist_name, wallet_address)")
+        .or("coin_address.not.is.null,nft_contract_address.not.is.null")
+        .order("created_at", { ascending: false })
+
+      setTokenizedSongs(tokenizedTracksData || [])
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create tokenized song",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmittingToken(false)
     }
   }
 
@@ -716,6 +810,13 @@ export default function AdminPage() {
               >
                 <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Transactions
+              </TabsTrigger>
+              <TabsTrigger
+                value="tokenized"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Coins className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Tokenized
               </TabsTrigger>
               <TabsTrigger
                 value="system"
@@ -1247,6 +1348,100 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="tokenized" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Coins className="h-4 w-4 sm:h-5 w-5 text-primary" />
+                  Tokenized Songs
+                </h3>
+                <Button
+                  onClick={() => setShowAddTokenDialog(true)}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 w-fit"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tokenized Song
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {tokenizedSongs.length > 0 ? (
+                  tokenizedSongs.map((song) => (
+                    <Card
+                      key={song.id}
+                      className="bg-muted/10 border border-border/50 p-4 hover:border-primary/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                            <Coins className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm sm:text-base truncate mb-1">{song.title}</p>
+                            <p className="text-xs text-muted-foreground truncate mb-2">
+                              {song.artist?.artist_name || "Unknown Artist"}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {song.coin_address && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-primary/10 border-primary/30 text-primary text-xs font-mono"
+                                >
+                                  Token: {song.coin_address.slice(0, 6)}...{song.coin_address.slice(-4)}
+                                </Badge>
+                              )}
+                              {song.nft_contract_address && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-purple-500/10 border-purple-500/30 text-purple-500 text-xs font-mono"
+                                >
+                                  NFT: {song.nft_contract_address.slice(0, 6)}...
+                                  {song.nft_contract_address.slice(-4)}
+                                </Badge>
+                              )}
+                              {song.token_id && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-500/10 border-blue-500/30 text-blue-500 text-xs"
+                                >
+                                  ID: {song.token_id}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View on /tokens
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Coins className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p className="mb-2">No tokenized songs yet</p>
+                    <p className="text-xs">Add your first tokenized song to get started</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="system" className="space-y-4">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
               <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1445,6 +1640,178 @@ export default function AdminPage() {
                   <>
                     <Ban className="h-4 w-4 mr-2" />
                     Hide
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAddTokenDialog} onOpenChange={setShowAddTokenDialog}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-primary" />
+                Add Tokenized Song
+              </DialogTitle>
+              <DialogDescription>Create a new tokenized song that will appear on the /tokens page</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Basic Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Music className="h-4 w-4 text-primary" />
+                  Basic Information
+                </h4>
+
+                <div className="space-y-2">
+                  <Label htmlFor="title">Song Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Enter song title"
+                    value={tokenFormData.title}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, title: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="artist_id">Artist Wallet Address *</Label>
+                  <Input
+                    id="artist_id"
+                    placeholder="0x..."
+                    value={tokenFormData.artist_id}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, artist_id: e.target.value })}
+                    className="bg-background/50 border-border/50 font-mono text-sm"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="audio_url">Audio URL *</Label>
+                  <Input
+                    id="audio_url"
+                    placeholder="https://..."
+                    value={tokenFormData.audio_url}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, audio_url: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cover_url">Cover Image URL</Label>
+                  <Input
+                    id="cover_url"
+                    placeholder="https://..."
+                    value={tokenFormData.cover_url}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, cover_url: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duration (seconds)</Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      placeholder="180"
+                      value={tokenFormData.duration}
+                      onChange={(e) => setTokenFormData({ ...tokenFormData, duration: Number(e.target.value) })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="price_per_chunk">Price per Chunk (ETH)</Label>
+                    <Input
+                      id="price_per_chunk"
+                      type="number"
+                      step="0.0001"
+                      placeholder="0.001"
+                      value={tokenFormData.price_per_chunk}
+                      onChange={(e) => setTokenFormData({ ...tokenFormData, price_per_chunk: e.target.value })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Token Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-primary" />
+                  Token Information
+                </h4>
+
+                <div className="space-y-2">
+                  <Label htmlFor="coin_address">Token Contract Address</Label>
+                  <Input
+                    id="coin_address"
+                    placeholder="0x..."
+                    value={tokenFormData.coin_address}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, coin_address: e.target.value })}
+                    className="bg-background/50 border-border/50 font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">ERC-20 token contract address</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="nft_contract_address">NFT Contract Address</Label>
+                  <Input
+                    id="nft_contract_address"
+                    placeholder="0x..."
+                    value={tokenFormData.nft_contract_address}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, nft_contract_address: e.target.value })}
+                    className="bg-background/50 border-border/50 font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">ERC-721/1155 NFT contract address</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="token_id">Token ID</Label>
+                  <Input
+                    id="token_id"
+                    placeholder="1"
+                    value={tokenFormData.token_id}
+                    onChange={(e) => setTokenFormData({ ...tokenFormData, token_id: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                  <p className="text-xs text-muted-foreground">NFT token ID (if applicable)</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-primary">Note:</strong> At least one token address (Token Contract or NFT
+                  Contract) must be provided for the song to appear on the /tokens page.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddTokenDialog(false)}
+                disabled={submittingToken}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateTokenizedSong}
+                disabled={submittingToken}
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                {submittingToken ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Tokenized Song
                   </>
                 )}
               </Button>

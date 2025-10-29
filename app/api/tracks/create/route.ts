@@ -16,6 +16,9 @@ export async function POST(request: Request) {
       price_per_chunk,
       unlock_type,
       royalty_splits,
+      coin_address,
+      token_id,
+      nft_contract_address,
     } = body
 
     console.log("[v0] Creating track with metadata:", {
@@ -24,6 +27,9 @@ export async function POST(request: Request) {
       content_type,
       has_audio_url: !!audio_url,
       has_video_url: !!video_url,
+      has_coin_address: !!coin_address,
+      has_nft_contract: !!nft_contract_address,
+      token_id,
     })
 
     // Use admin client to bypass RLS
@@ -43,6 +49,9 @@ export async function POST(request: Request) {
         duration,
         price_per_chunk,
         unlock_type,
+        coin_address: coin_address || null,
+        token_id: token_id || null,
+        nft_contract_address: nft_contract_address || null,
       })
       .select()
       .single()
