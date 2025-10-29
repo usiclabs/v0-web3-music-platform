@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { TokenDetailModal } from "@/components/token-detail-modal"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AddLiquidityDrawer } from "@/components/add-liquidity-drawer"
 import {
   Play,
   Pause,
@@ -16,13 +19,17 @@ import {
   Wallet,
   ExternalLink,
   Search,
-  ArrowUpDown,
   Loader2,
   Music,
   Zap,
   Info,
   AlertCircle,
   Droplet,
+  Heart,
+  X,
+  BarChart3,
+  Activity,
+  Sparkles,
 } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
@@ -65,7 +72,7 @@ export default function TokensPage() {
   const [tracks, setTracks] = useState<TokenizedTrack[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<"recent" | "popular">("recent")
+  const [sortBy, setSortBy] = useState<"recent" | "popular" | "trending">("trending")
   const [selectedTrack, setSelectedTrack] = useState<TokenizedTrack | null>(null)
   const [swapAmount, setSwapAmount] = useState("")
   const [swapOutput, setSwapOutput] = useState("")
@@ -74,9 +81,25 @@ export default function TokensPage() {
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [detailToken, setDetailToken] = useState<TokenizedTrack | null>(null)
+  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [showFilters, setShowFilters] = useState(false)
+  const [imagesLoaded, setImagesLoaded] = useState<Set<string>>(new Set())
+  const [liquidityDrawerOpen, setLiquidityDrawerOpen] = useState(false)
+  const [selectedLiquidityToken, setSelectedLiquidityToken] = useState<TokenizedTrack | null>(null)
 
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient()
+
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("tokenFavorites")
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)))
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem("tokenFavorites", JSON.stringify(Array.from(favorites)))
+  }, [favorites])
 
   useEffect(() => {
     loadTokenizedTracks()
@@ -125,14 +148,6 @@ export default function TokensPage() {
   }
 
   const handlePlay = (track: TokenizedTrack) => {
-    console.log("[v0] Playing track:", {
-      id: track.id,
-      title: track.title,
-      audio_url: track.audio_url,
-      audio_url_type: typeof track.audio_url,
-      audio_url_length: track.audio_url?.length,
-    })
-
     if (currentTrack?.id === track.id && isPlaying) {
       pause()
     } else {
@@ -147,6 +162,18 @@ export default function TokensPage() {
         pricePerChunk: track.price_per_chunk,
       })
     }
+  }
+
+  const toggleFavorite = (trackId: string) => {
+    setFavorites((prev) => {
+      const newFavorites = new Set(prev)
+      if (newFavorites.has(trackId)) {
+        newFavorites.delete(trackId)
+      } else {
+        newFavorites.add(trackId)
+      }
+      return newFavorites
+    })
   }
 
   useEffect(() => {
@@ -176,7 +203,6 @@ export default function TokensPage() {
 
         if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
           setPoolInfo({ address: poolAddress as string, fee })
-          console.log(`[v0] Found pool for ${tokenAddress} with ${fee / 10000}% fee`)
           return
         }
       }
@@ -313,319 +339,493 @@ export default function TokensPage() {
     setSelectedTrack(track)
   }
 
-  const filteredTracks = tracks.filter(
-    (track) =>
-      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      track.artist_name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredTracks = useMemo(() => {
+    return tracks.filter(
+      (track) =>
+        (track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          track.artist_name.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!showFilters || favorites.has(track.id)),
+    )
+  }, [tracks, searchQuery, showFilters, favorites])
+
+  const stats = useMemo(() => {
+    return {
+      totalTokens: tracks.length,
+      totalFavorites: favorites.size,
+      recentlyAdded: tracks.filter((t) => {
+        const dayAgo = Date.now() - 24 * 60 * 60 * 1000
+        return new Date(t.created_at).getTime() > dayAgo
+      }).length,
+    }
+  }, [tracks, favorites])
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-bold flex items-center gap-3">
-              <Coins className="h-8 w-8 text-primary" />
-              Tokenized Music
-            </h1>
-            <p className="text-muted-foreground">Stream and trade tokenized songs on Base network</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/20 p-8 backdrop-blur-xl">
+          <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
+          <div className="relative space-y-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+                    <div className="relative bg-gradient-to-br from-primary to-primary/50 p-3 rounded-2xl">
+                      <Coins className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Tokenized Music
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                      Stream, trade, and provide liquidity for tokenized songs on Base
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {!isConnected && (
+                <Button
+                  onClick={connect}
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
+                >
+                  <Wallet className="h-5 w-5" />
+                  Connect Wallet
+                </Button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <Music className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{stats.totalTokens}</p>
+                    <p className="text-sm text-muted-foreground">Total Tokens</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="bg-red-500/10 p-2 rounded-lg">
+                    <Heart className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{stats.totalFavorites}</p>
+                    <p className="text-sm text-muted-foreground">Favorites</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/10 p-2 rounded-lg">
+                    <Sparkles className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{stats.recentlyAdded}</p>
+                    <p className="text-sm text-muted-foreground">Added 24h</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          {!isConnected && (
-            <Button onClick={connect} variant="outline" className="gap-2 bg-transparent">
-              <Wallet className="h-4 w-4" />
-              Connect Wallet
-            </Button>
-          )}
         </div>
 
-        {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search tracks or artists..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
             />
           </div>
           <div className="flex gap-2">
             <Button
+              variant={sortBy === "trending" ? "default" : "outline"}
+              onClick={() => setSortBy("trending")}
+              className="gap-2 h-12"
+            >
+              <TrendingUp className="h-4 w-4" />
+              Trending
+            </Button>
+            <Button
               variant={sortBy === "recent" ? "default" : "outline"}
               onClick={() => setSortBy("recent")}
-              className="gap-2"
+              className="gap-2 h-12"
             >
-              <ArrowUpDown className="h-4 w-4" />
+              <Activity className="h-4 w-4" />
               Recent
             </Button>
             <Button
               variant={sortBy === "popular" ? "default" : "outline"}
               onClick={() => setSortBy("popular")}
-              className="gap-2"
+              className="gap-2 h-12"
             >
-              <TrendingUp className="h-4 w-4" />
+              <BarChart3 className="h-4 w-4" />
               Popular
+            </Button>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2 h-12"
+            >
+              <Heart className="h-4 w-4" />
+              Favorites
+              {favorites.size > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1">
+                  {favorites.size}
+                </Badge>
+              )}
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* Tracks Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : filteredTracks.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-20">
-            <Music className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Tokenized Tracks Found</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              {searchQuery
-                ? "No tracks match your search. Try different keywords."
-                : "No tokenized tracks available yet. Check back soon!"}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTracks.map((track) => (
-            <Card
-              key={track.id}
-              className="group hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 overflow-hidden"
-            >
-              <div className="relative aspect-square overflow-hidden">
-                <img
-                  src={track.cover_url || "/placeholder.svg?height=400&width=400"}
-                  alt={track.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Button
-                  size="icon"
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100"
-                  onClick={() => handlePlay(track)}
-                >
-                  {currentTrack?.id === track.id && isPlaying ? (
-                    <Pause className="h-8 w-8" />
-                  ) : (
-                    <Play className="h-8 w-8 ml-1" />
-                  )}
-                </Button>
-                <div className="absolute top-3 right-3 bg-primary/90 backdrop-blur-sm px-3 py-1 rounded-full">
-                  <span className="text-xs font-semibold text-white flex items-center gap-1">
-                    <Coins className="h-3 w-3" />
-                    Tokenized
-                  </span>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-square w-full" />
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredTracks.length === 0 ? (
+          <Card className="border-dashed border-2">
+            <CardContent className="flex flex-col items-center justify-center py-20">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                <div className="relative bg-gradient-to-br from-primary/20 to-primary/5 p-8 rounded-full">
+                  <Music className="h-16 w-16 text-primary" />
                 </div>
               </div>
-
-              <CardHeader className="pb-3">
-                <CardTitle className="line-clamp-1">{track.title}</CardTitle>
-                <CardDescription className="line-clamp-1">{track.artist_name}</CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Token Address</span>
-                  <a
-                    href={`https://basescan.org/token/${track.coin_address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    View <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Token Details</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDetailToken(track)}
-                    className="text-primary hover:underline h-auto p-0"
-                  >
-                    View Details
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 bg-transparent" onClick={() => handlePlay(track)}>
-                    {currentTrack?.id === track.id && isPlaying ? (
-                      <>
-                        <Pause className="h-4 w-4 mr-2" />
-                        Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Play
-                      </>
-                    )}
-                  </Button>
-                  <Button className="flex-1" onClick={() => handleSwapClick(track)}>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Swap
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      if (!isConnected) {
-                        addToast({
-                          title: "Wallet Required",
-                          description: "Please connect your wallet to add liquidity",
-                          variant: "default",
-                        })
-                        connect()
-                        return
-                      }
-                      window.location.href = `/lp-manager?token=${track.coin_address}`
-                    }}
-                    title="Add Liquidity"
-                  >
-                    <Droplet className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Swap Modal */}
-      {selectedTrack && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-primary" />
-                Swap for {selectedTrack.title}
-              </CardTitle>
-              <CardDescription>Exchange ETH for track tokens via Uniswap V3</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isCheckingPool ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Checking Uniswap V3 pools...</span>
-                </div>
-              ) : poolInfo ? (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
-                </div>
-              ) : quoteError ? (
-                <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="font-medium">{quoteError}</p>
-                    <p className="text-xs">
-                      Add liquidity on{" "}
-                      <a
-                        href="https://app.uniswap.org/add"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline hover:text-amber-700"
-                      >
-                        Uniswap
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <Label htmlFor="swap-amount">Amount (ETH)</Label>
-                <Input
-                  id="swap-amount"
-                  type="number"
-                  placeholder="0.0"
-                  value={swapAmount}
-                  onChange={(e) => setSwapAmount(e.target.value)}
-                  className="text-lg h-12"
-                  disabled={!poolInfo}
-                />
-              </div>
-
-              {swapOutput && (
-                <div className="space-y-2">
-                  <Label>You will receive (estimated)</Label>
-                  <div className="text-2xl font-bold text-primary">
-                    {Number.parseFloat(swapOutput).toFixed(2)} tokens
-                  </div>
-                </div>
-              )}
-
-              {poolInfo && swapOutput && (
-                <div className="rounded-lg bg-muted/50 p-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rate</span>
-                    <span className="font-medium">
-                      1 ETH ≈ {(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Pool Fee</span>
-                    <span className="font-medium">{(poolInfo.fee / 10000).toFixed(2)}%</span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => handleSwap(selectedTrack)}
-                  disabled={!swapAmount || !poolInfo || !swapOutput || Number.parseFloat(swapAmount) <= 0 || isSwapping}
-                  className="flex-1"
-                >
-                  {isSwapping ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Swapping...
-                    </>
-                  ) : !poolInfo ? (
-                    <>
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                      No Pool Available
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Swap Now
-                    </>
-                  )}
-                </Button>
+              <h3 className="text-2xl font-bold mb-2">No Tokens Found</h3>
+              <p className="text-muted-foreground text-center max-w-md mb-6">
+                {searchQuery
+                  ? "No tracks match your search. Try different keywords."
+                  : showFilters
+                    ? "You haven't favorited any tokens yet. Click the heart icon on tokens to add them to your favorites."
+                    : "No tokenized tracks available yet. Check back soon!"}
+              </p>
+              {(searchQuery || showFilters) && (
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setSelectedTrack(null)
-                    setPoolInfo(null)
-                    setSwapAmount("")
-                    setSwapOutput("")
-                    setQuoteError(null)
+                    setSearchQuery("")
+                    setShowFilters(false)
                   }}
-                  disabled={isSwapping}
+                  className="gap-2"
                 >
-                  Cancel
+                  <X className="h-4 w-4" />
+                  Clear Filters
                 </Button>
-              </div>
-
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <p>
-                  Swaps use Uniswap V3 on Base network with live on-chain pricing. The system automatically detects
-                  available pools across all fee tiers.
-                </p>
-              </div>
+              )}
             </CardContent>
           </Card>
-        </div>
-      )}
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTracks.map((track) => (
+              <Card
+                key={track.id}
+                className="group relative overflow-hidden bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-1"
+              >
+                <div className="relative aspect-square overflow-hidden bg-muted">
+                  {!imagesLoaded.has(track.id) && <Skeleton className="absolute inset-0" />}
+                  <img
+                    src={track.cover_url || "/placeholder.svg?height=400&width=400"}
+                    alt={track.title}
+                    className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${
+                      imagesLoaded.has(track.id) ? "opacity-100" : "opacity-0"
+                    }`}
+                    onLoad={() => setImagesLoaded((prev) => new Set(prev).add(track.id))}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
-      {/* Token Detail Modal */}
-      {detailToken && <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} />}
+                  <Button
+                    size="icon"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100 bg-primary/90 hover:bg-primary backdrop-blur-sm shadow-2xl shadow-primary/50"
+                    onClick={() => handlePlay(track)}
+                  >
+                    {currentTrack?.id === track.id && isPlaying ? (
+                      <Pause className="h-8 w-8" />
+                    ) : (
+                      <Play className="h-8 w-8 ml-1" />
+                    )}
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-3 right-3 h-10 w-10 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-all duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite(track.id)
+                    }}
+                  >
+                    <Heart
+                      className={`h-5 w-5 transition-all duration-300 ${
+                        favorites.has(track.id) ? "fill-red-500 text-red-500 scale-110" : "text-white"
+                      }`}
+                    />
+                  </Button>
+
+                  <div className="absolute top-3 left-3 bg-gradient-to-r from-primary to-primary/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg">
+                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Coins className="h-3.5 w-3.5" />
+                      Tokenized
+                    </span>
+                  </div>
+                </div>
+
+                <CardHeader className="pb-3">
+                  <CardTitle className="line-clamp-1 text-lg">{track.title}</CardTitle>
+                  <CardDescription className="line-clamp-1 flex items-center gap-2">
+                    {track.artist_name}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-2">
+                    <span className="text-muted-foreground">Token Address</span>
+                    <a
+                      href={`https://basescan.org/token/${track.coin_address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1 font-medium"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      View <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-2">
+                    <span className="text-muted-foreground">Token Details</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDetailToken(track)}
+                      className="text-primary hover:underline h-auto p-0 font-medium"
+                    >
+                      View Details
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 bg-background/50 hover:bg-background border-border/50"
+                      onClick={() => handlePlay(track)}
+                    >
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <>
+                          <Pause className="h-4 w-4 mr-2" />
+                          Pause
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Play
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
+                      onClick={() => handleSwapClick(track)}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Swap
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="bg-background/50 hover:bg-background border-border/50"
+                      onClick={() => {
+                        if (!isConnected) {
+                          addToast({
+                            title: "Wallet Required",
+                            description: "Please connect your wallet to add liquidity",
+                            variant: "default",
+                          })
+                          connect()
+                          return
+                        }
+                        setSelectedLiquidityToken(track)
+                        setLiquidityDrawerOpen(true)
+                      }}
+                      title="Add Liquidity"
+                    >
+                      <Droplet className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {selectedTrack && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <Card className="w-full max-w-md bg-gradient-to-br from-card to-card/50 backdrop-blur-xl border-border/50 shadow-2xl">
+              <CardHeader className="border-b border-border/50">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="bg-gradient-to-br from-primary to-primary/50 p-2 rounded-lg">
+                    <Zap className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg">Swap for {selectedTrack.title}</div>
+                    <div className="text-sm font-normal text-muted-foreground">
+                      Exchange ETH for track tokens via Uniswap V3
+                    </div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                {isCheckingPool ? (
+                  <div className="flex items-center gap-3 text-sm bg-muted/50 rounded-xl p-4 border border-border/50">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span>Checking Uniswap V3 pools...</span>
+                  </div>
+                ) : poolInfo ? (
+                  <div className="flex items-center gap-3 text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="font-medium">Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
+                  </div>
+                ) : quoteError ? (
+                  <div className="flex items-start gap-3 text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-medium">{quoteError}</p>
+                      <p className="text-xs">
+                        Add liquidity on{" "}
+                        <a
+                          href="https://app.uniswap.org/add"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-amber-700 font-medium"
+                        >
+                          Uniswap
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  <Label htmlFor="swap-amount" className="text-sm font-medium">
+                    Amount (ETH)
+                  </Label>
+                  <Input
+                    id="swap-amount"
+                    type="number"
+                    placeholder="0.0"
+                    value={swapAmount}
+                    onChange={(e) => setSwapAmount(e.target.value)}
+                    className="text-lg h-14 bg-background/50 border-border/50 focus:border-primary/50"
+                    disabled={!poolInfo}
+                  />
+                </div>
+
+                {swapOutput && (
+                  <div className="space-y-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20">
+                    <Label className="text-sm font-medium text-muted-foreground">You will receive (estimated)</Label>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                      {Number.parseFloat(swapOutput).toFixed(2)} tokens
+                    </div>
+                  </div>
+                )}
+
+                {poolInfo && swapOutput && (
+                  <div className="rounded-xl bg-muted/50 p-4 space-y-3 text-sm border border-border/50">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Rate</span>
+                      <span className="font-medium">
+                        1 ETH ≈ {(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Pool Fee</span>
+                      <span className="font-medium">{(poolInfo.fee / 10000).toFixed(2)}%</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={() => handleSwap(selectedTrack)}
+                    disabled={
+                      !swapAmount || !poolInfo || !swapOutput || Number.parseFloat(swapAmount) <= 0 || isSwapping
+                    }
+                    className="flex-1 h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/25"
+                  >
+                    {isSwapping ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Swapping...
+                      </>
+                    ) : !poolInfo ? (
+                      <>
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        No Pool Available
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        Swap Now
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedTrack(null)
+                      setPoolInfo(null)
+                      setSwapAmount("")
+                      setSwapOutput("")
+                      setQuoteError(null)
+                    }}
+                    disabled={isSwapping}
+                    className="h-12 bg-background/50"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                <div className="flex items-start gap-3 text-xs text-muted-foreground bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                  <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p>
+                    Swaps use Uniswap V3 on Base network with live on-chain pricing. The system automatically detects
+                    available pools across all fee tiers.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Token Detail Modal */}
+        {detailToken && <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} />}
+
+        {selectedLiquidityToken && (
+          <AddLiquidityDrawer
+            open={liquidityDrawerOpen}
+            onOpenChange={setLiquidityDrawerOpen}
+            tokenAddress={selectedLiquidityToken.coin_address}
+            tokenName={selectedLiquidityToken.title}
+            tokenSymbol={selectedLiquidityToken.title.substring(0, 6).toUpperCase()}
+            tokenImage={selectedLiquidityToken.cover_url}
+          />
+        )}
+      </div>
     </div>
   )
 }
