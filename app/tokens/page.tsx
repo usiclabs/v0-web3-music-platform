@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AddLiquidityDrawer } from "@/components/add-liquidity-drawer"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { AnimatedCounter } from "@/components/animated-counter"
 import {
   Play,
   Pause,
@@ -576,7 +577,9 @@ export default function TokensPage() {
                 <Music className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">{stats.totalTokens}</p>
+                <p className="text-xl sm:text-2xl font-bold">
+                  <AnimatedCounter value={stats.totalTokens} />
+                </p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Total Tokens</p>
               </div>
             </div>
@@ -587,13 +590,13 @@ export default function TokensPage() {
                 <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               </div>
               <div>
-                {isLoadingMetrics ? (
-                  <Skeleton className="h-7 w-20 mb-1" />
-                ) : (
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {aggregateMetrics ? formatCurrency(aggregateMetrics.totalVolume24h) : "$0"}
-                  </p>
-                )}
+                <p className="text-xl sm:text-2xl font-bold">
+                  <AnimatedCounter
+                    value={aggregateMetrics?.totalVolume24h || 0}
+                    formatFn={formatCurrency}
+                    duration={1800}
+                  />
+                </p>
                 <p className="text-xs sm:text-sm text-muted-foreground">24h Volume</p>
               </div>
             </div>
@@ -604,13 +607,13 @@ export default function TokensPage() {
                 <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               </div>
               <div>
-                {isLoadingMetrics ? (
-                  <Skeleton className="h-7 w-20 mb-1" />
-                ) : (
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {aggregateMetrics ? formatCurrency(aggregateMetrics.totalMarketCap) : "$0"}
-                  </p>
-                )}
+                <p className="text-xl sm:text-2xl font-bold">
+                  <AnimatedCounter
+                    value={aggregateMetrics?.totalMarketCap || 0}
+                    formatFn={formatCurrency}
+                    duration={1800}
+                  />
+                </p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Market Cap</p>
               </div>
             </div>
