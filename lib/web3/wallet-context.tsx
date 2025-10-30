@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react"
 import { useAccount, useConnect, useDisconnect, useSwitchChain, useSignTypedData } from "wagmi"
 import { base } from "wagmi/chains"
 import type { Address } from "viem"
@@ -15,6 +15,7 @@ interface WalletContextType {
   signTypedData: (domain: any, types: any, value: any) => Promise<string>
   showMobileWalletModal: boolean
   setShowMobileWalletModal: (show: boolean) => void
+  isConnecting: boolean
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -26,6 +27,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const { switchChainAsync } = useSwitchChain()
   const { signTypedDataAsync } = useSignTypedData()
   const [showMobileWalletModal, setShowMobileWalletModal] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const connectionInProgressRef = useRef(false)
+  // </CHANGE>
 
   useEffect(() => {
     const autoConnectInjected = async () => {
@@ -53,6 +57,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [isConnected, connectors, connectAsync])
 
   const connect = async () => {
+    if (connectionInProgressRef.current || isConnecting) {
+      console.log("[v0] Connection already in progress, ignoring duplicate request")
+      return
+    }
+
+    connectionInProgressRef.current = true
+    setIsConnecting(true)
+    // </CHANGE>
+
     try {
       console.log("[v0] Manual wallet connection requested")
       console.log(
@@ -89,10 +102,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         if (error.message.includes("User rejected")) {
           return
         }
-        if (error.message.includes("Already processing")) {
-          alert("Connection already in progress. Please check your wallet app.")
+        if (error.message.includes("already pending") || error.message.includes("Already processing")) {
+          console.log("[v0] Connection request already pending, waiting for user response")
           return
         }
+        // </CHANGE>
         if (error.message.includes("Connector not found")) {
           if (typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
             setShowMobileWalletModal(true)
@@ -109,6 +123,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
 
       alert("Failed to connect wallet. Please try again or use a different wallet.")
+    } finally {
+      connectionInProgressRef.current = false
+      setIsConnecting(false)
+      // </CHANGE>
     }
   }
 
@@ -252,6 +270,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         signTypedData,
         showMobileWalletModal,
         setShowMobileWalletModal,
+        isConnecting,
       }}
     >
       {children}
