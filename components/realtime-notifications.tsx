@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
@@ -16,6 +16,7 @@ export function RealtimeNotifications() {
   const [streamStatus, setStreamStatus] = useState<string>("connecting")
   const [swapStatus, setSwapStatus] = useState<string>("connecting")
   const [showDebug, setShowDebug] = useState(false)
+  const hasShownErrorToast = useRef(false)
 
   useEffect(() => {
     console.log("[v0] RealtimeNotifications component mounted")
@@ -48,14 +49,12 @@ export function RealtimeNotifications() {
             currentUser: address,
           })
 
-          // Don't show notification for current user's own streams
           if (address && stream.listener_address.toLowerCase() === address.toLowerCase()) {
             console.log("[v0] Skipping notification - user's own stream")
             return
           }
 
           console.log("[v0] Fetching track and profile info...")
-          // Fetch track and user info
           const [trackResult, profileResult] = await Promise.all([
             supabase.from("tracks").select("title, artist_id").eq("id", stream.track_id).single(),
             supabase.from("profiles").select("artist_name").eq("wallet_address", stream.listener_address).single(),
@@ -98,11 +97,16 @@ export function RealtimeNotifications() {
       .subscribe((status) => {
         console.log("[v0] Stream channel subscription status:", status)
         setStreamStatus(status)
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT") && !hasShownErrorToast.current) {
           console.error("[v0] ❌ Stream channel subscription failed:", status)
-          console.error(
-            "[v0] Make sure Realtime is enabled on the 'streams' table in Supabase Dashboard > Database > Replication",
-          )
+          hasShownErrorToast.current = true
+          addToast({
+            title: "Real-time Notifications Disabled",
+            description:
+              "Run the 'enable_realtime_notifications.sql' script from the scripts folder to enable live activity notifications.",
+            variant: "error",
+            duration: 10000,
+          })
         }
       })
 
@@ -136,7 +140,6 @@ export function RealtimeNotifications() {
             currentUser: address,
           })
 
-          // Don't show notification for current user's own swaps
           if (address && swap.user_address.toLowerCase() === address.toLowerCase()) {
             console.log("[v0] Skipping notification - user's own swap")
             return
@@ -152,7 +155,6 @@ export function RealtimeNotifications() {
 
           console.log("[v0] Track lookup result:", track)
 
-          // Fetch user info
           const { data: profile } = await supabase
             .from("profiles")
             .select("artist_name")
@@ -232,29 +234,22 @@ export function RealtimeNotifications() {
         setSwapStatus(status)
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("[v0] ❌ Swap channel subscription failed:", status)
-          console.error(
-            "[v0] Make sure Realtime is enabled on the 'swap_history' table in Supabase Dashboard > Database > Replication",
-          )
         }
       })
 
     console.log("[v0] Both notification channels set up")
-    console.log(
-      "[v0] ⚠️ If you don't see notifications, make sure Realtime is enabled on 'streams' and 'swap_history' tables in Supabase",
-    )
 
-    // Cleanup subscriptions on unmount
     return () => {
       console.log("[v0] Cleaning up notification subscriptions")
       supabase.removeChannel(streamChannel)
       supabase.removeChannel(swapChannel)
+      hasShownErrorToast.current = false
     }
   }, [address, addToast, router, supabase])
 
   const testNotifications = () => {
     console.log("[v0] Testing toast notifications...")
 
-    // Test stream notification
     addToast({
       title: (
         <div className="flex items-center gap-2">
@@ -272,7 +267,6 @@ export function RealtimeNotifications() {
       duration: 5000,
     })
 
-    // Test token purchase notification
     setTimeout(() => {
       addToast({
         title: (

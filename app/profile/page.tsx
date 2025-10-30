@@ -182,64 +182,65 @@ export default function ProfilePage() {
           </div>
 
           <Tabs defaultValue="settings" className="w-full">
-            <div className="mb-6 sm:mb-8 relative overflow-hidden">
-              {/* Fade indicators for mobile scroll */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none sm:hidden" />
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none sm:hidden" />
-
-              <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-                <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:max-w-4xl sm:grid-cols-7 h-auto sm:h-10 p-1 gap-1">
-                  <TabsTrigger
-                    value="settings"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Settings</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="ai-creations"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>AI Creations</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="liked"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Liked</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="history"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <History className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>History</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="followers"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Followers</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="following"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Following</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="playlists"
-                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-4 sm:px-4 py-2"
-                  >
-                    <ListMusic className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span>Playlists</span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+            <div className="mb-6 sm:mb-8">
+              <TabsList className="grid grid-cols-7 w-full h-auto p-1 gap-1 bg-card/50 backdrop-blur-xl border border-border/50">
+                <TabsTrigger
+                  value="settings"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Settings"
+                >
+                  <User className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">Settings</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ai-creations"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="AI Creations"
+                >
+                  <Sparkles className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">AI</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="liked"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Liked Songs"
+                >
+                  <Heart className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">Liked</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Listening History"
+                >
+                  <History className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">History</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="followers"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Followers"
+                >
+                  <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">Followers</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="following"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Following"
+                >
+                  <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">Following</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="playlists"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                  title="Playlists"
+                >
+                  <ListMusic className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="hidden sm:inline text-sm">Playlists</span>
+                </TabsTrigger>
+              </TabsList>
             </div>
 
             <TabsContent value="settings">
@@ -252,7 +253,7 @@ export default function ProfilePage() {
                   <div className="mb-4 sm:mb-6">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="h-6 w-6 text-accent" />
-                      <h2 className="text-xl sm:text-2xl font-bold">Your AI Creations</h2>
+                      <h2 className="text-xl sm:text-2xl font-bold mb-2">Your AI Creations</h2>
                     </div>
                     <p className="text-sm sm:text-base text-muted-foreground">
                       {aiTracks.length} AI-generated {aiTracks.length === 1 ? "track" : "tracks"}

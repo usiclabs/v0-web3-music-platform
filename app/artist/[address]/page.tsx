@@ -310,36 +310,60 @@ export default async function ArtistPage({ params }: { params: { address: string
         </div>
 
         <Tabs defaultValue="tracks" className="w-full">
-          <TabsList className="grid w-full max-w-2xl grid-cols-6 mb-8">
-            <TabsTrigger value="tracks" className="flex items-center gap-2">
-              <Music className="h-4 w-4" />
-              Tracks
+          <TabsList className="grid w-full grid-cols-6 mb-8 bg-card/50 backdrop-blur-xl border border-border/50 p-1">
+            <TabsTrigger
+              value="tracks"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              title="Tracks"
+            >
+              <Music className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Tracks</span>
             </TabsTrigger>
-            <TabsTrigger value="ai-creations" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              AI
+            <TabsTrigger
+              value="ai-creations"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              title="AI Creations"
+            >
+              <Sparkles className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">AI</span>
             </TabsTrigger>
-            <TabsTrigger value="live" className="flex items-center gap-2">
-              <Radio className="h-4 w-4" />
-              Live
+            <TabsTrigger
+              value="live"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary relative"
+              title="Live Streams"
+            >
+              <Radio className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Live</span>
               {isCurrentlyLive && (
-                <span className="ml-1 flex h-2 w-2">
+                <span className="absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-500 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              History
+            <TabsTrigger
+              value="history"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              title="Listening History"
+            >
+              <Play className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">History</span>
             </TabsTrigger>
-            <TabsTrigger value="followers" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Followers
+            <TabsTrigger
+              value="followers"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              title="Followers"
+            >
+              <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Followers</span>
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Following
+            <TabsTrigger
+              value="following"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+              title="Following"
+            >
+              <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Following</span>
             </TabsTrigger>
           </TabsList>
 
