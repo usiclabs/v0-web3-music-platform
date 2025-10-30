@@ -528,7 +528,7 @@ export function TrackDetailContent({
       </main>
 
       {isTokenized && (
-        <div className="fixed bottom-20 sm:bottom-8 left-0 right-0 z-40 px-4 sm:px-6 animate-in slide-in-from-bottom-4 duration-500">
+        <div className="fixed bottom-20 sm:bottom-8 left-0 right-0 z-50 px-4 sm:px-6 animate-in slide-in-from-bottom-4 duration-500">
           <div className="container max-w-2xl mx-auto">
             <Button
               onClick={handleBuyClick}
