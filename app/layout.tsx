@@ -13,6 +13,7 @@ import { BlockchainTicker } from "@/components/blockchain-ticker"
 import { OnboardingModal } from "@/components/onboarding-modal"
 import { RealtimeNotifications } from "@/components/realtime-notifications"
 import { PageTransition } from "@/components/page-transition"
+import { ErrorBoundary } from "@/components/error-boundary"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -32,21 +33,22 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.className} antialiased`}>
-        <Web3Provider>
-          <AudioPlayerProvider>
-            <ToastProvider>
-              <Header />
-              <BlockchainTicker />
-              <PageTransition>{children}</PageTransition>
-              <AudioPlayer />
-              <X402PaymentModal />
-              <MobileBottomNav />
-              <OnboardingModal />
-              <RealtimeNotifications />
-            </ToastProvider>
-          </AudioPlayerProvider>
-        </Web3Provider>
-        {/* */}
+        <ErrorBoundary>
+          <Web3Provider>
+            <AudioPlayerProvider>
+              <ToastProvider>
+                <Header />
+                <BlockchainTicker />
+                <PageTransition>{children}</PageTransition>
+                <AudioPlayer />
+                <X402PaymentModal />
+                <MobileBottomNav />
+                <OnboardingModal />
+                <RealtimeNotifications />
+              </ToastProvider>
+            </AudioPlayerProvider>
+          </Web3Provider>
+        </ErrorBoundary>
         <Analytics />
       </body>
     </html>
