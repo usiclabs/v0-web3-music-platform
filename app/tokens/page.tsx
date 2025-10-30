@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import useSWR from "swr"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { TokenDetailModal } from "@/components/token-detail-modal"
+import { TokenDetailDrawer } from "@/components/token-detail-drawer"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AddLiquidityDrawer } from "@/components/add-liquidity-drawer"
@@ -94,6 +95,7 @@ export default function TokensPage() {
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [detailToken, setDetailToken] = useState<TokenizedTrack | null>(null)
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters] = useState(false)
   const [imagesLoaded, setImagesLoaded] = useState<Set<string>>(new Set())
@@ -104,12 +106,23 @@ export default function TokensPage() {
   const [priceFilter, setPriceFilter] = useState<"all" | "low" | "mid" | "high">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
-  const [aggregateMetrics, setAggregateMetrics] = useState<{
-    totalVolume24h: number
-    totalMarketCap: number
-    tokenCount: number
-  } | null>(null)
-  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true)
+  const { data: aggregateMetrics, error: metricsError } = useSWR(
+    "/api/tokens/aggregate-metrics",
+    async (url) => {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error("Failed to fetch aggregate metrics")
+      return response.json()
+    },
+    {
+      refreshInterval: 30000,
+      revalidateOnFocus: false,
+      dedupingInterval: 10000,
+      fallbackData: { totalVolume24h: 0, totalMarketCap: 0 }, // Added fallback data
+      onError: (err) => {
+        console.error("[v0] Failed to fetch aggregate metrics:", err)
+      },
+    },
+  )
 
   const [tokenMetrics, setTokenMetrics] = useState<Record<string, TokenMetrics>>({})
   const [loadingMetrics, setLoadingMetrics] = useState<Set<string>>(new Set())
@@ -132,23 +145,23 @@ export default function TokensPage() {
     loadTokenizedTracks()
   }, [sortBy])
 
-  useEffect(() => {
-    loadAggregateMetrics()
-  }, [])
+  // useEffect(() => {
+  //   loadAggregateMetrics()
+  // }, [])
 
-  const loadAggregateMetrics = async () => {
-    setIsLoadingMetrics(true)
-    try {
-      const response = await fetch("/api/tokens/aggregate-metrics")
-      if (!response.ok) throw new Error("Failed to fetch aggregate metrics")
-      const data = await response.json()
-      setAggregateMetrics(data)
-    } catch (error) {
-      console.error("[v0] Failed to load aggregate metrics:", error)
-    } finally {
-      setIsLoadingMetrics(false)
-    }
-  }
+  // const loadAggregateMetrics = async () => {
+  //   setIsLoadingMetrics(true)
+  //   try {
+  //     const response = await fetch("/api/tokens/aggregate-metrics")
+  //     if (!response.ok) throw new Error("Failed to fetch aggregate metrics")
+  //     const data = await response.json()
+  //     setAggregateMetrics(data)
+  //   } catch (error) {
+  //     console.error("[v0] Failed to load aggregate metrics:", error)
+  //   } finally {
+  //     setIsLoadingMetrics(false)
+  //   }
+  // }
 
   const loadTokenizedTracks = async () => {
     setIsLoading(true)
@@ -538,6 +551,11 @@ export default function TokensPage() {
       return `${(value / 1_000).toFixed(2)}K`
     }
     return value.toFixed(2)
+  }
+
+  const handleViewDetails = (track: TokenizedTrack) => {
+    setDetailToken(track)
+    setDetailDrawerOpen(true)
   }
 
   return (
@@ -963,7 +981,7 @@ export default function TokensPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setDetailToken(track)}
+                        onClick={() => handleViewDetails(track)}
                         className="text-primary hover:underline h-auto p-0 font-medium touch-manipulation"
                       >
                         View Details
@@ -1020,7 +1038,8 @@ export default function TokensPage() {
       </main>
 
       {/* Token Detail Modal */}
-      {detailToken && <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} />}
+      {/* <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} /> */}
+      <TokenDetailDrawer token={detailToken} open={detailDrawerOpen} onOpenChange={setDetailDrawerOpen} />
 
       {/* Swap Drawer Sheet */}
       <Sheet open={!!selectedTrack} onOpenChange={handleSwapSheetChange}>
