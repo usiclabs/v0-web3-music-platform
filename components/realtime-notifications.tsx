@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp } from "lucide-react"
+import { Music, TrendingUp, Coins } from "lucide-react"
 
 export function RealtimeNotifications() {
   const { addToast } = useToast()
@@ -17,7 +17,6 @@ export function RealtimeNotifications() {
     console.log("[v0] RealtimeNotifications component mounted")
     console.log("[v0] Current wallet address:", address)
 
-    // Subscribe to new stream events
     console.log("[v0] Setting up stream notifications channel...")
     const streamChannel = supabase
       .channel("stream-notifications")
@@ -35,11 +34,13 @@ export function RealtimeNotifications() {
             listener_address: string
             track_id: string
             started_at: string
+            chunks_played: number
           }
 
           console.log("[v0] Stream data:", {
             listener: stream.listener_address,
             track: stream.track_id,
+            chunks: stream.chunks_played,
             currentUser: address,
           })
 
@@ -64,14 +65,13 @@ export function RealtimeNotifications() {
             profileResult.data?.artist_name ||
             `${stream.listener_address.slice(0, 6)}...${stream.listener_address.slice(-4)}`
 
-          console.log("[v0] Showing stream notification:", { username, trackTitle })
+          console.log("[v0] Showing stream unlock notification:", { username, trackTitle })
 
-          // Show clickable toast notification
           addToast({
             title: (
               <div className="flex items-center gap-2">
-                <Music className="h-4 w-4 text-accent" />
-                <span>New Stream</span>
+                <Music className="h-4 w-4 text-green-500" />
+                <span>Song Unlocked</span>
               </div>
             ),
             description: (
@@ -82,8 +82,8 @@ export function RealtimeNotifications() {
                   router.push(`/track/${stream.track_id}`)
                 }}
               >
-                <span className="font-medium">{username}</span> just streamed{" "}
-                <span className="font-medium text-accent">{trackTitle}</span>
+                <span className="font-medium">{username}</span> just unlocked{" "}
+                <span className="font-medium text-green-500">{trackTitle}</span>
               </div>
             ),
             variant: "default",
@@ -95,7 +95,6 @@ export function RealtimeNotifications() {
         console.log("[v0] Stream channel subscription status:", status)
       })
 
-    // Subscribe to token buying activity (swap_history)
     console.log("[v0] Setting up swap notifications channel...")
     const swapChannel = supabase
       .channel("swap-notifications")
@@ -132,13 +131,16 @@ export function RealtimeNotifications() {
             return
           }
 
-          // Only show notifications for $USI purchases (when token_out is USI)
-          if (swap.token_out !== "USI") {
-            console.log("[v0] Skipping notification - not a USI purchase, token_out:", swap.token_out)
-            return
-          }
+          console.log("[v0] Fetching user profile and checking if token is a music token...")
 
-          console.log("[v0] Fetching user profile for swap notification...")
+          const { data: track } = await supabase
+            .from("tracks")
+            .select("title, coin_address, artist_id")
+            .eq("coin_address", swap.token_out)
+            .single()
+
+          console.log("[v0] Track lookup result:", track)
+
           // Fetch user info
           const { data: profile } = await supabase
             .from("profiles")
@@ -149,33 +151,69 @@ export function RealtimeNotifications() {
           console.log("[v0] Profile result:", profile)
 
           const username = profile?.artist_name || `${swap.user_address.slice(0, 6)}...${swap.user_address.slice(-4)}`
-          const amount = Number.parseFloat(swap.amount_out).toFixed(2)
 
-          console.log("[v0] Showing swap notification:", { username, amount })
+          if (track) {
+            const amount = Number.parseFloat(swap.amount_out).toFixed(2)
+            console.log("[v0] Showing tokenized music purchase notification:", {
+              username,
+              trackTitle: track.title,
+              amount,
+            })
 
-          // Show clickable toast notification
-          addToast({
-            title: (
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-accent" />
-                <span>Token Activity</span>
-              </div>
-            ),
-            description: (
-              <div
-                className="cursor-pointer hover:underline"
-                onClick={() => {
-                  console.log("[v0] Navigating to swap page")
-                  router.push("/swap")
-                }}
-              >
-                <span className="font-medium">{username}</span> bought{" "}
-                <span className="font-medium text-accent">{amount} $USI</span>
-              </div>
-            ),
-            variant: "default",
-            duration: 8000,
-          })
+            addToast({
+              title: (
+                <div className="flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-accent" />
+                  <span>Token Purchased</span>
+                </div>
+              ),
+              description: (
+                <div
+                  className="cursor-pointer hover:underline"
+                  onClick={() => {
+                    console.log("[v0] Navigating to tokens page")
+                    router.push("/tokens")
+                  }}
+                >
+                  <span className="font-medium">{username}</span> bought{" "}
+                  <span className="font-medium text-accent">
+                    {amount} ${track.title}
+                  </span>{" "}
+                  tokens
+                </div>
+              ),
+              variant: "default",
+              duration: 8000,
+            })
+          } else if (swap.token_out === "USI") {
+            const amount = Number.parseFloat(swap.amount_out).toFixed(2)
+            console.log("[v0] Showing USI purchase notification:", { username, amount })
+
+            addToast({
+              title: (
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                  <span>Platform Token Activity</span>
+                </div>
+              ),
+              description: (
+                <div
+                  className="cursor-pointer hover:underline"
+                  onClick={() => {
+                    console.log("[v0] Navigating to swap page")
+                    router.push("/swap")
+                  }}
+                >
+                  <span className="font-medium">{username}</span> bought{" "}
+                  <span className="font-medium text-accent">{amount} $USI</span>
+                </div>
+              ),
+              variant: "default",
+              duration: 8000,
+            })
+          } else {
+            console.log("[v0] Skipping notification - not a music token or USI purchase")
+          }
         },
       )
       .subscribe((status) => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import useSWR from "swr"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useAudioPlayer } from "@/lib/audio-player-context"
@@ -126,6 +126,8 @@ export default function TokensPage() {
 
   const [tokenMetrics, setTokenMetrics] = useState<Record<string, TokenMetrics>>({})
   const [loadingMetrics, setLoadingMetrics] = useState<Set<string>>(new Set())
+
+  const fetchedTokensRef = useRef<Set<string>>(new Set())
 
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient()
@@ -269,8 +271,12 @@ export default function TokensPage() {
   }, [selectedTrack, chainId])
 
   const checkPoolAvailability = async (tokenAddress: string) => {
-    if (!chainId || !publicClient) return
+    if (!chainId || !publicClient) {
+      console.log("[v0] Cannot check pool: missing chainId or publicClient")
+      return
+    }
 
+    console.log("[v0] Checking pool availability for token:", tokenAddress)
     setIsCheckingPool(true)
     setPoolInfo(null)
     setQuoteError(null)
@@ -279,24 +285,36 @@ export default function TokensPage() {
       const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
       const feeTiers = [500, 3000, 10000]
 
-      for (const fee of feeTiers) {
-        const poolAddress = await publicClient.readContract({
-          address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
-          abi: UNISWAP_V3_FACTORY_ABI,
-          functionName: "getPool",
-          args: [wethAddress as `0x${string}`, tokenAddress as `0x${string}`, fee],
-        })
+      console.log("[v0] Checking fee tiers:", feeTiers)
 
-        if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
-          setPoolInfo({ address: poolAddress as string, fee })
-          return
+      for (const fee of feeTiers) {
+        try {
+          console.log("[v0] Checking fee tier:", fee)
+          const poolAddress = await publicClient.readContract({
+            address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
+            abi: UNISWAP_V3_FACTORY_ABI,
+            functionName: "getPool",
+            args: [wethAddress as `0x${string}`, tokenAddress as `0x${string}`, fee],
+          })
+
+          console.log("[v0] Pool address for fee tier", fee, ":", poolAddress)
+
+          if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
+            console.log("[v0] Pool found at:", poolAddress, "with fee:", fee)
+            setPoolInfo({ address: poolAddress as string, fee })
+            return
+          }
+        } catch (error) {
+          console.error("[v0] Error checking fee tier", fee, ":", error)
+          // Continue to next fee tier
         }
       }
 
+      console.log("[v0] No pool found for token:", tokenAddress)
       setQuoteError("No Uniswap V3 pool found for this token. Liquidity needs to be added first.")
     } catch (error) {
       console.error("[v0] Failed to check pool:", error)
-      setQuoteError("Failed to check pool availability")
+      setQuoteError("Failed to check pool availability. Please try again.")
     } finally {
       setIsCheckingPool(false)
     }
@@ -425,7 +443,9 @@ export default function TokensPage() {
       return
     }
     console.log("[v0] Opening swap drawer")
-    setSelectedTrack(track)
+    setTimeout(() => {
+      setSelectedTrack(track)
+    }, 50)
   }
 
   const handleSwapSheetChange = (open: boolean) => {
@@ -508,40 +528,43 @@ export default function TokensPage() {
     return `$${value.toFixed(2)}`
   }
 
-  useEffect(() => {
-    filteredTracks.forEach((track) => {
-      if (track.coin_address && !tokenMetrics[track.coin_address]) {
-        fetchTokenMetrics(track.coin_address)
+  const fetchTokenMetrics = useCallback(
+    async (tokenAddress: string) => {
+      // Prevent duplicate fetches
+      if (
+        fetchedTokensRef.current.has(tokenAddress) ||
+        loadingMetrics.has(tokenAddress) ||
+        tokenMetrics[tokenAddress]
+      ) {
+        return
       }
-    })
-  }, [filteredTracks])
 
-  const fetchTokenMetrics = async (tokenAddress: string) => {
-    if (loadingMetrics.has(tokenAddress) || tokenMetrics[tokenAddress]) {
-      return // Already loading or loaded
-    }
+      fetchedTokensRef.current.add(tokenAddress)
+      setLoadingMetrics((prev) => new Set(prev).add(tokenAddress))
 
-    setLoadingMetrics((prev) => new Set(prev).add(tokenAddress))
+      try {
+        const response = await fetch(`/api/token/metrics/${tokenAddress}`)
+        if (!response.ok) throw new Error("Failed to fetch token metrics")
 
-    try {
-      const response = await fetch(`/api/token/metrics/${tokenAddress}`)
-      if (!response.ok) throw new Error("Failed to fetch token metrics")
-
-      const data = await response.json()
-      setTokenMetrics((prev) => ({
-        ...prev,
-        [tokenAddress]: data,
-      }))
-    } catch (error) {
-      console.error("[v0] Failed to fetch token metrics:", error)
-    } finally {
-      setLoadingMetrics((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(tokenAddress)
-        return newSet
-      })
-    }
-  }
+        const data = await response.json()
+        setTokenMetrics((prev) => ({
+          ...prev,
+          [tokenAddress]: data,
+        }))
+      } catch (error) {
+        console.error("[v0] Failed to fetch token metrics:", error)
+        // Remove from fetched set so we can retry later
+        fetchedTokensRef.current.delete(tokenAddress)
+      } finally {
+        setLoadingMetrics((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(tokenAddress)
+          return newSet
+        })
+      }
+    },
+    [loadingMetrics, tokenMetrics],
+  )
 
   const formatNumber = (value: number): string => {
     if (value >= 1_000_000) {
@@ -557,6 +580,22 @@ export default function TokensPage() {
     setDetailToken(track)
     setDetailDrawerOpen(true)
   }
+
+  useEffect(() => {
+    // Only fetch metrics for visible tokens (first 20)
+    const visibleTracks = filteredTracks.slice(0, 20)
+
+    // Batch the fetches with a small delay to prevent overwhelming the API
+    const timeoutId = setTimeout(() => {
+      visibleTracks.forEach((track) => {
+        if (track.coin_address && !fetchedTokensRef.current.has(track.coin_address)) {
+          fetchTokenMetrics(track.coin_address)
+        }
+      })
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
+  }, [filteredTracks, fetchTokenMetrics])
 
   return (
     <div className="min-h-screen bg-black pb-32">
@@ -1014,7 +1053,10 @@ export default function TokensPage() {
                       </Button>
                       <Button
                         className="flex-1 h-11 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 touch-manipulation"
-                        onClick={() => handleSwapClick(track)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSwapClick(track)
+                        }}
                       >
                         <Zap className="h-4 w-4 mr-2" />
                         Swap
@@ -1023,7 +1065,10 @@ export default function TokensPage() {
                         variant="outline"
                         size="icon"
                         className="h-11 w-11 glass-premium hover:bg-background border-border/50 touch-manipulation hover-lift bg-transparent"
-                        onClick={() => handleLiquidityClick(track)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleLiquidityClick(track)
+                        }}
                         title="Add Liquidity"
                       >
                         <Droplet className="h-4 w-4" />
