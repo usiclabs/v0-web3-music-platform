@@ -1,17 +1,21 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp, Coins } from "lucide-react"
+import { Music, TrendingUp, Coins, Bell, BellOff } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export function RealtimeNotifications() {
   const { addToast } = useToast()
   const router = useRouter()
   const { address } = useWallet()
   const supabase = createClient()
+  const [streamStatus, setStreamStatus] = useState<string>("connecting")
+  const [swapStatus, setSwapStatus] = useState<string>("connecting")
+  const [showDebug, setShowDebug] = useState(false)
 
   useEffect(() => {
     console.log("[v0] RealtimeNotifications component mounted")
@@ -28,7 +32,7 @@ export function RealtimeNotifications() {
           table: "streams",
         },
         async (payload) => {
-          console.log("[v0] Stream event received:", payload)
+          console.log("[v0] ✅ Stream event received:", payload)
 
           const stream = payload.new as {
             listener_address: string
@@ -93,6 +97,13 @@ export function RealtimeNotifications() {
       )
       .subscribe((status) => {
         console.log("[v0] Stream channel subscription status:", status)
+        setStreamStatus(status)
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error("[v0] ❌ Stream channel subscription failed:", status)
+          console.error(
+            "[v0] Make sure Realtime is enabled on the 'streams' table in Supabase Dashboard > Database > Replication",
+          )
+        }
       })
 
     console.log("[v0] Setting up swap notifications channel...")
@@ -106,7 +117,7 @@ export function RealtimeNotifications() {
           table: "swap_history",
         },
         async (payload) => {
-          console.log("[v0] Swap event received:", payload)
+          console.log("[v0] ✅ Swap event received:", payload)
 
           const swap = payload.new as {
             user_address: string
@@ -218,9 +229,19 @@ export function RealtimeNotifications() {
       )
       .subscribe((status) => {
         console.log("[v0] Swap channel subscription status:", status)
+        setSwapStatus(status)
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error("[v0] ❌ Swap channel subscription failed:", status)
+          console.error(
+            "[v0] Make sure Realtime is enabled on the 'swap_history' table in Supabase Dashboard > Database > Replication",
+          )
+        }
       })
 
     console.log("[v0] Both notification channels set up")
+    console.log(
+      "[v0] ⚠️ If you don't see notifications, make sure Realtime is enabled on 'streams' and 'swap_history' tables in Supabase",
+    )
 
     // Cleanup subscriptions on unmount
     return () => {
@@ -230,5 +251,84 @@ export function RealtimeNotifications() {
     }
   }, [address, addToast, router, supabase])
 
-  return null // This component doesn't render anything
+  const testNotifications = () => {
+    console.log("[v0] Testing toast notifications...")
+
+    // Test stream notification
+    addToast({
+      title: (
+        <div className="flex items-center gap-2">
+          <Music className="h-4 w-4 text-green-500" />
+          <span>Song Unlocked (Test)</span>
+        </div>
+      ),
+      description: (
+        <div>
+          <span className="font-medium">Test User</span> just unlocked{" "}
+          <span className="font-medium text-green-500">Test Track</span>
+        </div>
+      ),
+      variant: "default",
+      duration: 5000,
+    })
+
+    // Test token purchase notification
+    setTimeout(() => {
+      addToast({
+        title: (
+          <div className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-accent" />
+            <span>Token Purchased (Test)</span>
+          </div>
+        ),
+        description: (
+          <div>
+            <span className="font-medium">Test User</span> bought{" "}
+            <span className="font-medium text-accent">100 $TEST</span> tokens
+          </div>
+        ),
+        variant: "default",
+        duration: 5000,
+      })
+    }, 1000)
+
+    console.log("[v0] Test notifications triggered")
+  }
+
+  if (process.env.NODE_ENV === "development" || showDebug) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+        <div className="rounded-lg border border-border bg-background/95 p-3 text-xs backdrop-blur-sm">
+          <div className="mb-2 flex items-center gap-2 font-semibold">
+            {streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED" ? (
+              <Bell className="h-4 w-4 text-green-500" />
+            ) : (
+              <BellOff className="h-4 w-4 text-red-500" />
+            )}
+            <span>Notifications</span>
+          </div>
+          <div className="space-y-1 text-muted-foreground">
+            <div>
+              Streams:{" "}
+              <span className={streamStatus === "SUBSCRIBED" ? "text-green-500" : "text-yellow-500"}>
+                {streamStatus}
+              </span>
+            </div>
+            <div>
+              Swaps:{" "}
+              <span className={swapStatus === "SUBSCRIBED" ? "text-green-500" : "text-yellow-500"}>{swapStatus}</span>
+            </div>
+          </div>
+          <Button size="sm" onClick={testNotifications} className="mt-2 w-full">
+            Test Notifications
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowDebug(false)} className="mt-1 w-full text-xs">
+            Hide Debug
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return null
 }
