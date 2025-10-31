@@ -178,7 +178,7 @@ export default function TokensPage() {
             artist_name
           )
         `)
-        .not("coin_address", "is", null)
+        .or("coin_address.not.is.null,nft_contract_address.not.is.null")
         .eq("is_active", true)
 
       if (sortBy === "recent") {
@@ -1084,7 +1084,12 @@ export default function TokensPage() {
 
       {/* Token Detail Modal */}
       {/* <TokenDetailModal token={detailToken} onClose={() => setDetailToken(null)} /> */}
-      <TokenDetailDrawer token={detailToken} open={detailDrawerOpen} onOpenChange={setDetailDrawerOpen} />
+      <TokenDetailDrawer
+        token={detailToken}
+        open={detailDrawerOpen}
+        onOpenChange={setDetailDrawerOpen}
+        metrics={detailToken ? tokenMetrics[detailToken.coin_address] : undefined}
+      />
 
       {/* Swap Drawer Sheet */}
       <Sheet open={!!selectedTrack} onOpenChange={handleSwapSheetChange}>

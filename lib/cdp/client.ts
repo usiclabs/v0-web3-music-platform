@@ -1,4 +1,4 @@
-import { Coinbase, type Wallet } from "@coinbase/coinbase-sdk"
+import { Coinbase, Wallet } from "@coinbase/coinbase-sdk"
 
 // CDP Client singleton
 let cdpClient: Coinbase | null = null
@@ -21,9 +21,12 @@ export function getCDPClient(): Coinbase {
     )
   }
 
-  cdpClient = Coinbase.configureFromJson({
+  // Handle multiline private keys (replace escaped newlines with actual newlines)
+  const formattedPrivateKey = privateKey.replace(/\\n/g, "\n")
+
+  cdpClient = new Coinbase({
     apiKeyName,
-    privateKey,
+    privateKey: formattedPrivateKey,
   })
 
   console.log("[CDP] Client initialized successfully")
@@ -38,31 +41,64 @@ export function getCDPClient(): Coinbase {
  * - Platform operations
  */
 export async function getServerWallet(): Promise<Wallet> {
-  const client = getCDPClient()
+  getCDPClient()
 
   // Try to load existing wallet from environment
   const walletData = process.env.CDP_SERVER_WALLET_DATA
 
   if (walletData) {
     try {
-      const wallet = await client.importWallet(JSON.parse(walletData))
-      console.log("[CDP] Server wallet loaded from environment")
+      console.log("[CDP] Attempting to load server wallet from environment...")
+      console.log(`[CDP] Wallet data preview: ${walletData.substring(0, 50)}...`)
+
+      let parsedData: any
+
+      try {
+        // First, try direct JSON parse
+        parsedData = JSON.parse(walletData)
+      } catch (jsonError) {
+        console.log("[CDP] Direct JSON parse failed, attempting base64 decode...")
+
+        try {
+          // Try base64 decode then JSON parse
+          const decoded = Buffer.from(walletData, "base64").toString("utf-8")
+          parsedData = JSON.parse(decoded)
+          console.log("[CDP] Successfully decoded base64 wallet data")
+        } catch (base64Error) {
+          throw new Error(
+            `Wallet data is not valid JSON or base64-encoded JSON. ` +
+              `Expected format: JSON object from wallet.export(). ` +
+              `Data preview: ${walletData.substring(0, 50)}...`,
+          )
+        }
+      }
+
+      const wallet = await Wallet.import(parsedData)
+      console.log("[CDP] Server wallet loaded successfully")
       return wallet
     } catch (error) {
       console.error("[CDP] Failed to load server wallet:", error)
+      throw new Error(`Failed to load server wallet: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  // Create new wallet if none exists
-  console.log("[CDP] Creating new server wallet...")
-  const wallet = await client.createWallet({
-    networkId: "base-mainnet",
+  console.log("[CDP] No CDP_SERVER_WALLET_DATA found. Creating new server wallet...")
+  const wallet = await Wallet.create({
+    networkId: Coinbase.networks.BaseMainnet,
   })
 
   // Export wallet data for persistence
   const exportedData = await wallet.export()
-  console.log("[CDP] Server wallet created. Save this data to CDP_SERVER_WALLET_DATA environment variable:")
-  console.log(JSON.stringify(exportedData))
+  const exportedJson = JSON.stringify(exportedData)
+
+  console.log("[CDP] ========================================")
+  console.log("[CDP] NEW SERVER WALLET CREATED")
+  console.log("[CDP] ========================================")
+  console.log("[CDP] Save this JSON data to your CDP_SERVER_WALLET_DATA environment variable:")
+  console.log(exportedJson)
+  console.log("[CDP] ========================================")
+  console.log("[CDP] Wallet address:", await wallet.getDefaultAddress())
+  console.log("[CDP] ========================================")
 
   return wallet
 }
@@ -138,4 +174,71 @@ export async function batchSendTokens(
  */
 export function isCDPConfigured(): boolean {
   return !!(process.env.CDP_API_KEY_NAME && process.env.CDP_API_KEY_PRIVATE_KEY)
+}
+
+// Additional functionality for handling different networks
+export async function getWalletForNetwork(networkId: string): Promise<Wallet> {
+  const walletData = process.env[`CDP_SERVER_WALLET_DATA_${networkId.toUpperCase()}`]
+
+  if (walletData) {
+    try {
+      console.log(`[CDP] Attempting to load server wallet for network ${networkId} from environment...`)
+      console.log(`[CDP] Wallet data preview: ${walletData.substring(0, 50)}...`)
+
+      let parsedData: any
+
+      try {
+        // First, try direct JSON parse
+        parsedData = JSON.parse(walletData)
+      } catch (jsonError) {
+        console.log("[CDP] Direct JSON parse failed, attempting base64 decode...")
+
+        try {
+          // Try base64 decode then JSON parse
+          const decoded = Buffer.from(walletData, "base64").toString("utf-8")
+          parsedData = JSON.parse(decoded)
+          console.log("[CDP] Successfully decoded base64 wallet data")
+        } catch (base64Error) {
+          throw new Error(
+            `Wallet data is not valid JSON or base64-encoded JSON. ` +
+              `Expected format: JSON object from wallet.export(). ` +
+              `Data preview: ${walletData.substring(0, 50)}...`,
+          )
+        }
+      }
+
+      const wallet = await Wallet.import(parsedData)
+      console.log(`[CDP] Server wallet for network ${networkId} loaded successfully`)
+      return wallet
+    } catch (error) {
+      console.error(`[CDP] Failed to load server wallet for network ${networkId}:`, error)
+      throw new Error(
+        `Failed to load server wallet for network ${networkId}: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
+
+  console.log(
+    `[CDP] No CDP_SERVER_WALLET_DATA_${networkId.toUpperCase()} found. Creating new server wallet for network ${networkId}...`,
+  )
+  const wallet = await Wallet.create({
+    networkId,
+  })
+
+  // Export wallet data for persistence
+  const exportedData = await wallet.export()
+  const exportedJson = JSON.stringify(exportedData)
+
+  console.log("[CDP] ========================================")
+  console.log(`[CDP] NEW SERVER WALLET CREATED FOR NETWORK ${networkId.toUpperCase()}`)
+  console.log("[CDP] ========================================")
+  console.log(
+    `[CDP] Save this JSON data to your CDP_SERVER_WALLET_DATA_${networkId.toUpperCase()} environment variable:`,
+  )
+  console.log(exportedJson)
+  console.log("[CDP] ========================================")
+  console.log(`[CDP] Wallet address:`, await wallet.getDefaultAddress())
+  console.log("[CDP] ========================================")
+
+  return wallet
 }

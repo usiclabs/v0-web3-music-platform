@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Plus, X, Upload, Loader2, Music, Video, Coins, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase/client"
@@ -43,6 +44,7 @@ export function UploadForm() {
   const [royaltySplits, setRoyaltySplits] = useState<RoyaltySplit[]>([{ address: address || "", percentage: 100 }])
 
   const [tokenizeTrack, setTokenizeTrack] = useState(false)
+  const [deploymentMethod, setDeploymentMethod] = useState<"zora" | "clanker">("zora")
   const [coinName, setCoinName] = useState("")
   const [coinSymbol, setCoinSymbol] = useState("")
   const [createdTrackId, setCreatedTrackId] = useState<string | null>(null)
@@ -68,8 +70,9 @@ export function UploadForm() {
     },
   })
 
-  const REQUIRED_USI_BALANCE = BigInt("1000000000000000000000000") // 1,000,000 * 10^18
-  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_USI_BALANCE : false
+  const REQUIRED_USI_BALANCE = BigInt("0") // Temporarily 0 for testing (was 1,000,000 * 10^18)
+  const hasRequiredUSI =
+    REQUIRED_USI_BALANCE === BigInt("0") || (usiBalance ? (usiBalance as bigint) >= REQUIRED_USI_BALANCE : false)
   const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
 
   useEffect(() => {
@@ -149,6 +152,85 @@ export function UploadForm() {
   }
 
   const totalPercentage = royaltySplits.reduce((sum, split) => sum + Number(split.percentage), 0)
+
+  const createClankerToken = async (trackId: string, coverImageUrl: string | null) => {
+    if (!address || !tokenizeTrack) return
+
+    try {
+      setUploadProgress("Deploying token via Clanker...")
+      setCoinCreationStarted(true)
+      console.log("[v0] Creating Clanker token for track:", trackId)
+
+      const response = await fetch("/api/tokens/deploy-clanker", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: coinName || title,
+          symbol: coinSymbol || title.slice(0, 5).toUpperCase(),
+          deployerAddress: address,
+          trackId,
+          coverImageUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to deploy token via Clanker")
+      }
+
+      const { tokenAddress } = await response.json()
+      console.log("[v0] Clanker token deployed:", tokenAddress)
+
+      setUploadProgress("Token deployed successfully!")
+
+      const supabase = createBrowserClient()
+      const { error: updateError } = await supabase
+        .from("tracks")
+        .update({ coin_address: tokenAddress })
+        .eq("id", trackId)
+
+      if (updateError) {
+        console.error("[v0] Failed to update track with token address:", updateError)
+        throw new Error("Failed to save token address")
+      }
+
+      console.log("[v0] Track updated with token address:", tokenAddress)
+
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
+        gravity: 1.2,
+      })
+
+      setTimeout(() => {
+        setIsLoading(false)
+        setUploadProgress("")
+        setCoinCreationStarted(false)
+        router.push("/dashboard")
+      }, 2000)
+    } catch (err) {
+      console.error("[v0] Failed to create Clanker token:", err)
+      const errorMessage = err instanceof Error ? err.message : "Unknown error"
+      setError(`✅ Track uploaded successfully! However, token deployment failed: ${errorMessage}`)
+      setCoinCreationStarted(false)
+
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
+      })
+
+      setTimeout(() => {
+        setIsLoading(false)
+        router.push("/dashboard")
+      }, 3000)
+    }
+  }
 
   const createZoraCoin = async (trackId: string, coverImageUrl: string | null) => {
     if (!address || !tokenizeTrack) return
@@ -243,11 +325,11 @@ export function UploadForm() {
 
     if (tokenizeTrack) {
       if (!coinName || !coinSymbol) {
-        setError("Please provide coin name and symbol")
+        setError("Please provide token name and symbol")
         return
       }
       if (coinSymbol.length < 2 || coinSymbol.length > 5) {
-        setError("Coin symbol must be 2-5 characters")
+        setError("Token symbol must be 2-5 characters")
         return
       }
     }
@@ -457,11 +539,15 @@ export function UploadForm() {
 
       if (tokenizeTrack) {
         try {
-          await createZoraCoin(track.id, uploadedCoverUrl)
+          if (deploymentMethod === "clanker") {
+            await createClankerToken(track.id, uploadedCoverUrl)
+          } else {
+            await createZoraCoin(track.id, uploadedCoverUrl)
+          }
           return
         } catch (coinError) {
-          console.error("[v0] Coin creation failed, but track uploaded:", coinError)
-          // Continue to success flow even if coin creation fails
+          console.error("[v0] Token creation failed, but track uploaded:", coinError)
+          // Continue to success flow even if token creation fails
         }
       }
 
@@ -643,9 +729,7 @@ export function UploadForm() {
             <Coins className="h-6 w-6 text-accent" />
             <div>
               <h2 className="text-xl font-semibold">Tokenize Your {contentType === "audio" ? "Track" : "Video"}</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create a coin on Zora for your {contentType} (powered by Base)
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Create a tradeable token for your {contentType}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -691,15 +775,57 @@ export function UploadForm() {
 
         {tokenizeTrack && (
           <div className="space-y-4 pt-4 border-t border-border/50">
+            <div>
+              <Label className="mb-3 block">Deployment Method</Label>
+              <RadioGroup
+                value={deploymentMethod}
+                onValueChange={(value) => setDeploymentMethod(value as "zora" | "clanker")}
+              >
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                      deploymentMethod === "zora"
+                        ? "border-accent bg-accent/10"
+                        : "border-border/50 bg-card/30 hover:border-border"
+                    }`}
+                  >
+                    <RadioGroupItem value="zora" id="zora" className="mt-1" />
+                    <Label htmlFor="zora" className="flex-1 cursor-pointer">
+                      <div className="font-semibold mb-1">Zora</div>
+                      <div className="text-xs text-muted-foreground">
+                        Create a coin on Zora with custom bonding curve
+                      </div>
+                    </Label>
+                  </div>
+                  <div
+                    className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                      deploymentMethod === "clanker"
+                        ? "border-accent bg-accent/10"
+                        : "border-border/50 bg-card/30 hover:border-border"
+                    }`}
+                  >
+                    <RadioGroupItem value="clanker" id="clanker" className="mt-1" />
+                    <Label htmlFor="clanker" className="flex-1 cursor-pointer">
+                      <div className="font-semibold mb-1">Clanker</div>
+                      <div className="text-xs text-muted-foreground">Deploy ERC20 with auto Uniswap v4 pool</div>
+                    </Label>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
               <p className="text-sm text-muted-foreground">
-                Creating a coin allows fans to invest in your {contentType}. They can buy, sell, and trade your coin on
-                Zora, creating a market for your work.
+                {deploymentMethod === "zora"
+                  ? "Creating a coin allows fans to invest in your " +
+                    contentType +
+                    ". They can buy, sell, and trade your coin on Zora, creating a market for your work."
+                  : "Clanker deploys a standard ERC20 token with automatic Uniswap v4 liquidity pool creation, making your token instantly tradeable with fair price distribution."}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="coinName">Coin Name</Label>
+              <Label htmlFor="coinName">Token Name</Label>
               <Input
                 id="coinName"
                 value={coinName}
@@ -708,11 +834,11 @@ export function UploadForm() {
                 required={tokenizeTrack}
                 className="bg-card/50 backdrop-blur-xl border border-border/50"
               />
-              <p className="text-xs text-muted-foreground mt-1">The full name of your coin</p>
+              <p className="text-xs text-muted-foreground mt-1">The full name of your token</p>
             </div>
 
             <div>
-              <Label htmlFor="coinSymbol">Coin Symbol (Ticker)</Label>
+              <Label htmlFor="coinSymbol">Token Symbol (Ticker)</Label>
               <Input
                 id="coinSymbol"
                 value={coinSymbol}
@@ -731,13 +857,21 @@ export function UploadForm() {
                 <span className="font-medium">Base</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Currency:</span>
-                <span className="font-medium">ETH</span>
+                <span className="text-muted-foreground">Paired Token:</span>
+                <span className="font-medium">{deploymentMethod === "zora" ? "ETH" : "WETH"}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Starting Market Cap:</span>
-                <span className="font-medium">Low (Accessible)</span>
+                <span className="font-medium">
+                  {deploymentMethod === "zora" ? "Low (Accessible)" : "10 ETH (Default)"}
+                </span>
               </div>
+              {deploymentMethod === "clanker" && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Liquidity Pool:</span>
+                  <span className="font-medium">Uniswap v4 (Auto)</span>
+                </div>
+              )}
             </div>
           </div>
         )}

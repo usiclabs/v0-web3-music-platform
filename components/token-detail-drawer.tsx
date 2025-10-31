@@ -27,6 +27,15 @@ interface TokenDetailDrawerProps {
   } | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  metrics?: {
+    price: number
+    priceChange24h: number
+    marketCap: number
+    volume24h: number
+    liquidity: number
+    holders: number
+    txns24h: number
+  }
 }
 
 const WETH_ADDRESS = {
@@ -86,7 +95,7 @@ const tokenDataCache = new Map<
 
 const CACHE_DURATION = 30000 // 30 seconds cache
 
-export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDrawerProps) {
+export function TokenDetailDrawer({ token, open, onOpenChange, metrics }: TokenDetailDrawerProps) {
   const { chainId } = useWallet()
   const publicClient = usePublicClient()
   const [copied, setCopied] = useState(false)
@@ -100,7 +109,25 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
   const hasFetched = useRef(false)
 
   useEffect(() => {
-    if (!token || !chainId || !publicClient || !open) return
+    if (!token || !open) return
+
+    // If we have metrics from DexScreener, use them immediately
+    if (metrics) {
+      console.log("[v0] Using metrics from DexScreener:", metrics)
+      setCurrentPrice(metrics.price.toFixed(8))
+      setPoolLiquidity(metrics.liquidity.toFixed(4))
+      setIsLoadingPool(false)
+      setIsLoadingData(false)
+
+      // Still fetch pool info for the address and fee tier
+      if (chainId && publicClient) {
+        fetchPoolInfo()
+      }
+      return
+    }
+
+    // Otherwise, fetch from blockchain as before
+    if (!chainId || !publicClient) return
 
     // Reset when token changes
     if (hasFetched.current) {
@@ -259,7 +286,39 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
     }
 
     fetchLiveData()
-  }, [token, chainId, publicClient, open])
+  }, [token, chainId, publicClient, open, metrics])
+
+  const fetchPoolInfo = async () => {
+    if (!token || !chainId || !publicClient) return
+
+    setIsLoadingPool(true)
+    try {
+      const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
+      const feeTiers = [3000, 500, 10000]
+
+      for (const fee of feeTiers) {
+        try {
+          const poolAddress = await publicClient.readContract({
+            address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
+            abi: UNISWAP_V3_FACTORY_ABI,
+            functionName: "getPool",
+            args: [wethAddress as `0x${string}`, token.coin_address as `0x${string}`, fee],
+          })
+
+          if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
+            setPoolInfo({ address: poolAddress as string, fee })
+            break
+          }
+        } catch (error) {
+          console.error(`[v0] Failed to check pool for fee ${fee}:`, error)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Failed to fetch pool info:", error)
+    } finally {
+      setIsLoadingPool(false)
+    }
+  }
 
   const copyAddress = () => {
     if (!token) return
@@ -272,8 +331,17 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  const marketCap =
-    currentPrice && totalSupply ? (Number.parseFloat(currentPrice) * Number.parseFloat(totalSupply)).toFixed(2) : null
+  const marketCap = metrics
+    ? (metrics.marketCap / 3500).toFixed(2) // Convert USD to ETH (approximate)
+    : currentPrice && totalSupply
+      ? (Number.parseFloat(currentPrice) * Number.parseFloat(totalSupply)).toFixed(2)
+      : null
+
+  const displayTotalSupply = metrics
+    ? (metrics.marketCap / metrics.price).toFixed(0) // Calculate supply from market cap and price
+    : totalSupply
+      ? Number.parseFloat(totalSupply).toFixed(0)
+      : null
 
   if (!token) return null
 
@@ -339,7 +407,12 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
                 <CardDescription className="text-xs">Current Price</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingPool ? (
+                {metrics ? (
+                  <div>
+                    <div className="text-2xl font-bold text-primary">${metrics.price.toFixed(6)}</div>
+                    <div className="text-xs text-muted-foreground mt-1">per token</div>
+                  </div>
+                ) : isLoadingPool ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Loading...</span>
@@ -360,7 +433,12 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
                 <CardDescription className="text-xs">Market Cap</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingData ? (
+                {metrics ? (
+                  <div>
+                    <div className="text-2xl font-bold">${(metrics.marketCap / 1000).toFixed(2)}K</div>
+                    <div className="text-xs text-muted-foreground mt-1">estimated value</div>
+                  </div>
+                ) : isLoadingData ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Calculating...</span>
@@ -381,15 +459,15 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
                 <CardDescription className="text-xs">Total Supply</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingData ? (
+                {displayTotalSupply ? (
+                  <div>
+                    <div className="text-2xl font-bold">{Number.parseFloat(displayTotalSupply).toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground mt-1">tokens</div>
+                  </div>
+                ) : isLoadingData ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">Loading...</span>
-                  </div>
-                ) : totalSupply ? (
-                  <div>
-                    <div className="text-2xl font-bold">{Number.parseFloat(totalSupply).toFixed(0)}</div>
-                    <div className="text-xs text-muted-foreground mt-1">tokens</div>
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground">Data unavailable</div>
@@ -564,7 +642,9 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
                   <div className="flex justify-between py-2 border-b border-muted">
                     <span className="text-muted-foreground">Market Cap</span>
                     <span className="font-medium">
-                      {isLoadingData ? (
+                      {metrics ? (
+                        `$${(metrics.marketCap / 1000).toFixed(2)}K`
+                      ) : isLoadingData ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : marketCap ? (
                         `${marketCap} ETH`
@@ -576,19 +656,31 @@ export function TokenDetailDrawer({ token, open, onOpenChange }: TokenDetailDraw
                   <div className="flex justify-between py-2 border-b border-muted">
                     <span className="text-muted-foreground">Total Supply</span>
                     <span className="font-medium">
-                      {isLoadingData ? (
+                      {displayTotalSupply ? (
+                        Number.parseFloat(displayTotalSupply).toLocaleString()
+                      ) : isLoadingData ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : totalSupply ? (
-                        Number.parseFloat(totalSupply).toFixed(0)
                       ) : (
                         "N/A"
                       )}
                     </span>
                   </div>
+                  <div className="flex justify-between py-2 border-b border-muted">
+                    <span className="text-muted-foreground">24h Volume</span>
+                    <span className="font-medium">
+                      {metrics ? `$${(metrics.volume24h / 1000).toFixed(2)}K` : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-muted">
+                    <span className="text-muted-foreground">24h Transactions</span>
+                    <span className="font-medium">{metrics ? metrics.txns24h.toFixed(0) : "N/A"}</span>
+                  </div>
                   <div className="flex justify-between py-2">
                     <span className="text-muted-foreground">Current Price</span>
                     <span className="font-medium">
-                      {isLoadingPool ? (
+                      {metrics ? (
+                        `$${metrics.price.toFixed(6)}`
+                      ) : isLoadingPool ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : currentPrice ? (
                         `${currentPrice} ETH`

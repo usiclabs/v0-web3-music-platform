@@ -133,6 +133,21 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string } | null>(null)
   const [showStreamDialog, setShowStreamDialog] = useState(false) // Added state for stream dialog
 
+  const [showEditTrackDialog, setShowEditTrackDialog] = useState(false)
+  const [editTrackData, setEditTrackData] = useState({
+    id: "",
+    title: "",
+    audio_url: "",
+    cover_url: "",
+    coin_address: "",
+    token_id: "",
+    nft_contract_address: "",
+    price_per_chunk: "0.001",
+    duration: 180,
+    unlock_type: "token",
+  })
+  const [updatingTrack, setUpdatingTrack] = useState(false)
+
   const [showHiddenTracks, setShowHiddenTracks] = useState(false)
 
   const [maintenanceMode, setMaintenanceMode] = useState(false)
@@ -188,7 +203,9 @@ export default function AdminPage() {
           supabase.from("tracks").select("*", { count: "exact", head: true }).eq("is_active", true),
           supabase.from("likes").select("*", { count: "exact", head: true }),
           supabase.from("follows").select("*", { count: "exact", head: true }),
-          supabase.from("streams").select("chunks_played, total_paid, created_at, listener_address"),
+          supabase
+            .from("streams")
+            .select("chunks_played, total_paid, started_at, listener_address"), // Changed created_at to started_at
           supabase.from("profiles").select("*").order("created_at", { ascending: false }),
           supabase
             .from("tracks")
@@ -227,7 +244,7 @@ export default function AdminPage() {
         const { data: activeUsersData } = await supabase
           .from("streams")
           .select("listener_address")
-          .gte("created_at", oneDayAgo)
+          .gte("started_at", oneDayAgo)
 
         const uniqueActiveUsers = new Set(activeUsersData?.map((s) => s.listener_address) || [])
         const activeUsers24h = uniqueActiveUsers.size
@@ -247,13 +264,13 @@ export default function AdminPage() {
 
         const recentRevenue =
           streams
-            ?.filter((s) => new Date(s.created_at) >= new Date(sevenDaysAgo))
+            ?.filter((s) => new Date(s.started_at) >= new Date(sevenDaysAgo)) // Changed created_at to started_at
             .reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
         const previousRevenue =
           streams
             ?.filter(
               (s) =>
-                new Date(s.created_at) >= new Date(fourteenDaysAgo) && new Date(s.created_at) < new Date(sevenDaysAgo),
+                new Date(s.started_at) >= new Date(fourteenDaysAgo) && new Date(s.started_at) < new Date(sevenDaysAgo), // Changed created_at to started_at
             )
             .reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
 
@@ -357,7 +374,7 @@ export default function AdminPage() {
         }
 
         streams?.forEach((stream) => {
-          const dateStr = new Date(stream.created_at).toISOString().split("T")[0]
+          const dateStr = new Date(stream.started_at).toISOString().split("T")[0] // Changed created_at to started_at
           const data = dailyData.get(dateStr)
           if (data) {
             data.revenue += Number(stream.total_paid)
@@ -586,6 +603,105 @@ export default function AdminPage() {
         description: "Failed to update track visibility",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleEditTrack = (track: any) => {
+    setEditTrackData({
+      id: track.id,
+      title: track.title || "",
+      audio_url: track.audio_url || "",
+      cover_url: track.cover_url || "",
+      coin_address: track.coin_address || "",
+      token_id: track.token_id || "",
+      nft_contract_address: track.nft_contract_address || "",
+      price_per_chunk: track.price_per_chunk?.toString() || "0.001",
+      duration: track.duration || 180,
+      unlock_type: track.unlock_type || "token",
+    })
+    setShowEditTrackDialog(true)
+  }
+
+  const handleUpdateTrack = async () => {
+    if (!editTrackData.id) {
+      toast({
+        title: "Error",
+        description: "No track selected",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setUpdatingTrack(true)
+
+    try {
+      console.log("[v0] Updating track metadata:", {
+        id: editTrackData.id,
+        title: editTrackData.title,
+        coin_address: editTrackData.coin_address,
+        nft_contract_address: editTrackData.nft_contract_address,
+      })
+
+      const response = await fetch(`/api/admin/tracks/${editTrackData.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address || "",
+        },
+        body: JSON.stringify({
+          title: editTrackData.title,
+          audio_url: editTrackData.audio_url,
+          cover_url: editTrackData.cover_url || null,
+          coin_address: editTrackData.coin_address || null,
+          token_id: editTrackData.token_id || null,
+          nft_contract_address: editTrackData.nft_contract_address || null,
+          price_per_chunk: Number(editTrackData.price_per_chunk),
+          duration: editTrackData.duration,
+          unlock_type: editTrackData.unlock_type,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update track")
+      }
+
+      console.log("[v0] Track metadata updated successfully:", data.track)
+
+      toast({
+        title: "Success",
+        description: "Track metadata updated successfully. Changes will appear on /tokens page.",
+      })
+
+      // Update local state
+      setTracks(tracks.map((t) => (t.id === editTrackData.id ? { ...t, ...data.track } : t)))
+
+      // Close dialog
+      setShowEditTrackDialog(false)
+
+      // Refresh tokenized songs if token address was added
+      if (editTrackData.coin_address || editTrackData.nft_contract_address) {
+        console.log("[v0] Refreshing tokenized songs list...")
+        const supabase = createBrowserClient()
+        const { data: tokenizedTracksData } = await supabase
+          .from("tracks")
+          .select("*, artist:profiles!tracks_artist_id_fkey(artist_name, wallet_address)")
+          .or("coin_address.not.is.null,nft_contract_address.not.is.null")
+          .order("created_at", { ascending: false })
+
+        setTokenizedSongs(tokenizedTracksData || [])
+        console.log("[v0] Tokenized songs refreshed:", tokenizedTracksData?.length || 0, "tracks")
+      }
+    } catch (error) {
+      console.error("[v0] Failed to update track metadata:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update track",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdatingTrack(false)
     }
   }
 
@@ -1161,21 +1277,15 @@ export default function AdminPage() {
                             {track.artist?.artist_name || "Unknown"}
                           </p>
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Badge
-                              variant="outline"
-                              className="bg-green-500/10 border-green-500/30 text-green-500 text-xs"
-                            >
+                            <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-500">
                               <Play className="h-2.5 w-2.5 mr-1" />
                               {track.plays}
                             </Badge>
-                            <Badge
-                              variant="outline"
-                              className="bg-pink-500/10 border-pink-500/30 text-pink-500 text-xs"
-                            >
+                            <Badge variant="outline" className="bg-pink-500/10 border-pink-500/30 text-pink-500">
                               <Heart className="h-2.5 w-2.5 mr-1" />
                               {track.likes}
                             </Badge>
-                            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-xs">
+                            <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary">
                               ${track.revenue.toFixed(2)}
                             </Badge>
                           </div>
@@ -1196,6 +1306,10 @@ export default function AdminPage() {
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditTrack(track)}>
+                            <Settings className="h-4 w-4 mr-2" />
+                            Edit Metadata
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleFeatureTrack(track.id)}>
                             <Star className="h-4 w-4 mr-2" />
@@ -1565,6 +1679,31 @@ export default function AdminPage() {
               </h3>
 
               <div className="space-y-6">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Liquidity & Pairing
+                  </h4>
+
+                  <Card
+                    className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20 p-4 hover:border-primary/30 transition-all group cursor-pointer"
+                    onClick={() => (window.location.href = "/pairing")}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:scale-110 transition-transform">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">USI Pairing Engine</p>
+                          <p className="text-xs text-muted-foreground">Deploy tokens and create USI pairs</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Card>
+                </div>
+
                 {/* Gasless Management Section */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -1953,6 +2092,169 @@ export default function AdminPage() {
                   <>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Tokenized Song
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditTrackDialog} onOpenChange={setShowEditTrackDialog}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                Edit Track Metadata
+              </DialogTitle>
+              <DialogDescription>Update track information and token contract addresses</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Basic Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Music className="h-4 w-4 text-primary" />
+                  Basic Information
+                </h4>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Song Title</Label>
+                  <Input
+                    id="edit-title"
+                    placeholder="Enter song title"
+                    value={editTrackData.title}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, title: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-audio_url">Audio URL</Label>
+                  <Input
+                    id="edit-audio_url"
+                    placeholder="https://..."
+                    value={editTrackData.audio_url}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, audio_url: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cover_url">Cover Image URL</Label>
+                  <Input
+                    id="edit-cover_url"
+                    placeholder="https://..."
+                    value={editTrackData.cover_url}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, cover_url: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-duration">Duration (seconds)</Label>
+                    <Input
+                      id="edit-duration"
+                      type="number"
+                      placeholder="180"
+                      value={editTrackData.duration}
+                      onChange={(e) => setEditTrackData({ ...editTrackData, duration: Number(e.target.value) })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-price_per_chunk">Price per Chunk (ETH)</Label>
+                    <Input
+                      id="edit-price_per_chunk"
+                      type="number"
+                      step="0.0001"
+                      placeholder="0.001"
+                      value={editTrackData.price_per_chunk}
+                      onChange={(e) => setEditTrackData({ ...editTrackData, price_per_chunk: e.target.value })}
+                      className="bg-background/50 border-border/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Token Info */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-primary" />
+                  Token Information
+                </h4>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-coin_address">Token Contract Address</Label>
+                  <Input
+                    id="edit-coin_address"
+                    placeholder="0x..."
+                    value={editTrackData.coin_address}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, coin_address: e.target.value })}
+                    className="bg-background/50 border-border/50 font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    ERC-20 token contract address (e.g., from Clanker or Zora)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nft_contract_address">NFT Contract Address</Label>
+                  <Input
+                    id="edit-nft_contract_address"
+                    placeholder="0x..."
+                    value={editTrackData.nft_contract_address}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, nft_contract_address: e.target.value })}
+                    className="bg-background/50 border-border/50 font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">ERC-721/1155 NFT contract address</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-token_id">Token ID</Label>
+                  <Input
+                    id="edit-token_id"
+                    placeholder="1"
+                    value={editTrackData.token_id}
+                    onChange={(e) => setEditTrackData({ ...editTrackData, token_id: e.target.value })}
+                    className="bg-background/50 border-border/50"
+                  />
+                  <p className="text-xs text-muted-foreground">NFT token ID (if applicable)</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-primary">Tip:</strong> Add a token contract address to make this track appear
+                  on the /tokens page for trading. You can paste the address from a Clanker or Zora deployment.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditTrackDialog(false)}
+                disabled={updatingTrack}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateTrack}
+                disabled={updatingTrack}
+                className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                {updatingTrack ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Save Changes
                   </>
                 )}
               </Button>
