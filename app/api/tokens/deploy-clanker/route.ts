@@ -4,9 +4,9 @@ import { deployClankerERC20 } from "@/lib/erc20-deploy"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, symbol, totalSupply, deployerAddress, trackId, coverImageUrl } = body
+    const { name, symbol, totalSupply, deployerAddress, trackId, coverImageUrl, version, advancedConfig } = body
 
-    console.log("[Clanker Token Deploy] Starting deployment:", { name, symbol, totalSupply, coverImageUrl })
+    console.log("[Clanker Token Deploy] Starting deployment:", { name, symbol, totalSupply, coverImageUrl, version })
 
     // Validate required fields
     if (!name || !symbol || !deployerAddress) {
@@ -21,6 +21,8 @@ export async function POST(request: Request) {
       deployerAddress,
       imageUrl: coverImageUrl, // Track artwork
       description: `Token for music track: ${name}`, // Track description
+      version: version || "v4.0", // Default to v4.0 if not specified
+      advancedConfig: advancedConfig || {}, // Pass through advanced configuration options
     })
 
     if (!result.success || !result.tokenAddress) {

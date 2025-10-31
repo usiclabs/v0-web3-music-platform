@@ -14,6 +14,8 @@ export interface TokenDeploymentParams {
   deployerAddress: string
   imageUrl?: string
   description?: string
+  version?: "v3.1" | "v4.0"
+  advancedConfig?: any
 }
 
 export interface DeploymentResult {
@@ -76,6 +78,8 @@ export async function deployClankerERC20(
   params: TokenDeploymentParams & {
     targetMarketCapEth?: number
     feeTier?: number
+    trackId?: string
+    coverImageUrl?: string
   },
 ): Promise<DeploymentResult> {
   try {
@@ -89,8 +93,10 @@ export async function deployClankerERC20(
       deployerAddress: params.deployerAddress,
       targetMarketCapEth: params.targetMarketCapEth,
       feeTier: params.feeTier,
-      imageUrl: params.imageUrl,
+      imageUrl: params.imageUrl || params.coverImageUrl,
       description: params.description,
+      version: params.version || "v4.0",
+      advancedConfig: params.advancedConfig,
     })
 
     if (!result.success) {

@@ -1,9 +1,9 @@
 /**
  * Clanker SDK Integration
- * Deploy tokens with automatic Uniswap v4 pool creation
+ * Deploy tokens with automatic Uniswap pool creation
+ * Supports both v3.1 (Uniswap v3) and v4.0 (Uniswap v4)
  */
 
-import { Clanker } from "clanker-sdk/v4"
 import { createWalletClient, createPublicClient, http, type Address } from "viem"
 import { base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
@@ -18,6 +18,8 @@ export interface ClankerDeployParams {
   feeTier?: number
   imageUrl?: string
   description?: string
+  version?: "v3.1" | "v4.0"
+  advancedConfig?: any
 }
 
 export interface ClankerDeployResult {
@@ -35,6 +37,9 @@ export interface ClankerDeployResult {
 export async function deployClankerToken(params: ClankerDeployParams): Promise<ClankerDeployResult> {
   try {
     console.log("[Clanker Deploy] Starting deployment:", params)
+
+    const version = params.version || "v4.0"
+    console.log("[Clanker Deploy] Using Clanker SDK version:", version)
 
     // Get private key from environment
     const privateKey = process.env.SERVER_WALLET_PRIVATE_KEY
@@ -56,34 +61,81 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       transport: http(),
     })
 
-    // Initialize Clanker SDK
-    const clanker = new Clanker({
-      publicClient,
-      wallet: walletClient,
-    })
+    let clanker: any
+    if (version === "v3.1") {
+      const { Clanker } = await import("clanker-sdk")
+      clanker = new Clanker({
+        wallet: walletClient,
+        publicClient,
+      })
+      console.log("[Clanker Deploy] Initialized Clanker SDK v3.1 (Uniswap v3)")
+    } else {
+      const { Clanker } = await import("clanker-sdk/v4")
+      clanker = new Clanker({
+        publicClient,
+        wallet: walletClient,
+      })
+      console.log("[Clanker Deploy] Initialized Clanker SDK v4.0 (Uniswap v4)")
+    }
 
     const deployConfig: any = {
       name: params.name,
       symbol: params.symbol,
-      tokenAdmin: params.deployerAddress as Address,
-      rewards: {
-        recipients: [
-          {
-            recipient: params.deployerAddress as Address,
-            admin: params.deployerAddress as Address,
-            bps: 10_000, // 100%
-            token: "Both",
-          },
-        ],
-      },
     }
 
-    if (params.imageUrl) {
+    // Merge in advanced config if provided
+    if (params.advancedConfig) {
+      Object.assign(deployConfig, params.advancedConfig)
+      console.log("[Clanker Deploy] Using advanced config:", params.advancedConfig)
+    }
+
+    const PLATFORM_ADMIN_ADDRESS = "0x7D1a4B4941200FB2907638202782E9248b9b9887"
+
+    // Set defaults based on version if not provided in advancedConfig
+    if (version === "v4.0") {
+      if (!deployConfig.tokenAdmin) {
+        deployConfig.tokenAdmin = params.deployerAddress as Address
+      }
+      if (!deployConfig.rewards) {
+        deployConfig.rewards = [
+          {
+            recipient: params.deployerAddress as Address,
+            admin: PLATFORM_ADMIN_ADDRESS as Address, // Platform controls rewards for LP fees
+            bps: 10_000,
+            token: "Both",
+          },
+        ]
+      }
+      if (!deployConfig.poolPosition) {
+        deployConfig.poolPosition = "standard"
+      }
+      if (!deployConfig.feeConfig) {
+        deployConfig.feeConfig = "dynamic"
+      }
+    } else {
+      // v3.1 defaults
+      if (!deployConfig.rewardsConfig) {
+        deployConfig.rewardsConfig = {
+          creatorReward: 80,
+          creatorAdmin: PLATFORM_ADMIN_ADDRESS as Address, // Platform controls creator rewards for LP fees
+          creatorRewardRecipient: params.deployerAddress as Address, // Artist receives rewards
+        }
+      }
+      if (!deployConfig.pool) {
+        deployConfig.pool = {
+          quoteToken: "0x4200000000000000000000000000000000000006",
+          initialMarketCap: "1",
+        }
+      }
+    }
+
+    // Add image and metadata if provided
+    if (params.imageUrl && !deployConfig.image) {
       deployConfig.image = params.imageUrl
       console.log("[Clanker Deploy] Including track artwork:", params.imageUrl)
     }
 
-    if (params.description || params.imageUrl) {
+    if (!deployConfig.metadata && (params.description || params.imageUrl)) {
       deployConfig.metadata = {
         description: params.description || `Token for ${params.name}`,
         socialMediaUrls: [],
@@ -92,28 +144,44 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       console.log("[Clanker Deploy] Including metadata:", deployConfig.metadata)
     }
 
-    deployConfig.context = {
-      interface: "Anti-Platform Music",
-      platform: "web3-music",
-      messageId: "",
-      id: params.deployerAddress,
+    if (!deployConfig.context) {
+      deployConfig.context = {
+        interface: "MyUSIC",
+        platform: "https://myusic.xyz",
+        messageId: "",
+        id: params.deployerAddress,
+      }
     }
 
-    console.log("[Clanker Deploy] Using Clanker defaults: 10 ETH market cap, WETH pairing, standard positions")
+    console.log("[Clanker Deploy] Final deploy config:", JSON.stringify(deployConfig, null, 2))
 
-    const { txHash, waitForTransaction, error } = await clanker.deploy(deployConfig)
+    let txHash: string
+    let address: string
 
-    if (error) {
-      throw error
+    if (version === "v3.1") {
+      const tokenAddress = await clanker.deployToken(deployConfig)
+      address = tokenAddress
+      txHash = ""
+      console.log("[Clanker Deploy] v3.1 Token deployed:", address)
+    } else {
+      const { txHash: hash, waitForTransaction, error } = await clanker.deploy(deployConfig)
+
+      if (error) {
+        throw error
+      }
+
+      txHash = hash
+      console.log("[Clanker Deploy] v4.0 Transaction submitted:", txHash)
+
+      const result = await waitForTransaction()
+      address = result.address
+      console.log("[Clanker Deploy] v4.0 Token deployed:", address)
     }
-
-    console.log("[Clanker Deploy] Transaction submitted:", txHash)
-
-    const { address } = await waitForTransaction()
 
     console.log("[Clanker Deploy] Token deployed successfully:", {
       address,
       txHash,
+      version,
     })
 
     return {
