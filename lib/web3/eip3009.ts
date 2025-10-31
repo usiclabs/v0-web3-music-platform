@@ -138,21 +138,76 @@ export function createCancelAuthorization(authorizer: Address, nonce: Hex): Canc
   }
 }
 
+// EIP-6492 magic bytes used to identify wrapped signatures for undeployed smart contract wallets
+const EIP6492_MAGIC_BYTES = "0x6492649264926492649264926492649264926492649264926492649264926492"
+
 /**
  * Parse a signature into v, r, s components
+ * Supports both standard ECDSA signatures and EIP-6492 wrapped signatures for smart contract wallets
  * @param signature - The signature hex string
  */
 export function parseSignature(signature: Hex): { v: number; r: Hex; s: Hex } {
   // Remove 0x prefix if present
-  const sig = signature.startsWith("0x") ? signature.slice(2) : signature
+  let sig = signature.startsWith("0x") ? signature.slice(2) : signature
+
+  console.log("[v0] Parsing signature, length:", sig.length)
+
+  // EIP-6492 signatures end with magic bytes and contain deployment data for undeployed smart wallets
+  if (sig.length > 130 && sig.endsWith(EIP6492_MAGIC_BYTES.slice(2))) {
+    console.log("[v0] Detected EIP-6492 wrapped signature, unwrapping...")
+
+    // Remove the magic bytes (64 characters)
+    sig = sig.slice(0, -64)
+
+    // The signature is ABI-encoded: (address factory, bytes factoryCalldata, bytes signature)
+    // We need to extract the original signature from the end
+    // The last 130 characters should be the original ECDSA signature
+
+    try {
+      // For EIP-6492, the original signature is typically at the end before the magic bytes
+      // We'll try to extract the last 130 characters as the signature
+      const potentialSig = sig.slice(-130)
+
+      console.log("[v0] Extracted signature from EIP-6492 wrapper, length:", potentialSig.length)
+
+      if (potentialSig.length === 130) {
+        sig = potentialSig
+      } else {
+        // If we can't find a standard signature, try a different approach
+        // Look for the signature in the ABI-encoded data
+        // The signature should be 65 bytes (130 hex chars) somewhere in the data
+        console.log("[v0] Could not extract standard signature, attempting to decode ABI-encoded data...")
+
+        // For now, we'll throw an error and log the signature for debugging
+        console.error("[v0] EIP-6492 signature format not fully supported yet. Signature length:", sig.length)
+        throw new Error(
+          `EIP-6492 signature detected but could not extract standard signature. ` +
+            `Please ensure your Coinbase Smart Wallet is deployed on-chain first, or contact support.`,
+        )
+      }
+    } catch (err) {
+      console.error("[v0] Failed to unwrap EIP-6492 signature:", err)
+      throw new Error(
+        `Failed to parse EIP-6492 signature. Your smart wallet may need to be deployed first. ` +
+          `Original error: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
+  }
 
   if (sig.length !== 130) {
-    throw new Error(`Invalid signature length: ${sig.length}. Expected 130 characters (65 bytes).`)
+    console.error("[v0] Invalid signature length after parsing:", sig.length)
+    console.error("[v0] Signature preview:", sig.slice(0, 100) + "...")
+    throw new Error(
+      `Invalid signature length: ${sig.length}. Expected 130 characters (65 bytes). ` +
+        `If you're using Coinbase Smart Wallet, please ensure your wallet is deployed on-chain first.`,
+    )
   }
 
   const r = `0x${sig.slice(0, 64)}` as Hex
   const s = `0x${sig.slice(64, 128)}` as Hex
   const v = Number.parseInt(sig.slice(128, 130), 16)
+
+  console.log("[v0] Signature parsed successfully:", { v, r: r.slice(0, 10) + "...", s: s.slice(0, 10) + "..." })
 
   return { v, r, s }
 }

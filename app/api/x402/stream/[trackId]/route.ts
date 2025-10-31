@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: { trackId:
     const supabase = await createClient()
     const { data: track, error } = await supabase
       .from("tracks")
-      .select("*, profiles!tracks_artist_id_fkey(*)")
+      .select("*, profiles!tracks_artist_id_fkey(*), royalty_splits(*)")
       .eq("id", trackId)
       .single()
 
@@ -27,13 +27,22 @@ export async function GET(request: NextRequest, { params }: { params: { trackId:
       return NextResponse.json({ error: "Invalid chunk index" }, { status: 400 })
     }
 
+    // If there are royalty splits, payment goes to platform relayer for distribution
+    // Otherwise, payment goes directly to artist
+    const hasRoyaltySplits = track.royalty_splits && track.royalty_splits.length > 0
+    const recipient = hasRoyaltySplits
+      ? (process.env.NEXT_PUBLIC_RELAYER_ADDRESS as string) // Platform wallet for distribution
+      : track.artist_id // Direct to artist if no splits
+
+    console.log("[v0] Payment recipient:", recipient, "Has splits:", hasRoyaltySplits)
+
     // Return 402 Payment Required with X402 payment instructions
     const paymentInstructions = {
       scheme: X402_CONFIG.SCHEME,
       network: X402_CONFIG.NETWORK,
       token: "USDC",
       amount: track.price_per_chunk.toString(),
-      recipient: track.artist_id, // Artist wallet address
+      recipient,
       metadata: {
         trackId: track.id,
         trackTitle: track.title,

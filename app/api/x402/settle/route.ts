@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const { data: track } = await supabase
       .from("tracks")
-      .select("price_per_chunk, artist_id")
+      .select("price_per_chunk, artist_id, royalty_splits(*)")
       .eq("id", trackId)
       .maybeSingle()
 
@@ -65,10 +65,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate payment recipient is the track artist
-    if (to.toLowerCase() !== track.artist_id.toLowerCase()) {
-      console.log("[v0] Settlement failed: Payment recipient mismatch")
-      return NextResponse.json({ error: "Payment recipient must be the track artist" }, { status: 400 })
+    const hasRoyaltySplits = track.royalty_splits && track.royalty_splits.length > 0
+    const expectedRecipient = hasRoyaltySplits ? (process.env.NEXT_PUBLIC_RELAYER_ADDRESS as string) : track.artist_id
+
+    if (to.toLowerCase() !== expectedRecipient.toLowerCase()) {
+      console.log("[v0] Settlement failed: Payment recipient mismatch. Expected:", expectedRecipient, "Got:", to)
+      return NextResponse.json({ error: "Payment recipient mismatch" }, { status: 400 })
     }
 
     try {
@@ -316,6 +318,54 @@ export async function POST(request: NextRequest) {
         }
 
         console.log("[v0] Transfer confirmed in block:", receipt.blockNumber)
+
+        if (hasRoyaltySplits && track.royalty_splits.length > 0) {
+          console.log("[v0] Distributing payment to", track.royalty_splits.length, "royalty split recipients")
+
+          for (const split of track.royalty_splits) {
+            const splitAmount = Math.floor((Number(value) * split.percentage) / 100)
+
+            console.log("[v0] Sending", splitAmount, "USDC (", split.percentage, "%) to", split.wallet_address)
+
+            try {
+              const splitHash = await walletClient.writeContract({
+                address: usdcAddress,
+                abi: [
+                  {
+                    inputs: [
+                      { name: "to", type: "address" },
+                      { name: "amount", type: "uint256" },
+                    ],
+                    name: "transfer",
+                    outputs: [{ name: "", type: "bool" }],
+                    stateMutability: "nonpayable",
+                    type: "function",
+                  },
+                ],
+                functionName: "transfer",
+                args: [split.wallet_address as `0x${string}`, splitAmount],
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                gas: 100000n,
+              })
+
+              console.log("[v0] Split payment sent:", splitHash)
+
+              const splitReceipt = await walletClient.waitForTransactionReceipt({ hash: splitHash })
+
+              if (splitReceipt.status === "reverted") {
+                console.error("[v0] Split payment reverted for", split.wallet_address)
+              } else {
+                console.log("[v0] Split payment confirmed for", split.wallet_address)
+              }
+            } catch (splitError) {
+              console.error("[v0] Failed to send split payment to", split.wallet_address, ":", splitError)
+              // Continue with other splits even if one fails
+            }
+          }
+
+          console.log("[v0] Royalty split distribution complete")
+        }
       }
     } catch (onChainError) {
       console.error("[v0] On-chain settlement error:", onChainError)
