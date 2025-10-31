@@ -16,6 +16,8 @@ export interface ClankerDeployParams {
   deployerAddress: string
   targetMarketCapEth?: number // Target market cap in ETH (default: 10 ETH)
   feeTier?: number
+  imageUrl?: string
+  description?: string
 }
 
 export interface ClankerDeployResult {
@@ -60,8 +62,6 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       wallet: walletClient,
     })
 
-    // Clanker will use: 10 ETH market cap, WETH pairing, standard meme positions
-    // This ensures a fair price distribution curve without manual tick calculations
     const deployConfig: any = {
       name: params.name,
       symbol: params.symbol,
@@ -78,9 +78,29 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       },
     }
 
+    if (params.imageUrl) {
+      deployConfig.image = params.imageUrl
+      console.log("[Clanker Deploy] Including track artwork:", params.imageUrl)
+    }
+
+    if (params.description || params.imageUrl) {
+      deployConfig.metadata = {
+        description: params.description || `Token for ${params.name}`,
+        socialMediaUrls: [],
+        auditUrls: [],
+      }
+      console.log("[Clanker Deploy] Including metadata:", deployConfig.metadata)
+    }
+
+    deployConfig.context = {
+      interface: "Anti-Platform Music",
+      platform: "web3-music",
+      messageId: "",
+      id: params.deployerAddress,
+    }
+
     console.log("[Clanker Deploy] Using Clanker defaults: 10 ETH market cap, WETH pairing, standard positions")
 
-    // Deploy token with Clanker
     const { txHash, waitForTransaction, error } = await clanker.deploy(deployConfig)
 
     if (error) {
@@ -89,7 +109,6 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
 
     console.log("[Clanker Deploy] Transaction submitted:", txHash)
 
-    // Wait for deployment to complete
     const { address } = await waitForTransaction()
 
     console.log("[Clanker Deploy] Token deployed successfully:", {

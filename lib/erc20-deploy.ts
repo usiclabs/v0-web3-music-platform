@@ -12,6 +12,8 @@ export interface TokenDeploymentParams {
   decimals: number
   totalSupply: number
   deployerAddress: string
+  imageUrl?: string
+  description?: string
 }
 
 export interface DeploymentResult {
@@ -87,6 +89,8 @@ export async function deployClankerERC20(
       deployerAddress: params.deployerAddress,
       targetMarketCapEth: params.targetMarketCapEth,
       feeTier: params.feeTier,
+      imageUrl: params.imageUrl,
+      description: params.description,
     })
 
     if (!result.success) {

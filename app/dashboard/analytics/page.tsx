@@ -224,10 +224,10 @@ export default function AnalyticsPage() {
                 </div>
               )}
             </div>
-            <div className="bg-transparent py-1 sm:py-2">
-              <p className="inline-block text-xl sm:text-2xl md:text-3xl font-bold text-primary animate-pulse-glow drop-shadow-[0_0_16px_hsl(35,75%,50%)]">
+            <div className="py-1 sm:py-2">
+              <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary drop-shadow-[0_0_16px_hsl(35,75%,50%)]">
                 {stats.totalEarnings.toFixed(4)}
-              </p>
+              </span>
               <span className="text-sm sm:text-base text-primary ml-1">USDC</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">≈ ${(stats.totalEarnings * 1).toFixed(2)} USD</p>
@@ -314,7 +314,7 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <p className="inline-block font-semibold text-xs sm:text-sm text-primary animate-pulse-glow drop-shadow-[0_0_12px_hsl(35,75%,50%)]">
+                    <p className="inline-block font-semibold text-xs sm:text-sm text-primary drop-shadow-[0_0_12px_hsl(35,75%,50%)]">
                       {track.earnings.toFixed(4)}
                     </p>
                     <p className="text-xs text-muted-foreground">USDC</p>

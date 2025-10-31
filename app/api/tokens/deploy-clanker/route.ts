@@ -6,20 +6,21 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { name, symbol, totalSupply, deployerAddress, trackId, coverImageUrl } = body
 
-    console.log("[Clanker Token Deploy] Starting deployment:", { name, symbol, totalSupply })
+    console.log("[Clanker Token Deploy] Starting deployment:", { name, symbol, totalSupply, coverImageUrl })
 
     // Validate required fields
     if (!name || !symbol || !deployerAddress) {
       return NextResponse.json({ error: "Missing required fields: name, symbol, deployerAddress" }, { status: 400 })
     }
 
-    // Deploy token via Clanker
     const result = await deployClankerERC20({
       name,
       symbol,
       totalSupply: totalSupply || "1000000000", // 1 billion default
       decimals: 18, // Standard ERC20 decimals
       deployerAddress,
+      imageUrl: coverImageUrl, // Track artwork
+      description: `Token for music track: ${name}`, // Track description
     })
 
     if (!result.success || !result.tokenAddress) {

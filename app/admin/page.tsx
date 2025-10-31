@@ -524,53 +524,34 @@ export default function AdminPage() {
     console.log("[v0] Attempting to end stream:", streamId)
 
     try {
-      const supabase = createBrowserClient()
-
-      const { data: existingStream, error: fetchError } = await supabase
-        .from("live_streams")
-        .select("id, is_live, title")
-        .eq("id", streamId)
-        .single()
-
-      if (fetchError) {
-        console.error("[v0] Error fetching stream:", fetchError)
-        throw new Error(`Failed to find stream: ${fetchError.message}`)
+      if (!address) {
+        throw new Error("Wallet not connected")
       }
 
-      if (!existingStream) {
-        console.error("[v0] Stream not found:", streamId)
-        throw new Error("Stream not found")
+      const response = await fetch(`/api/admin/streams/${streamId}/end`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address,
+        },
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to end stream")
       }
 
-      console.log("[v0] Found stream:", existingStream.title, "is_live:", existingStream.is_live)
-
-      const { data, error, count } = await supabase
-        .from("live_streams")
-        .update({ is_live: false, ended_at: new Date().toISOString() })
-        .eq("id", streamId)
-        .select()
-
-      if (error) {
-        console.error("[v0] Failed to end stream:", error)
-        throw error
-      }
-
-      if (!data || data.length === 0) {
-        console.error("[v0] No rows were updated for stream:", streamId)
-        throw new Error("Failed to update stream - no rows affected")
-      }
-
-      console.log("[v0] Stream ended successfully:", data)
+      const result = await response.json()
+      console.log("[v0] Stream ended successfully:", result)
 
       toast({
         title: "Stream Ended",
         description: "Live stream has been terminated.",
       })
 
-      setLiveStreams(
-        liveStreams.map((s) => (s.id === streamId ? { ...s, is_live: false, ended_at: new Date().toISOString() } : s)),
-      )
-      setShowStreamDialog(false) // Fixed: Using the declared setShowStreamDialog state
+      // Update local state to remove the stream from live streams
+      setLiveStreams(liveStreams.filter((s) => s.id !== streamId))
+      setShowStreamDialog(false)
     } catch (error) {
       console.error("[v0] Error ending stream:", error)
       toast({
