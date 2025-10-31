@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { createWalletClient, http, publicActions, hashTypedData, recoverAddress } from "viem"
+import { createWalletClient, http, publicActions, hashTypedData, recoverAddress, isAddress } from "viem"
 import { base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { USDC_ADDRESS, USDC_TRANSFER_WITH_AUTHORIZATION_ABI } from "@/lib/web3/contracts"
@@ -66,7 +66,18 @@ export async function POST(request: NextRequest) {
     }
 
     const hasRoyaltySplits = track.royalty_splits && track.royalty_splits.length > 0
-    const expectedRecipient = hasRoyaltySplits ? (process.env.NEXT_PUBLIC_RELAYER_ADDRESS as string) : track.artist_id
+    const relayerAddress = process.env.NEXT_PUBLIC_RELAYER_ADDRESS
+    const isRelayerValid = relayerAddress && isAddress(relayerAddress)
+
+    const expectedRecipient = hasRoyaltySplits && isRelayerValid ? (relayerAddress as string) : track.artist_id
+
+    if (hasRoyaltySplits && !isRelayerValid) {
+      console.warn(
+        "[v0] WARNING: Track has royalty splits but NEXT_PUBLIC_RELAYER_ADDRESS is not valid:",
+        relayerAddress,
+        "- Using artist address instead",
+      )
+    }
 
     if (to.toLowerCase() !== expectedRecipient.toLowerCase()) {
       console.log("[v0] Settlement failed: Payment recipient mismatch. Expected:", expectedRecipient, "Got:", to)
@@ -319,7 +330,7 @@ export async function POST(request: NextRequest) {
 
         console.log("[v0] Transfer confirmed in block:", receipt.blockNumber)
 
-        if (hasRoyaltySplits && track.royalty_splits.length > 0) {
+        if (hasRoyaltySplits && isRelayerValid && track.royalty_splits.length > 0) {
           console.log("[v0] Distributing payment to", track.royalty_splits.length, "royalty split recipients")
 
           for (const split of track.royalty_splits) {
@@ -365,6 +376,10 @@ export async function POST(request: NextRequest) {
           }
 
           console.log("[v0] Royalty split distribution complete")
+        } else if (hasRoyaltySplits && !isRelayerValid) {
+          console.warn(
+            "[v0] Skipping royalty split distribution - relayer address not configured properly. Payment went directly to artist.",
+          )
         }
       }
     } catch (onChainError) {

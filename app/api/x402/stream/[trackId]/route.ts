@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { X402_CONFIG } from "@/lib/web3/contracts"
+import { isAddress } from "viem"
 
 // X402 streaming endpoint - returns 402 with payment instructions
 export async function GET(request: NextRequest, { params }: { params: { trackId: string } }) {
@@ -27,14 +28,31 @@ export async function GET(request: NextRequest, { params }: { params: { trackId:
       return NextResponse.json({ error: "Invalid chunk index" }, { status: 400 })
     }
 
-    // If there are royalty splits, payment goes to platform relayer for distribution
-    // Otherwise, payment goes directly to artist
     const hasRoyaltySplits = track.royalty_splits && track.royalty_splits.length > 0
-    const recipient = hasRoyaltySplits
-      ? (process.env.NEXT_PUBLIC_RELAYER_ADDRESS as string) // Platform wallet for distribution
-      : track.artist_id // Direct to artist if no splits
+    const relayerAddress = process.env.NEXT_PUBLIC_RELAYER_ADDRESS
+    const isRelayerValid = relayerAddress && isAddress(relayerAddress)
 
-    console.log("[v0] Payment recipient:", recipient, "Has splits:", hasRoyaltySplits)
+    // If there are royalty splits AND relayer is valid, payment goes to platform relayer for distribution
+    // Otherwise, payment goes directly to artist
+    let recipient: string
+    let useRoyaltySplits = false
+
+    if (hasRoyaltySplits && isRelayerValid) {
+      recipient = relayerAddress as string
+      useRoyaltySplits = true
+      console.log("[v0] Payment will go to relayer for royalty split distribution:", recipient)
+    } else {
+      recipient = track.artist_id
+      if (hasRoyaltySplits && !isRelayerValid) {
+        console.warn(
+          "[v0] WARNING: Track has royalty splits but NEXT_PUBLIC_RELAYER_ADDRESS is not a valid Ethereum address:",
+          relayerAddress,
+          "- Falling back to direct artist payment. Please update the environment variable to enable royalty splits.",
+        )
+      }
+      console.log("[v0] Payment will go directly to artist:", recipient)
+    }
+    // </CHANGE>
 
     // Return 402 Payment Required with X402 payment instructions
     const paymentInstructions = {
