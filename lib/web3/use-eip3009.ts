@@ -103,7 +103,12 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(domain, TRANSFER_WITH_AUTHORIZATION_TYPES, authorization)
+        const signature = await signTypedData(
+          domain,
+          TRANSFER_WITH_AUTHORIZATION_TYPES,
+          authorization,
+          "TransferWithAuthorization",
+        )
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)
@@ -164,7 +169,12 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(domain, RECEIVE_WITH_AUTHORIZATION_TYPES, authorization)
+        const signature = await signTypedData(
+          domain,
+          RECEIVE_WITH_AUTHORIZATION_TYPES,
+          authorization,
+          "ReceiveWithAuthorization",
+        )
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)
@@ -215,7 +225,7 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(domain, CANCEL_AUTHORIZATION_TYPES, authorization)
+        const signature = await signTypedData(domain, CANCEL_AUTHORIZATION_TYPES, authorization, "CancelAuthorization")
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)

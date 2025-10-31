@@ -12,7 +12,7 @@ interface WalletContextType {
   connect: () => Promise<void>
   disconnect: () => void
   switchChain: (chainId: number) => Promise<void>
-  signTypedData: (domain: any, types: any, value: any) => Promise<string>
+  signTypedData: (domain: any, types: any, value: any, primaryType?: string) => Promise<string>
   showMobileWalletModal: boolean
   setShowMobileWalletModal: (show: boolean) => void
   isConnecting: boolean
@@ -147,7 +147,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signTypedData = async (domain: any, types: any, value: any): Promise<string> => {
+  const signTypedData = async (domain: any, types: any, value: any, primaryType?: string): Promise<string> => {
     if (!address) {
       throw new Error("Wallet not connected")
     }
@@ -156,6 +156,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Requesting signature from wallet...")
       console.log("[v0] Signing typed data with domain:", domain.name, "chainId:", domain.chainId)
       console.log("[v0] Message fields:", Object.keys(value).join(", "))
+
+      const detectedPrimaryType = primaryType || Object.keys(types)[0]
+      console.log("[v0] Using primaryType:", detectedPrimaryType)
 
       const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
       console.log("[v0] Mobile device detected:", isMobile)
@@ -183,7 +186,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const signaturePromise = signTypedDataAsync({
         domain,
         types,
-        primaryType: "TransferWithAuthorization",
+        primaryType: detectedPrimaryType,
         message: value,
       })
 
