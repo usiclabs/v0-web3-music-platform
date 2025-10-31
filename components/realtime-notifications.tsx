@@ -1,21 +1,17 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp, Coins, AlertCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Music, TrendingUp, Coins } from "lucide-react"
 
 export function RealtimeNotifications() {
   const { addToast } = useToast()
   const router = useRouter()
   const { address } = useWallet()
   const supabase = createClient()
-  const [streamStatus, setStreamStatus] = useState<string>("connecting")
-  const [swapStatus, setSwapStatus] = useState<string>("connecting")
-  const [showDebug, setShowDebug] = useState(false)
   const hasShownErrorToast = useRef(false)
 
   useEffect(() => {
@@ -98,10 +94,8 @@ export function RealtimeNotifications() {
       )
       .subscribe((status) => {
         console.log("[v0] Stream channel subscription status:", status)
-        setStreamStatus(status)
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("[v0] ❌ Stream channel subscription failed:", status)
-          setShowDebug(true)
         }
       })
 
@@ -228,10 +222,8 @@ export function RealtimeNotifications() {
       )
       .subscribe((status) => {
         console.log("[v0] Swap channel subscription status:", status)
-        setSwapStatus(status)
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("[v0] ❌ Swap channel subscription failed:", status)
-          setShowDebug(true)
         }
       })
 
@@ -244,116 +236,6 @@ export function RealtimeNotifications() {
       hasShownErrorToast.current = false
     }
   }, [address, addToast, router, supabase])
-
-  const testNotifications = () => {
-    console.log("[v0] Testing toast notifications...")
-
-    addToast({
-      title: (
-        <div className="flex items-center gap-2">
-          <Music className="h-4 w-4 text-green-500" />
-          <span>Song Unlocked (Test)</span>
-        </div>
-      ),
-      description: (
-        <div>
-          <span className="font-medium">Test User</span> just unlocked{" "}
-          <span className="font-medium text-green-500">Test Track</span>
-        </div>
-      ),
-      variant: "default",
-      duration: 5000,
-    })
-
-    setTimeout(() => {
-      addToast({
-        title: (
-          <div className="flex items-center gap-2">
-            <Coins className="h-4 w-4 text-accent" />
-            <span>Token Purchased (Test)</span>
-          </div>
-        ),
-        description: (
-          <div>
-            <span className="font-medium">Test User</span> bought{" "}
-            <span className="font-medium text-accent">100 $TEST</span> tokens
-          </div>
-        ),
-        variant: "default",
-        duration: 5000,
-      })
-    }, 1000)
-
-    console.log("[v0] Test notifications triggered")
-  }
-
-  const hasError =
-    streamStatus === "CHANNEL_ERROR" ||
-    streamStatus === "TIMED_OUT" ||
-    swapStatus === "CHANNEL_ERROR" ||
-    swapStatus === "TIMED_OUT"
-
-  if (showDebug || hasError) {
-    return (
-      <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2 max-w-sm">
-        <div className="rounded-lg border-2 border-red-500/50 bg-background/95 p-4 shadow-xl backdrop-blur-sm">
-          <div className="mb-3 flex items-center gap-2 font-semibold text-red-500">
-            <AlertCircle className="h-5 w-5" />
-            <span>{hasError ? "Notifications Disabled" : "Debug Panel"}</span>
-          </div>
-
-          <div className="mb-3 space-y-1 text-sm text-muted-foreground">
-            <div className="flex items-center justify-between">
-              <span>Streams:</span>
-              <span className={streamStatus === "SUBSCRIBED" ? "text-green-500" : "text-red-500"}>{streamStatus}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Swaps:</span>
-              <span className={swapStatus === "SUBSCRIBED" ? "text-green-500" : "text-red-500"}>{swapStatus}</span>
-            </div>
-          </div>
-
-          {hasError && (
-            <div className="mb-3 rounded-md bg-red-500/10 p-3 text-xs text-red-500">
-              <p className="font-semibold mb-1">Action Required:</p>
-              <p>Run the SQL script from the scripts folder:</p>
-              <code className="block mt-1 bg-black/20 p-1 rounded">fix_realtime_rls_policies.sql</code>
-            </div>
-          )}
-
-          {streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED" && (
-            <div className="mb-3 rounded-md bg-green-500/10 p-3 text-xs text-green-500">
-              <p className="font-semibold mb-1">Realtime Connected</p>
-              <p>Waiting for events... Try streaming a song or swapping tokens to see notifications.</p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Button size="sm" onClick={testNotifications} className="w-full bg-transparent" variant="outline">
-              Test Toast System
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowDebug(false)} className="w-full text-xs">
-              Hide Panel
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED") {
-    return (
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setShowDebug(true)}
-        className="fixed bottom-20 right-4 z-40 opacity-30 hover:opacity-100 transition-opacity"
-        title="Show notification debug panel"
-      >
-        <AlertCircle className="h-4 w-4" />
-      </Button>
-    )
-  }
 
   return null
 }
