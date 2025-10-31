@@ -151,6 +151,7 @@ export default function AdminPage() {
     price_per_chunk: "0.001",
     duration: 180,
     unlock_type: "token",
+    is_featured: false, // Added for feature flag
   })
   const [updatingTrack, setUpdatingTrack] = useState(false)
 
@@ -182,6 +183,44 @@ export default function AdminPage() {
   // Check if connected wallet is admin (case-insensitive)
   const isAdmin = address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase()
 
+  // Function to load all tracks, including featured status
+  const loadAllTracks = async () => {
+    try {
+      const supabase = createBrowserClient()
+      const { data: tracksData } = await supabase
+        .from("tracks")
+        .select("*, artist:profiles!tracks_artist_id_fkey(artist_name, wallet_address), is_featured") // Include is_featured
+        .order("created_at", { ascending: false })
+
+      const tracksWithStats = await Promise.all(
+        tracksData?.map(async (track) => {
+          const { data: trackStreams } = await supabase
+            .from("streams")
+            .select("chunks_played, total_paid")
+            .eq("track_id", track.id)
+
+          const plays = trackStreams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
+          const revenue = trackStreams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+
+          const { count: likes } = await supabase
+            .from("likes")
+            .select("*", { count: "exact", head: true })
+            .eq("track_id", track.id)
+
+          return {
+            ...track,
+            plays,
+            revenue,
+            likes: likes || 0,
+          }
+        }) || [],
+      )
+      setTracks(tracksWithStats)
+    } catch (error) {
+      console.error("Failed to load tracks:", error)
+    }
+  }
+
   useEffect(() => {
     async function loadAdminData() {
       if (!isAdmin) {
@@ -202,30 +241,32 @@ export default function AdminPage() {
           { count: totalFollows },
           { data: streams },
           { data: profiles },
-          { data: tracksData },
+          // Removed tracksData from here as loadAllTracks will handle it
           { data: recentStreams },
         ] = await Promise.all([
           supabase.from("profiles").select("*", { count: "exact", head: true }),
           supabase.from("tracks").select("*", { count: "exact", head: true }).eq("is_active", true),
           supabase.from("likes").select("*", { count: "exact", head: true }),
           supabase.from("follows").select("*", { count: "exact", head: true }),
-          supabase
-            .from("streams")
-            .select("chunks_played, total_paid, started_at, listener_address"), // Changed created_at to started_at
+          supabase.from("streams").select("chunks_played, total_paid, started_at, listener_address"),
           supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-          supabase
-            .from("tracks")
-            .select("*, artist:profiles!tracks_artist_id_fkey(artist_name, wallet_address)")
-            .order("created_at", { ascending: false }),
+          // Moved tracks fetching to loadAllTracks
           supabase
             .from("streams")
-            .select("*, track:tracks(title), listener:profiles!streams_listener_address_fkey(artist_name)")
+            .select(`
+              *,
+              track:tracks(title),
+              listener:profiles!streams_listener_address_fkey(artist_name)
+            `)
             .order("last_played_at", { ascending: false })
             .limit(20),
         ])
 
-        console.log("[v0] Streams data:", streams?.length, "streams")
-        console.log("[v0] Sample stream:", streams?.[0])
+        console.log("[v0] Recent streams query result:", {
+          count: recentStreams?.length || 0,
+          sample: recentStreams?.[0],
+          error: recentStreams === null ? "Query returned null" : "No error",
+        })
 
         const totalStreams =
           streams?.reduce((sum, s) => {
@@ -333,40 +374,24 @@ export default function AdminPage() {
 
         setUsers(usersWithStats)
 
-        const tracksWithStats = await Promise.all(
-          tracksData?.map(async (track) => {
-            const { data: trackStreams } = await supabase
-              .from("streams")
-              .select("chunks_played, total_paid")
-              .eq("track_id", track.id)
-
-            const plays = trackStreams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
-            const revenue = trackStreams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-
-            const { count: likes } = await supabase
-              .from("likes")
-              .select("*", { count: "exact", head: true })
-              .eq("track_id", track.id)
-
-            return {
-              ...track,
-              plays,
-              revenue,
-              likes: likes || 0,
-            }
-          }) || [],
-        )
-
-        setTracks(tracksWithStats)
+        // Moved tracks fetching to loadAllTracks function
+        await loadAllTracks()
 
         const activity: RecentActivity[] =
-          recentStreams?.map((stream) => ({
-            id: stream.id,
-            type: "stream" as const,
-            description: `${stream.listener?.artist_name || "Anonymous"} played "${stream.track?.title || "Unknown"}"`,
-            timestamp: stream.last_played_at,
-            amount: Number(stream.total_paid),
-          })) || []
+          recentStreams
+            ?.filter((stream) => stream.track && stream.total_paid) // Only include streams with valid track and payment data
+            .map((stream) => ({
+              id: stream.id,
+              type: "stream" as const,
+              description: `${stream.listener?.artist_name || `User ${stream.listener_address?.slice(0, 6)}...${stream.listener_address?.slice(-4)}`} played "${stream.track?.title || "Unknown Track"}"`,
+              timestamp: stream.last_played_at || stream.started_at,
+              amount: Number(stream.total_paid),
+            })) || []
+
+        console.log("[v0] Recent activity processed:", {
+          count: activity.length,
+          sample: activity[0],
+        })
 
         setRecentActivity(activity)
 
@@ -524,15 +549,37 @@ export default function AdminPage() {
 
   const handleFeatureTrack = async (trackId: string) => {
     try {
-      toast({
-        title: "Track Featured",
-        description: "Track has been added to featured section.",
+      const track = tracks.find((t) => t.id === trackId) // Use local state 'tracks'
+      const newFeaturedStatus = !track?.is_featured
+
+      const response = await fetch(`/api/admin/tracks/${trackId}/feature`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address || "",
+        },
+        body: JSON.stringify({ featured: newFeaturedStatus }),
       })
-      setShowTrackDialog(false)
+
+      if (!response.ok) {
+        throw new Error("Failed to update featured status")
+      }
+
+      toast({
+        title: newFeaturedStatus ? "Track Featured" : "Track Unfeatured",
+        description: newFeaturedStatus
+          ? "Track has been added to featured section on discover page."
+          : "Track has been removed from featured section.",
+      })
+
+      // Refresh tracks using the dedicated function
+      await loadAllTracks()
+      setShowTrackDialog(false) // Assuming this dialog is not directly used for feature toggle
     } catch (error) {
+      console.error("[v0] Error featuring track:", error)
       toast({
         title: "Error",
-        description: "Failed to feature track",
+        description: "Failed to update featured status",
         variant: "destructive",
       })
     }
@@ -617,6 +664,7 @@ export default function AdminPage() {
       price_per_chunk: track.price_per_chunk?.toString() || "0.001",
       duration: track.duration || 180,
       unlock_type: track.unlock_type || "token",
+      is_featured: track.is_featured || false, // Set initial featured status
     })
     setShowEditTrackDialog(true)
   }
@@ -639,6 +687,7 @@ export default function AdminPage() {
         title: editTrackData.title,
         coin_address: editTrackData.coin_address,
         nft_contract_address: editTrackData.nft_contract_address,
+        is_featured: editTrackData.is_featured, // Include featured status
       })
 
       const response = await fetch(`/api/admin/tracks/${editTrackData.id}`, {
@@ -657,6 +706,7 @@ export default function AdminPage() {
           price_per_chunk: Number(editTrackData.price_per_chunk),
           duration: editTrackData.duration,
           unlock_type: editTrackData.unlock_type,
+          is_featured: editTrackData.is_featured, // Send featured status to API
         }),
       })
 
@@ -1397,8 +1447,10 @@ export default function AdminPage() {
                             Edit Metadata
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleFeatureTrack(track.id)}>
-                            <Star className="h-4 w-4 mr-2" />
-                            Feature Track
+                            <Star
+                              className={`h-4 w-4 mr-2 ${track.is_featured ? "fill-yellow-500 text-yellow-500" : ""}`}
+                            />
+                            {track.is_featured ? "Unfeature Track" : "Feature Track"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -2439,6 +2491,25 @@ export default function AdminPage() {
                   />
                   <p className="text-xs text-muted-foreground">NFT token ID (if applicable)</p>
                 </div>
+              </div>
+
+              {/* Featured Toggle */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-is_featured">Featured Status</Label>
+                <div className="flex items-center p-3 rounded-lg bg-muted/10 border border-border/50">
+                  <Label htmlFor="edit-is_featured" className="text-sm flex-grow">
+                    Mark as Featured
+                  </Label>
+                  <Switch
+                    id="edit-is_featured"
+                    checked={editTrackData.is_featured}
+                    onCheckedChange={(checked) => setEditTrackData({ ...editTrackData, is_featured: checked })}
+                    className="data-[state=checked]:bg-yellow-500"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  If checked, this track will appear in the featured section on the discover page.
+                </p>
               </div>
 
               <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">

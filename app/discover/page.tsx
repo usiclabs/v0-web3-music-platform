@@ -30,7 +30,8 @@ interface Category {
 }
 
 export default function DiscoverPage() {
-  const [featuredTrack, setFeaturedTrack] = useState<TrackWithStats | null>(null)
+  const [featuredTracks, setFeaturedTracks] = useState<TrackWithStats[]>([])
+  const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0)
   const [newReleases, setNewReleases] = useState<TrackWithStats[]>([])
   const [trending, setTrending] = useState<TrackWithStats[]>([])
   const [forYou, setForYou] = useState<TrackWithStats[]>([])
@@ -77,19 +78,46 @@ export default function DiscoverPage() {
     loadAllContent()
   }, [])
 
+  useEffect(() => {
+    if (featuredTracks.length <= 1) return
+
+    const interval = setInterval(() => {
+      setCurrentFeaturedIndex((prev) => (prev + 1) % featuredTracks.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [featuredTracks.length])
+
   async function loadAllContent() {
     setLoading(true)
     setError(null)
     try {
       const supabase = createBrowserClient()
 
-      // Fetch all tracks with artist information
+      const { data: featuredData, error: featuredError } = await supabase
+        .from("tracks")
+        .select(`
+          *,
+          artist:profiles!tracks_artist_id_fkey(*)
+        `)
+        .eq("is_featured", true)
+        .eq("is_active", true)
+        .or("is_hidden.is.null,is_hidden.eq.false")
+        .order("created_at", { ascending: false })
+        .limit(5)
+
+      if (featuredError) {
+        console.error("[v0] Error loading featured tracks:", featuredError)
+      }
+
       const { data: tracksData, error: tracksError } = await supabase
         .from("tracks")
         .select(`
           *,
           artist:profiles!tracks_artist_id_fkey(*)
         `)
+        .eq("is_active", true)
+        .or("is_hidden.is.null,is_hidden.eq.false")
         .order("created_at", { ascending: false })
         .limit(50)
 
@@ -104,16 +132,13 @@ export default function DiscoverPage() {
 
       const trackIds = tracksData.map((t) => t.id)
 
-      // Get play counts and earnings from streams
       const { data: streams } = await supabase
         .from("streams")
         .select("track_id, chunks_played, total_paid")
         .in("track_id", trackIds)
 
-      // Get like counts
       const { data: likes } = await supabase.from("likes").select("track_id").in("track_id", trackIds)
 
-      // Aggregate stats
       const statsMap = new Map<string, { total_earned: number; play_count: number; like_count: number }>()
 
       trackIds.forEach((id) => {
@@ -131,24 +156,27 @@ export default function DiscoverPage() {
         stats.like_count += 1
       })
 
-      // Merge stats with tracks
       const tracksWithStats: TrackWithStats[] = tracksData.map((track) => ({
         ...track,
         ...statsMap.get(track.id),
       }))
 
-      // Set featured track (most played or random from top tracks)
-      const topTracks = [...tracksWithStats].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
-      setFeaturedTrack(topTracks[0] || tracksWithStats[0])
+      if (featuredData && featuredData.length > 0) {
+        const featuredWithStats: TrackWithStats[] = featuredData.map((track) => ({
+          ...track,
+          ...statsMap.get(track.id),
+        }))
+        setFeaturedTracks(featuredWithStats)
+      } else {
+        const topTracks = [...tracksWithStats].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
+        setFeaturedTracks(topTracks.slice(0, 1))
+      }
 
-      // New releases (newest tracks)
       setNewReleases(tracksWithStats.slice(0, 12))
 
-      // Trending (most played)
       const trendingTracks = [...tracksWithStats].sort((a, b) => (b.play_count || 0) - (a.play_count || 0))
       setTrending(trendingTracks.slice(0, 12))
 
-      // For You (random selection for now, could be personalized later)
       const shuffled = [...tracksWithStats].sort(() => Math.random() - 0.5)
       setForYou(shuffled.slice(0, 12))
     } catch (error) {
@@ -237,84 +265,124 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-black pb-32">
-      {/* Hero Section */}
-      {!loading && !error && featuredTrack && (
-        <section className="relative h-[60vh] md:h-[70vh] overflow-hidden animate-fade-in">
-          {/* Background Image with Gradient Overlay */}
-          <div className="absolute inset-0">
-            <Image
-              src={featuredTrack.cover_url || "/placeholder.svg?height=800&width=1600&query=music hero"}
-              alt={featuredTrack.title}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent" />
-          </div>
+      {!loading && !error && featuredTracks.length > 0 && (
+        <section className="relative h-[60vh] md:h-[70vh] overflow-hidden">
+          {featuredTracks.map((track, index) => (
+            <div
+              key={track.id}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentFeaturedIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+              }`}
+            >
+              <div className="absolute inset-0">
+                <Image
+                  src={track.cover_url || "/placeholder.svg?height=800&width=1600&query=music hero"}
+                  alt={track.title}
+                  fill
+                  className="object-cover"
+                  priority={index === 0}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent" />
+              </div>
 
-          {/* Hero Content */}
-          <div className="relative container h-full flex items-end pb-12 px-4 sm:px-6">
-            <div className="max-w-2xl space-y-6 animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">Featured Track</span>
-              </div>
-              <h1 className="text-5xl md:text-7xl font-bold text-white text-balance leading-tight">
-                {featuredTrack.title}
-              </h1>
-              <Link href={`/artist/${featuredTrack.artist_id}`}>
-                <p className="text-xl md:text-2xl text-white/90 hover:text-primary transition-colors">
-                  {featuredTrack.artist?.artist_name ||
-                    `${featuredTrack.artist_id.slice(0, 6)}...${featuredTrack.artist_id.slice(-4)}`}
-                </p>
-              </Link>
-              <div className="flex items-center gap-4 text-white/70">
-                {featuredTrack.play_count && featuredTrack.play_count > 0 && (
-                  <span className="flex items-center gap-2">
-                    <Play className="h-4 w-4" />
-                    {featuredTrack.play_count} plays
-                  </span>
-                )}
-                {featuredTrack.like_count && featuredTrack.like_count > 0 && (
-                  <span className="flex items-center gap-2">
-                    <Heart className="h-4 w-4" />
-                    {featuredTrack.like_count} likes
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4">
-                <Button
-                  size="lg"
-                  className="rounded-full px-8 h-14 text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform"
-                  onClick={() => playTrack(featuredTrack, [featuredTrack])}
-                >
-                  <Play className="h-5 w-5 mr-2 fill-current" />
-                  Play Now
-                </Button>
-                <Link href={`/track/${featuredTrack.id}`}>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/20"
-                  >
-                    View Details
-                  </Button>
-                </Link>
+              <div className="relative container h-full flex items-end pb-12 px-4 sm:px-6">
+                <div className="max-w-2xl space-y-6 animate-fade-in">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-primary">Featured Track</span>
+                  </div>
+                  <h1 className="text-5xl md:text-7xl font-bold text-white text-balance leading-tight">
+                    {track.title}
+                  </h1>
+                  <Link href={`/artist/${track.artist_id}`}>
+                    <p className="text-xl md:text-2xl text-white/90 hover:text-primary transition-colors">
+                      {track.artist?.artist_name || `${track.artist_id.slice(0, 6)}...${track.artist_id.slice(-4)}`}
+                    </p>
+                  </Link>
+                  <div className="flex items-center gap-4 text-white/70">
+                    {track.play_count && track.play_count > 0 && (
+                      <span className="flex items-center gap-2">
+                        <Play className="h-4 w-4" />
+                        {track.play_count} plays
+                      </span>
+                    )}
+                    {track.like_count && track.like_count > 0 && (
+                      <span className="flex items-center gap-2">
+                        <Heart className="h-4 w-4" />
+                        {track.like_count} likes
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      size="lg"
+                      className="rounded-full px-8 h-14 text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform"
+                      onClick={() => playTrack(track, featuredTracks)}
+                    >
+                      <Play className="h-5 w-5 mr-2 fill-current" />
+                      Play Now
+                    </Button>
+                    <Link href={`/track/${track.id}`}>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/20"
+                      >
+                        View Details
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
+
+          {featuredTracks.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+              {featuredTracks.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentFeaturedIndex(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    index === currentFeaturedIndex ? "w-8 bg-primary" : "w-2 bg-white/50 hover:bg-white/70"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {featuredTracks.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/50 backdrop-blur-xl border border-white/20 hover:bg-black/70 hover:scale-110 transition-all"
+                onClick={() =>
+                  setCurrentFeaturedIndex((prev) => (prev - 1 + featuredTracks.length) % featuredTracks.length)
+                }
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/50 backdrop-blur-xl border border-white/20 hover:bg-black/70 hover:scale-110 transition-all"
+                onClick={() => setCurrentFeaturedIndex((prev) => (prev + 1) % featuredTracks.length)}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+            </>
+          )}
         </section>
       )}
 
       <main className="container py-12 px-4 sm:px-6 space-y-12">
-        {/* Error State */}
         {error && <ErrorState />}
 
-        {/* Empty State */}
         {!loading && !error && newReleases.length === 0 && <EmptyState />}
 
-        {/* Browse Categories */}
         {!loading && !error && newReleases.length > 0 && (
           <section ref={categoriesRef} data-section="categories" className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
@@ -348,7 +416,6 @@ export default function DiscoverPage() {
           </section>
         )}
 
-        {/* New Releases */}
         {!loading && !error && newReleases.length > 0 && (
           <section
             ref={newReleasesSectionRef}
@@ -396,7 +463,6 @@ export default function DiscoverPage() {
           </section>
         )}
 
-        {/* Trending Now */}
         {!loading && !error && trending.length > 0 && (
           <section
             ref={trendingSectionRef}
@@ -445,7 +511,6 @@ export default function DiscoverPage() {
           </section>
         )}
 
-        {/* For You */}
         {!loading && !error && forYou.length > 0 && (
           <section
             ref={forYouSectionRef}
@@ -471,7 +536,7 @@ export default function DiscoverPage() {
               </Button>
               <div ref={forYouRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
                 {forYou.map((track) => (
-                  <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
+                  <div key={track.id} className="flex-none w-[180px]">
                     <TrackCard track={track} queue={forYou} />
                   </div>
                 ))}
@@ -488,7 +553,6 @@ export default function DiscoverPage() {
           </section>
         )}
 
-        {/* Loading State */}
         {loading && (
           <div className="space-y-12">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

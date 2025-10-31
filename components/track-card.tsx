@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Heart, VideoIcon } from "lucide-react"
+import { Play, Heart, VideoIcon, Coins } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { TrackWithArtist } from "@/types/database"
@@ -11,6 +11,7 @@ import { useState, useEffect } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { AddToPlaylistModal } from "./add-to-playlist-modal"
 import { ReportTrackDialog } from "./report-track-dialog"
+import useSWR from "swr"
 
 interface TrackCardProps {
   track: TrackWithArtist & {
@@ -19,9 +20,13 @@ interface TrackCardProps {
     like_count?: number
     content_type?: string
     thumbnail_url?: string
+    token_address?: string
+    coin_address?: string
   }
   queue?: TrackWithArtist[]
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export function TrackCard({ track, queue }: TrackCardProps) {
   const { playTrack } = useAudioPlayer()
@@ -30,6 +35,26 @@ export function TrackCard({ track, queue }: TrackCardProps) {
   const [likeCount, setLikeCount] = useState(track.like_count || 0)
   const [isLiking, setIsLiking] = useState(false)
   const [likesAvailable, setLikesAvailable] = useState(true)
+
+  const tokenAddress = track.coin_address || track.token_address
+
+  const { data: tokenMetrics } = useSWR(tokenAddress ? `/api/token/metrics/${tokenAddress}` : null, fetcher, {
+    refreshInterval: 30000,
+  })
+
+  useEffect(() => {
+    console.log("[v0] Track card rendered:", {
+      title: track.title,
+      token_address: track.token_address,
+      hasTokenAddress: !!track.token_address,
+    })
+  }, [track.id, track.token_address])
+
+  useEffect(() => {
+    if (tokenAddress) {
+      console.log("[v0] Token metrics for", track.title, ":", tokenMetrics)
+    }
+  }, [tokenMetrics, tokenAddress])
 
   useEffect(() => {
     if (address) {
@@ -122,6 +147,11 @@ export function TrackCard({ track, queue }: TrackCardProps) {
   return (
     <Card className="bg-card/50 backdrop-blur-xl border border-border/50 group overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/30">
       <div className="relative aspect-square overflow-hidden">
+        {tokenAddress && (
+          <div className="absolute top-2 left-2 z-10 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 p-1.5 rounded-full shadow-lg animate-shine">
+            <Coins className="h-4 w-4 text-yellow-950" />
+          </div>
+        )}
         {track.content_type === "video" && (
           <div className="absolute top-2 right-2 z-10 bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1">
             <VideoIcon className="h-3 w-3 text-primary" />
@@ -166,6 +196,17 @@ export function TrackCard({ track, queue }: TrackCardProps) {
             {track.artist.artist_name || formatAddress(track.artist_id)}
           </p>
         </Link>
+        {tokenAddress && tokenMetrics?.marketCap && (
+          <p className="text-xs font-bold mt-1 text-green-500 animate-pulse-green">
+            $
+            {tokenMetrics.marketCap >= 1000000
+              ? `${(tokenMetrics.marketCap / 1000000).toFixed(2)}M`
+              : tokenMetrics.marketCap >= 1000
+                ? `${(tokenMetrics.marketCap / 1000).toFixed(2)}K`
+                : tokenMetrics.marketCap.toFixed(2)}{" "}
+            MC
+          </p>
+        )}
         {track.total_earned !== undefined && track.total_earned > 0 && (
           <p className="text-xs font-medium mt-2 text-green-500 animate-green-glow">
             {track.total_earned.toFixed(4)} USDC earned
