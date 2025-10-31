@@ -157,7 +157,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Requesting signature from wallet...")
       console.log("[v0] Domain:", JSON.stringify(domain, null, 2))
       console.log("[v0] Types:", JSON.stringify(types, null, 2))
-      console.log("[v0] Value:", JSON.stringify(value, null, 2))
+      console.log(
+        "[v0] Value:",
+        JSON.stringify(value, (key, val) => (typeof val === "bigint" ? val.toString() : val), 2),
+      )
       console.log("[v0] Provided primaryType:", primaryType)
 
       const detectedPrimaryType = primaryType || Object.keys(types)[0]
