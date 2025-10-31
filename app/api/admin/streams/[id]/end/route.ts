@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 const ADMIN_ADDRESSES = (process.env.NEXT_PUBLIC_ADMIN_ADDRESSES || "").toLowerCase().split(",")
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id: streamId } = await params
+    const { id: streamId } = params
     console.log("[v0] [Admin] Attempting to end stream:", streamId)
 
     // Get wallet address from headers
@@ -42,8 +43,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     console.log("[v0] [Admin] Found stream:", existingStream.title, "is_live:", existingStream.is_live)
 
-    // Update the stream to end it
-    const { data: updatedStream, error: updateError } = await supabase
+    if (!existingStream.is_live) {
+      console.log("[v0] [Admin] Stream is already ended")
+      return NextResponse.json({
+        success: true,
+        stream: existingStream,
+        message: "Stream was already ended",
+      })
+    }
+
+    console.log("[v0] [Admin] Using admin client to update stream (bypassing RLS)...")
+    const adminClient = createAdminClient()
+
+    const { data: updatedStream, error: updateError } = await adminClient
       .from("live_streams")
       .update({
         is_live: false,
@@ -53,17 +65,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .select()
       .single()
 
+    console.log("[v0] [Admin] Update result:", {
+      success: !!updatedStream,
+      is_live: updatedStream?.is_live,
+      ended_at: updatedStream?.ended_at,
+      error: updateError,
+    })
+
     if (updateError) {
       console.error("[v0] [Admin] Failed to update stream:", updateError)
       return NextResponse.json({ error: "Failed to end stream", details: updateError.message }, { status: 500 })
     }
 
     if (!updatedStream) {
-      console.error("[v0] [Admin] No rows were updated for stream:", streamId)
-      return NextResponse.json({ error: "Failed to update stream - no rows affected" }, { status: 500 })
+      console.error("[v0] [Admin] Update returned null for stream:", streamId)
+      return NextResponse.json({ error: "Failed to update stream - no data returned" }, { status: 500 })
     }
 
-    console.log("[v0] [Admin] Stream ended successfully:", updatedStream)
+    console.log("[v0] [Admin] Stream ended successfully:", {
+      id: updatedStream.id,
+      title: existingStream.title,
+      is_live: updatedStream.is_live,
+      ended_at: updatedStream.ended_at,
+    })
 
     return NextResponse.json({
       success: true,
