@@ -159,6 +159,33 @@ export default function WalletPage() {
     { refreshInterval: 30000 }, // Refresh every 30 seconds
   )
 
+  const { data: portfolioValue, isLoading: portfolioLoading } = useSWR(
+    songTokens && songTokens.length > 0 ? ["wallet-portfolio-value", songTokens] : null,
+    async () => {
+      if (!songTokens || songTokens.length === 0) return 0
+
+      let totalValue = 0
+
+      for (const token of songTokens) {
+        try {
+          const res = await fetch(`/api/token/metrics/${token.coin_address}`)
+          if (res.ok) {
+            const metrics = await res.json()
+            if (metrics.price > 0) {
+              const tokenValue = token.balanceNum * metrics.price
+              totalValue += tokenValue
+            }
+          }
+        } catch (error) {
+          console.error("[v0] Failed to fetch price for token:", token.title, error)
+        }
+      }
+
+      return totalValue
+    },
+    { refreshInterval: 60000 }, // Refresh every minute
+  )
+
   const copyAddress = () => {
     if (address) {
       navigator.clipboard.writeText(address)
@@ -235,7 +262,25 @@ export default function WalletPage() {
         {/* Token Balances */}
         <div>
           <h2 className="text-xl font-bold mb-4">Token Balances</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Portfolio Value */}
+            <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20 hover:border-purple-500/40 transition-all">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-purple-500" />
+                </div>
+                <span className="text-xs font-medium text-purple-500 bg-purple-500/10 px-2 py-1 rounded-full">
+                  PORTFOLIO
+                </span>
+              </div>
+              {portfolioLoading || tokensLoading ? (
+                <Skeleton className="h-8 w-32 mb-2" />
+              ) : (
+                <p className="text-3xl font-bold mb-1">${portfolioValue ? portfolioValue.toFixed(2) : "0.00"}</p>
+              )}
+              <p className="text-sm text-muted-foreground">Total Token Value</p>
+            </Card>
+
             {/* USDC Balance */}
             <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 hover:border-green-500/40 transition-all">
               <div className="flex items-center justify-between mb-4">

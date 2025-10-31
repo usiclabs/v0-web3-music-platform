@@ -29,6 +29,7 @@ import {
   UNISWAP_V3_QUOTER_ABI,
 } from "@/lib/web3/contracts"
 import confetti from "canvas-confetti"
+import { TrackComments } from "@/components/track-comments"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -599,6 +600,10 @@ export function TrackDetailContent({
               </Card>
             )}
           </div>
+        </div>
+
+        <div className="mt-12 max-w-4xl mx-auto">
+          <TrackComments trackId={track.id} />
         </div>
       </main>
 
