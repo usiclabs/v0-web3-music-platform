@@ -98,9 +98,8 @@ export default function WalletPage() {
     },
   )
 
-  // Fetch collected song tokens
   const { data: songTokens, isLoading: tokensLoading } = useSWR(
-    address ? ["wallet-song-tokens", address] : null,
+    address && publicClient ? ["wallet-song-tokens", address] : null,
     async () => {
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -114,11 +113,50 @@ export default function WalletPage() {
         .not("coin_address", "is", null)
 
       if (error) throw error
+      if (!tracks || tracks.length === 0) return []
 
-      // For now, return tracks with coin addresses
-      // In production, you'd check on-chain balances for each coin
-      return tracks || []
+      console.log("[v0] Checking balances for", tracks.length, "tokenized tracks")
+
+      // Check on-chain balance for each token
+      const tokensWithBalances = await Promise.all(
+        tracks.map(async (track) => {
+          try {
+            const balance = await publicClient!.readContract({
+              address: track.coin_address as `0x${string}`,
+              abi: ERC20_ABI,
+              functionName: "balanceOf",
+              args: [address as `0x${string}`],
+            })
+
+            const balanceFormatted = formatUnits(balance as bigint, 18)
+            const balanceNum = Number.parseFloat(balanceFormatted)
+
+            console.log("[v0] Token balance for", track.title, ":", balanceFormatted)
+
+            return {
+              ...track,
+              balance: balanceFormatted,
+              balanceNum,
+            }
+          } catch (error) {
+            console.error("[v0] Failed to fetch balance for", track.title, error)
+            return {
+              ...track,
+              balance: "0",
+              balanceNum: 0,
+            }
+          }
+        }),
+      )
+
+      // Filter out tokens with zero balance
+      const ownedTokens = tokensWithBalances.filter((token) => token.balanceNum > 0)
+
+      console.log("[v0] User owns", ownedTokens.length, "out of", tracks.length, "tokenized tracks")
+
+      return ownedTokens
     },
+    { refreshInterval: 30000 }, // Refresh every 30 seconds
   )
 
   const copyAddress = () => {
@@ -328,12 +366,17 @@ export default function WalletPage() {
               {songTokens.map((token: any) => (
                 <Link key={token.id} href={`/track/${token.id}`}>
                   <Card className="p-4 hover:border-accent/50 transition-all group">
-                    <div className="aspect-square w-full rounded overflow-hidden mb-3 bg-accent/5">
+                    <div className="aspect-square w-full rounded overflow-hidden mb-3 bg-accent/5 relative">
                       <img
                         src={token.cover_url || "/placeholder.svg?height=200&width=200"}
                         alt={token.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
+                      <div className="absolute top-2 right-2 bg-accent/90 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-full">
+                        {Number.parseFloat(token.balance).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}
+                      </div>
                     </div>
                     <p className="font-medium text-sm truncate mb-1">{token.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{formatAddress(token.artist_id)}</p>
@@ -349,7 +392,7 @@ export default function WalletPage() {
                 Collect song tokens by supporting your favorite artists
               </p>
               <Button asChild>
-                <Link href="/explore">Discover Music</Link>
+                <Link href="/tokens">Discover Tokenized Music</Link>
               </Button>
             </Card>
           )}
