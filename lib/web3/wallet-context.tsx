@@ -153,12 +153,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log("[v0] ===== SIGNATURE REQUEST START =====")
       console.log("[v0] Requesting signature from wallet...")
-      console.log("[v0] Signing typed data with domain:", domain.name, "chainId:", domain.chainId)
-      console.log("[v0] Message fields:", Object.keys(value).join(", "))
+      console.log("[v0] Domain:", JSON.stringify(domain, null, 2))
+      console.log("[v0] Types:", JSON.stringify(types, null, 2))
+      console.log("[v0] Value:", JSON.stringify(value, null, 2))
+      console.log("[v0] Provided primaryType:", primaryType)
 
       const detectedPrimaryType = primaryType || Object.keys(types)[0]
-      console.log("[v0] Using primaryType:", detectedPrimaryType)
+      console.log("[v0] Final primaryType:", detectedPrimaryType)
+      console.log("[v0] Available types in object:", Object.keys(types).join(", "))
+
+      // Validate that the primaryType exists in types
+      if (!types[detectedPrimaryType]) {
+        console.error("[v0] ERROR: primaryType not found in types object!")
+        console.error("[v0] Looking for:", detectedPrimaryType)
+        console.error("[v0] Available:", Object.keys(types))
+        throw new Error(`Invalid primaryType: ${detectedPrimaryType} not found in types object`)
+      }
 
       const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
       console.log("[v0] Mobile device detected:", isMobile)
@@ -183,6 +195,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const timeoutMs = isMobile ? 120000 : 60000
       console.log("[v0] Using timeout:", timeoutMs, "ms")
 
+      console.log("[v0] Calling signTypedDataAsync with:", {
+        domain: domain.name,
+        chainId: domain.chainId,
+        primaryType: detectedPrimaryType,
+        messageKeys: Object.keys(value),
+      })
+
       const signaturePromise = signTypedDataAsync({
         domain,
         types,
@@ -198,8 +217,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       const signature = await Promise.race([signaturePromise, timeoutPromise])
 
-      console.log("[v0] Signature received:", signature)
+      console.log("[v0] Signature received successfully!")
+      console.log("[v0] Signature:", signature)
       console.log("[v0] Signature length:", signature.length)
+      console.log("[v0] ===== SIGNATURE REQUEST END =====")
 
       if (!signature || signature.length < 128) {
         throw new Error("Invalid signature received from wallet")
@@ -207,6 +228,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       return signature
     } catch (error) {
+      console.error("[v0] ===== SIGNATURE REQUEST FAILED =====")
       console.error("[v0] Failed to sign typed data:", error)
       console.error("[v0] Error details:", {
         name: error instanceof Error ? error.name : "Unknown",
@@ -214,42 +236,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         stack: error instanceof Error ? error.stack : undefined,
       })
 
-      if (error instanceof Error) {
-        if (
-          error.message.includes("User rejected") ||
-          error.message.includes("User denied") ||
-          error.message.includes("User cancelled")
-        ) {
-          throw new Error(
-            "You cancelled the signature request. Please try again and approve the signature in your wallet.",
-          )
-        }
-        if (error.message.includes("timeout") || error.message.includes("timed out")) {
-          throw new Error(
-            "Signature request timed out. This can happen on slow mobile connections. Please ensure you have a stable internet connection and try again.",
-          )
-        }
-        if (error.message.includes("Invalid parameters") || error.message.includes("eth_signTypedData")) {
-          throw new Error(
-            "Your wallet doesn't fully support EIP-712 signatures. Please try using MetaMask, Coinbase Wallet, or Base Wallet for the best experience.",
-          )
-        }
-        if (error.message.includes("Unknown method") || error.message.includes("not supported")) {
-          throw new Error(
-            "Your wallet doesn't support the required signature method. Please use MetaMask, Coinbase Wallet, or Base Wallet.",
-          )
-        }
-        if (error.message.includes("network") || error.message.includes("fetch")) {
-          throw new Error(
-            "Network error while requesting signature. Please check your internet connection and try again.",
-          )
-        }
-        if (error.message.includes("Invalid signature received")) {
-          throw error
-        }
-      }
-
-      throw new Error("Failed to sign payment authorization. Please ensure your wallet is unlocked and try again.")
+      throw error
     }
   }
 
