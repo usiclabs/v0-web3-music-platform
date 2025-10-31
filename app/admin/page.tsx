@@ -44,6 +44,8 @@ import {
   Grid,
   Coins,
   Plus,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
@@ -72,6 +74,7 @@ type PlatformStats = {
   avgRevenuePerUser: number
   revenueGrowth: number
   userGrowth: number
+  totalTransactions?: number // Added for gasless dashboard
 }
 
 type RecentActivity = {
@@ -102,6 +105,7 @@ export default function AdminPage() {
     avgRevenuePerUser: 0,
     revenueGrowth: 0,
     userGrowth: 0,
+    totalTransactions: 0, // Initialize for gasless dashboard
   })
 
   const [users, setUsers] = useState<any[]>([])
@@ -167,6 +171,8 @@ export default function AdminPage() {
       try {
         const supabase = createBrowserClient()
 
+        console.log("[v0] Loading admin data...")
+
         // Get platform statistics
         const [
           { count: totalUsers },
@@ -195,18 +201,38 @@ export default function AdminPage() {
             .limit(20),
         ])
 
-        const totalStreams = streams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
-        const totalRevenue = streams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+        console.log("[v0] Streams data:", streams?.length, "streams")
+        console.log("[v0] Sample stream:", streams?.[0])
+
+        const totalStreams =
+          streams?.reduce((sum, s) => {
+            const chunks = Number(s.chunks_played) || 0
+            return sum + chunks
+          }, 0) || 0
+
+        const totalRevenue =
+          streams?.reduce((sum, s) => {
+            const paid = Number(s.total_paid) || 0
+            return sum + paid
+          }, 0) || 0
+
+        console.log("[v0] Total streams:", totalStreams)
+        console.log("[v0] Total revenue:", totalRevenue)
 
         // Calculate active users in last 24h
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
         const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
-        const { count: activeUsers24h } = await supabase
+        const { data: activeUsersData } = await supabase
           .from("streams")
-          .select("listener_address", { count: "exact", head: true })
+          .select("listener_address")
           .gte("created_at", oneDayAgo)
+
+        const uniqueActiveUsers = new Set(activeUsersData?.map((s) => s.listener_address) || [])
+        const activeUsers24h = uniqueActiveUsers.size
+
+        console.log("[v0] Active users 24h:", activeUsers24h, "unique users from", activeUsersData?.length, "streams")
 
         const { count: newUsers7d } = await supabase
           .from("profiles")
@@ -234,18 +260,30 @@ export default function AdminPage() {
         const userGrowth = newUsersPrevious7d ? ((newUsers7d - newUsersPrevious7d) / newUsersPrevious7d) * 100 : 0
         const revenueGrowth = previousRevenue ? ((recentRevenue - previousRevenue) / previousRevenue) * 100 : 0
 
+        // Fetch total transactions for gasless dashboard
+        const { count: totalTransactions } = await supabase
+          .from("relay_transactions") // Assuming this table stores relay transactions
+          .select("*", { count: "exact", head: true })
+
         setStats({
           totalUsers: totalUsers || 0,
           totalTracks: totalTracks || 0,
           totalStreams,
           totalRevenue,
-          activeUsers24h: activeUsers24h || 0,
+          activeUsers24h,
           newUsers7d: newUsers7d || 0,
           totalLikes: totalLikes || 0,
           totalFollows: totalFollows || 0,
           avgRevenuePerUser: totalUsers ? totalRevenue / totalUsers : 0,
           revenueGrowth,
           userGrowth,
+          totalTransactions: totalTransactions || 0,
+        })
+
+        console.log("[v0] Stats updated:", {
+          totalStreams,
+          totalRevenue,
+          activeUsers24h,
         })
 
         const usersWithStats = await Promise.all(
@@ -866,6 +904,46 @@ export default function AdminPage() {
           </div>
 
           <TabsContent value="overview" className="space-y-6">
+            {/* Gasless Subsidy Dashboard Card */}
+            <Card
+              className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent backdrop-blur-xl border border-primary/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 hover:border-primary/50 transition-all duration-300 group cursor-pointer"
+              onClick={() => (window.location.href = "/admin/gasless")}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        Gasless Subsidy Dashboard
+                        <Badge variant="outline" className="bg-primary/10 border-primary/30 text-primary text-xs">
+                          EIP-3009
+                        </Badge>
+                      </h3>
+                      <p className="text-xs text-muted-foreground">Monitor and manage gasless transactions</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Track relayed transactions, user gas usage, and subsidy limits. Manage EIP-3009 gasless features
+                    including X402 streaming and token swaps.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-500">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Active
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-500/10 border-blue-500/30 text-blue-500">
+                      <Activity className="h-3 w-3 mr-1" />
+                      {stats.totalTransactions?.toLocaleString()} Total Txs
+                    </Badge>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 text-primary group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Card>
+
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6">
               <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
                 <Clock className="h-5 w-5 text-primary" />
@@ -1487,6 +1565,32 @@ export default function AdminPage() {
               </h3>
 
               <div className="space-y-6">
+                {/* Gasless Management Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Gasless Transactions
+                  </h4>
+
+                  <Card
+                    className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20 p-4 hover:border-primary/30 transition-all group cursor-pointer"
+                    onClick={() => (window.location.href = "/admin/gasless")}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 group-hover:scale-110 transition-transform">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Gasless Subsidy Dashboard</p>
+                          <p className="text-xs text-muted-foreground">Manage EIP-3009 relayer and subsidies</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Card>
+                </div>
+
                 {/* Maintenance Mode */}
                 <div className="flex items-center justify-between p-4 rounded-lg bg-muted/10 border border-border/50">
                   <div className="flex-1">

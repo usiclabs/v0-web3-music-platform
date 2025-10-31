@@ -254,6 +254,23 @@ export async function POST(request: NextRequest) {
         const vHex = normalizedV.toString(16).padStart(2, "0")
         const signature = `0x${rHex}${sHex}${vHex}` as `0x${string}`
 
+        const latestNonce = await walletClient.getTransactionCount({
+          address: account.address,
+          blockTag: "pending", // Include pending transactions
+        })
+        console.log("[v0] Using nonce:", latestNonce)
+
+        const gasPrice = await walletClient.getGasPrice()
+        const maxFeePerGas = (gasPrice * 120n) / 100n // 20% higher
+        const maxPriorityFeePerGas = (gasPrice * 10n) / 100n // 10% of base fee as priority
+
+        console.log(
+          "[v0] Gas configuration - maxFeePerGas:",
+          maxFeePerGas.toString(),
+          "maxPriorityFeePerGas:",
+          maxPriorityFeePerGas.toString(),
+        )
+
         const submitPromise = walletClient.writeContract({
           address: usdcAddress,
           abi: USDC_TRANSFER_WITH_AUTHORIZATION_ABI,
@@ -267,6 +284,10 @@ export async function POST(request: NextRequest) {
             nonce as `0x${string}`,
             signature,
           ],
+          nonce: latestNonce,
+          maxFeePerGas,
+          maxPriorityFeePerGas,
+          gas: 100000n, // Explicit gas limit for transferWithAuthorization
         })
 
         const hash = await Promise.race([

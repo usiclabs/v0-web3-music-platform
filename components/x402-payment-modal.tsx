@@ -2,7 +2,18 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Coins, Zap, Shield, Clock, CheckCircle2, Loader2, ExternalLink, Music, AlertCircle } from "lucide-react"
+import {
+  Coins,
+  Zap,
+  Shield,
+  Clock,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  Music,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useState, useEffect } from "react"
 import { X402_CONFIG } from "@/lib/web3/contracts"
@@ -234,6 +245,14 @@ export function X402PaymentModal() {
             </div>
           )}
 
+          {/* Gasless Payment Indicator */}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-primary">
+              <span className="font-semibold">Gasless Payment:</span> No ETH needed! We cover the gas fees for you.
+            </p>
+          </div>
+
           {isConnected && hasInsufficientBalance && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -339,16 +358,23 @@ export function X402PaymentModal() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">X402 Benefits</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
+                    <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">100% Gasless</p>
+                      <p className="text-xs text-muted-foreground">We pay all gas fees - you only pay for content</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
                     <Zap className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">No Gas Fees</p>
-                      <p className="text-xs text-muted-foreground">Pay only for content, not transactions</p>
+                      <p className="text-sm font-medium">Instant Streaming</p>
+                      <p className="text-xs text-muted-foreground">Sign once and start listening immediately</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Shield className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Secure & Instant</p>
+                      <p className="text-sm font-medium">Secure & Private</p>
                       <p className="text-xs text-muted-foreground">Cryptographic payment authorization</p>
                     </div>
                   </div>

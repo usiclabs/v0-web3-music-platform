@@ -5,6 +5,8 @@ import { Activity, Play, DollarSign, Music } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface RecentActivityFeedProps {
   activity: Array<{
@@ -24,12 +26,85 @@ interface RecentActivityFeedProps {
   }>
 }
 
-export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
+export function RecentActivityFeed({ activity: initialActivity }: RecentActivityFeedProps) {
+  const [activity, setActivity] = useState(initialActivity)
+  const supabase = createClient()
+
+  useEffect(() => {
+    console.log("[v0] Setting up real-time activity feed subscription...")
+
+    const channel = supabase
+      .channel("activity-feed")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "streams",
+        },
+        async (payload) => {
+          console.log("[v0] New stream activity received:", payload)
+
+          const newStream = payload.new as {
+            id: string
+            started_at: string
+            listener_address: string
+            chunks_played: number
+            total_paid: number
+            track_id: string
+          }
+
+          const { data: streamData } = await supabase
+            .from("streams")
+            .select(
+              `
+              id,
+              started_at,
+              listener_address,
+              chunks_played,
+              total_paid,
+              tracks!streams_track_id_fkey (
+                id,
+                title,
+                cover_url,
+                artist_id,
+                profiles!tracks_artist_id_fkey (
+                  artist_name
+                )
+              )
+            `,
+            )
+            .eq("id", newStream.id)
+            .single()
+
+          if (streamData) {
+            console.log("[v0] Adding new activity to feed:", streamData)
+            setActivity((prev) => [streamData, ...prev].slice(0, 20))
+          }
+        },
+      )
+      .subscribe((status) => {
+        console.log("[v0] Activity feed subscription status:", status)
+      })
+
+    return () => {
+      console.log("[v0] Cleaning up activity feed subscription")
+      supabase.removeChannel(channel)
+    }
+  }, [supabase])
+
   return (
     <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
       <h3 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
         <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
         Recent Activity
+        <span className="ml-auto flex items-center gap-1 text-xs text-green-500">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          Live
+        </span>
       </h3>
 
       <div className="space-y-3 max-h-[500px] overflow-y-auto">

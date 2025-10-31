@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp, Coins, Bell, BellOff } from "lucide-react"
+import { Music, TrendingUp, Coins, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function RealtimeNotifications() {
@@ -31,6 +31,8 @@ export function RealtimeNotifications() {
           event: "INSERT",
           schema: "public",
           table: "streams",
+          // Filter out current user's streams at the database level
+          filter: address ? `listener_address=neq.${address}` : undefined,
         },
         async (payload) => {
           console.log("[v0] ✅ Stream event received:", payload)
@@ -97,16 +99,9 @@ export function RealtimeNotifications() {
       .subscribe((status) => {
         console.log("[v0] Stream channel subscription status:", status)
         setStreamStatus(status)
-        if ((status === "CHANNEL_ERROR" || status === "TIMED_OUT") && !hasShownErrorToast.current) {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("[v0] ❌ Stream channel subscription failed:", status)
-          hasShownErrorToast.current = true
-          addToast({
-            title: "Real-time Notifications Disabled",
-            description:
-              "Run the 'enable_realtime_notifications.sql' script from the scripts folder to enable live activity notifications.",
-            variant: "error",
-            duration: 10000,
-          })
+          setShowDebug(true)
         }
       })
 
@@ -119,6 +114,8 @@ export function RealtimeNotifications() {
           event: "INSERT",
           schema: "public",
           table: "swap_history",
+          // Filter out current user's swaps at the database level
+          filter: address ? `user_address=neq.${address}` : undefined,
         },
         async (payload) => {
           console.log("[v0] ✅ Swap event received:", payload)
@@ -234,6 +231,7 @@ export function RealtimeNotifications() {
         setSwapStatus(status)
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           console.error("[v0] ❌ Swap channel subscription failed:", status)
+          setShowDebug(true)
         }
       })
 
@@ -289,38 +287,71 @@ export function RealtimeNotifications() {
     console.log("[v0] Test notifications triggered")
   }
 
-  if (process.env.NODE_ENV === "development" || showDebug) {
+  const hasError =
+    streamStatus === "CHANNEL_ERROR" ||
+    streamStatus === "TIMED_OUT" ||
+    swapStatus === "CHANNEL_ERROR" ||
+    swapStatus === "TIMED_OUT"
+
+  if (showDebug || hasError) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        <div className="rounded-lg border border-border bg-background/95 p-3 text-xs backdrop-blur-sm">
-          <div className="mb-2 flex items-center gap-2 font-semibold">
-            {streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED" ? (
-              <Bell className="h-4 w-4 text-green-500" />
-            ) : (
-              <BellOff className="h-4 w-4 text-red-500" />
-            )}
-            <span>Notifications</span>
+      <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2 max-w-sm">
+        <div className="rounded-lg border-2 border-red-500/50 bg-background/95 p-4 shadow-xl backdrop-blur-sm">
+          <div className="mb-3 flex items-center gap-2 font-semibold text-red-500">
+            <AlertCircle className="h-5 w-5" />
+            <span>{hasError ? "Notifications Disabled" : "Debug Panel"}</span>
           </div>
-          <div className="space-y-1 text-muted-foreground">
-            <div>
-              Streams:{" "}
-              <span className={streamStatus === "SUBSCRIBED" ? "text-green-500" : "text-yellow-500"}>
-                {streamStatus}
-              </span>
+
+          <div className="mb-3 space-y-1 text-sm text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <span>Streams:</span>
+              <span className={streamStatus === "SUBSCRIBED" ? "text-green-500" : "text-red-500"}>{streamStatus}</span>
             </div>
-            <div>
-              Swaps:{" "}
-              <span className={swapStatus === "SUBSCRIBED" ? "text-green-500" : "text-yellow-500"}>{swapStatus}</span>
+            <div className="flex items-center justify-between">
+              <span>Swaps:</span>
+              <span className={swapStatus === "SUBSCRIBED" ? "text-green-500" : "text-red-500"}>{swapStatus}</span>
             </div>
           </div>
-          <Button size="sm" onClick={testNotifications} className="mt-2 w-full">
-            Test Notifications
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setShowDebug(false)} className="mt-1 w-full text-xs">
-            Hide Debug
-          </Button>
+
+          {hasError && (
+            <div className="mb-3 rounded-md bg-red-500/10 p-3 text-xs text-red-500">
+              <p className="font-semibold mb-1">Action Required:</p>
+              <p>Run the SQL script from the scripts folder:</p>
+              <code className="block mt-1 bg-black/20 p-1 rounded">fix_realtime_rls_policies.sql</code>
+            </div>
+          )}
+
+          {streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED" && (
+            <div className="mb-3 rounded-md bg-green-500/10 p-3 text-xs text-green-500">
+              <p className="font-semibold mb-1">Realtime Connected</p>
+              <p>Waiting for events... Try streaming a song or swapping tokens to see notifications.</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Button size="sm" onClick={testNotifications} className="w-full bg-transparent" variant="outline">
+              Test Toast System
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowDebug(false)} className="w-full text-xs">
+              Hide Panel
+            </Button>
+          </div>
         </div>
       </div>
+    )
+  }
+
+  if (streamStatus === "SUBSCRIBED" && swapStatus === "SUBSCRIBED") {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setShowDebug(true)}
+        className="fixed bottom-20 right-4 z-40 opacity-30 hover:opacity-100 transition-opacity"
+        title="Show notification debug panel"
+      >
+        <AlertCircle className="h-4 w-4" />
+      </Button>
     )
   }
 

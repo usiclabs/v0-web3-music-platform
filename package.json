@@ -26,6 +26,7 @@
     "@vercel/analytics": "latest",
     "@zoralabs/coins-sdk": "latest",
     "abitype": "latest",
+    "antd": "5.27.6",
     "canvas-confetti": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

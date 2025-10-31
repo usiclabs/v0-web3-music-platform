@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useState, useRef, useEffect, type ReactNode } from "react"
 import type { TrackWithArtist } from "@/types/database"
-import { requestChunk, verifyPayment, settlePayment, type X402PaymentPayload } from "@/lib/x402/client"
-import { X402_CONFIG, USDC_ADDRESS } from "@/lib/web3/contracts"
+import { requestChunk, verifyPayment } from "@/lib/x402/client"
+import { X402_CONFIG } from "@/lib/web3/contracts"
 import { useWallet } from "@/lib/web3/wallet-context"
+import { useEIP3009 } from "@/lib/web3/use-eip3009"
+import { submitAuthorization, getGasSubsidyInfo } from "@/lib/web3/eip3009-client"
 
 interface AudioPlayerContextType {
   currentTrack: TrackWithArtist | null
@@ -29,6 +31,7 @@ interface AudioPlayerContextType {
   skipTrack: () => void
   playNext: () => void
   playPrevious: () => void
+  gasSubsidyAvailable: boolean
 }
 
 const AudioPlayerContext = createContext<AudioPlayerContextType | undefined>(undefined)
@@ -47,6 +50,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const paymentJustSucceededRef = useRef(false)
   const { address, signTypedData } = useWallet()
+  const { signTransferAuthorization, isSigning } = useEIP3009()
+  const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
 
   const [queue, setQueue] = useState<TrackWithArtist[]>([])
   const [currentTrackIndex, setCurrentTrackIndex] = useState(-1)
@@ -110,6 +115,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [volume])
 
+  useEffect(() => {
+    const checkSubsidy = async () => {
+      if (address) {
+        const subsidyInfo = await getGasSubsidyInfo()
+        setGasSubsidyAvailable(subsidyInfo.available)
+      }
+    }
+    checkSubsidy()
+  }, [address])
+
   const isMobile = () => {
     if (typeof window === "undefined") return false
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -130,213 +145,107 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Detected wallet type:", walletType)
 
       const mobile = isMobile()
-      const maxVerifyAttempts = mobile ? 8 : 3
-      const maxSettleAttempts = mobile ? 8 : 3
-      const baseDelay = mobile ? 3000 : 1000
-
       console.log("[v0] Mobile device detected:", mobile)
-      console.log(
-        "[v0] Using retry strategy - verify attempts:",
-        maxVerifyAttempts,
-        "settle attempts:",
-        maxSettleAttempts,
-      )
 
       const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex)
       console.log("[v0] Payment instructions:", paymentInstructions)
 
-      const nonce = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`
-      const validAfter = Math.floor(Date.now() / 1000)
-      const validBefore = validAfter + (walletType === "coinbase" ? 86400 : mobile ? 14400 : 3600)
+      onProgress?.("signing")
+      console.log("[v0] Creating gasless payment authorization...")
+
       const valueInUSDC = Math.floor(Number.parseFloat(paymentInstructions.amount) * 1e6)
 
-      const domain = {
-        name: "USD Coin",
-        version: "2",
-        chainId: 8453,
-        verifyingContract: USDC_ADDRESS[8453] as `0x${string}`,
-      }
+      const signedAuth = await signTransferAuthorization(
+        paymentInstructions.recipient as `0x${string}`,
+        BigInt(valueInUSDC),
+        0n, // validAfter: now
+        BigInt(Math.floor(Date.now() / 1000) + (mobile ? 14400 : 3600)), // validBefore: 1-4 hours
+      )
 
-      const types = {
-        TransferWithAuthorization: [
-          { name: "from", type: "address" },
-          { name: "to", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "validAfter", type: "uint256" },
-          { name: "validBefore", type: "uint256" },
-          { name: "nonce", type: "bytes32" },
-        ],
-      }
+      console.log("[v0] Authorization signed successfully")
 
-      const message = {
-        from: address,
-        to: paymentInstructions.recipient,
-        value: BigInt(valueInUSDC),
-        validAfter: BigInt(validAfter),
-        validBefore: BigInt(validBefore),
-        nonce: nonce as `0x${string}`,
-      }
+      onProgress?.("verifying")
+      console.log("[v0] Submitting to relayer...")
 
-      console.log("[v0] EIP-712 Domain:", domain)
-      console.log("[v0] Message to sign:", {
-        from: message.from,
-        to: message.to,
-        value: message.value.toString(),
-        validAfter: message.validAfter.toString(),
-        validBefore: message.validBefore.toString(),
-        nonce: message.nonce,
+      const result = await submitAuthorization(signedAuth, {
+        trackId: currentTrack.id,
+        chunkIndex,
+        userId: address,
+        purpose: "x402_streaming",
       })
 
-      onProgress?.("signing")
-      console.log("[v0] Requesting signature from wallet...")
-
-      if (mobile || walletType === "coinbase") {
-        console.log(
-          "[v0] Mobile/Coinbase wallet detected - signature request may take longer. Please be patient and approve the request in your wallet app.",
-        )
+      if (!result.success) {
+        throw new Error(result.error || "Failed to submit gasless payment")
       }
 
-      const signature = await signTypedData(domain, types, message)
+      console.log("[v0] Gasless payment successful! Transaction:", result.txHash)
 
-      console.log("[v0] Raw signature received:", signature)
-      console.log("[v0] Signature length:", signature.length)
+      onProgress?.("settling")
+      console.log("[v0] Verifying payment signature...")
 
-      const { v, r, s } = splitSignature(signature, walletType)
-
-      console.log("[v0] Parsed signature components:")
-      console.log("[v0]   r:", r)
-      console.log("[v0]   s:", s)
-      console.log("[v0]   v:", v)
-
-      const paymentPayload: X402PaymentPayload = {
+      const paymentPayload = {
         scheme: paymentInstructions.scheme,
         network: paymentInstructions.network,
         authorization: {
-          from: address,
-          to: paymentInstructions.recipient,
-          value: valueInUSDC.toString(),
-          validAfter,
-          validBefore,
-          nonce,
-          v,
-          r,
-          s,
+          from: signedAuth.authorization.from,
+          to: signedAuth.authorization.to,
+          value: signedAuth.authorization.value.toString(),
+          validAfter: Number(signedAuth.authorization.validAfter),
+          validBefore: Number(signedAuth.authorization.validBefore),
+          nonce: signedAuth.authorization.nonce,
+          v: signedAuth.v,
+          r: signedAuth.r,
+          s: signedAuth.s,
         },
       }
 
-      console.log("[v0] Payment payload to send:", JSON.stringify(paymentPayload.authorization, null, 2))
-
-      onProgress?.("verifying")
-      console.log("[v0] Verifying payment signature...")
-
-      let verified = false
-      let verifyAttempts = 0
-
-      while (!verified && verifyAttempts < maxVerifyAttempts) {
-        try {
-          verified = await verifyPayment(paymentPayload)
-          if (!verified) {
-            verifyAttempts++
-            if (verifyAttempts < maxVerifyAttempts) {
-              const delay = baseDelay * Math.pow(1.5, verifyAttempts - 1)
-              console.log(`[v0] Verification attempt ${verifyAttempts} failed, retrying in ${delay}ms...`)
-              await new Promise((resolve) => setTimeout(resolve, delay))
-            }
-          }
-        } catch (verifyError) {
-          verifyAttempts++
-          console.error(`[v0] Verification attempt ${verifyAttempts} error:`, verifyError)
-          if (verifyAttempts >= maxVerifyAttempts) {
-            throw new Error(
-              mobile
-                ? "Payment verification failed. Mobile networks can be slow - please check your connection and try again. Your signature is valid for 4 hours."
-                : "Payment verification failed after multiple attempts",
-            )
-          }
-          const delay = baseDelay * Math.pow(1.5, verifyAttempts - 1)
-          await new Promise((resolve) => setTimeout(resolve, delay))
-        }
-      }
-
+      const verified = await verifyPayment(paymentPayload)
       if (!verified) {
         throw new Error("Payment verification failed")
       }
 
-      onProgress?.("settling")
-      console.log("[v0] Settling payment...")
+      console.log("[v0] Payment verified! Unlocking chunk", chunkIndex)
 
-      let result
-      let settleAttempts = 0
-
-      while (!result && settleAttempts < maxSettleAttempts) {
-        try {
-          result = await settlePayment(paymentPayload, currentTrack.id, address, chunkIndex)
-          if (!result.success) {
-            settleAttempts++
-            if (settleAttempts < maxSettleAttempts) {
-              const delay = baseDelay * 2 * Math.pow(1.5, settleAttempts - 1)
-              console.log(`[v0] Settlement attempt ${settleAttempts} failed, retrying in ${delay}ms...`)
-              await new Promise((resolve) => setTimeout(resolve, delay))
-            }
-          }
-        } catch (settleError) {
-          settleAttempts++
-          console.error(`[v0] Settlement attempt ${settleAttempts} error:`, settleError)
-
-          const errorMessage = settleError instanceof Error ? settleError.message : ""
-          const isNetworkError =
-            errorMessage.includes("fetch") || errorMessage.includes("network") || errorMessage.includes("timeout")
-
-          if (
-            errorMessage.includes("Insufficient USDC balance") ||
-            errorMessage.includes("transfer amount exceeds balance")
-          ) {
-            throw new Error(
-              "Insufficient USDC balance. Please add USDC to your wallet to play this track. You can buy USDC on Base using Coinbase or Uniswap.",
-            )
-          }
-
-          if (settleAttempts >= maxSettleAttempts) {
-            if (mobile && isNetworkError) {
-              throw new Error(
-                "Payment settlement timed out on mobile network. Your payment signature is valid for 4 hours - please try again when you have a better connection.",
-              )
-            }
-            throw new Error(
-              "Payment settlement failed after multiple attempts. Your payment may still be processing - please wait a moment and check your transaction history.",
-            )
-          }
-
-          const delay = baseDelay * 2 * Math.pow(1.5, settleAttempts - 1)
-          console.log(`[v0] Retrying settlement in ${delay}ms...`)
-          await new Promise((resolve) => setTimeout(resolve, delay))
-        }
+      try {
+        await fetch("/api/x402/record-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            trackId: currentTrack.id,
+            userId: address,
+            chunkIndex,
+            txHash: result.txHash,
+            amount: valueInUSDC,
+          }),
+        })
+      } catch (err) {
+        console.warn("[v0] Failed to record payment in database:", err)
       }
 
-      if (result?.success) {
-        console.log("[v0] Payment successful! Unlocking chunk", chunkIndex)
-        paymentJustSucceededRef.current = true
-        setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
+      paymentJustSucceededRef.current = true
+      setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
 
-        if (currentTrack.unlock_type === "full_song") {
-          const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
-          const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
-          setUnlockedChunks(allChunks)
-          console.log("[v0] Full song unlocked - all", totalChunks, "chunks available")
-        }
+      if (currentTrack.unlock_type === "full_song") {
+        const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
+        const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
+        setUnlockedChunks(allChunks)
+        console.log("[v0] Full song unlocked - all", totalChunks, "chunks available")
+      }
 
-        setPaymentRequired(false)
-        setError(null)
-        setShowPaymentModal(false)
+      setPaymentRequired(false)
+      setError(null)
+      setShowPaymentModal(false)
 
-        onProgress?.("complete", result.txHash)
+      onProgress?.("complete", result.txHash)
 
-        if (audioRef.current && currentTrack) {
-          audioRef.current.play().catch((err) => {
-            console.log("[v0] Autoplay after payment blocked:", err)
-          })
-          setIsPlaying(true)
-        }
+      const subsidyInfo = await getGasSubsidyInfo()
+      setGasSubsidyAvailable(subsidyInfo.available)
+
+      if (audioRef.current && currentTrack) {
+        audioRef.current.play().catch((err) => {
+          console.log("[v0] Autoplay after payment blocked:", err)
+        })
+        setIsPlaying(true)
       }
     } catch (err) {
       console.error("[v0] Payment error:", err)
@@ -576,6 +485,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         skipTrack,
         playNext,
         playPrevious,
+        gasSubsidyAvailable,
       }}
     >
       {children}
@@ -586,17 +496,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 const detectWalletType = (): "coinbase" | "metamask" | "walletconnect" | "unknown" => {
   if (typeof window === "undefined") return "unknown"
 
-  // Check for Coinbase Wallet
   if (window.ethereum?.isCoinbaseWallet || window.coinbaseWalletExtension) {
     return "coinbase"
   }
 
-  // Check for MetaMask
   if (window.ethereum?.isMetaMask) {
     return "metamask"
   }
 
-  // Check for WalletConnect
   if (window.ethereum?.isWalletConnect) {
     return "walletconnect"
   }
@@ -615,34 +522,26 @@ function splitSignature(signature: string, walletType?: string): { v: number; r:
   let s: string
   let v: number
 
-  // Standard format: 130 characters (65 bytes)
   if (sig.length === 130) {
     r = `0x${sig.slice(0, 64)}`
     s = `0x${sig.slice(64, 128)}`
     v = Number.parseInt(sig.slice(128, 130), 16)
     console.log("[v0] Standard signature format (130 chars)")
-  }
-  // Compact format: 128 characters (64 bytes) - missing v
-  else if (sig.length === 128) {
+  } else if (sig.length === 128) {
     r = `0x${sig.slice(0, 64)}`
     s = `0x${sig.slice(64, 128)}`
-    // Infer v from s value
     const sValue = BigInt(s)
     const secp256k1N = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141")
     v = sValue > secp256k1N / 2n ? 28 : 27
     console.log("[v0] Compact signature format (128 chars), inferred v:", v)
-  }
-  // Coinbase Wallet sometimes adds extra bytes
-  else if (sig.length > 130) {
+  } else if (sig.length > 130) {
     console.log("[v0] Extended signature format detected:", sig.length, "chars")
 
-    // Try standard extraction first
     try {
       r = `0x${sig.slice(0, 64)}`
       s = `0x${sig.slice(64, 128)}`
       v = Number.parseInt(sig.slice(128, 130), 16)
 
-      // Validate r and s are valid hex
       if (!/^0x[0-9a-fA-F]{64}$/.test(r) || !/^0x[0-9a-fA-F]{64}$/.test(s)) {
         throw new Error("Invalid r or s format in first 130 chars")
       }
@@ -651,41 +550,33 @@ function splitSignature(signature: string, walletType?: string): { v: number; r:
     } catch (e) {
       console.log("[v0] First 130 chars failed, trying last 130 chars")
 
-      // Try from the end (some wallets append data)
       const offset = sig.length - 130
       r = `0x${sig.slice(offset, offset + 64)}`
       s = `0x${sig.slice(offset + 64, offset + 128)}`
       v = Number.parseInt(sig.slice(offset + 128, offset + 130), 16)
 
-      // Validate
-      if (!/^0x[0-9a-fA-F]{64}$/.test(r) || !/^0x[0-9a-fA-F]{64}$/.test(s)) {
-        console.log("[v0] Last 130 chars failed, trying to find signature in middle")
+      console.log("[v0] Last 130 chars failed, trying to find signature in middle")
 
-        // Some wallets prepend metadata - try to find the actual signature
-        // Look for patterns that indicate start of r value
-        let found = false
-        for (let i = 0; i < sig.length - 130; i += 2) {
-          const testR = `0x${sig.slice(i, i + 64)}`
-          const testS = `0x${sig.slice(i + 64, i + 128)}`
+      let found = false
+      for (let i = 0; i < sig.length - 130; i += 2) {
+        const testR = `0x${sig.slice(i, i + 64)}`
+        const testS = `0x${sig.slice(i + 64, i + 128)}`
 
-          if (/^0x[0-9a-fA-F]{64}$/.test(testR) && /^0x[0-9a-fA-F]{64}$/.test(testS)) {
-            r = testR
-            s = testS
-            v = Number.parseInt(sig.slice(i + 128, i + 130), 16)
-            console.log("[v0] Found valid signature at offset:", i)
-            found = true
-            break
-          }
-        }
-
-        if (!found) {
-          throw new Error("Could not find valid signature components in extended format")
+        if (/^0x[0-9a-fA-F]{64}$/.test(testR) && /^0x[0-9a-fA-F]{64}$/.test(testS)) {
+          r = testR
+          s = testS
+          v = Number.parseInt(sig.slice(i + 128, i + 130), 16)
+          console.log("[v0] Found valid signature at offset:", i)
+          found = true
+          break
         }
       }
+
+      if (!found) {
+        throw new Error("Could not find valid signature components in extended format")
+      }
     }
-  }
-  // Signature too short
-  else {
+  } else {
     console.error("[v0] Signature too short:", sig.length, "chars")
     console.error("[v0] Full signature:", signature)
     throw new Error(
@@ -694,20 +585,17 @@ function splitSignature(signature: string, walletType?: string): { v: number; r:
     )
   }
 
-  // Normalize v value
   if (v < 27) {
     console.log("[v0] Normalizing v from", v, "to", v + 27)
     v = v + 27
   }
 
-  // Ensure v is 27 or 28
   if (v !== 27 && v !== 28) {
     console.warn("[v0] Unusual v value:", v, "- attempting to normalize")
     v = v % 2 === 0 ? 28 : 27
     console.log("[v0] Normalized v to:", v)
   }
 
-  // Final validation
   if (!/^0x[0-9a-fA-F]{64}$/.test(r)) {
     throw new Error(`Invalid r component: ${r}`)
   }

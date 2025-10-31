@@ -7,7 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowDownUp, Loader2, ExternalLink, TrendingUp, Wallet, Settings, Info, Zap, AlertCircle } from "lucide-react"
+import {
+  ArrowDownUp,
+  Loader2,
+  ExternalLink,
+  TrendingUp,
+  Wallet,
+  Settings,
+  Info,
+  Zap,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import {
   USDC_ADDRESS,
@@ -24,6 +35,9 @@ import { useReadContract, useWriteContract, useBalance } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import { createClient } from "@/lib/supabase/client"
 import confetti from "canvas-confetti"
+import { useEIP3009 } from "@/lib/web3/use-eip3009"
+import { checkGaslessSwapEligibility } from "@/lib/swap/gasless-swap"
+import { Switch } from "@/components/ui/switch"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006", // WETH on Base
@@ -51,13 +65,18 @@ export default function SwapPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [swapHistory, setSwapHistory] = useState<SwapHistory[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
-  const [activeTab, setActiveTab] = useState<"eth" | "usdc">("eth")
+  const [activeTab, setActiveTab] = useState<"eth" | "usdc">("usdc") // Default to USDC for gasless
   const [estimatedGas, setEstimatedGas] = useState<string>("0.01")
   const [priceImpact, setPriceImpact] = useState<string>("0")
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [realQuote, setRealQuote] = useState<bigint | null>(null)
   const [availablePool, setAvailablePool] = useState<{ address: string; fee: number } | null>(null)
   const [isCheckingPools, setIsCheckingPools] = useState(false)
+
+  const [gaslessMode, setGaslessMode] = useState(false)
+  const [gaslessEligible, setGaslessEligible] = useState(false)
+  const [remainingGaslessSwaps, setRemainingGaslessSwaps] = useState(0)
+  const { signTransferAuthorization, isSigning } = useEIP3009()
 
   const { data: ethBalance } = useBalance({
     address: address,
@@ -231,6 +250,23 @@ export default function SwapPage() {
     }
   }, [quoteData, quoteErrorData, isQuoteLoading, inputAmount, activeTab, availablePool])
 
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (address && activeTab === "usdc") {
+        const result = await checkGaslessSwapEligibility(address as `0x${string}`)
+        setGaslessEligible(result.eligible)
+        setRemainingGaslessSwaps(result.remainingSwaps)
+      }
+    }
+    checkEligibility()
+  }, [address, activeTab])
+
+  useEffect(() => {
+    if (activeTab === "eth") {
+      setGaslessMode(false)
+    }
+  }, [activeTab])
+
   const loadSwapHistory = async () => {
     if (!address) return
 
@@ -293,7 +329,96 @@ export default function SwapPage() {
         minAmountOut: minAmountOut.toString(),
         slippage: slippagePercent,
         fee: availablePool.fee,
+        gaslessMode,
       })
+
+      if (gaslessMode && activeTab === "usdc") {
+        addToast({
+          title: "Gasless Swap",
+          description: "Please sign the authorization in your wallet...",
+          variant: "default",
+        })
+
+        const signedAuth = await signTransferAuthorization(
+          process.env.NEXT_PUBLIC_RELAYER_ADDRESS as `0x${string}`,
+          amountInParsed,
+          0n,
+          BigInt(Math.floor(Date.now() / 1000) + 3600),
+        )
+
+        addToast({
+          title: "Submitting Swap",
+          description: "Relayer is executing your swap...",
+          variant: "default",
+        })
+
+        const response = await fetch("/api/eip3009/swap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            authorization: {
+              from: signedAuth.authorization.from,
+              to: signedAuth.authorization.to,
+              value: signedAuth.authorization.value.toString(),
+              validAfter: Number(signedAuth.authorization.validAfter),
+              validBefore: Number(signedAuth.authorization.validBefore),
+              nonce: signedAuth.authorization.nonce,
+            },
+            signature: {
+              v: signedAuth.v,
+              r: signedAuth.r,
+              s: signedAuth.s,
+            },
+            metadata: {
+              purpose: "gasless_swap",
+              swapParams: {
+                tokenIn: "USDC",
+                tokenOut: "USI",
+                amountIn: amountInParsed.toString(),
+                minAmountOut: minAmountOut.toString(),
+                slippage: slippagePercent,
+                poolFee: availablePool.fee,
+              },
+            },
+          }),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || "Gasless swap failed")
+        }
+
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5", "#ffffff"],
+          ticks: 200,
+          gravity: 1.2,
+          scalar: 1.2,
+        })
+
+        addToast({
+          title: "Gasless Swap Successful!",
+          description: `Swapped ${inputAmount} USDC for ${Number.parseFloat(outputAmount).toFixed(2)} $USI with no gas fees!`,
+          variant: "success",
+        })
+
+        setInputAmount("")
+        setOutputAmount("")
+        setRealQuote(null)
+        refetchUSDC()
+        refetchUSI()
+        loadSwapHistory()
+
+        // Update gasless eligibility
+        const eligibility = await checkGaslessSwapEligibility(address as `0x${string}`)
+        setGaslessEligible(eligibility.eligible)
+        setRemainingGaslessSwaps(eligibility.remainingSwaps)
+
+        return
+      }
 
       if (activeTab === "usdc") {
         addToast({
@@ -499,6 +624,19 @@ export default function SwapPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {activeTab === "usdc" && gaslessEligible && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Gasless Mode</p>
+                      <p className="text-xs text-muted-foreground">{remainingGaslessSwaps} free swaps remaining</p>
+                    </div>
+                  </div>
+                  <Switch checked={gaslessMode} onCheckedChange={setGaslessMode} />
+                </div>
+              )}
+
               {/* Settings Panel */}
               {showSettings && (
                 <div className="rounded-lg bg-muted/50 p-4 space-y-3">
@@ -753,10 +891,16 @@ export default function SwapPage() {
                   !availablePool ||
                   Number.parseFloat(inputAmount) <= 0 ||
                   isQuoteLoading ||
-                  !!quoteError
+                  !!quoteError ||
+                  isSigning
                 }
               >
-                {isQuoteLoading ? (
+                {isSigning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Signing...
+                  </>
+                ) : isQuoteLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Checking Pools...
@@ -765,6 +909,11 @@ export default function SwapPage() {
                   <>
                     <AlertCircle className="h-4 w-4 mr-2" />
                     No Liquidity Pool Available
+                  </>
+                ) : gaslessMode ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Swap Gasless
                   </>
                 ) : (
                   <>
@@ -777,9 +926,9 @@ export default function SwapPage() {
               <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                 <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
                 <p>
-                  Swaps use live on-chain data from Uniswap V3 on Base network. The system automatically detects
-                  available liquidity pools across all fee tiers (0.05%, 0.3%, 1%) and uses the best available route.
-                  Base offers ultra-low fees (~$0.01) and 2-second block times.
+                  {gaslessMode
+                    ? "Gasless mode: Sign once and we'll execute the swap for you with no gas fees! You only pay for the tokens."
+                    : "Swaps use live on-chain data from Uniswap V3 on Base network. Enable Gasless Mode for USDC swaps to avoid gas fees."}
                 </p>
               </div>
             </CardContent>
