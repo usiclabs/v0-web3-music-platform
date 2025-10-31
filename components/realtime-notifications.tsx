@@ -222,6 +222,7 @@ export function RealtimeNotifications() {
                 variant: "default",
                 duration: 8000,
               })
+              console.log("[v0] addToast called successfully")
             } else {
               console.log("[v0] Skipping notification - not a music token or USI purchase")
             }

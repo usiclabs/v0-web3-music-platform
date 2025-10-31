@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Radio, Eye, Loader2, AlertCircle, X, CheckCircle, Wifi, WifiOff, Video, VideoOff } from "lucide-react"
+import { Radio, Eye, Loader2, AlertCircle, X, CheckCircle, Wifi, WifiOff, Video, VideoOff, Lock } from "lucide-react"
 import * as Broadcast from "@livepeer/react/broadcast"
 import { useBroadcastContext } from "@livepeer/react/broadcast"
+import { createPublicClient, http, formatUnits } from "viem"
+import { base } from "viem/chains"
+import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
+import Link from "next/link"
 
 function BroadcastStateTracker({ onStateChange }: { onStateChange: (enabled: boolean) => void }) {
   const broadcast = useBroadcastContext()
@@ -45,9 +49,43 @@ export default function StudioPage() {
   const [goingLive, setGoingLive] = useState(false)
   const [connectionHealth, setConnectionHealth] = useState<"good" | "poor" | "disconnected">("disconnected")
   const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [usiBalance, setUsiBalance] = useState<bigint | null>(null)
+  const [checkingBalance, setCheckingBalance] = useState(true)
 
   const shouldCleanupRef = useRef(false)
   const cleanupInProgressRef = useRef(false)
+
+  useEffect(() => {
+    async function checkUsiBalance() {
+      if (!address) {
+        setCheckingBalance(false)
+        return
+      }
+
+      try {
+        const publicClient = createPublicClient({
+          chain: base,
+          transport: http(),
+        })
+
+        const balance = await publicClient.readContract({
+          address: USI_TOKEN_ADDRESS[8453] as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [address as `0x${string}`],
+        })
+
+        console.log("[v0] USI balance:", balance)
+        setUsiBalance(balance as bigint)
+      } catch (error) {
+        console.error("[v0] Error checking USI balance:", error)
+      } finally {
+        setCheckingBalance(false)
+      }
+    }
+
+    checkUsiBalance()
+  }, [address])
 
   useEffect(() => {
     if (!stream?.id) return
@@ -207,6 +245,11 @@ export default function StudioPage() {
   const ingestUrl = stream?.stream_key ? `https://playback.livepeer.studio/webrtc/${stream.stream_key}` : null
 
   console.log("[v0] Ingest URL:", ingestUrl)
+
+  const REQUIRED_USI_BALANCE = BigInt("100000000000000000000000000") // 100,000,000 * 10^18
+  const hasEnoughUsi = usiBalance !== null && usiBalance >= REQUIRED_USI_BALANCE
+  const formattedBalance = usiBalance ? formatUnits(usiBalance, 18) : "0"
+  const formattedRequired = formatUnits(REQUIRED_USI_BALANCE, 18)
 
   if (loading) {
     return (
@@ -386,12 +429,22 @@ export default function StudioPage() {
                       <Button
                         onClick={handleGoLive}
                         className="bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={goingLive}
+                        disabled={goingLive || checkingBalance || !hasEnoughUsi}
                       >
-                        {goingLive ? (
+                        {checkingBalance ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Checking...
+                          </>
+                        ) : goingLive ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Going Live...
+                          </>
+                        ) : !hasEnoughUsi ? (
+                          <>
+                            <Lock className="h-4 w-4 mr-2" />
+                            Go Live (Locked)
                           </>
                         ) : (
                           <>
@@ -400,9 +453,15 @@ export default function StudioPage() {
                           </>
                         )}
                       </Button>
-                      {!isBroadcasting && !goingLive && (
+                      {!isBroadcasting && !goingLive && hasEnoughUsi && (
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           Start broadcasting first
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-black/90" />
+                        </div>
+                      )}
+                      {!hasEnoughUsi && !checkingBalance && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                          Requires 100M $USI tokens
                           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-black/90" />
                         </div>
                       )}
@@ -416,12 +475,17 @@ export default function StudioPage() {
               </div>
             </Card>
 
-            {permissionError && (
-              <Alert className="border-red-500/50 bg-red-500/10">
-                <AlertCircle className="h-4 w-4 text-red-500" />
+            {!checkingBalance && !hasEnoughUsi && !isLive && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <Lock className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Camera/Microphone Access Required:</strong> {permissionError}. Please allow access in your
-                  browser settings and refresh the page.
+                  <strong>Insufficient $USI Balance:</strong> You need at least{" "}
+                  <span className="font-semibold">{Number(formattedRequired).toLocaleString()} $USI</span> tokens to go
+                  live. Your current balance:{" "}
+                  <span className="font-semibold">{Number(formattedBalance).toLocaleString()} $USI</span>.{" "}
+                  <Link href="/swap" className="underline hover:text-yellow-400 transition-colors">
+                    Get more $USI
+                  </Link>
                 </AlertDescription>
               </Alert>
             )}
