@@ -40,6 +40,7 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true)
   const [isLive, setIsLive] = useState(false)
   const [isBroadcasting, setIsBroadcasting] = useState(false)
+  const [livepeerActive, setLivepeerActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [goingLive, setGoingLive] = useState(false)
   const [connectionHealth, setConnectionHealth] = useState<"good" | "poor" | "disconnected">("disconnected")
@@ -47,6 +48,27 @@ export default function StudioPage() {
 
   const shouldCleanupRef = useRef(false)
   const cleanupInProgressRef = useRef(false)
+
+  useEffect(() => {
+    if (!stream?.id) return
+
+    const checkLivepeerStatus = async () => {
+      try {
+        const res = await fetch(`/api/live/${stream.id}/livepeer-status`)
+        if (res.ok) {
+          const data = await res.json()
+          console.log("[v0] Livepeer status:", data)
+          setLivepeerActive(data.isActive)
+        }
+      } catch (error) {
+        console.error("[v0] Error checking Livepeer status:", error)
+      }
+    }
+
+    checkLivepeerStatus()
+    const interval = setInterval(checkLivepeerStatus, 5000)
+    return () => clearInterval(interval)
+  }, [stream?.id])
 
   const endStreamCleanup = useCallback(async () => {
     if (cleanupInProgressRef.current || !shouldCleanupRef.current) return
@@ -82,7 +104,6 @@ export default function StudioPage() {
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (shouldCleanupRef.current) {
-        // Use sendBeacon for reliable cleanup on page unload
         const data = JSON.stringify({
           is_live: false,
           ended_at: new Date().toISOString(),
@@ -90,7 +111,6 @@ export default function StudioPage() {
 
         navigator.sendBeacon(`/api/live/${params.id}`, data)
 
-        // Show confirmation dialog if stream is live
         if (isLive) {
           e.preventDefault()
           e.returnValue = ""
@@ -244,6 +264,12 @@ export default function StudioPage() {
                     : "Disconnected"}
               </Badge>
             )}
+            {livepeerActive && (
+              <Badge className="bg-green-500 text-white border-0">
+                <Video className="h-3 w-3 mr-1" />
+                Livepeer Receiving
+              </Badge>
+            )}
             {isLive && (
               <Badge className="bg-red-500 text-white border-0 animate-pulse">
                 <Radio className="h-3 w-3 mr-1" />
@@ -251,7 +277,7 @@ export default function StudioPage() {
               </Badge>
             )}
             {isBroadcasting && (
-              <Badge className="bg-green-500 text-white border-0">
+              <Badge className="bg-blue-500 text-white border-0">
                 <Video className="h-3 w-3 mr-1" />
                 Broadcasting
               </Badge>
@@ -404,38 +430,48 @@ export default function StudioPage() {
               <Alert className="border-blue-500/50 bg-blue-500/10">
                 <AlertCircle className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Ready to go live?</strong> Click "Go Live" to make your stream public, then click "Start
-                  Broadcast" to begin streaming your camera and audio.
+                  <strong>Ready to go live?</strong> Click "Start Broadcast" to begin streaming your camera and audio,
+                  then click "Go Live" to make your stream public.
                 </AlertDescription>
               </Alert>
             )}
 
-            {isBroadcasting && !isLive && (
+            {isBroadcasting && !livepeerActive && (
               <Alert className="border-yellow-500/50 bg-yellow-500/10">
                 <AlertCircle className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Broadcasting but not live!</strong> Your camera is streaming but viewers can't see you yet.
-                  Click "Go Live" to make your stream public.
+                  <strong>Connecting to Livepeer...</strong> Your camera is active but video hasn't reached Livepeer
+                  yet. This usually takes 5-10 seconds.
                 </AlertDescription>
               </Alert>
             )}
 
-            {isLive && !isBroadcasting && (
+            {isBroadcasting && livepeerActive && !isLive && (
               <Alert className="border-green-500/50 bg-green-500/10">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-sm">
-                  <strong>Stream is live!</strong> Click "Start Broadcast" above to begin streaming your camera and
-                  audio to viewers.
+                  <strong>Broadcasting successfully!</strong> Livepeer is receiving your video. Click "Go Live" to make
+                  your stream public so viewers can watch.
                 </AlertDescription>
               </Alert>
             )}
 
-            {isLive && isBroadcasting && (
+            {isLive && !livepeerActive && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-sm">
+                  <strong>Stream is live but no video detected!</strong> Click "Start Broadcast" to begin streaming your
+                  camera and audio to viewers.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isLive && livepeerActive && (
               <Alert className="border-green-500/50 bg-green-500/10">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <AlertDescription className="text-sm">
-                  <strong>You're live!</strong> Your stream is public and broadcasting. Viewers can now see and hear
-                  you.
+                  <strong>You're live!</strong> Your stream is public and Livepeer is broadcasting your video. Viewers
+                  can now see and hear you.
                 </AlertDescription>
               </Alert>
             )}
@@ -473,6 +509,19 @@ export default function StudioPage() {
                     )}
                   </p>
                 </div>
+                <div>
+                  <span className="text-muted-foreground">Livepeer Status:</span>
+                  <p className="font-medium">
+                    {livepeerActive ? (
+                      <span className="text-green-500 flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Receiving Video
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">No Video</span>
+                    )}
+                  </p>
+                </div>
               </div>
             </Card>
 
@@ -481,9 +530,10 @@ export default function StudioPage() {
               <AlertDescription className="text-xs">
                 <strong>How to go live:</strong>
                 <ol className="list-decimal list-inside mt-2 space-y-1">
-                  <li>Click "Go Live" to make your stream public</li>
                   <li>Click "Start Broadcast" to begin streaming</li>
                   <li>Allow camera and microphone access</li>
+                  <li>Wait for "Livepeer Receiving" badge (5-10 sec)</li>
+                  <li>Click "Go Live" to make stream public</li>
                   <li>Viewers can now see and hear you</li>
                   <li>Click "End Stream" when finished</li>
                 </ol>

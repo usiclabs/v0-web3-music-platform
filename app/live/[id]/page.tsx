@@ -17,14 +17,14 @@ export default function WatchStreamPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [playerError, setPlayerError] = useState<string | null>(null)
+  const [livepeerActive, setLivepeerActive] = useState(false)
 
   useEffect(() => {
     const originalError = console.error
     console.error = (...args: any[]) => {
-      // Filter out Livepeer analytics SDK errors
       const message = args[0]?.toString() || ""
       if (message.includes("Analytics SDK") || message.includes("AnalyticsSDKApiError")) {
-        return // Suppress this error
+        return
       }
       originalError.apply(console, args)
     }
@@ -81,6 +81,27 @@ export default function WatchStreamPage() {
     const interval = setInterval(loadStream, 10000)
     return () => clearInterval(interval)
   }, [params.id, router])
+
+  useEffect(() => {
+    if (!stream?.id) return
+
+    const checkLivepeerStatus = async () => {
+      try {
+        const res = await fetch(`/api/live/${stream.id}/livepeer-status`)
+        if (res.ok) {
+          const data = await res.json()
+          console.log("[v0] Livepeer status:", data)
+          setLivepeerActive(data.isActive)
+        }
+      } catch (error) {
+        console.error("[v0] Error checking Livepeer status:", error)
+      }
+    }
+
+    checkLivepeerStatus()
+    const interval = setInterval(checkLivepeerStatus, 5000)
+    return () => clearInterval(interval)
+  }, [stream?.id])
 
   const playbackSrc = stream?.playback_id
     ? [
@@ -151,10 +172,14 @@ export default function WatchStreamPage() {
                       <Player.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/80">
                         <div className="text-center text-white">
                           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                          <p className="text-sm">Connecting to stream...</p>
+                          <p className="text-sm">
+                            {livepeerActive ? "Connecting to stream..." : "Waiting for broadcast to start..."}
+                          </p>
                           <p className="text-xs text-muted-foreground mt-2">
                             {stream.is_live
-                              ? "Waiting for broadcast to start. The broadcaster needs to start streaming from their studio."
+                              ? livepeerActive
+                                ? "Stream is active, loading video..."
+                                : "The broadcaster needs to start streaming from their studio."
                               : "This stream is currently offline"}
                           </p>
                           {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
@@ -247,12 +272,15 @@ export default function WatchStreamPage() {
                     <h1 className="text-2xl font-bold mb-2">{stream.title}</h1>
                     {stream.description && <p className="text-muted-foreground text-sm">{stream.description}</p>}
                   </div>
-                  {stream.is_live && (
-                    <Badge className="bg-red-500 text-white border-0 animate-pulse ml-4">
-                      <Radio className="h-3 w-3 mr-1" />
-                      LIVE
-                    </Badge>
-                  )}
+                  <div className="flex gap-2 ml-4">
+                    {stream.is_live && (
+                      <Badge className="bg-red-500 text-white border-0 animate-pulse">
+                        <Radio className="h-3 w-3 mr-1" />
+                        LIVE
+                      </Badge>
+                    )}
+                    {livepeerActive && <Badge className="bg-green-500 text-white border-0">Broadcasting</Badge>}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -307,6 +335,16 @@ export default function WatchStreamPage() {
                       <span className="text-green-500">Live</span>
                     ) : (
                       <span className="text-muted-foreground">Offline</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Video Status:</span>
+                  <p className="font-medium">
+                    {livepeerActive ? (
+                      <span className="text-green-500">Broadcasting</span>
+                    ) : (
+                      <span className="text-muted-foreground">No Video</span>
                     )}
                   </p>
                 </div>

@@ -548,7 +548,7 @@ export function TrackDetailContent({
                 </div>
 
                 <div className="max-w-full overflow-hidden">
-                  <TrackAnalyticsCharts data={streamData} />
+                  <TrackAnalyticsCharts data={streamData} tokenAddress={track.coin_address} />
                 </div>
               </div>
             )}
