@@ -94,10 +94,10 @@ export function OnboardingModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/80 backdrop-blur-md" />
+        <DialogOverlay className="bg-black/90 backdrop-blur-md" />
         <DialogContent className="max-w-2xl border-0 bg-transparent p-0 shadow-none" hideClose>
           {/* Glassmorphic Container */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl">
             {/* Animated Background Gradient */}
             <div
               className={`absolute inset-0 bg-gradient-to-br ${currentStepData.gradient} opacity-50 transition-all duration-700`}
@@ -193,13 +193,6 @@ export function OnboardingModal() {
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 )}
-              </div>
-
-              {/* Skip Link */}
-              <div className="mt-6 text-center">
-                <button onClick={handleSkip} className="text-sm text-white/40 transition-colors hover:text-white/60">
-                  Skip tutorial
-                </button>
               </div>
             </div>
           </div>
