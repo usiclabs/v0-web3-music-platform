@@ -59,6 +59,7 @@ export default function ExplorePage() {
           artist:profiles!tracks_artist_id_fkey(*)
         `)
         .eq("is_active", true)
+        .or("is_hidden.is.null,is_hidden.eq.false")
 
       // Apply sorting
       if (sortBy === "newest") {

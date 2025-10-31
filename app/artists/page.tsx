@@ -16,6 +16,7 @@ type Artist = {
   totalEarned: number
   trackCount: number
   followerCount: number
+  totalStreams: number
 }
 
 export default function ArtistsPage() {
@@ -24,7 +25,7 @@ export default function ArtistsPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState<SortOption>("newest")
+  const [sortBy, setSortBy] = useState<SortOption>("earnings-high")
   const [minEarnings, setMinEarnings] = useState(0)
   const [minTracks, setMinTracks] = useState(0)
 
@@ -53,6 +54,11 @@ export default function ArtistsPage() {
 
           const totalEarned = earnings?.reduce((sum, stream) => sum + (stream.total_paid || 0), 0) || 0
 
+          const { count: totalStreams } = await supabase
+            .from("streams")
+            .select("*, tracks!inner(artist_id)", { count: "exact", head: true })
+            .eq("tracks.artist_id", artist.wallet_address.toLowerCase())
+
           const { count: followerCount } = await supabase
             .from("follows")
             .select("*", { count: "exact", head: true })
@@ -63,6 +69,7 @@ export default function ArtistsPage() {
             totalEarned,
             trackCount: trackCount || 0,
             followerCount: followerCount || 0,
+            totalStreams: totalStreams || 0,
           }
         }),
       )
@@ -113,6 +120,10 @@ export default function ArtistsPage() {
           return b.followerCount - a.followerCount
         case "followers-low":
           return a.followerCount - b.followerCount
+        case "streams-high":
+          return b.totalStreams - a.totalStreams
+        case "streams-low":
+          return a.totalStreams - b.totalStreams
         default:
           return 0
       }

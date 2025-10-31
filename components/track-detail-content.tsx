@@ -3,11 +3,12 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Share2, ExternalLink, Zap, Coins, Loader2, AlertCircle, Info } from "lucide-react"
+import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { PlayTrackButton } from "@/components/play-track-button"
 import { LikeButton } from "@/components/like-button"
+import { ReportTrackDialog } from "@/components/report-track-dialog"
 import { TrackAnalyticsCharts } from "@/components/track-analytics-charts"
 import { VideoPlayer } from "@/components/video-player"
 import { useEffect, useState, useRef } from "react"
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useWriteContract, usePublicClient } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
+import useSWR from "swr"
 import {
   UNISWAP_V3_ROUTER,
   UNISWAP_V3_ROUTER_ABI,
@@ -72,11 +74,25 @@ export function TrackDetailContent({
   const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number } | null>(null)
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
+  const [showReportDialog, setShowReportDialog] = useState(false)
 
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient()
 
   const isTokenized = !!track.coin_address
+
+  const { data: tokenMetrics } = useSWR(
+    isTokenized ? `/api/token/metrics/${track.coin_address}` : null,
+    async (url) => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error("Failed to fetch token metrics")
+      return res.json()
+    },
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+    },
+  )
 
   useEffect(() => {
     setIsVisible(true)
@@ -370,6 +386,16 @@ export function TrackDetailContent({
                   className="flex-1 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300"
                 />
               )}
+              {isTokenized && (
+                <Button
+                  onClick={handleBuyClick}
+                  size="lg"
+                  className="flex-1 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 transition-all duration-300"
+                >
+                  <ArrowLeftRight className="h-5 w-5 mr-2" />
+                  Swap
+                </Button>
+              )}
               <LikeButton
                 trackId={track.id}
                 initialLikeCount={likeCount || 0}
@@ -383,6 +409,14 @@ export function TrackDetailContent({
                 className="bg-transparent hover:bg-primary/10 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
               >
                 <Share2 className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowReportDialog(true)}
+                className="bg-transparent hover:bg-red-500/10 hover:scale-110 hover:shadow-lg hover:shadow-red-500/20 transition-all duration-300"
+              >
+                <Flag className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -435,6 +469,47 @@ export function TrackDetailContent({
                 <p className="text-2xl font-bold text-white animate-green-glow">{totalEarned.toFixed(2)} USDC</p>
               </Card>
             </div>
+
+            {isTokenized && tokenMetrics && (tokenMetrics.price > 0 || tokenMetrics.marketCap > 0) && (
+              <div
+                className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-700 ${
+                  statsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+              >
+                <Card className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-xl border border-primary/30 p-4 hover:bg-primary/20 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300 group">
+                  <p className="text-sm text-gray-400 mb-1 group-hover:text-primary transition-colors">Token Price</p>
+                  <p className="text-2xl font-bold text-primary">
+                    ${tokenMetrics.price > 0 ? tokenMetrics.price.toFixed(6) : "0.000000"}
+                  </p>
+                  {tokenMetrics.priceChange24h !== 0 && (
+                    <p
+                      className={`text-sm mt-1 ${tokenMetrics.priceChange24h > 0 ? "text-green-500" : "text-red-500"}`}
+                    >
+                      {tokenMetrics.priceChange24h > 0 ? "+" : ""}
+                      {tokenMetrics.priceChange24h.toFixed(2)}% (24h)
+                    </p>
+                  )}
+                </Card>
+                <Card className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent backdrop-blur-xl border border-primary/30 p-4 hover:bg-primary/20 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300 group">
+                  <p className="text-sm text-gray-400 mb-1 group-hover:text-primary transition-colors">Market Cap</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {tokenMetrics.marketCap > 0
+                      ? tokenMetrics.marketCap >= 1000000
+                        ? `$${(tokenMetrics.marketCap / 1000000).toFixed(2)}M`
+                        : `$${(tokenMetrics.marketCap / 1000).toFixed(2)}K`
+                      : "$0"}
+                  </p>
+                  {tokenMetrics.volume24h > 0 && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      Vol: $
+                      {tokenMetrics.volume24h >= 1000
+                        ? `${(tokenMetrics.volume24h / 1000).toFixed(1)}K`
+                        : tokenMetrics.volume24h.toFixed(0)}
+                    </p>
+                  )}
+                </Card>
+              </div>
+            )}
 
             {streamData && streamData.length > 0 && (
               <div
@@ -526,21 +601,6 @@ export function TrackDetailContent({
           </div>
         </div>
       </main>
-
-      {isTokenized && (
-        <div className="fixed bottom-24 sm:bottom-8 left-0 right-0 z-[60] px-4 sm:px-6 animate-in slide-in-from-bottom-4 duration-500">
-          <div className="container max-w-2xl mx-auto">
-            <Button
-              onClick={handleBuyClick}
-              className="w-full h-16 text-lg font-bold bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-2xl shadow-primary/40 hover:shadow-3xl hover:shadow-primary/50 transition-all duration-300 hover:scale-[1.02] active:scale-95 backdrop-blur-xl border-2 border-primary/30"
-            >
-              <Zap className="h-6 w-6 mr-3" />
-              Buy {track.title} Tokens
-              <Coins className="h-5 w-5 ml-3 opacity-80" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
         <SheetContent
@@ -735,6 +795,13 @@ export function TrackDetailContent({
           </div>
         </SheetContent>
       </Sheet>
+
+      <ReportTrackDialog
+        trackId={track.id}
+        trackTitle={track.title}
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+      />
     </div>
   )
 }

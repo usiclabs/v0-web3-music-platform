@@ -15,6 +15,8 @@ export type SortOption =
   | "tracks-low"
   | "name-asc"
   | "name-desc"
+  | "streams-high"
+  | "streams-low"
 
 interface ArtistsFilterProps {
   searchQuery: string
@@ -68,12 +70,14 @@ export function ArtistsFilter({
           onChange={(e) => onSortChange(e.target.value as SortOption)}
           className="w-full sm:w-[200px] h-10 px-3 rounded-md bg-card/50 backdrop-blur-xl border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
         >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
+          <option value="streams-high">Most Streams</option>
+          <option value="streams-low">Fewest Streams</option>
           <option value="earnings-high">Highest Earnings</option>
           <option value="earnings-low">Lowest Earnings</option>
           <option value="tracks-high">Most Tracks</option>
           <option value="tracks-low">Fewest Tracks</option>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
         </select>

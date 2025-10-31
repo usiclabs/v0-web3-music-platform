@@ -46,6 +46,8 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
+  Flag,
+  X,
 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
@@ -122,7 +124,11 @@ export default function AdminPage() {
   const [liveStreams, setLiveStreams] = useState<any[]>([])
   const [playlists, setPlaylists] = useState<any[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
-  const [reportedContent, setReportedContent] = useState<any[]>([])
+  // Removed: const [reportedContent, setReportedContent] = useState<any[]>([]) // Replaced by reports state
+
+  const [reports, setReports] = useState<any[]>([])
+  const [selectedReport, setSelectedReport] = useState<any>(null)
+  const [showReportDialog, setShowReportDialog] = useState(false)
 
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [selectedTrack, setSelectedTrack] = useState<any>(null)
@@ -428,6 +434,18 @@ export default function AdminPage() {
           .order("created_at", { ascending: false })
 
         setTokenizedSongs(tokenizedTracksData || [])
+
+        try {
+          const reportsResponse = await fetch("/api/admin/reports", {
+            headers: { "x-wallet-address": address },
+          })
+          if (reportsResponse.ok) {
+            const reportsData = await reportsResponse.json()
+            setReports(reportsData.reports || [])
+          }
+        } catch (error) {
+          console.error("Failed to load reports:", error)
+        }
       } catch (error) {
         console.error("Failed to load admin data:", error)
       } finally {
@@ -782,6 +800,80 @@ export default function AdminPage() {
     })
   }, [tracks, searchQuery, sortBy, showHiddenTracks])
 
+  async function handleReportAction(reportId: string, action: "reviewed" | "dismissed") {
+    try {
+      const response = await fetch("/api/admin/reports", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address,
+        },
+        body: JSON.stringify({ reportId, status: action }),
+      })
+
+      if (!response.ok) throw new Error("Failed to update report")
+
+      toast({
+        title: "Report updated",
+        description: `Report has been marked as ${action}`,
+      })
+
+      // reload the data
+      const supabase = createBrowserClient()
+      const reportsResponse = await fetch("/api/admin/reports", {
+        headers: { "x-wallet-address": address },
+      })
+      if (reportsResponse.ok) {
+        const reportsData = await reportsResponse.json()
+        setReports(reportsData.reports || [])
+      }
+    } catch (error) {
+      console.error("Failed to update report:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update report",
+        variant: "destructive",
+      })
+    }
+  }
+
+  async function handleHideTrackFromReport(trackId: string, isHidden: boolean) {
+    try {
+      const response = await fetch(`/api/admin/tracks/${trackId}/hide`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address,
+        },
+        body: JSON.stringify({ isHidden }),
+      })
+
+      if (!response.ok) throw new Error("Failed to update track")
+
+      toast({
+        title: isHidden ? "Track hidden" : "Track restored",
+        description: isHidden ? "Track has been hidden from public view" : "Track is now visible to all users",
+      })
+
+      // reload the data
+      const supabase = createBrowserClient()
+      const reportsResponse = await fetch("/api/admin/reports", {
+        headers: { "x-wallet-address": address },
+      })
+      if (reportsResponse.ok) {
+        const reportsData = await reportsResponse.json()
+        setReports(reportsData.reports || [])
+      }
+    } catch (error) {
+      console.error("Failed to update track:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update track",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Access denied screen
   if (!isConnected || !isAdmin) {
     return (
@@ -989,6 +1081,18 @@ export default function AdminPage() {
               >
                 <Coins className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 Tokenized
+              </TabsTrigger>
+              <TabsTrigger
+                value="flagged"
+                className="data-[state=active]:bg-primary/20 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Flag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Flagged
+                {reports.filter((r) => r.status === "pending").length > 0 && (
+                  <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-xs">
+                    {reports.filter((r) => r.status === "pending").length}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger
                 value="system"
@@ -1646,6 +1750,138 @@ export default function AdminPage() {
                     <Coins className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p className="mb-2">No tokenized songs yet</p>
                     <p className="text-xs">Add your first tokenized song to get started</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="flagged" className="space-y-4">
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <Flag className="h-4 w-4 sm:h-5 w-5 text-red-500" />
+                  Flagged Content
+                </h3>
+                <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-500 w-fit">
+                  {reports.filter((r) => r.status === "pending").length} Pending
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {reports.length > 0 ? (
+                  reports.map((report) => (
+                    <Card
+                      key={report.id}
+                      className={`bg-muted/10 border p-4 hover:border-primary/30 transition-all ${
+                        report.status === "pending" ? "border-red-500/30" : "border-border/50 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                            <Flag className="h-5 w-5 text-red-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-sm truncate">
+                                {report.tracks?.title || "Unknown Track"}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  report.status === "pending"
+                                    ? "bg-red-500/10 border-red-500/30 text-red-500 text-xs"
+                                    : report.status === "reviewed"
+                                      ? "bg-green-500/10 border-green-500/30 text-green-500 text-xs"
+                                      : "bg-muted/20 border-border/50 text-xs"
+                                }
+                              >
+                                {report.status}
+                              </Badge>
+                              {report.tracks?.is_hidden && (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-orange-500/10 border-orange-500/30 text-orange-500 text-xs"
+                                >
+                                  Hidden
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              Reported by {report.reporter_address.slice(0, 6)}...{report.reporter_address.slice(-4)}
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="bg-muted/20 border-border/50 text-xs">
+                                {report.reason.replace("_", " ")}
+                              </Badge>
+                            </div>
+                            {report.details && (
+                              <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted/20 rounded border border-border/50">
+                                {report.details}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {new Date(report.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedReport(report)
+                                setShowReportDialog(true)
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {report.status === "pending" && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleHideTrackFromReport(report.track_id, !report.tracks?.is_hidden)}
+                                >
+                                  {report.tracks?.is_hidden ? (
+                                    <>
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Restore Track
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Ban className="h-4 w-4 mr-2" />
+                                      Hide Track
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleReportAction(report.id, "reviewed")}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Mark Reviewed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleReportAction(report.id, "dismissed")}
+                                  className="text-muted-foreground"
+                                >
+                                  <X className="h-4 w-4 mr-2" />
+                                  Dismiss Report
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Flag className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No flagged content</p>
                   </div>
                 )}
               </div>

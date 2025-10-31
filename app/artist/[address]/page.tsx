@@ -39,6 +39,7 @@ export default async function ArtistPage({ params }: { params: { address: string
       artist:profiles!tracks_artist_id_fkey(*)
     `)
     .eq("artist_id", address.toLowerCase())
+    .or("is_hidden.is.null,is_hidden.eq.false")
     .order("created_at", { ascending: false })
 
   const trackIds = tracks?.map((t) => t.id) || []
@@ -130,6 +131,7 @@ export default async function ArtistPage({ params }: { params: { address: string
     }))
   }
 
+  // Fetch artist's AI tracks
   const { data: aiTracks } = await supabase
     .from("tracks")
     .select(`
@@ -138,6 +140,7 @@ export default async function ArtistPage({ params }: { params: { address: string
     `)
     .eq("artist_id", address.toLowerCase())
     .eq("ai_generated", true)
+    .or("is_hidden.is.null,is_hidden.eq.false")
     .order("created_at", { ascending: false })
 
   return (
