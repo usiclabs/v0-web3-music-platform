@@ -91,7 +91,7 @@ export default function TokensPage() {
   const [swapAmount, setSwapAmount] = useState("")
   const [swapOutput, setSwapOutput] = useState("")
   const [isSwapping, setIsSwapping] = useState(false)
-  const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number; version: "v3" | "v4" } | null>(null)
+  const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number } | null>(null)
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [detailToken, setDetailToken] = useState<TokenizedTrack | null>(null)
@@ -283,10 +283,9 @@ export default function TokensPage() {
 
     try {
       const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
-
-      // Focus on V3 pools which work reliably
-      console.log("[v0] Checking for V3 pools...")
       const feeTiers = [500, 3000, 10000]
+
+      console.log("[v0] Checking fee tiers:", feeTiers)
 
       for (const fee of feeTiers) {
         try {
@@ -302,8 +301,7 @@ export default function TokensPage() {
 
           if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
             console.log("[v0] Pool found at:", poolAddress, "with fee:", fee)
-            setPoolInfo({ address: poolAddress as string, fee, version: "v3" })
-            setIsCheckingPool(false)
+            setPoolInfo({ address: poolAddress as string, fee })
             return
           }
         } catch (error) {
@@ -1136,7 +1134,7 @@ export default function TokensPage() {
                 <CardContent className="pt-6">
                   <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    Uniswap V3 pool found with {poolInfo.fee / 10000}% fee tier
+                    Pool found with {poolInfo.fee / 10000}% fee tier
                   </p>
                 </CardContent>
               </Card>

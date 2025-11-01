@@ -25,7 +25,6 @@ interface TokenDetailDrawerProps {
     cover_url: string
     coin_address: string
     created_at: string
-    description?: string
   } | null
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -364,9 +363,6 @@ export function TokenDetailDrawer({ token, open, onOpenChange, metrics }: TokenD
               <div className="flex-1 min-w-0">
                 <SheetTitle className="text-2xl truncate">{token.title}</SheetTitle>
                 <SheetDescription className="truncate">{token.artist_name}</SheetDescription>
-                {token.description && (
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{token.description}</p>
-                )}
                 <div className="flex items-center gap-2 mt-2">
                   <code className="text-xs bg-muted px-2 py-1 rounded">{formatAddress(token.coin_address)}</code>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyAddress}>
@@ -626,12 +622,6 @@ export function TokenDetailDrawer({ token, open, onOpenChange, metrics }: TokenD
                       <span className="text-muted-foreground">Artist</span>
                       <span className="font-medium">{token.artist_name}</span>
                     </div>
-                    {token.description && (
-                      <div className="flex flex-col py-2 border-b border-muted">
-                        <span className="text-muted-foreground mb-1">Description</span>
-                        <span className="font-medium text-sm">{token.description}</span>
-                      </div>
-                    )}
                     <div className="flex justify-between py-2 border-b border-muted">
                       <span className="text-muted-foreground">Contract Address</span>
                       <div className="flex items-center gap-2">

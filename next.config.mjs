@@ -13,7 +13,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '50mb',
     },
-    serverComponentsExternalPackages: ['clanker-sdk'],
   },
 }
 

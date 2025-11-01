@@ -9,11 +9,15 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Lock, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { getRequiredTokenBalance, formatTokenBalance } from "@/lib/web3/token-gate"
 
 export default function UploadPage() {
   const { address, isConnected } = useWallet()
   const chainId = useChainId()
   const router = useRouter()
+  const [requiredBalance, setRequiredBalance] = useState<bigint>(BigInt("0"))
+  const [isLoadingRequired, setIsLoadingRequired] = useState(true)
 
   const { data: usiBalance, isLoading } = useReadContract({
     address: chainId ? (USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] as `0x${string}`) : undefined,
@@ -25,11 +29,20 @@ export default function UploadPage() {
     },
   })
 
-  const REQUIRED_USI_BALANCE = BigInt("10000000000000000000000000") // 10,000,000 tokens with 18 decimals
-  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_USI_BALANCE : false
-  const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
+  useEffect(() => {
+    if (chainId) {
+      getRequiredTokenBalance(chainId).then((balance) => {
+        setRequiredBalance(balance)
+        setIsLoadingRequired(false)
+      })
+    }
+  }, [chainId])
 
-  if (isConnected && isLoading) {
+  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= requiredBalance : false
+  const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
+  const requiredBalanceFormatted = formatTokenBalance(requiredBalance)
+
+  if (isConnected && (isLoading || isLoadingRequired)) {
     return (
       <div className="min-h-screen pb-32">
         <main className="container py-12">
@@ -63,7 +76,8 @@ export default function UploadPage() {
                   <h2 className="text-2xl font-bold">Token-Gated Feature</h2>
                   <p className="text-muted-foreground max-w-md">
                     To upload tracks on USIC, you need to hold at least{" "}
-                    <span className="font-semibold text-accent">10,000,000 $USI</span> tokens.
+                    <span className="font-semibold text-accent">0.1% of the total $USI supply</span> (
+                    {requiredBalanceFormatted} $USI).
                   </p>
                 </div>
 
@@ -71,7 +85,7 @@ export default function UploadPage() {
                   <div className="bg-muted/30 border border-border/50 rounded-lg p-4">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-muted-foreground">Required Balance:</span>
-                      <span className="font-mono font-semibold text-accent">10,000,000 $USI</span>
+                      <span className="font-mono font-semibold text-accent">{requiredBalanceFormatted} $USI</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Your Balance:</span>

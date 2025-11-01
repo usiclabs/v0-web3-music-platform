@@ -467,7 +467,3 @@ export const UNISWAP_V3_POSITION_MANAGER_ABI = [
     type: "function",
   },
 ] as const
-
-// Import v4 contracts and helpers directly from their files when needed:
-// import { UNISWAP_V4_POOL_MANAGER, ... } from "@/lib/web3/uniswap-v4-contracts"
-// import { getV4PoolInfo, ... } from "@/lib/web3/uniswap-v4-helpers"

@@ -9,9 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Slider } from "@/components/ui/slider"
-import { Textarea } from "@/components/ui/textarea"
-import { Plus, X, Upload, Loader2, Music, Video, Coins, Lock, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, X, Upload, Loader2, Music, Video, Coins, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { useWallet } from "@/lib/web3/wallet-context"
@@ -21,17 +19,11 @@ import { useSendTransaction, useWaitForTransactionReceipt, usePublicClient, useR
 import type { Address } from "viem"
 import { formatUnits } from "viem"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
+import "@/lib/web3/token-gate"
 
 interface RoyaltySplit {
   address: string
   percentage: number
-}
-
-interface ClankerRewardRecipient {
-  address: string
-  admin: string
-  percentage: number
-  token: "Paired" | "Clanker" | "Both"
 }
 
 export function UploadForm() {
@@ -54,43 +46,14 @@ export function UploadForm() {
 
   const [tokenizeTrack, setTokenizeTrack] = useState(false)
   const [deploymentMethod, setDeploymentMethod] = useState<"zora" | "clanker">("zora")
-  const [clankerVersion, setClankerVersion] = useState<"v3.1" | "v4.0">("v4.0")
   const [coinName, setCoinName] = useState("")
   const [coinSymbol, setCoinSymbol] = useState("")
   const [createdTrackId, setCreatedTrackId] = useState<string | null>(null)
   const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string | null>(null)
   const [coinCreationStarted, setCoinCreationStarted] = useState(false)
 
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-
-  // Metadata
-  const [tokenDescription, setTokenDescription] = useState("")
-  const [socialUrls, setSocialUrls] = useState<string[]>([""])
-  const [auditUrls, setAuditUrls] = useState<string[]>([])
-
-  // v3.1 specific
-  const [enableVesting, setEnableVesting] = useState(false)
-  const [vestingPercentage, setVestingPercentage] = useState(20)
-  const [vestingDays, setVestingDays] = useState(90)
-  const [initialMarketCap, setInitialMarketCap] = useState(1)
-  const [enableDevBuy, setEnableDevBuy] = useState(false)
-  const [devBuyAmount, setDevBuyAmount] = useState("0.1")
-  const [devBuySlippage, setDevBuySlippage] = useState(5)
-  const [enableCustomRewards, setEnableCustomRewards] = useState(false)
-  const [creatorRewardPercentage, setCreatorRewardPercentage] = useState(80)
-  const [creatorAdmin, setCreatorAdmin] = useState("")
-  const [creatorRewardRecipient, setCreatorRewardRecipient] = useState("")
-
-  // v4.0 specific
-  const [tokenAdmin, setTokenAdmin] = useState("")
-  const [poolPosition, setPoolPosition] = useState<"standard" | "project">("standard")
-  const [feeConfig, setFeeConfig] = useState<"static" | "dynamic">("dynamic")
-  const [clankerFee, setClankerFee] = useState(100) // 1% in bps
-  const [pairedFee, setPairedFee] = useState(100) // 1% in bps
-  const [rewardRecipients, setRewardRecipients] = useState<ClankerRewardRecipient[]>([])
-  const [v4VestingPercentage, setV4VestingPercentage] = useState(0)
-
-  const [pairedToken, setPairedToken] = useState<"weth" | "usi">("weth")
+  const [requiredBalance, setRequiredBalance] = useState<bigint>(BigInt("0"))
+  const [isLoadingRequired, setIsLoadingRequired] = useState(true)
 
   const { sendTransaction, data: txHash, reset: resetTx } = useSendTransaction()
   const {
@@ -111,16 +74,27 @@ export function UploadForm() {
     },
   })
 
-  const REQUIRED_USI_BALANCE = BigInt("0")
-  const hasRequiredUSI =
-    REQUIRED_USI_BALANCE === BigInt("0") || (usiBalance ? (usiBalance as bigint) >= REQUIRED_USI_BALANCE : false)
-  const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
-
   useEffect(() => {
-    if (address && !tokenAdmin && clankerVersion === "v4.0") {
-      setTokenAdmin(address)
+    if (chainId) {
+      ;(async () => {
+        try {
+          const { getRequiredTokenBalance } = await import("@/lib/web3/token-gate")
+          const balance = await getRequiredTokenBalance(chainId)
+          setRequiredBalance(balance)
+          setIsLoadingRequired(false)
+        } catch (error) {
+          console.error("[v0] Error fetching required balance:", error)
+          setIsLoadingRequired(false)
+        }
+      })()
     }
-  }, [address, clankerVersion, tokenAdmin])
+  }, [chainId])
+
+  const hasRequiredUSI = usiBalance && !isLoadingRequired ? (usiBalance as bigint) >= requiredBalance : false
+  const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
+  const requiredBalanceFormatted = requiredBalance
+    ? Number(formatUnits(requiredBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : "0"
 
   useEffect(() => {
     if (isCoinCreated && receipt && createdTrackId && coinCreationStarted) {
@@ -182,9 +156,6 @@ export function UploadForm() {
     if (tokenizeTrack && !coinName) {
       setCoinName(newTitle)
     }
-    if (tokenizeTrack && !tokenDescription) {
-      setTokenDescription(`Token for ${contentType}: ${newTitle}`)
-    }
   }
 
   const addRoyaltySplit = () => {
@@ -203,52 +174,6 @@ export function UploadForm() {
 
   const totalPercentage = royaltySplits.reduce((sum, split) => sum + Number(split.percentage), 0)
 
-  const addSocialUrl = () => {
-    setSocialUrls([...socialUrls, ""])
-  }
-
-  const removeSocialUrl = (index: number) => {
-    setSocialUrls(socialUrls.filter((_, i) => i !== index))
-  }
-
-  const updateSocialUrl = (index: number, value: string) => {
-    const updated = [...socialUrls]
-    updated[index] = value
-    setSocialUrls(updated)
-  }
-
-  const addAuditUrl = () => {
-    setAuditUrls([...auditUrls, ""])
-  }
-
-  const removeAuditUrl = (index: number) => {
-    setAuditUrls(auditUrls.filter((_, i) => i !== index))
-  }
-
-  const updateAuditUrl = (index: number, value: string) => {
-    const updated = [...auditUrls]
-    updated[index] = value
-    setAuditUrls(updated)
-  }
-
-  const addRewardRecipient = () => {
-    setRewardRecipients([...rewardRecipients, { address: "", admin: address || "", percentage: 0, token: "Both" }])
-  }
-
-  const removeRewardRecipient = (index: number) => {
-    setRewardRecipients(rewardRecipients.filter((_, i) => i !== index))
-  }
-
-  const updateRewardRecipient = (
-    index: number,
-    field: "address" | "admin" | "percentage" | "token",
-    value: string | number,
-  ) => {
-    const updated = [...rewardRecipients]
-    updated[index] = { ...updated[index], [field]: value }
-    setRewardRecipients(updated)
-  }
-
   const createClankerToken = async (trackId: string, coverImageUrl: string | null) => {
     if (!address || !tokenizeTrack) return
 
@@ -256,89 +181,6 @@ export function UploadForm() {
       setUploadProgress("Deploying token via Clanker...")
       setCoinCreationStarted(true)
       console.log("[v0] Creating Clanker token for track:", trackId)
-
-      const advancedConfig: any = {
-        metadata: {
-          description: tokenDescription || `Token for ${contentType}: ${title}`,
-          socialMediaUrls: socialUrls.filter((url) => url.trim() !== ""),
-          auditUrls: auditUrls.filter((url) => url.trim() !== ""),
-        },
-        context: {
-          interface: "MyUSIC",
-          platform: "https://myusic.xyz",
-          messageId: trackId,
-          id: trackId,
-        },
-      }
-
-      if (clankerVersion === "v3.1") {
-        // v3.1 specific config
-        if (enableVesting) {
-          advancedConfig.vault = {
-            percentage: vestingPercentage,
-            durationInDays: vestingDays,
-          }
-        }
-        advancedConfig.pool = {
-          quoteToken: "0x4200000000000000000000000000000000000006", // WETH on Base
-          initialMarketCap: initialMarketCap.toString(),
-        }
-        if (enableDevBuy) {
-          advancedConfig.devBuy = {
-            ethAmount: devBuyAmount,
-            maxSlippage: devBuySlippage,
-          }
-        }
-        if (enableCustomRewards) {
-          advancedConfig.rewardsConfig = {
-            creatorReward: creatorRewardPercentage,
-            ...(creatorAdmin && { creatorAdmin }),
-            ...(creatorRewardRecipient && { creatorRewardRecipient }),
-          }
-        }
-      } else {
-        // v4.0 specific config
-        advancedConfig.tokenAdmin = tokenAdmin || address
-        advancedConfig.poolPosition = poolPosition
-        advancedConfig.feeConfig = feeConfig
-        if (feeConfig === "static") {
-          advancedConfig.clankerFee = clankerFee
-          advancedConfig.pairedFee = pairedFee
-        }
-
-        if (pairedToken === "usi") {
-          advancedConfig.pool = {
-            pairedToken: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", // $USI token address
-            tickIfToken0IsClanker: -423_800,
-            positions: [
-              {
-                tickLower: -423_800,
-                tickUpper: -318_400,
-                positionBps: 9500,
-              },
-              {
-                tickLower: -318_400,
-                tickUpper: -100_000,
-                positionBps: 500,
-              },
-            ],
-          }
-        }
-
-        if (rewardRecipients.length > 0) {
-          advancedConfig.rewards = rewardRecipients.map((r) => ({
-            recipient: r.address,
-            admin: r.admin,
-            bps: r.percentage * 100, // Convert percentage to basis points
-            token: r.token,
-          }))
-        }
-        if (v4VestingPercentage > 0) {
-          advancedConfig.vault = {
-            percentage: v4VestingPercentage,
-          }
-        }
-      }
 
       const response = await fetch("/api/tokens/deploy-clanker", {
         method: "POST",
@@ -351,8 +193,6 @@ export function UploadForm() {
           deployerAddress: address,
           trackId,
           coverImageUrl,
-          version: clankerVersion,
-          advancedConfig,
         }),
       })
 
@@ -493,7 +333,7 @@ export function UploadForm() {
       return
     }
 
-    const maxSize = 50 * 1024 * 1024
+    const maxSize = 50 * 1024 * 1024 // 50MB
     const fileToCheck = contentType === "audio" ? audioFile : videoFile
     if (fileToCheck && fileToCheck.size > maxSize) {
       setError(`File size must be less than 50MB. Your file is ${(fileToCheck.size / 1024 / 1024).toFixed(2)}MB`)
@@ -512,10 +352,6 @@ export function UploadForm() {
       }
       if (coinSymbol.length < 2 || coinSymbol.length > 5) {
         setError("Token symbol must be 2-5 characters")
-        return
-      }
-      if (clankerVersion === "v4.0" && !tokenAdmin) {
-        setError("Please provide token admin address for Clanker v4.0")
         return
       }
     }
@@ -707,10 +543,6 @@ export function UploadForm() {
           duration,
           price_per_chunk: Number.parseFloat(pricePerChunk),
           unlock_type: unlockType,
-          ...(tokenizeTrack &&
-            deploymentMethod === "clanker" && {
-              pool_version: clankerVersion === "v4.0" ? "v4" : "v3",
-            }),
           royalty_splits: royaltySplits.map((split) => ({
             address: split.address,
             percentage: split.percentage,
@@ -737,6 +569,7 @@ export function UploadForm() {
           return
         } catch (coinError) {
           console.error("[v0] Token creation failed, but track uploaded:", coinError)
+          // Continue to success flow even if token creation fails
         }
       }
 
@@ -747,7 +580,6 @@ export function UploadForm() {
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
-        gravity: 1.2,
       })
 
       setTimeout(() => {
@@ -886,7 +718,7 @@ export function UploadForm() {
           </div>
 
           <div>
-            <Label>
+            <Label htmlFor="price">
               {unlockType === "per_chunk"
                 ? "Price per 30s Segment (USDC)"
                 : `Price to Unlock Full ${contentType === "audio" ? "Song" : "Video"} (USDC)`}
@@ -926,7 +758,7 @@ export function UploadForm() {
             {!hasRequiredUSI && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Lock className="h-3 w-3" />
-                <span>Requires 1M $USI</span>
+                <span>Requires 0.1% $USI</span>
               </div>
             )}
             <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} disabled={!hasRequiredUSI} />
@@ -941,7 +773,8 @@ export function UploadForm() {
                 <h3 className="font-semibold text-sm mb-1">Token-Gated Feature</h3>
                 <p className="text-sm text-muted-foreground mb-2">
                   This feature requires holding at least{" "}
-                  <span className="font-semibold text-accent">1,000,000 $USI</span> tokens to access.
+                  <span className="font-semibold text-accent">0.1% of the total $USI supply</span> (
+                  {requiredBalanceFormatted} $USI) to access.
                 </p>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Your balance:</span>
@@ -997,105 +830,22 @@ export function UploadForm() {
                     <RadioGroupItem value="clanker" id="clanker" className="mt-1" />
                     <Label htmlFor="clanker" className="flex-1 cursor-pointer">
                       <div className="font-semibold mb-1">Clanker</div>
-                      <div className="text-xs text-muted-foreground">Deploy ERC20 with auto Uniswap pool</div>
+                      <div className="text-xs text-muted-foreground">Deploy ERC20 with auto Uniswap v4 pool</div>
                     </Label>
                   </div>
                 </div>
               </RadioGroup>
             </div>
 
-            {deploymentMethod === "clanker" && (
-              <div>
-                <Label className="mb-3 block">Clanker Version</Label>
-                <RadioGroup
-                  value={clankerVersion}
-                  onValueChange={(value) => setClankerVersion(value as "v3.1" | "v4.0")}
-                >
-                  <div className="grid grid-cols-2 gap-4">
-                    <div
-                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        clankerVersion === "v4.0"
-                          ? "border-accent bg-accent/10"
-                          : "border-border/50 bg-card/30 hover:border-border"
-                      }`}
-                    >
-                      <RadioGroupItem value="v4.0" id="v4.0" className="mt-1" />
-                      <Label htmlFor="v4.0" className="flex-1 cursor-pointer">
-                        <div className="font-semibold mb-1">Clanker 4.0</div>
-                        <div className="text-xs text-muted-foreground">Uniswap v4 pool (Latest)</div>
-                      </Label>
-                    </div>
-                    <div
-                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        clankerVersion === "v3.1"
-                          ? "border-accent bg-accent/10"
-                          : "border-border/50 bg-card/30 hover:border-border"
-                      }`}
-                    >
-                      <RadioGroupItem value="v3.1" id="v3.1" className="mt-1" />
-                      <Label htmlFor="v3.1" className="flex-1 cursor-pointer">
-                        <div className="font-semibold mb-1">Clanker 3.1</div>
-                        <div className="text-xs text-muted-foreground">Uniswap v3 pool (Legacy)</div>
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-            )}
-
-            {deploymentMethod === "clanker" && clankerVersion === "v4.0" && (
-              <div>
-                <Label className="mb-3 block">Paired Token</Label>
-                <RadioGroup value={pairedToken} onValueChange={(value) => setPairedToken(value as "weth" | "usi")}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div
-                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        pairedToken === "weth"
-                          ? "border-accent bg-accent/10"
-                          : "border-border/50 bg-card/30 hover:border-border"
-                      }`}
-                    >
-                      <RadioGroupItem value="weth" id="weth" className="mt-1" />
-                      <Label htmlFor="weth" className="flex-1 cursor-pointer">
-                        <div className="font-semibold mb-1">WETH</div>
-                        <div className="text-xs text-muted-foreground">Pair with Wrapped ETH (Standard)</div>
-                      </Label>
-                    </div>
-                    <div
-                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        pairedToken === "usi"
-                          ? "border-accent bg-accent/10"
-                          : "border-border/50 bg-card/30 hover:border-border"
-                      }`}
-                    >
-                      <RadioGroupItem value="usi" id="usi" className="mt-1" />
-                      <Label htmlFor="usi" className="flex-1 cursor-pointer">
-                        <div className="font-semibold mb-1">$USI</div>
-                        <div className="text-xs text-muted-foreground">Pair with platform token (Custom)</div>
-                      </Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-                {pairedToken === "usi" && (
-                  <div className="mt-3 bg-accent/5 border border-accent/20 rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">
-                      Pairing with $USI creates a custom liquidity pool with optimized tick ranges for the platform
-                      token, enabling direct trading between your track token and $USI.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {deploymentMethod === "clanker" && (
-              <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">
-                  {clankerVersion === "v4.0"
-                    ? "Clanker 4.0 deploys a standard ERC20 token with automatic Uniswap v4 liquidity pool creation, making your token instantly tradeable with fair price distribution."
-                    : "Clanker 3.1 deploys a standard ERC20 token with automatic Uniswap v3 liquidity pool creation, with support for vesting schedules and custom reward distribution."}
-                </p>
-              </div>
-            )}
+            <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground">
+                {deploymentMethod === "zora"
+                  ? "Creating a coin allows fans to invest in your " +
+                    contentType +
+                    ". They can buy, sell, and trade your coin on Zora, creating a market for your work."
+                  : "Clanker deploys a standard ERC20 token with automatic Uniswap v4 liquidity pool creation, making your token instantly tradeable with fair price distribution."}
+              </p>
+            </div>
 
             <div>
               <Label htmlFor="coinName">Token Name</Label>
@@ -1124,573 +874,6 @@ export function UploadForm() {
               <p className="text-xs text-muted-foreground mt-1">2-5 characters (auto-generated from title)</p>
             </div>
 
-            {deploymentMethod === "clanker" && (
-              <div className="border-t border-border/50 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                  className="flex items-center justify-between w-full p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <span className="font-semibold text-sm">Advanced Token Configuration</span>
-                  {showAdvancedOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </button>
-
-                {showAdvancedOptions && (
-                  <div className="mt-4 space-y-6">
-                    {/* Token Metadata */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-sm">Token Metadata</h3>
-
-                      <div>
-                        <Label htmlFor="tokenDescription">Description</Label>
-                        <Textarea
-                          id="tokenDescription"
-                          value={tokenDescription}
-                          onChange={(e) => setTokenDescription(e.target.value)}
-                          placeholder="Describe your token and what it represents..."
-                          className="bg-card/50 backdrop-blur-xl border border-border/50 min-h-[80px]"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <Label>Social Media URLs</Label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={addSocialUrl}
-                            className="h-7 text-xs"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add URL
-                          </Button>
-                        </div>
-                        <div className="space-y-2">
-                          {socialUrls.map((url, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Input
-                                value={url}
-                                onChange={(e) => updateSocialUrl(index, e.target.value)}
-                                placeholder="https://twitter.com/yourtoken"
-                                className="bg-card/50 backdrop-blur-xl border border-border/50 text-sm"
-                              />
-                              {socialUrls.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeSocialUrl(index)}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <Label>Audit URLs (Optional)</Label>
-                          <Button type="button" variant="ghost" size="sm" onClick={addAuditUrl} className="h-7 text-xs">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add URL
-                          </Button>
-                        </div>
-                        {auditUrls.length > 0 && (
-                          <div className="space-y-2">
-                            {auditUrls.map((url, index) => (
-                              <div key={index} className="flex gap-2">
-                                <Input
-                                  value={url}
-                                  onChange={(e) => updateAuditUrl(index, e.target.value)}
-                                  placeholder="https://audit.example.com/report"
-                                  className="bg-card/50 backdrop-blur-xl border border-border/50 text-sm"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeAuditUrl(index)}
-                                  className="h-10 w-10 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* v3.1 Specific Options */}
-                    {clankerVersion === "v3.1" && (
-                      <>
-                        {/* Initial Market Cap */}
-                        <div className="space-y-3">
-                          <Label>Initial Market Cap (ETH)</Label>
-                          <div className="flex items-center gap-4">
-                            <Slider
-                              value={[initialMarketCap]}
-                              onValueChange={(value) => setInitialMarketCap(value[0])}
-                              min={0.1}
-                              max={10}
-                              step={0.1}
-                              className="flex-1"
-                            />
-                            <span className="font-mono text-sm font-semibold w-16 text-right">
-                              {initialMarketCap.toFixed(1)} ETH
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Starting liquidity for your token's Uniswap pool
-                          </p>
-                        </div>
-
-                        {/* Vesting Vault */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label>Vesting Vault</Label>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Lock a percentage of tokens with a vesting schedule
-                              </p>
-                            </div>
-                            <Switch checked={enableVesting} onCheckedChange={setEnableVesting} />
-                          </div>
-
-                          {enableVesting && (
-                            <div className="space-y-4 pl-4 border-l-2 border-accent/20">
-                              <div>
-                                <Label>Vesting Percentage</Label>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Slider
-                                    value={[vestingPercentage]}
-                                    onValueChange={(value) => setVestingPercentage(value[0])}
-                                    min={1}
-                                    max={50}
-                                    step={1}
-                                    className="flex-1"
-                                  />
-                                  <span className="font-mono text-sm font-semibold w-12 text-right">
-                                    {vestingPercentage}%
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <Label htmlFor="vestingDays">Vesting Duration (Days)</Label>
-                                <Input
-                                  id="vestingDays"
-                                  type="number"
-                                  min="1"
-                                  max="365"
-                                  value={vestingDays}
-                                  onChange={(e) => setVestingDays(Number.parseInt(e.target.value) || 90)}
-                                  className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">Common: 30, 90, 180, or 365 days</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Dev Buy */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label>Initial Dev Buy</Label>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Automatically buy tokens at launch to provide initial liquidity
-                              </p>
-                            </div>
-                            <Switch checked={enableDevBuy} onCheckedChange={setEnableDevBuy} />
-                          </div>
-
-                          {enableDevBuy && (
-                            <div className="space-y-4 pl-4 border-l-2 border-accent/20">
-                              <div>
-                                <Label htmlFor="devBuyAmount">ETH Amount</Label>
-                                <Input
-                                  id="devBuyAmount"
-                                  type="number"
-                                  step="0.01"
-                                  min="0.01"
-                                  max="10"
-                                  value={devBuyAmount}
-                                  onChange={(e) => setDevBuyAmount(e.target.value)}
-                                  className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Amount of ETH to spend buying your token
-                                </p>
-                              </div>
-
-                              <div>
-                                <Label>Max Slippage</Label>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Slider
-                                    value={[devBuySlippage]}
-                                    onValueChange={(value) => setDevBuySlippage(value[0])}
-                                    min={1}
-                                    max={20}
-                                    step={1}
-                                    className="flex-1"
-                                  />
-                                  <span className="font-mono text-sm font-semibold w-12 text-right">
-                                    {devBuySlippage}%
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">Maximum price slippage tolerance</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Custom Rewards */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <Label>Custom Reward Distribution</Label>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Configure creator rewards (Clanker retains 20%)
-                              </p>
-                            </div>
-                            <Switch checked={enableCustomRewards} onCheckedChange={setEnableCustomRewards} />
-                          </div>
-
-                          {enableCustomRewards && (
-                            <div className="space-y-4 pl-4 border-l-2 border-accent/20">
-                              <div>
-                                <Label>Creator Reward Percentage</Label>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Slider
-                                    value={[creatorRewardPercentage]}
-                                    onValueChange={(value) => setCreatorRewardPercentage(value[0])}
-                                    min={0}
-                                    max={80}
-                                    step={5}
-                                    className="flex-1"
-                                  />
-                                  <span className="font-mono text-sm font-semibold w-12 text-right">
-                                    {creatorRewardPercentage}%
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Your share: {creatorRewardPercentage}% | Interface: {80 - creatorRewardPercentage}% |
-                                  Clanker: 20%
-                                </p>
-                              </div>
-
-                              <div>
-                                <Label htmlFor="creatorAdmin">Creator Admin Address (Optional)</Label>
-                                <Input
-                                  id="creatorAdmin"
-                                  value={creatorAdmin}
-                                  onChange={(e) => setCreatorAdmin(e.target.value)}
-                                  placeholder={address || "0x..."}
-                                  className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm"
-                                />
-                              </div>
-
-                              <div>
-                                <Label htmlFor="creatorRewardRecipient">Reward Recipient Address (Optional)</Label>
-                                <Input
-                                  id="creatorRewardRecipient"
-                                  value={creatorRewardRecipient}
-                                  onChange={(e) => setCreatorRewardRecipient(e.target.value)}
-                                  placeholder={address || "0x..."}
-                                  className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-
-                    {/* v4.0 Specific Options */}
-                    {clankerVersion === "v4.0" && (
-                      <>
-                        {/* Token Admin */}
-                        <div>
-                          <Label htmlFor="tokenAdmin">Token Admin Address</Label>
-                          <Input
-                            id="tokenAdmin"
-                            value={tokenAdmin}
-                            onChange={(e) => setTokenAdmin(e.target.value)}
-                            placeholder={address || "0x..."}
-                            required
-                            className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm"
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Address with admin privileges for the token
-                          </p>
-                        </div>
-
-                        {/* Pool Position */}
-                        <div>
-                          <Label className="mb-3 block">Pool Position Strategy</Label>
-                          <RadioGroup
-                            value={poolPosition}
-                            onValueChange={(value) => setPoolPosition(value as "standard" | "project")}
-                          >
-                            <div className="space-y-2">
-                              <div
-                                className={`flex items-start space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                                  poolPosition === "standard"
-                                    ? "border-accent bg-accent/10"
-                                    : "border-border/50 bg-card/30 hover:border-border"
-                                }`}
-                              >
-                                <RadioGroupItem value="standard" id="standard" className="mt-1" />
-                                <Label htmlFor="standard" className="flex-1 cursor-pointer">
-                                  <div className="font-semibold text-sm mb-1">Standard</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Balanced liquidity distribution for general trading
-                                  </div>
-                                </Label>
-                              </div>
-                              <div
-                                className={`flex items-start space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                                  poolPosition === "project"
-                                    ? "border-accent bg-accent/10"
-                                    : "border-border/50 bg-card/30 hover:border-border"
-                                }`}
-                              >
-                                <RadioGroupItem value="project" id="project" className="mt-1" />
-                                <Label htmlFor="project" className="flex-1 cursor-pointer">
-                                  <div className="font-semibold text-sm mb-1">Project</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Optimized for project tokens with concentrated liquidity
-                                  </div>
-                                </Label>
-                              </div>
-                            </div>
-                          </RadioGroup>
-                        </div>
-
-                        {/* Fee Configuration */}
-                        <div>
-                          <Label className="mb-3 block">Fee Configuration</Label>
-                          <RadioGroup
-                            value={feeConfig}
-                            onValueChange={(value) => setFeeConfig(value as "static" | "dynamic")}
-                          >
-                            <div className="space-y-2">
-                              <div
-                                className={`flex items-start space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                                  feeConfig === "dynamic"
-                                    ? "border-accent bg-accent/10"
-                                    : "border-border/50 bg-card/30 hover:border-border"
-                                }`}
-                              >
-                                <RadioGroupItem value="dynamic" id="dynamic" className="mt-1" />
-                                <Label htmlFor="dynamic" className="flex-1 cursor-pointer">
-                                  <div className="font-semibold text-sm mb-1">Dynamic (Recommended)</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Automatically adjusts fees based on market conditions
-                                  </div>
-                                </Label>
-                              </div>
-                              <div
-                                className={`flex items-start space-x-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${
-                                  feeConfig === "static"
-                                    ? "border-accent bg-accent/10"
-                                    : "border-border/50 bg-card/30 hover:border-border"
-                                }`}
-                              >
-                                <RadioGroupItem value="static" id="static" className="mt-1" />
-                                <Label htmlFor="static" className="flex-1 cursor-pointer">
-                                  <div className="font-semibold text-sm mb-1">Static</div>
-                                  <div className="text-xs text-muted-foreground">Fixed fee percentages</div>
-                                </Label>
-                              </div>
-                            </div>
-                          </RadioGroup>
-
-                          {feeConfig === "static" && (
-                            <div className="mt-4 space-y-4 pl-4 border-l-2 border-accent/20">
-                              <div>
-                                <Label>Clanker Token Fee (bps)</Label>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Slider
-                                    value={[clankerFee]}
-                                    onValueChange={(value) => setClankerFee(value[0])}
-                                    min={0}
-                                    max={500}
-                                    step={10}
-                                    className="flex-1"
-                                  />
-                                  <span className="font-mono text-sm font-semibold w-20 text-right">
-                                    {clankerFee} bps
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {(clankerFee / 100).toFixed(2)}% fee on Clanker token trades
-                                </p>
-                              </div>
-
-                              <div>
-                                <Label>Paired Token Fee (bps)</Label>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <Slider
-                                    value={[pairedFee]}
-                                    onValueChange={(value) => setPairedFee(value[0])}
-                                    min={0}
-                                    max={500}
-                                    step={10}
-                                    className="flex-1"
-                                  />
-                                  <span className="font-mono text-sm font-semibold w-20 text-right">
-                                    {pairedFee} bps
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {(pairedFee / 100).toFixed(2)}% fee on paired token (WETH) trades
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Vesting */}
-                        <div>
-                          <Label>Vesting Percentage</Label>
-                          <div className="flex items-center gap-4 mt-2">
-                            <Slider
-                              value={[v4VestingPercentage]}
-                              onValueChange={(value) => setV4VestingPercentage(value[0])}
-                              min={0}
-                              max={50}
-                              step={1}
-                              className="flex-1"
-                            />
-                            <span className="font-mono text-sm font-semibold w-12 text-right">
-                              {v4VestingPercentage}%
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Percentage of tokens to vault at launch (0 = no vesting)
-                          </p>
-                        </div>
-
-                        {/* Reward Recipients */}
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Label>Reward Recipients</Label>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={addRewardRecipient}
-                              className="h-7 text-xs"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Recipient
-                            </Button>
-                          </div>
-
-                          {rewardRecipients.length > 0 && (
-                            <div className="space-y-4">
-                              {rewardRecipients.map((recipient, index) => (
-                                <div
-                                  key={index}
-                                  className="p-4 rounded-lg border border-border/50 bg-card/30 space-y-3"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold">Recipient {index + 1}</span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeRewardRecipient(index)}
-                                      className="h-7 w-7 p-0"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-
-                                  <div>
-                                    <Label className="text-xs">Recipient Address</Label>
-                                    <Input
-                                      value={recipient.address}
-                                      onChange={(e) => updateRewardRecipient(index, "address", e.target.value)}
-                                      placeholder="0x..."
-                                      className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm mt-1"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label className="text-xs">Admin Address</Label>
-                                    <Input
-                                      value={recipient.admin}
-                                      onChange={(e) => updateRewardRecipient(index, "admin", e.target.value)}
-                                      placeholder="0x..."
-                                      className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm mt-1"
-                                    />
-                                  </div>
-
-                                  <div>
-                                    <Label className="text-xs">Reward Percentage</Label>
-                                    <div className="flex items-center gap-4 mt-1">
-                                      <Slider
-                                        value={[recipient.percentage]}
-                                        onValueChange={(value) => updateRewardRecipient(index, "percentage", value[0])}
-                                        min={0}
-                                        max={100}
-                                        step={1}
-                                        className="flex-1"
-                                      />
-                                      <span className="font-mono text-sm font-semibold w-12 text-right">
-                                        {recipient.percentage}%
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <Label className="text-xs">Token Type</Label>
-                                    <RadioGroup
-                                      value={recipient.token}
-                                      onValueChange={(value) =>
-                                        updateRewardRecipient(index, "token", value as "Paired" | "Clanker" | "Both")
-                                      }
-                                      className="flex gap-2 mt-1"
-                                    >
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="Paired" id={`paired-${index}`} />
-                                        <Label htmlFor={`paired-${index}`} className="text-xs cursor-pointer">
-                                          Paired
-                                        </Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="Clanker" id={`clanker-${index}`} />
-                                        <Label htmlFor={`clanker-${index}`} className="text-xs cursor-pointer">
-                                          Clanker
-                                        </Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="Both" id={`both-${index}`} />
-                                        <Label htmlFor={`both-${index}`} className="text-xs cursor-pointer">
-                                          Both
-                                        </Label>
-                                      </div>
-                                    </RadioGroup>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="bg-muted/30 rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Network:</span>
@@ -1698,33 +881,19 @@ export function UploadForm() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Paired Token:</span>
+                <span className="font-medium">{deploymentMethod === "zora" ? "ETH" : "WETH"}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Starting Market Cap:</span>
                 <span className="font-medium">
-                  {deploymentMethod === "zora"
-                    ? "ETH"
-                    : clankerVersion === "v4.0" && pairedToken === "usi"
-                      ? "$USI"
-                      : "WETH"}
+                  {deploymentMethod === "zora" ? "Low (Accessible)" : "10 ETH (Default)"}
                 </span>
               </div>
-              {deploymentMethod === "zora" && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Starting Market Cap:</span>
-                  <span className="font-medium">Low (Accessible)</span>
-                </div>
-              )}
               {deploymentMethod === "clanker" && (
-                <>
-                  {clankerVersion === "v3.1" && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Initial Market Cap:</span>
-                      <span className="font-medium">{initialMarketCap} ETH</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Liquidity Pool:</span>
-                    <span className="font-medium">Uniswap {clankerVersion === "v4.0" ? "v4" : "v3"} (Auto)</span>
-                  </div>
-                </>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Liquidity Pool:</span>
+                  <span className="font-medium">Uniswap v4 (Auto)</span>
+                </div>
               )}
             </div>
           </div>
