@@ -90,6 +90,8 @@ export function UploadForm() {
   const [rewardRecipients, setRewardRecipients] = useState<ClankerRewardRecipient[]>([])
   const [v4VestingPercentage, setV4VestingPercentage] = useState(0)
 
+  const [pairedToken, setPairedToken] = useState<"weth" | "usi">("weth")
+
   const { sendTransaction, data: txHash, reset: resetTx } = useSendTransaction()
   const {
     isLoading: isCoinCreating,
@@ -303,6 +305,26 @@ export function UploadForm() {
           advancedConfig.clankerFee = clankerFee
           advancedConfig.pairedFee = pairedFee
         }
+
+        if (pairedToken === "usi") {
+          advancedConfig.pool = {
+            pairedToken: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", // $USI token address
+            tickIfToken0IsClanker: -423_800,
+            positions: [
+              {
+                tickLower: -423_800,
+                tickUpper: -318_400,
+                positionBps: 9500,
+              },
+              {
+                tickLower: -318_400,
+                tickUpper: -100_000,
+                positionBps: 500,
+              },
+            ],
+          }
+        }
+
         if (rewardRecipients.length > 0) {
           advancedConfig.rewards = rewardRecipients.map((r) => ({
             recipient: r.address,
@@ -685,6 +707,10 @@ export function UploadForm() {
           duration,
           price_per_chunk: Number.parseFloat(pricePerChunk),
           unlock_type: unlockType,
+          ...(tokenizeTrack &&
+            deploymentMethod === "clanker" && {
+              pool_version: clankerVersion === "v4.0" ? "v4" : "v3",
+            }),
           royalty_splits: royaltySplits.map((split) => ({
             address: split.address,
             percentage: split.percentage,
@@ -860,7 +886,7 @@ export function UploadForm() {
           </div>
 
           <div>
-            <Label htmlFor="price">
+            <Label>
               {unlockType === "per_chunk"
                 ? "Price per 30s Segment (USDC)"
                 : `Price to Unlock Full ${contentType === "audio" ? "Song" : "Video"} (USDC)`}
@@ -1014,6 +1040,50 @@ export function UploadForm() {
                     </div>
                   </div>
                 </RadioGroup>
+              </div>
+            )}
+
+            {deploymentMethod === "clanker" && clankerVersion === "v4.0" && (
+              <div>
+                <Label className="mb-3 block">Paired Token</Label>
+                <RadioGroup value={pairedToken} onValueChange={(value) => setPairedToken(value as "weth" | "usi")}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div
+                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                        pairedToken === "weth"
+                          ? "border-accent bg-accent/10"
+                          : "border-border/50 bg-card/30 hover:border-border"
+                      }`}
+                    >
+                      <RadioGroupItem value="weth" id="weth" className="mt-1" />
+                      <Label htmlFor="weth" className="flex-1 cursor-pointer">
+                        <div className="font-semibold mb-1">WETH</div>
+                        <div className="text-xs text-muted-foreground">Pair with Wrapped ETH (Standard)</div>
+                      </Label>
+                    </div>
+                    <div
+                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                        pairedToken === "usi"
+                          ? "border-accent bg-accent/10"
+                          : "border-border/50 bg-card/30 hover:border-border"
+                      }`}
+                    >
+                      <RadioGroupItem value="usi" id="usi" className="mt-1" />
+                      <Label htmlFor="usi" className="flex-1 cursor-pointer">
+                        <div className="font-semibold mb-1">$USI</div>
+                        <div className="text-xs text-muted-foreground">Pair with platform token (Custom)</div>
+                      </Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+                {pairedToken === "usi" && (
+                  <div className="mt-3 bg-accent/5 border border-accent/20 rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Pairing with $USI creates a custom liquidity pool with optimized tick ranges for the platform
+                      token, enabling direct trading between your track token and $USI.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1628,7 +1698,13 @@ export function UploadForm() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Paired Token:</span>
-                <span className="font-medium">{deploymentMethod === "zora" ? "ETH" : "WETH"}</span>
+                <span className="font-medium">
+                  {deploymentMethod === "zora"
+                    ? "ETH"
+                    : clankerVersion === "v4.0" && pairedToken === "usi"
+                      ? "$USI"
+                      : "WETH"}
+                </span>
               </div>
               {deploymentMethod === "zora" && (
                 <div className="flex items-center justify-between text-sm">

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Loader2, Info, AlertCircle, Droplet, Plus, ExternalLink, Sparkles } from "lucide-react"
+import { Loader2, Info, AlertCircle, Droplet, Plus, ExternalLink } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import {
   UNISWAP_V3_POSITION_MANAGER,
@@ -52,21 +52,26 @@ export function AddLiquidityDrawer({
   const [tokenAmount, setTokenAmount] = useState("")
   const [isAddingLiquidity, setIsAddingLiquidity] = useState(false)
   const [poolExists, setPoolExists] = useState<boolean | null>(null)
+  const [poolVersion, setPoolVersion] = useState<"v3" | "v4" | null>(null)
   const [isCheckingPool, setIsCheckingPool] = useState(false)
 
   const wethAddress = chainId ? WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS] : undefined
 
   useEffect(() => {
-    if (open && tokenAddress && wethAddress && chainId) {
+    if (open && tokenAddress && wethAddress && chainId && publicClient) {
       checkPoolExists()
     }
-  }, [open, tokenAddress, wethAddress, feeTier, chainId])
+  }, [open, tokenAddress, wethAddress, feeTier, chainId, publicClient])
 
   const checkPoolExists = async () => {
     if (!chainId || !publicClient || !tokenAddress || !wethAddress) return
 
     setIsCheckingPool(true)
+    setPoolExists(null)
+    setPoolVersion(null)
+
     try {
+      console.log("[v0] Checking for V3 pool...")
       const poolAddress = await publicClient.readContract({
         address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
         abi: UNISWAP_V3_FACTORY_ABI,
@@ -74,10 +79,13 @@ export function AddLiquidityDrawer({
         args: [wethAddress as `0x${string}`, tokenAddress as `0x${string}`, feeTier],
       })
 
-      setPoolExists(poolAddress !== "0x0000000000000000000000000000000000000000")
+      const exists = poolAddress !== "0x0000000000000000000000000000000000000000"
+      setPoolExists(exists)
+      setPoolVersion(exists ? "v3" : null)
     } catch (error) {
       console.error("[v0] Failed to check pool:", error)
       setPoolExists(null)
+      setPoolVersion(null)
     } finally {
       setIsCheckingPool(false)
     }
@@ -216,7 +224,7 @@ export function AddLiquidityDrawer({
           {/* Fee Tier Selection */}
           <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Plus className="h-4 w-4 text-primary" />
               Fee Tier
             </Label>
             <div className="grid grid-cols-3 gap-2">
@@ -247,7 +255,7 @@ export function AddLiquidityDrawer({
             <div className="flex items-start gap-3 text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">Pool doesn't exist</p>
+                <p className="font-medium">No Uniswap V3 pool exists</p>
                 <p className="text-xs mt-1">
                   This pool needs to be created first. Visit{" "}
                   <a href="/lp-manager" className="underline hover:text-amber-700 font-medium">
@@ -260,7 +268,7 @@ export function AddLiquidityDrawer({
           ) : poolExists === true ? (
             <div className="flex items-center gap-3 text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
               <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="font-medium">Pool exists - ready to add liquidity</span>
+              <span className="font-medium">Uniswap V3 pool exists - ready to add liquidity</span>
             </div>
           ) : null}
 
@@ -347,6 +355,12 @@ export function AddLiquidityDrawer({
 
           {/* Additional Info */}
           <div className="space-y-2 pt-4 border-t border-border/50">
+            {poolVersion && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Pool Version</span>
+                <span className="font-medium">Uniswap V3</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Pool Fee</span>
               <span className="font-medium">{(feeTier / 10000).toFixed(2)}%</span>

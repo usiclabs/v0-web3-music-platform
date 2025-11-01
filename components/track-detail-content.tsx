@@ -30,6 +30,7 @@ import {
 } from "@/lib/web3/contracts"
 import confetti from "canvas-confetti"
 import { TrackComments } from "@/components/track-comments"
+// import { v4PoolExists, getV4PoolInfo } from "@/lib/web3/uniswap-v4-helpers"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -72,7 +73,7 @@ export function TrackDetailContent({
   const [swapAmount, setSwapAmount] = useState("")
   const [swapOutput, setSwapOutput] = useState("")
   const [isSwapping, setIsSwapping] = useState(false)
-  const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number } | null>(null)
+  const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number; version: "v3" | "v4" } | null>(null)
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [showReportDialog, setShowReportDialog] = useState(false)
@@ -147,9 +148,12 @@ export function TrackDetailContent({
 
     try {
       const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
+
+      console.log("[v0] Checking for V3 pools...")
       const feeTiers = [500, 3000, 10000]
 
       for (const fee of feeTiers) {
+        console.log("[v0] Checking fee tier:", fee)
         const poolAddress = await publicClient.readContract({
           address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
           abi: UNISWAP_V3_FACTORY_ABI,
@@ -157,12 +161,15 @@ export function TrackDetailContent({
           args: [wethAddress as `0x${string}`, tokenAddress as `0x${string}`, fee],
         })
 
+        console.log("[v0] Pool address for fee tier", fee, ":", poolAddress)
+
         if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
-          setPoolInfo({ address: poolAddress as string, fee })
+          setPoolInfo({ address: poolAddress as string, fee, version: "v3" })
           return
         }
       }
 
+      console.log("[v0] No pool found for token:", tokenAddress)
       setQuoteError("No Uniswap V3 pool found for this token. Liquidity needs to be added first.")
     } catch (error) {
       console.error("[v0] Failed to check pool:", error)
@@ -171,14 +178,6 @@ export function TrackDetailContent({
       setIsCheckingPool(false)
     }
   }
-
-  useEffect(() => {
-    if (swapAmount && poolInfo && chainId && isTokenized) {
-      fetchQuote()
-    } else {
-      setSwapOutput("")
-    }
-  }, [swapAmount, poolInfo, chainId])
 
   const fetchQuote = async () => {
     if (!swapAmount || !poolInfo || !chainId || !publicClient || !isTokenized) return
@@ -647,7 +646,9 @@ export function TrackDetailContent({
                     <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
                     <div className="absolute inset-0 bg-green-500/50 blur-sm rounded-full animate-pulse" />
                   </div>
-                  <span className="font-semibold">Pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee</span>
+                  <span className="font-semibold">
+                    Uniswap V3 pool found with {(poolInfo.fee / 10000).toFixed(2)}% fee
+                  </span>
                 </div>
               ) : quoteError ? (
                 <div className="flex items-start gap-3 text-sm text-amber-600 bg-gradient-to-r from-amber-500/20 to-amber-500/10 border border-amber-500/30 rounded-2xl p-4 shadow-lg shadow-amber-500/10 animate-in fade-in slide-in-from-top-2 duration-500">
@@ -730,7 +731,7 @@ export function TrackDetailContent({
               </div>
 
               {swapOutput && (
-                <div className="space-y-3 bg-gradient-to-br from-primary/15 via-primary/10 to-primary/5 rounded-2xl p-5 border-2 border-primary/30 shadow-xl shadow-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="space-y-3 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 rounded-2xl p-5 border-2 border-primary/30 shadow-xl shadow-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
                   <Label className="text-sm font-semibold text-muted-foreground">You will receive (estimated)</Label>
                   <div className="text-4xl font-bold bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent animate-in zoom-in duration-700">
                     {Number.parseFloat(swapOutput).toFixed(2)} tokens
@@ -743,8 +744,13 @@ export function TrackDetailContent({
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground font-medium">Rate</span>
                     <span className="font-bold text-foreground">
-                      1 ETH ≈ {(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens
+                      {`1 ETH ≈ ${(Number.parseFloat(swapOutput) / Number.parseFloat(swapAmount)).toFixed(2)} tokens`}
                     </span>
+                  </div>
+                  <div className="h-px bg-border/50" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground font-medium">Pool Version</span>
+                    <span className="font-bold text-foreground">Uniswap V3</span>
                   </div>
                   <div className="h-px bg-border/50" />
                   <div className="flex justify-between items-center">

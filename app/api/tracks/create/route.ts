@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const {
       title,
+      description,
       artist_id,
       content_type,
       audio_url,
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
 
     console.log("[v0] Creating track with metadata:", {
       title,
+      description,
       artist_id,
       content_type,
       has_audio_url: !!audio_url,
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
       .from("tracks")
       .insert({
         title,
+        description: description || null,
         artist_id: artist_id.toLowerCase(),
         content_type,
         audio_url,
