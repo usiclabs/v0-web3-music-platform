@@ -16,6 +16,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
+  Coins,
+  CheckCircle2,
 } from "lucide-react"
 import Link from "next/link"
 import { TrackCard } from "@/components/track-card"
@@ -26,6 +28,7 @@ import { ensureProfile } from "@/lib/supabase/helpers"
 import type { Database } from "@/types/database"
 import { SkeletonCard, SkeletonStats } from "@/components/skeleton-loader"
 import { WalletConnectPrompt } from "@/components/wallet-connect-prompt"
+import { TokenizeProfileModal } from "@/components/tokenize-profile-modal"
 
 type Track = Database["public"]["Tables"]["tracks"]["Row"] & {
   artist: Database["public"]["Tables"]["profiles"]["Row"]
@@ -55,141 +58,148 @@ export default function DashboardPage() {
     earningsGrowth: 0,
     tracksGrowth: 0,
   })
+  const [showTokenizeModal, setShowTokenizeModal] = useState(false)
 
-  useEffect(() => {
-    async function loadDashboard() {
-      if (!address) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const supabase = createBrowserClient()
-
-        const { data: profileData } = await ensureProfile(address)
-        setProfile(profileData)
-
-        const { data: tracksData } = await supabase
-          .from("tracks")
-          .select(`
-            *,
-            artist:profiles!tracks_artist_id_fkey(*)
-          `)
-          .eq("artist_id", address.toLowerCase())
-          .order("created_at", { ascending: false })
-
-        if (tracksData) {
-          const tracksWithMetrics = await Promise.all(
-            tracksData.map(async (track) => {
-              const { data: streams } = await supabase
-                .from("streams")
-                .select("chunks_played, total_paid")
-                .eq("track_id", track.id)
-
-              const total_earned = streams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-              const play_count = streams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
-
-              return {
-                ...track,
-                total_earned,
-                play_count,
-              } as Track
-            }),
-          )
-
-          setTracks(tracksWithMetrics)
-        }
-
-        const { data: streams } = await supabase
-          .from("streams")
-          .select("track_id, chunks_played, total_paid, tracks!inner(artist_id)")
-          .eq("tracks.artist_id", address.toLowerCase())
-
-        console.log("[v0] Dashboard streams query result:", {
-          streamsCount: streams?.length || 0,
-          streams: streams?.slice(0, 3), // Log first 3 for debugging
-        })
-
-        const totalPlays = (streams as Stream[])?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
-        const totalEarnings = (streams as Stream[])?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-        const trackCount = tracksData?.length || 0
-
-        console.log("[v0] Dashboard stats calculated:", { totalPlays, totalEarnings, trackCount })
-
-        setStats({ totalPlays, totalEarnings, trackCount })
-
-        const sevenDaysAgo = new Date()
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
-        const { data: recentStreams } = await supabase
-          .from("streams")
-          .select("track_id, chunks_played, total_paid, started_at, tracks!inner(artist_id)")
-          .eq("tracks.artist_id", address.toLowerCase())
-          .gte("started_at", sevenDaysAgo.toISOString())
-
-        const recentPlays = (recentStreams as Stream[])?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
-        const recentEarnings = (recentStreams as Stream[])?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-
-        const playsGrowth = totalPlays > 0 ? (recentPlays / totalPlays) * 100 : 0
-        const earningsGrowth = totalEarnings > 0 ? (recentEarnings / totalEarnings) * 100 : 0
-
-        setGrowthStats({
-          playsGrowth: Math.round(playsGrowth),
-          earningsGrowth: Math.round(earningsGrowth),
-          tracksGrowth: 0,
-        })
-
-        const { data: recentActivityData } = await supabase
-          .from("streams")
-          .select(`
-            *,
-            tracks!inner(
-              title,
-              artist_id,
-              tracks.artist_id
-            )
-          `)
-          .eq("tracks.artist_id", address.toLowerCase())
-          .order("last_played_at", { ascending: false })
-          .limit(5)
-
-        setRecentActivity(recentActivityData || [])
-
-        try {
-          const { data: likes, error } = await supabase
-            .from("likes")
-            .select(
-              `
-              track_id,
-              tracks:tracks!inner(
-                *,
-                artist:profiles!tracks_artist_id_fkey(*)
-              )
-            `,
-            )
-            .eq("user_address", address.toLowerCase())
-            .order("created_at", { ascending: false })
-
-          if (error && error.code === "PGRST205") {
-            console.log("[v0] Likes table not found - skipping liked tracks")
-            setLikedTracks([])
-          } else if (likes) {
-            const likedTracksData = likes.map((like: any) => like.tracks)
-            setLikedTracks(likedTracksData)
-          }
-        } catch (error) {
-          console.error("Failed to load liked tracks:", error)
-          setLikedTracks([])
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard:", error)
-      } finally {
-        setLoading(false)
-      }
+  const loadDashboard = async () => {
+    if (!address) {
+      setLoading(false)
+      return
     }
 
+    try {
+      const supabase = createBrowserClient()
+
+      const { data: profileData } = await ensureProfile(address)
+      setProfile(profileData)
+
+      const { data: tracksData } = await supabase
+        .from("tracks")
+        .select(`
+          *,
+          artist:profiles!tracks_artist_id_fkey(*)
+        `)
+        .eq("artist_id", address.toLowerCase())
+        .order("created_at", { ascending: false })
+
+      if (tracksData) {
+        const tracksWithMetrics = await Promise.all(
+          tracksData.map(async (track) => {
+            const { data: streams } = await supabase
+              .from("streams")
+              .select("chunks_played, total_paid")
+              .eq("track_id", track.id)
+
+            const total_earned = streams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+            const play_count = streams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
+
+            return {
+              ...track,
+              total_earned,
+              play_count,
+            } as Track
+          }),
+        )
+
+        setTracks(tracksWithMetrics)
+      }
+
+      const { data: streams } = await supabase
+        .from("streams")
+        .select("track_id, chunks_played, total_paid, tracks!inner(artist_id)")
+        .eq("tracks.artist_id", address.toLowerCase())
+
+      console.log("[v0] Dashboard streams query result:", {
+        streamsCount: streams?.length || 0,
+        streams: streams?.slice(0, 3), // Log first 3 for debugging
+      })
+
+      const totalPlays = (streams as Stream[])?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
+      const totalEarnings = (streams as Stream[])?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+      const trackCount = tracksData?.length || 0
+
+      console.log("[v0] Dashboard stats calculated:", { totalPlays, totalEarnings, trackCount })
+
+      setStats({ totalPlays, totalEarnings, trackCount })
+
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+      const { data: recentStreams } = await supabase
+        .from("streams")
+        .select("track_id, chunks_played, total_paid, started_at, tracks!inner(artist_id)")
+        .eq("tracks.artist_id", address.toLowerCase())
+        .gte("started_at", sevenDaysAgo.toISOString())
+
+      const recentPlays = (recentStreams as Stream[])?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
+      const recentEarnings = (recentStreams as Stream[])?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+
+      const playsGrowth = totalPlays > 0 ? (recentPlays / totalPlays) * 100 : 0
+      const earningsGrowth = totalEarnings > 0 ? (recentEarnings / totalEarnings) * 100 : 0
+
+      setGrowthStats({
+        playsGrowth: Math.round(playsGrowth),
+        earningsGrowth: Math.round(earningsGrowth),
+        tracksGrowth: 0,
+      })
+
+      const { data: recentActivityData } = await supabase
+        .from("streams")
+        .select(`
+          *,
+          tracks!inner(
+            title,
+            artist_id,
+            tracks.artist_id
+          )
+        `)
+        .eq("tracks.artist_id", address.toLowerCase())
+        .order("last_played_at", { ascending: false })
+        .limit(5)
+
+      setRecentActivity(recentActivityData || [])
+
+      try {
+        const { data: likes, error } = await supabase
+          .from("likes")
+          .select(
+            `
+            track_id,
+            tracks:tracks!inner(
+              *,
+              artist:profiles!tracks_artist_id_fkey(*)
+            )
+          `,
+          )
+          .eq("user_address", address.toLowerCase())
+          .order("created_at", { ascending: false })
+
+        if (error && error.code === "PGRST205") {
+          console.log("[v0] Likes table not found - skipping liked tracks")
+          setLikedTracks([])
+        } else if (likes) {
+          const likedTracksData = likes.map((like: any) => like.tracks)
+          setLikedTracks(likedTracksData)
+        }
+      } catch (error) {
+        console.error("Failed to load liked tracks:", error)
+        setLikedTracks([])
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadDashboard()
   }, [address])
+
+  const handleTokenizeSuccess = (tokenAddress: string) => {
+    console.log("[v0] Profile tokenized:", tokenAddress)
+    // Reload dashboard to show new token address
+    loadDashboard()
+  }
 
   if (!isConnected) {
     return (
@@ -353,6 +363,50 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground mt-2">USDC</p>
             </div>
           </Card>
+
+          {profile?.profile_token_address ? (
+            <Card
+              className="bg-gradient-to-br from-chart-4/20 to-chart-4/10 backdrop-blur-xl border border-chart-4/30 shadow-lg p-6 hover-lift transition-all h-full animate-slide-up group"
+              style={{ animationDelay: "0.5s" }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-4/30 border border-chart-4/40 group-hover:scale-110 transition-transform">
+                  <Coins className="h-5 w-5 text-chart-4" />
+                </div>
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              </div>
+              <h3 className="font-semibold mb-2">Profile Token</h3>
+              <p className="text-sm text-muted-foreground mb-3">Your profile is tokenized</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full border-chart-4/20 hover:bg-chart-4/10 bg-transparent"
+                onClick={() => {
+                  navigator.clipboard.writeText(profile.profile_token_address)
+                  // TODO: Add toast notification
+                }}
+              >
+                Copy Address
+              </Button>
+            </Card>
+          ) : (
+            <button
+              onClick={() => setShowTokenizeModal(true)}
+              className="animate-slide-up group text-left"
+              style={{ animationDelay: "0.5s" }}
+            >
+              <Card className="bg-gradient-to-br from-chart-4/20 to-chart-4/10 backdrop-blur-xl border border-chart-4/30 shadow-lg p-6 hover-lift transition-all h-full">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-4/30 border border-chart-4/40 group-hover:scale-110 transition-transform">
+                    <Coins className="h-5 w-5 text-chart-4" />
+                  </div>
+                  <ArrowUpRight className="h-5 w-5 text-chart-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </div>
+                <h3 className="font-semibold mb-2">Tokenize Profile</h3>
+                <p className="text-sm text-muted-foreground">Create your own profile token on Base</p>
+              </Card>
+            </button>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -513,6 +567,12 @@ export default function DashboardPage() {
           </Card>
         )}
       </main>
+      <TokenizeProfileModal
+        open={showTokenizeModal}
+        onOpenChange={setShowTokenizeModal}
+        onSuccess={handleTokenizeSuccess}
+        artistName={profile?.artist_name || undefined}
+      />
     </div>
   )
 }

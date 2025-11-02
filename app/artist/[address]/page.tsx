@@ -3,13 +3,15 @@ import { createClient } from "@/lib/supabase/server"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { notFound } from "next/navigation"
 import type { TrackWithArtist } from "@/types/database"
-import { DollarSign, Music, Play, Users, Radio, Sparkles } from "lucide-react"
+import { DollarSign, Music, Play, Users, Radio, Sparkles, TrendingUp, ArrowUpRight } from "lucide-react"
 import { FollowButton } from "@/components/follow-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListeningHistory } from "@/components/listening-history"
 import { FollowersList } from "@/components/followers-list"
 import { FollowingList } from "@/components/following-list"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { CopyTokenAddressButton } from "@/components/copy-token-address-button"
 
 export default async function ArtistPage({ params }: { params: { address: string } }) {
   const { address } = params
@@ -19,6 +21,31 @@ export default async function ArtistPage({ params }: { params: { address: string
 
   if (!artist) {
     notFound()
+  }
+
+  let profileTokenMarketCap: string | null = null
+  if ((artist as any).profile_token_address) {
+    try {
+      const response = await fetch(
+        `https://api.dexscreener.com/latest/dex/tokens/${(artist as any).profile_token_address}`,
+        { next: { revalidate: 60 } },
+      )
+      if (response.ok) {
+        const data = await response.json()
+        if (data.pairs && data.pairs.length > 0) {
+          const marketCap = Number.parseFloat(data.pairs[0].marketCap || "0")
+          if (marketCap >= 1000000) {
+            profileTokenMarketCap = `$${(marketCap / 1000000).toFixed(2)}M`
+          } else if (marketCap >= 1000) {
+            profileTokenMarketCap = `$${(marketCap / 1000).toFixed(2)}K`
+          } else {
+            profileTokenMarketCap = `$${marketCap.toFixed(2)}`
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile token market cap:", error)
+    }
   }
 
   const { count: followerCount } = await supabase
@@ -274,7 +301,9 @@ export default async function ArtistPage({ params }: { params: { address: string
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div
+          className={`grid grid-cols-1 sm:grid-cols-${(artist as any).profile_token_address ? "2 lg:grid-cols-4" : "3"} gap-4 mb-8`}
+        >
           <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -310,6 +339,33 @@ export default async function ArtistPage({ params }: { params: { address: string
               </div>
             </div>
           </div>
+
+          {(artist as any).profile_token_address && (
+            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/30 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Market Cap</p>
+                  <p className="text-2xl font-bold text-green-500">{profileTokenMarketCap || "Loading..."}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <CopyTokenAddressButton address={(artist as any).profile_token_address} />
+                <Button size="sm" className="flex-1 h-8 text-xs bg-green-500 hover:bg-green-600 text-white" asChild>
+                  <a
+                    href={`https://app.uniswap.org/#/swap?outputCurrency=${(artist as any).profile_token_address}&chain=base`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Swap
+                    <ArrowUpRight className="h-3 w-3 ml-1" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="tracks" className="w-full">

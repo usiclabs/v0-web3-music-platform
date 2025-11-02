@@ -1,7 +1,21 @@
 "use client"
 
 import { ProfileForm } from "@/components/profile-form"
-import { User, History, Heart, Users, ListMusic, Sparkles, Music, Play, TrendingUp, Edit2, Upload } from "lucide-react"
+import {
+  User,
+  History,
+  Heart,
+  Users,
+  ListMusic,
+  Sparkles,
+  Music,
+  Play,
+  TrendingUp,
+  Edit2,
+  Upload,
+  DollarSign,
+  ExternalLink,
+} from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEffect, useState } from "react"
 import { ensureProfile } from "@/lib/supabase/helpers"
@@ -34,6 +48,10 @@ export default function ProfilePage() {
     totalFollowers: 0,
     totalFollowing: 0,
   })
+  const [profileTokenMetrics, setProfileTokenMetrics] = useState<{
+    marketCap: number
+    price: number
+  } | null>(null)
 
   const loadProfile = async () => {
     if (!address) {
@@ -46,6 +64,21 @@ export default function ProfilePage() {
 
       const { data: profileData } = await ensureProfile(address)
       setProfile(profileData)
+
+      if (profileData?.profile_token_address) {
+        try {
+          const metricsRes = await fetch(`/api/token/metrics/${profileData.profile_token_address}`)
+          if (metricsRes.ok) {
+            const metrics = await metricsRes.json()
+            setProfileTokenMetrics({
+              marketCap: metrics.marketCap || 0,
+              price: metrics.price || 0,
+            })
+          }
+        } catch (error) {
+          console.error("[v0] Failed to fetch profile token metrics:", error)
+        }
+      }
 
       const [streamsRes, likesRes, followersRes, followingRes, playlistsRes, aiTracksRes, tracksRes] =
         await Promise.all([
@@ -296,6 +329,55 @@ export default function ProfilePage() {
                     <p className="text-xl sm:text-2xl font-bold">{stats.totalFollowing}</p>
                   </Card>
                 </div>
+
+                {/* Profile Token Metrics and Swap Button */}
+                {profile?.profile_token_address && profileTokenMetrics && (
+                  <div className="mt-4 sm:mt-6 space-y-3">
+                    <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20 p-4 hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <DollarSign className="h-4 w-4 text-green-500" />
+                            <p className="text-xs text-muted-foreground">Market Cap</p>
+                          </div>
+                          <p className="text-xl sm:text-2xl font-bold">
+                            {profileTokenMetrics.marketCap >= 1000000
+                              ? `$${(profileTokenMetrics.marketCap / 1000000).toFixed(2)}M`
+                              : profileTokenMetrics.marketCap >= 1000
+                                ? `$${(profileTokenMetrics.marketCap / 1000).toFixed(2)}K`
+                                : `$${profileTokenMetrics.marketCap.toFixed(2)}`}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20"
+                            onClick={() => {
+                              navigator.clipboard.writeText(profile.profile_token_address)
+                            }}
+                          >
+                            Copy CA
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                            asChild
+                          >
+                            <a
+                              href={`https://app.uniswap.org/swap?outputCurrency=${profile.profile_token_address}&chain=base`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Swap
+                              <ExternalLink className="h-3 w-3 ml-1" />
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                )}
               </div>
             </div>
           </div>

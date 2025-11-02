@@ -17,6 +17,8 @@ type Artist = {
   trackCount: number
   followerCount: number
   totalStreams: number
+  profile_token_address?: string | null
+  marketCap?: number
 }
 
 export default function ArtistsPage() {
@@ -64,12 +66,26 @@ export default function ArtistsPage() {
             .select("*", { count: "exact", head: true })
             .eq("following_address", artist.wallet_address)
 
+          let marketCap = 0
+          if (artist.profile_token_address) {
+            try {
+              const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
+              if (res.ok) {
+                const metrics = await res.json()
+                marketCap = metrics.marketCap || 0
+              }
+            } catch (error) {
+              console.error(`[v0] Failed to fetch market cap for ${artist.wallet_address}:`, error)
+            }
+          }
+
           return {
             ...artist,
             totalEarned,
             trackCount: trackCount || 0,
             followerCount: followerCount || 0,
             totalStreams: totalStreams || 0,
+            marketCap,
           }
         }),
       )
@@ -124,6 +140,14 @@ export default function ArtistsPage() {
           return b.totalStreams - a.totalStreams
         case "streams-low":
           return a.totalStreams - b.totalStreams
+        case "marketcap-high":
+          if (a.profile_token_address && !b.profile_token_address) return -1
+          if (!a.profile_token_address && b.profile_token_address) return 1
+          return (b.marketCap || 0) - (a.marketCap || 0)
+        case "marketcap-low":
+          if (a.profile_token_address && !b.profile_token_address) return -1
+          if (!a.profile_token_address && b.profile_token_address) return 1
+          return (a.marketCap || 0) - (b.marketCap || 0)
         default:
           return 0
       }

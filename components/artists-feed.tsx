@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { Music, DollarSign, Users, TrendingUp } from "lucide-react"
+import { Music, DollarSign, Users, TrendingUp, ExternalLink } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -16,6 +16,7 @@ type Artist = {
   totalEarned: number
   trackCount: number
   followerCount: number
+  profile_token_address?: string | null
 }
 
 interface ArtistsFeedProps {
@@ -26,6 +27,39 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [scrollOffsets, setScrollOffsets] = useState<number[]>(new Array(artists.length).fill(0))
+  const [profileTokenMetrics, setProfileTokenMetrics] = useState<Record<string, { marketCap: number }>>({})
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      const tokenizedArtists = artists.filter((a) => a.profile_token_address)
+      const metricsPromises = tokenizedArtists.map(async (artist) => {
+        try {
+          const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
+          if (res.ok) {
+            const metrics = await res.json()
+            return { address: artist.wallet_address, marketCap: metrics.marketCap || 0 }
+          }
+        } catch (error) {
+          console.error(`[v0] Failed to fetch metrics for ${artist.wallet_address}:`, error)
+        }
+        return { address: artist.wallet_address, marketCap: 0 }
+      })
+
+      const results = await Promise.all(metricsPromises)
+      const metricsMap = results.reduce(
+        (acc, { address, marketCap }) => {
+          acc[address] = { marketCap }
+          return acc
+        },
+        {} as Record<string, { marketCap: number }>,
+      )
+      setProfileTokenMetrics(metricsMap)
+    }
+
+    if (artists.length > 0) {
+      fetchMetrics()
+    }
+  }, [artists])
 
   useEffect(() => {
     const container = containerRef.current
@@ -190,6 +224,36 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                     <span className="text-xs md:text-sm text-white/70 mt-1">Followers</span>
                   </div>
                 </div>
+
+                {artist.profile_token_address && profileTokenMetrics[artist.wallet_address] && (
+                  <div
+                    className="flex items-center gap-3 p-4 md:p-6 rounded-2xl bg-green-500/10 backdrop-blur-xl border border-green-500/20 max-w-2xl animate-fade-in-up"
+                    style={{ animationDelay: "250ms" }}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <span className="text-xs md:text-sm text-white/70">Market Cap</span>
+                      </div>
+                      <span className="font-bold text-xl md:text-2xl text-white">
+                        {profileTokenMetrics[artist.wallet_address].marketCap >= 1000000
+                          ? `$${(profileTokenMetrics[artist.wallet_address].marketCap / 1000000).toFixed(2)}M`
+                          : profileTokenMetrics[artist.wallet_address].marketCap >= 1000
+                            ? `$${(profileTokenMetrics[artist.wallet_address].marketCap / 1000).toFixed(2)}K`
+                            : `$${profileTokenMetrics[artist.wallet_address].marketCap.toFixed(2)}`}
+                      </span>
+                    </div>
+                    <a
+                      href={`https://app.uniswap.org/swap?outputCurrency=${artist.profile_token_address}&chain=base`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 md:px-6 py-2 md:py-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold text-sm md:text-base flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg"
+                    >
+                      Swap
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+                )}
 
                 <Link
                   href={`/artist/${artist.wallet_address}`}

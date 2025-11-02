@@ -17,6 +17,8 @@ export type SortOption =
   | "name-desc"
   | "streams-high"
   | "streams-low"
+  | "marketcap-high"
+  | "marketcap-low"
 
 interface ArtistsFilterProps {
   searchQuery: string
@@ -70,6 +72,8 @@ export function ArtistsFilter({
           onChange={(e) => onSortChange(e.target.value as SortOption)}
           className="w-full sm:w-[200px] h-10 px-3 rounded-md bg-card/50 backdrop-blur-xl border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
         >
+          <option value="marketcap-high">Highest Market Cap</option>
+          <option value="marketcap-low">Lowest Market Cap</option>
           <option value="streams-high">Most Streams</option>
           <option value="streams-low">Fewest Streams</option>
           <option value="earnings-high">Highest Earnings</option>
