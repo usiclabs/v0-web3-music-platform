@@ -270,6 +270,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       audio_url_type: typeof track.audio_url,
       audio_url_length: track.audio_url?.length,
       audio_url_valid: track.audio_url && track.audio_url.startsWith("http"),
+      token_gated_streaming: track.token_gated_streaming,
+      required_token_balance: track.required_token_balance,
+      coin_address: track.coin_address,
     })
 
     setError(null)
@@ -326,7 +329,28 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      setUnlockedChunks(new Set([0]))
+      if (track.token_gated_streaming && track.coin_address && address) {
+        console.log("[v0] Checking token balance for token-gated streaming...")
+
+        checkTokenBalance(track, address)
+          .then((hasEnoughTokens) => {
+            if (hasEnoughTokens) {
+              console.log("[v0] User has enough tokens - unlocking all chunks for free!")
+              const totalChunks = Math.ceil(track.duration / X402_CONFIG.CHUNK_DURATION)
+              const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
+              setUnlockedChunks(allChunks)
+            } else {
+              console.log("[v0] User doesn't have enough tokens - using X402 payment")
+              setUnlockedChunks(new Set([0]))
+            }
+          })
+          .catch((err) => {
+            console.error("[v0] Error checking token balance:", err)
+            setUnlockedChunks(new Set([0]))
+          })
+      } else {
+        setUnlockedChunks(new Set([0]))
+      }
 
       audioRef.current.play().catch((err) => {
         console.log("[v0] Autoplay blocked:", err)
@@ -495,6 +519,36 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       {children}
     </AudioPlayerContext.Provider>
   )
+}
+
+// Helper function to check token balance
+async function checkTokenBalance(track: TrackWithArtist, userAddress: string): Promise<boolean> {
+  if (!track.coin_address || !track.required_token_balance) {
+    return false
+  }
+
+  try {
+    const response = await fetch(`/api/tokens/balance?address=${userAddress}&tokenAddress=${track.coin_address}`)
+    if (!response.ok) {
+      console.error("[v0] Failed to fetch token balance")
+      return false
+    }
+
+    const { balance } = await response.json()
+    const balanceNum = Number.parseFloat(balance)
+    const requiredNum = Number.parseFloat(track.required_token_balance.toString())
+
+    console.log("[v0] Token balance check:", {
+      balance: balanceNum,
+      required: requiredNum,
+      hasEnough: balanceNum >= requiredNum,
+    })
+
+    return balanceNum >= requiredNum
+  } catch (err) {
+    console.error("[v0] Error checking token balance:", err)
+    return false
+  }
 }
 
 const detectWalletType = (): "coinbase" | "metamask" | "walletconnect" | "unknown" => {

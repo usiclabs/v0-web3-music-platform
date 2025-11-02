@@ -48,6 +48,8 @@ export function UploadForm() {
   const [deploymentMethod, setDeploymentMethod] = useState<"zora" | "clanker">("clanker")
   const [coinName, setCoinName] = useState("")
   const [coinSymbol, setCoinSymbol] = useState("")
+  const [tokenGatedStreaming, setTokenGatedStreaming] = useState(false)
+  const [requiredTokenBalance, setRequiredTokenBalance] = useState("100")
   const [createdTrackId, setCreatedTrackId] = useState<string | null>(null)
   const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string | null>(null)
   const [coinCreationStarted, setCoinCreationStarted] = useState(false)
@@ -537,6 +539,8 @@ export function UploadForm() {
           duration,
           price_per_chunk: Number.parseFloat(pricePerChunk),
           unlock_type: unlockType,
+          token_gated_streaming: tokenizeTrack && tokenGatedStreaming,
+          required_token_balance: tokenizeTrack && tokenGatedStreaming ? Number.parseFloat(requiredTokenBalance) : 0,
           royalty_splits: royaltySplits.map((split) => ({
             address: split.address,
             percentage: split.percentage,
@@ -574,6 +578,7 @@ export function UploadForm() {
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
+        gravity: 1.2,
       })
 
       setTimeout(() => {
@@ -891,6 +896,59 @@ export function UploadForm() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Liquidity Pool:</span>
                   <span className="font-medium">Uniswap v4 (Auto)</span>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gradient-to-br from-accent/5 to-primary/5 border border-accent/20 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-accent" />
+                  <div>
+                    <h3 className="font-semibold text-sm">Token-Gated Free Streaming</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Let token holders stream for free</p>
+                  </div>
+                </div>
+                <Switch checked={tokenGatedStreaming} onCheckedChange={setTokenGatedStreaming} />
+              </div>
+
+              {tokenGatedStreaming && (
+                <div className="space-y-3 pt-3 border-t border-border/30">
+                  <div>
+                    <Label htmlFor="requiredTokenBalance" className="text-sm">
+                      Required Token Balance
+                    </Label>
+                    <Input
+                      id="requiredTokenBalance"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={requiredTokenBalance}
+                      onChange={(e) => setRequiredTokenBalance(e.target.value)}
+                      placeholder="100"
+                      className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm mt-1.5"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Minimum tokens a listener must hold to bypass X402 payments
+                    </p>
+                  </div>
+
+                  <div className="bg-muted/30 rounded-md p-3 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                      <span>Token holders with {requiredTokenBalance}+ tokens stream for free</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                      <span>
+                        Others pay {pricePerChunk} USDC per {unlockType === "per_chunk" ? "30s segment" : "full unlock"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="h-1.5 w-1.5 rounded-full bg-accent" />
+                      <span>Incentivizes token ownership and community building</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

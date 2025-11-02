@@ -19,6 +19,8 @@ export async function POST(request: Request) {
       coin_address,
       token_id,
       nft_contract_address,
+      token_gated_streaming,
+      required_token_balance,
     } = body
 
     console.log("[v0] Creating track with metadata:", {
@@ -30,12 +32,12 @@ export async function POST(request: Request) {
       has_coin_address: !!coin_address,
       has_nft_contract: !!nft_contract_address,
       token_id,
+      token_gated_streaming,
+      required_token_balance,
     })
 
-    // Use admin client to bypass RLS
     const supabase = createAdminClient()
 
-    // Insert track
     const { data: track, error: trackError } = await supabase
       .from("tracks")
       .insert({
@@ -52,6 +54,8 @@ export async function POST(request: Request) {
         coin_address: coin_address || null,
         token_id: token_id || null,
         nft_contract_address: nft_contract_address || null,
+        token_gated_streaming: token_gated_streaming || false,
+        required_token_balance: required_token_balance || 0,
       })
       .select()
       .single()
@@ -63,7 +67,6 @@ export async function POST(request: Request) {
 
     console.log("[v0] Track created successfully:", track.id)
 
-    // Insert royalty splits if provided
     if (royalty_splits && royalty_splits.length > 0) {
       const { error: splitsError } = await supabase.from("royalty_splits").insert(
         royalty_splits.map((split: { address: string; percentage: number }) => ({

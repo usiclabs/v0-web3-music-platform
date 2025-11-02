@@ -309,7 +309,7 @@ export default function ProfilePage() {
               <TabsList className="grid grid-cols-7 w-full h-auto p-1.5 gap-1 bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg">
                 <TabsTrigger
                   value="settings"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all text-foreground"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Settings"
                 >
                   <User className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -317,7 +317,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="ai-creations"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-accent/80 data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg transition-all text-foreground"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-accent/80 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="AI Creations"
                 >
                   <Sparkles className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
