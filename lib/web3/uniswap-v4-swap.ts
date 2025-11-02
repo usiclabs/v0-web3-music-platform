@@ -1,5 +1,12 @@
 import { encodePacked, encodeAbiParameters, parseAbiParameters, keccak256, type Address } from "viem"
-import { UNISWAP_V4_POOL_MANAGER, UNISWAP_V4_POOL_MANAGER_ABI, WETH_ADDRESS, V4_COMMANDS } from "./contracts"
+import {
+  UNISWAP_V4_POOL_MANAGER,
+  UNISWAP_V4_POOL_MANAGER_ABI,
+  UNISWAP_V4_STATE_VIEW,
+  UNISWAP_V4_STATE_VIEW_ABI,
+  WETH_ADDRESS,
+  V4_COMMANDS,
+} from "./contracts"
 import type { PublicClient } from "viem"
 
 export interface V4PoolKey {
@@ -114,10 +121,10 @@ export async function detectV4Pool(
     console.log("[v0] No V4 pool found on DexScreener, trying manual detection...")
 
     const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS] as Address
-    const poolManagerAddress = UNISWAP_V4_POOL_MANAGER[chainId as keyof typeof UNISWAP_V4_POOL_MANAGER] as Address
+    const stateViewAddress = UNISWAP_V4_STATE_VIEW[chainId as keyof typeof UNISWAP_V4_STATE_VIEW] as Address
 
-    if (!poolManagerAddress) {
-      console.log("[v0] No V4 PoolManager address for chain:", chainId)
+    if (!stateViewAddress) {
+      console.log("[v0] No V4 StateView address for chain:", chainId)
       return null
     }
 
@@ -148,15 +155,11 @@ export async function detectV4Pool(
       try {
         console.log("[v0] Checking V4 pool config:", { fee, tickSpacing })
 
-        const poolId = computePoolId(poolKey)
-        console.log("[v0] Computed V4 Pool ID:", poolId)
-
-        // Try to get pool liquidity instead of slot0 (more reliable)
         const liquidity = await publicClient.readContract({
-          address: poolManagerAddress,
-          abi: UNISWAP_V4_POOL_MANAGER_ABI,
+          address: stateViewAddress,
+          abi: UNISWAP_V4_STATE_VIEW_ABI,
           functionName: "getLiquidity",
-          args: [poolId],
+          args: [poolKey],
         })
 
         console.log("[v0] V4 Pool liquidity:", liquidity)
@@ -194,23 +197,21 @@ export async function getV4Quote(
   chainId: number,
 ): Promise<bigint> {
   try {
-    const poolManagerAddress = UNISWAP_V4_POOL_MANAGER[chainId as keyof typeof UNISWAP_V4_POOL_MANAGER] as Address
+    const stateViewAddress = UNISWAP_V4_STATE_VIEW[chainId as keyof typeof UNISWAP_V4_STATE_VIEW] as Address
 
-    const poolId = computePoolId(poolKey)
-
-    // Get current pool state
+    // Get current pool state using StateView
     const slot0 = await publicClient.readContract({
-      address: poolManagerAddress,
-      abi: UNISWAP_V4_POOL_MANAGER_ABI,
+      address: stateViewAddress,
+      abi: UNISWAP_V4_STATE_VIEW_ABI,
       functionName: "getSlot0",
-      args: [poolId],
+      args: [poolKey],
     })
 
     const liquidity = await publicClient.readContract({
-      address: poolManagerAddress,
-      abi: UNISWAP_V4_POOL_MANAGER_ABI,
+      address: stateViewAddress,
+      abi: UNISWAP_V4_STATE_VIEW_ABI,
       functionName: "getLiquidity",
-      args: [poolId],
+      args: [poolKey],
     })
 
     if (!slot0 || !liquidity || slot0[0] === 0n || liquidity === 0n) {
@@ -300,4 +301,69 @@ export function encodeV4SwapParams(
  */
 export function getSwapDeadline(): bigint {
   return BigInt(Math.floor(Date.now() / 1000) + 1200) // 20 minutes from now
+}
+
+/**
+ * Executes a V4 swap
+ */
+export async function executeV4Swap(
+  params: V4SwapParams,
+  poolKey: V4PoolKey,
+  walletClient: any,
+  publicClient: PublicClient,
+): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  try {
+    console.log("[v0] Executing V4 swap:", params)
+
+    const poolManagerAddress = UNISWAP_V4_POOL_MANAGER[
+      params.chainId as keyof typeof UNISWAP_V4_POOL_MANAGER
+    ] as Address
+
+    if (!poolManagerAddress) {
+      return { success: false, error: "V4 PoolManager not available on this chain" }
+    }
+
+    // Determine swap direction
+    const zeroForOne = params.tokenIn.toLowerCase() === poolKey.currency0.toLowerCase()
+
+    // Build swap parameters for PoolManager
+    const swapParams = {
+      zeroForOne,
+      amountSpecified: params.amountIn,
+      sqrtPriceLimitX96: zeroForOne ? 4295128739n : 1461446703485210103287273052203988822378723970342n, // Min/max price limits
+    }
+
+    console.log("[v0] Swap params:", swapParams)
+
+    // Execute swap via PoolManager
+    const poolId = computePoolId(poolKey)
+
+    const { request } = await publicClient.simulateContract({
+      address: poolManagerAddress,
+      abi: UNISWAP_V4_POOL_MANAGER_ABI,
+      functionName: "swap",
+      args: [poolKey, swapParams, "0x"],
+      account: params.recipient,
+    })
+
+    const txHash = await walletClient.writeContract(request)
+
+    console.log("[v0] Swap transaction sent:", txHash)
+
+    // Wait for transaction confirmation
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+    if (receipt.status === "success") {
+      console.log("[v0] Swap successful!")
+      return { success: true, txHash }
+    } else {
+      return { success: false, error: "Transaction failed" }
+    }
+  } catch (error: any) {
+    console.error("[v0] Swap execution failed:", error)
+    return {
+      success: false,
+      error: error.message || "Failed to execute swap",
+    }
+  }
 }

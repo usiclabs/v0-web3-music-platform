@@ -14,7 +14,6 @@ import {
   Edit2,
   Upload,
   DollarSign,
-  ExternalLink,
 } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEffect, useState } from "react"
@@ -31,6 +30,8 @@ import Link from "next/link"
 import { CreatePlaylistModal } from "@/components/create-playlist-modal"
 import { PlaylistCard } from "@/components/playlist-card"
 import { Button } from "@/components/ui/button"
+import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import type { Address } from "viem"
 
 export default function ProfilePage() {
   const { address, isConnected } = useWallet()
@@ -52,6 +53,7 @@ export default function ProfilePage() {
     marketCap: number
     price: number
   } | null>(null)
+  const [showSwapModal, setShowSwapModal] = useState(false)
 
   const loadProfile = async () => {
     if (!address) {
@@ -362,16 +364,9 @@ export default function ProfilePage() {
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                            asChild
+                            onClick={() => setShowSwapModal(true)}
                           >
-                            <a
-                              href={`https://app.uniswap.org/swap?outputCurrency=${profile.profile_token_address}&chain=base`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Swap
-                              <ExternalLink className="h-3 w-3 ml-1" />
-                            </a>
+                            Swap
                           </Button>
                         </div>
                       </div>
@@ -671,6 +666,16 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </main>
+
+      {/* Native Swap Modal */}
+      {showSwapModal && profile?.profile_token_address && (
+        <ProfileTokenSwapModal
+          tokenAddress={profile.profile_token_address as Address}
+          tokenName={profile.artist_name || "Profile Token"}
+          tokenSymbol={profile.artist_name?.toUpperCase().slice(0, 4)}
+          onClose={() => setShowSwapModal(false)}
+        />
+      )}
     </div>
   )
 }
