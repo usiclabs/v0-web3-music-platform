@@ -35,6 +35,7 @@ export function X402PaymentModal() {
   const { isConnected, connect } = useWallet()
   const { address } = useAccount()
   const [hasInsufficientBalance, setHasInsufficientBalance] = useState(false)
+  const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true) // Assuming gas subsidy availability is a state
 
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: USDC_ADDRESS[base.id],
@@ -246,10 +247,23 @@ export function X402PaymentModal() {
           )}
 
           {/* Gasless Payment Indicator */}
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-            <p className="text-xs text-primary">
-              <span className="font-semibold">Gasless Payment:</span> No ETH needed! We cover the gas fees for you.
+          <div
+            className={`flex items-center gap-2 p-3 rounded-lg border ${
+              gasSubsidyAvailable ? "bg-primary/10 border-primary/20" : "bg-amber-500/10 border-amber-500/20"
+            }`}
+          >
+            <Sparkles className={`h-4 w-4 flex-shrink-0 ${gasSubsidyAvailable ? "text-primary" : "text-amber-500"}`} />
+            <p className={`text-xs ${gasSubsidyAvailable ? "text-primary" : "text-amber-600 dark:text-amber-400"}`}>
+              {gasSubsidyAvailable ? (
+                <>
+                  <span className="font-semibold">Gasless Payment:</span> No ETH needed! We cover the gas fees for you.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">Gas Required:</span> You'll need a small amount of ETH for gas fees
+                  (~$0.01).
+                </>
+              )}
             </p>
           </div>
 

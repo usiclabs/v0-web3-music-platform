@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+      <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 z-[100] flex flex-col gap-2 max-w-sm md:w-full mx-auto md:mx-0 pointer-events-none">
         {toasts.map((toast) => (
           <Toast key={toast.id} {...toast} onClose={() => removeToast(toast.id)} />
         ))}
@@ -63,8 +63,8 @@ function Toast({ title, description, variant = "default", onClose }: ToastProps 
   return (
     <div
       className={cn(
-        "pointer-events-auto rounded-lg border p-4 shadow-lg transition-all animate-in slide-in-from-right",
-        "bg-background border-border",
+        "pointer-events-auto rounded-lg border p-4 shadow-lg transition-all animate-in slide-in-from-bottom md:slide-in-from-right",
+        "bg-background border-border backdrop-blur-sm",
         variant === "success" && "border-green-500/50 bg-green-500/10",
         variant === "error" && "border-red-500/50 bg-red-500/10",
       )}
@@ -74,7 +74,7 @@ function Toast({ title, description, variant = "default", onClose }: ToastProps 
           {title && <div className="font-semibold text-sm">{title}</div>}
           {description && <div className="text-sm text-muted-foreground mt-1">{description}</div>}
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
           <X className="h-4 w-4" />
         </button>
       </div>

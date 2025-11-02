@@ -151,7 +151,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Payment instructions:", paymentInstructions)
 
       onProgress?.("signing")
-      console.log("[v0] Creating gasless payment authorization...")
+      console.log("[v0] Creating payment authorization...")
 
       const valueInUSDC = Math.floor(Number.parseFloat(paymentInstructions.amount) * 1e6)
 
@@ -165,7 +165,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Authorization signed successfully")
 
       onProgress?.("verifying")
-      console.log("[v0] Submitting to relayer...")
+      console.log("[v0] Submitting payment...")
 
       const result = await submitAuthorization(signedAuth, {
         trackId: currentTrack.id,
@@ -175,10 +175,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       })
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to submit gasless payment")
+        throw new Error(result.error || "Failed to submit payment")
       }
 
-      console.log("[v0] Gasless payment successful! Transaction:", result.txHash)
+      if (result.usedFallback) {
+        console.log("[v0] Payment successful via direct transfer (user paid gas)! Transaction:", result.txHash)
+      } else {
+        console.log("[v0] Gasless payment successful! Transaction:", result.txHash)
+      }
 
       onProgress?.("settling")
       console.log("[v0] Verifying payment signature...")
