@@ -133,7 +133,7 @@ export function BlockchainTicker() {
               <div className="flex items-center gap-2">
                 <Activity className="h-3 w-3 text-primary" />
                 <span className="text-xs font-medium text-foreground">
-                  TVL: <span className="font-mono text-primary">{data.marketCap}</span>
+                  Market Cap: <span className="font-mono text-primary">{data.marketCap}</span>
                 </span>
               </div>
 
