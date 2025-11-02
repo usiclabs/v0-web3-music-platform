@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AddLiquidityDrawer } from "@/components/add-liquidity-drawer"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { AnimatedCounter } from "@/components/animated-counter"
+import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import type { Address } from "viem"
 import {
   Play,
   Pause,
@@ -34,6 +36,7 @@ import {
   Loader2,
   AlertCircle,
   DollarSign,
+  User,
 } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { createClient } from "@/lib/supabase/client"
@@ -71,6 +74,8 @@ interface TokenizedTrack {
   price_per_chunk: number
   duration: number
   created_at: string
+  token_type: "track" | "profile" // Added to distinguish token types
+  wallet_address?: string // For profile tokens
 }
 
 interface TokenMetrics {
@@ -119,6 +124,11 @@ export default function TokensPage() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [priceFilter, setPriceFilter] = useState<"all" | "low" | "mid" | "high">("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  const [tokenTypeFilter, setTokenTypeFilter] = useState<"all" | "track" | "profile">("all")
+
+  const [showProfileSwapModal, setShowProfileSwapModal] = useState(false)
+  const [selectedProfileToken, setSelectedProfileToken] = useState<TokenizedTrack | null>(null)
 
   const { data: aggregateMetrics, error: metricsError } = useSWR(
     "/api/tokens/aggregate-metrics",
@@ -184,7 +194,8 @@ export default function TokensPage() {
     try {
       const supabase = createClient()
 
-      let query = supabase
+      // Fetch track tokens
+      let trackQuery = supabase
         .from("tracks")
         .select(`
           *,
@@ -194,45 +205,60 @@ export default function TokensPage() {
         `)
         .or("coin_address.not.is.null,nft_contract_address.not.is.null")
         .eq("is_active", true)
-        .eq("is_hidden", false) // Also filter out hidden tracks
+        .eq("is_hidden", false)
 
       if (sortBy === "recent") {
-        query = query.order("created_at", { ascending: false })
+        trackQuery = trackQuery.order("created_at", { ascending: false })
       }
 
-      const { data, error } = await query.limit(50)
+      const { data: trackData, error: trackError } = await trackQuery.limit(50)
+      if (trackError) throw trackError
 
-      if (error) throw error
+      // Fetch profile tokens
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .not("profile_token_address", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(50)
 
-      console.log("[v0] Fetched tracks from database:", data?.length, "tracks")
-      if (data && data.length > 0) {
-        console.log("[v0] Sample track data:", {
-          id: data[0].id,
-          title: data[0].title,
-          has_audio_url: !!data[0].audio_url,
-          audio_url_type: typeof data[0].audio_url,
-          audio_url_value: data[0].audio_url,
-        })
-      }
+      if (profileError) throw profileError
 
-      const formattedTracks = data.map((track: any) => ({
+      console.log("[v0] Fetched tracks:", trackData?.length, "profile tokens:", profileData?.length)
+
+      // Format track tokens
+      const formattedTracks = trackData.map((track: any) => ({
         ...track,
         artist_name: track.profiles?.artist_name || "Unknown Artist",
+        token_type: "track" as const,
       }))
 
-      console.log("[v0] Formatted tracks sample:", {
-        id: formattedTracks[0]?.id,
-        title: formattedTracks[0]?.title,
-        has_audio_url: !!formattedTracks[0]?.audio_url,
-        audio_url: formattedTracks[0]?.audio_url,
-      })
+      // Format profile tokens
+      const formattedProfileTokens = profileData.map((profile: any) => ({
+        id: `profile-${profile.wallet_address}`,
+        title: `${profile.artist_name || "Unknown Artist"} Token`,
+        artist_id: profile.wallet_address,
+        artist_name: profile.artist_name || "Unknown Artist",
+        cover_url: profile.avatar_url || "/placeholder.svg?height=400&width=400",
+        audio_url: "", // Profile tokens don't have audio
+        coin_address: profile.profile_token_address,
+        nft_contract_address: null,
+        token_id: null,
+        price_per_chunk: 0,
+        duration: 0,
+        created_at: profile.created_at,
+        token_type: "profile" as const,
+        wallet_address: profile.wallet_address,
+      }))
 
-      setTracks(formattedTracks)
+      // Merge both types
+      const allTokens = [...formattedTracks, ...formattedProfileTokens]
+      setTracks(allTokens)
     } catch (error) {
-      console.error("[v0] Failed to load tokenized tracks:", error)
+      console.error("[v0] Failed to load tokens:", error)
       addToast({
         title: "Error",
-        description: "Failed to load tokenized tracks",
+        description: "Failed to load tokens",
         variant: "error",
       })
     } finally {
@@ -555,6 +581,22 @@ export default function TokensPage() {
     }, 50)
   }
 
+  const handleProfileSwapClick = (track: TokenizedTrack) => {
+    console.log("[v0] Profile token swap clicked:", track.title)
+    if (!isConnected) {
+      console.log("[v0] Wallet not connected, prompting connection")
+      addToast({
+        title: "Wallet Required",
+        description: "Please connect your wallet to swap tokens",
+        variant: "default",
+      })
+      connect()
+      return
+    }
+    setSelectedProfileToken(track)
+    setShowProfileSwapModal(true)
+  }
+
   const handleSwapSheetChange = (open: boolean) => {
     console.log("[v0] Swap sheet state changing to:", open)
     if (!open) {
@@ -601,6 +643,13 @@ export default function TokensPage() {
         (!showFilters || favorites.has(track.id)),
     )
 
+    // Apply token type filter
+    if (tokenTypeFilter === "track") {
+      filtered = filtered.filter((track) => track.token_type === "track")
+    } else if (tokenTypeFilter === "profile") {
+      filtered = filtered.filter((track) => track.token_type === "profile")
+    }
+
     if (priceFilter !== "all") {
       filtered = filtered.filter((track) => {
         const price = track.price_per_chunk
@@ -612,7 +661,7 @@ export default function TokensPage() {
     }
 
     return filtered
-  }, [tracks, searchQuery, showFilters, favorites, priceFilter])
+  }, [tracks, searchQuery, showFilters, favorites, priceFilter, tokenTypeFilter])
 
   const stats = useMemo(() => {
     return {
@@ -863,6 +912,30 @@ export default function TokensPage() {
           <div className="w-full overflow-x-auto scrollbar-hide scroll-smooth-x">
             <div className="flex gap-2 pb-2">
               <Button
+                variant={tokenTypeFilter === "all" ? "default" : "outline"}
+                onClick={() => setTokenTypeFilter("all")}
+                className="gap-2 h-11 whitespace-nowrap hover-lift flex-shrink-0"
+              >
+                <Coins className="h-4 w-4" />
+                All Tokens
+              </Button>
+              <Button
+                variant={tokenTypeFilter === "track" ? "default" : "outline"}
+                onClick={() => setTokenTypeFilter("track")}
+                className="gap-2 h-11 whitespace-nowrap hover-lift flex-shrink-0"
+              >
+                <Music className="h-4 w-4" />
+                Track Tokens
+              </Button>
+              <Button
+                variant={tokenTypeFilter === "profile" ? "default" : "outline"}
+                onClick={() => setTokenTypeFilter("profile")}
+                className="gap-2 h-11 whitespace-nowrap hover-lift flex-shrink-0"
+              >
+                <User className="h-4 w-4" />
+                Profile Tokens
+              </Button>
+              <Button
                 variant={sortBy === "trending" ? "default" : "outline"}
                 onClick={() => setSortBy("trending")}
                 className="gap-2 h-11 whitespace-nowrap hover-lift flex-shrink-0"
@@ -955,6 +1028,7 @@ export default function TokensPage() {
             {filteredTracks.map((track, index) => {
               const metrics = tokenMetrics[track.coin_address]
               const isLoadingMetrics = loadingMetrics.has(track.coin_address)
+              const isProfileToken = track.token_type === "profile"
 
               return (
                 <Card
@@ -977,7 +1051,7 @@ export default function TokensPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
-                    {track.audio_url && track.audio_url.trim() !== "" ? (
+                    {!isProfileToken && track.audio_url && track.audio_url.trim() !== "" ? (
                       <Button
                         size="icon"
                         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-16 w-16 sm:h-20 sm:w-20 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100 bg-primary/90 hover:bg-primary backdrop-blur-sm shadow-2xl shadow-primary/50 touch-manipulation"
@@ -989,6 +1063,12 @@ export default function TokensPage() {
                           <Play className="h-8 w-8 sm:h-10 sm:w-10 ml-1" />
                         )}
                       </Button>
+                    ) : isProfileToken ? (
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="bg-primary/20 backdrop-blur-sm rounded-full p-6 border border-primary/30">
+                          <User className="h-12 w-12 text-primary" />
+                        </div>
+                      </div>
                     ) : (
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <div className="bg-black/80 backdrop-blur-sm rounded-full p-4 border border-white/20">
@@ -1016,12 +1096,21 @@ export default function TokensPage() {
 
                     <div className="absolute top-3 left-3 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg">
                       <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <Coins className="h-3.5 w-3.5" />
-                        Tokenized
+                        {isProfileToken ? (
+                          <>
+                            <User className="h-3.5 w-3.5" />
+                            Profile Token
+                          </>
+                        ) : (
+                          <>
+                            <Coins className="h-3.5 w-3.5" />
+                            Tokenized
+                          </>
+                        )}
                       </span>
                     </div>
 
-                    {(!track.audio_url || track.audio_url.trim() === "") && (
+                    {!isProfileToken && (!track.audio_url || track.audio_url.trim() === "") && (
                       <div className="absolute bottom-3 left-3 bg-yellow-500/90 backdrop-blur-md border border-yellow-400/30 px-3 py-1.5 rounded-full shadow-lg">
                         <span className="text-xs font-bold text-black flex items-center gap-1.5">
                           <AlertCircle className="h-3.5 w-3.5" />
@@ -1135,51 +1224,59 @@ export default function TokensPage() {
                     </div>
 
                     <div className="flex gap-2 pt-2">
+                      {!isProfileToken && (
+                        <Button
+                          variant="outline"
+                          className="flex-1 h-11 glass-premium hover:bg-background border-border/50 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed hover-lift bg-transparent"
+                          onClick={() => handlePlay(track)}
+                          disabled={!track.audio_url || track.audio_url.trim() === ""}
+                          title={
+                            !track.audio_url || track.audio_url.trim() === ""
+                              ? "Audio not available for this track"
+                              : "Play track"
+                          }
+                        >
+                          {currentTrack?.id === track.id && isPlaying ? (
+                            <>
+                              <Pause className="h-4 w-4 mr-2" />
+                              Pause
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4 mr-2" />
+                              Play
+                            </>
+                          )}
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
-                        className="flex-1 h-11 glass-premium hover:bg-background border-border/50 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed hover-lift bg-transparent"
-                        onClick={() => handlePlay(track)}
-                        disabled={!track.audio_url || track.audio_url.trim() === ""}
-                        title={
-                          !track.audio_url || track.audio_url.trim() === ""
-                            ? "Audio not available for this track"
-                            : "Play track"
-                        }
-                      >
-                        {currentTrack?.id === track.id && isPlaying ? (
-                          <>
-                            <Pause className="h-4 w-4 mr-2" />
-                            Pause
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            Play
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        className="flex-1 h-11 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 touch-manipulation"
+                        className={`${isProfileToken ? "flex-1" : "flex-1"} h-11 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary/70 shadow-xl shadow-primary/30 hover:shadow-2xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 touch-manipulation`}
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleSwapClick(track)
+                          if (isProfileToken) {
+                            handleProfileSwapClick(track)
+                          } else {
+                            handleSwapClick(track)
+                          }
                         }}
                       >
                         <Zap className="h-4 w-4 mr-2" />
                         Swap
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-11 w-11 glass-premium hover:bg-background border-border/50 touch-manipulation hover-lift bg-transparent"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleLiquidityClick(track)
-                        }}
-                        title="Add Liquidity"
-                      >
-                        <Droplet className="h-4 w-4" />
-                      </Button>
+                      {!isProfileToken && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11 glass-premium hover:bg-background border-border/50 touch-manipulation hover-lift bg-transparent"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleLiquidityClick(track)
+                          }}
+                          title="Add Liquidity"
+                        >
+                          <Droplet className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1391,6 +1488,19 @@ export default function TokensPage() {
           tokenName={selectedLiquidityToken.title}
           tokenSymbol={selectedLiquidityToken.title.substring(0, 6).toUpperCase()}
           tokenImage={selectedLiquidityToken.cover_url}
+        />
+      )}
+
+      {showProfileSwapModal && selectedProfileToken && (
+        <ProfileTokenSwapModal
+          isOpen={showProfileSwapModal}
+          onClose={() => {
+            setShowProfileSwapModal(false)
+            setSelectedProfileToken(null)
+          }}
+          tokenAddress={selectedProfileToken.coin_address as Address}
+          tokenName={selectedProfileToken.title}
+          tokenSymbol={selectedProfileToken.artist_name.substring(0, 6).toUpperCase()}
         />
       )}
     </div>
