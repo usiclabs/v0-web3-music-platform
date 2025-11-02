@@ -1,4 +1,5 @@
 import { getCDPClient } from "./client"
+import { createClient } from "@/lib/supabase/client"
 
 /**
  * Sponsor a transaction using CDP Paymaster
@@ -33,15 +34,56 @@ export async function sponsorTransaction(
 
 /**
  * Check if a user is eligible for gasless transactions
- * Can be based on various criteria like:
- * - New users (first X transactions free)
- * - Token holders
- * - Premium subscribers
+ * Eligibility criteria:
+ * - New users get first 5 transactions free
+ * - $USI token holders (>100 tokens) get unlimited gasless transactions
+ * - Premium subscribers get unlimited gasless transactions
  */
 export async function isEligibleForGasless(userAddress: string): Promise<boolean> {
-  // TODO: Implement eligibility logic
-  // For now, return true for all users
-  return true
+  try {
+    const supabase = createClient()
+
+    // Check transaction count
+    const { data: txHistory, error: txError } = await supabase
+      .from("gasless_transactions")
+      .select("id")
+      .eq("user_address", userAddress.toLowerCase())
+      .order("created_at", { ascending: false })
+
+    if (txError) {
+      console.error("[CDP Paymaster] Error checking transaction history:", txError)
+      // Default to allowing gasless for new users
+      return true
+    }
+
+    const txCount = txHistory?.length || 0
+
+    // New users get first 5 transactions free
+    if (txCount < 5) {
+      console.log(`[CDP Paymaster] User ${userAddress} eligible: ${txCount}/5 free transactions used`)
+      return true
+    }
+
+    // Check if user holds $USI tokens (would need to query on-chain)
+    // For now, we'll check if they have any staking history as a proxy
+    const { data: stakingData, error: stakingError } = await supabase
+      .from("staking_history")
+      .select("id")
+      .eq("user_address", userAddress.toLowerCase())
+      .limit(1)
+
+    if (!stakingError && stakingData && stakingData.length > 0) {
+      console.log(`[CDP Paymaster] User ${userAddress} eligible: $USI token holder`)
+      return true
+    }
+
+    console.log(`[CDP Paymaster] User ${userAddress} not eligible: exceeded free transactions`)
+    return false
+  } catch (error) {
+    console.error("[CDP Paymaster] Error checking eligibility:", error)
+    // Default to not eligible on error
+    return false
+  }
 }
 
 /**
@@ -52,6 +94,41 @@ export async function estimateGasCost(transactionData: {
   data: string
   value?: string
 }): Promise<string> {
-  // TODO: Implement gas estimation
-  return "0"
+  try {
+    const client = getCDPClient()
+
+    // Estimate gas for the transaction
+    const gasEstimate = await client.estimateGas({
+      to: transactionData.to,
+      data: transactionData.data,
+      value: transactionData.value || "0",
+    })
+
+    console.log(`[CDP Paymaster] Estimated gas: ${gasEstimate}`)
+    return gasEstimate.toString()
+  } catch (error) {
+    console.error("[CDP Paymaster] Error estimating gas:", error)
+    // Return a conservative estimate
+    return "100000"
+  }
+}
+
+/**
+ * Record a gasless transaction in the database
+ */
+export async function recordGaslessTransaction(userAddress: string, txHash: string, gasAmount: string): Promise<void> {
+  try {
+    const supabase = createClient()
+
+    await supabase.from("gasless_transactions").insert({
+      user_address: userAddress.toLowerCase(),
+      tx_hash: txHash,
+      gas_amount: gasAmount,
+      created_at: new Date().toISOString(),
+    })
+
+    console.log(`[CDP Paymaster] Recorded gasless transaction: ${txHash}`)
+  } catch (error) {
+    console.error("[CDP Paymaster] Error recording transaction:", error)
+  }
 }

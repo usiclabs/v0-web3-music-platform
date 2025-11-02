@@ -250,7 +250,7 @@ export default function AdminPage() {
           supabase.from("follows").select("*", { count: "exact", head: true }),
           supabase.from("streams").select("chunks_played, total_paid, started_at, listener_address"),
           supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-          // Moved tracks fetching to loadAllTracks
+          // Moved tracks fetching to loadAllTracks function
           supabase
             .from("streams")
             .select(`
@@ -309,19 +309,18 @@ export default function AdminPage() {
           .gte("created_at", fourteenDaysAgo)
           .lt("created_at", sevenDaysAgo)
 
-        const recentRevenue =
-          streams
-            ?.filter((s) => new Date(s.started_at) >= new Date(sevenDaysAgo)) // Changed created_at to started_at
-            .reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-        const previousRevenue =
-          streams
-            ?.filter(
-              (s) =>
-                new Date(s.started_at) >= new Date(fourteenDaysAgo) && new Date(s.started_at) < new Date(sevenDaysAgo), // Changed created_at to started_at
-            )
-            .reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
-
         const userGrowth = newUsersPrevious7d ? ((newUsers7d - newUsersPrevious7d) / newUsersPrevious7d) * 100 : 0
+        // Fetching previous week's revenue for revenueGrowth calculation
+        const prevWeekStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+        const prevWeekEnd = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: previousStreams } = await supabase
+          .from("streams")
+          .select("total_paid")
+          .gte("started_at", prevWeekStart)
+          .lt("started_at", prevWeekEnd)
+
+        const previousRevenue = previousStreams?.reduce((sum, s) => sum + Number(s.total_paid), 0) || 0
+        const recentRevenue = totalRevenue // totalRevenue is already calculated for the current period
         const revenueGrowth = previousRevenue ? ((recentRevenue - previousRevenue) / previousRevenue) * 100 : 0
 
         // Fetch total transactions for gasless dashboard
@@ -887,6 +886,7 @@ export default function AdminPage() {
     }
   }
 
+  // Existing handler for hiding/restoring tracks from reports
   async function handleHideTrackFromReport(trackId: string, isHidden: boolean) {
     try {
       const response = await fetch(`/api/admin/tracks/${trackId}/hide`, {
@@ -905,14 +905,36 @@ export default function AdminPage() {
         description: isHidden ? "Track has been hidden from public view" : "Track is now visible to all users",
       })
 
-      // reload the data
       const supabase = createBrowserClient()
+
+      // Reload reports
       const reportsResponse = await fetch("/api/admin/reports", {
         headers: { "x-wallet-address": address },
       })
       if (reportsResponse.ok) {
         const reportsData = await reportsResponse.json()
         setReports(reportsData.reports || [])
+      }
+
+      // Reload tracks to update the main tracks list
+      const { data: tracksData } = await supabase
+        .from("tracks")
+        .select(`
+          *,
+          profiles!tracks_artist_id_fkey (
+            artist_name
+          )
+        `)
+        // Filter to only active tracks unless showHiddenTracks is true
+        .neq("is_active", isHidden ? false : null) // If hiding, only show active; if restoring, show all (or filter as needed)
+        .order("created_at", { ascending: false })
+
+      if (tracksData) {
+        const formattedTracks = tracksData.map((track: any) => ({
+          ...track,
+          artist_name: track.profiles?.artist_name || "Unknown Artist",
+        }))
+        setTracks(formattedTracks)
       }
     } catch (error) {
       console.error("Failed to update track:", error)
@@ -924,12 +946,63 @@ export default function AdminPage() {
     }
   }
 
+  // ADDED HANDLER FOR REMOVING TOKENIZED TRACKS
+  async function handleRemoveTokenizedTrack(trackId: string) {
+    try {
+      console.log("[v0] Removing tokenized track:", trackId)
+
+      // This API endpoint is reused for hiding/restoring tracks, so we use 'hide' with isHidden: true
+      const response = await fetch(`/api/admin/tracks/${trackId}/hide`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-wallet-address": address,
+        },
+        body: JSON.stringify({ isHidden: true }),
+      })
+
+      if (!response.ok) throw new Error("Failed to remove track")
+
+      toast({
+        title: "Track removed",
+        description: "Tokenized track has been hidden from /tokens page",
+      })
+
+      // Reload tokenized songs list
+      const supabase = createBrowserClient()
+      const { data: tokenizedData } = await supabase
+        .from("tracks")
+        .select(`
+          *,
+          artist:profiles!tracks_artist_id_fkey (
+            artist_name
+          )
+        `)
+        .eq("is_active", true) // Ensure we only fetch active tracks
+        .not("coin_address", "is", null) // Filter for tokenized tracks
+        .order("created_at", { ascending: false })
+
+      if (tokenizedData) {
+        setTokenizedSongs(tokenizedData)
+      }
+
+      console.log("[v0] Tokenized track removed successfully")
+    } catch (error) {
+      console.error("[v0] Failed to remove tokenized track:", error)
+      toast({
+        title: "Error",
+        description: "Failed to remove track",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Access denied screen
   if (!isConnected || !isAdmin) {
     return (
       <div className="min-h-screen pb-32 bg-gradient-to-br from-black via-black to-primary/5 flex items-center justify-center">
         <Card className="bg-card/50 backdrop-blur-xl border border-border/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-12 max-w-md text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/5 border-2 border-destructive/30 mx-auto mb-6 animate-pulse">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-destructive/20 to-destructive/5 border-2 border-destructive/30 animate-pulse">
             <Shield className="h-10 w-10 text-destructive" />
           </div>
           <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-muted-foreground bg-clip-text text-transparent">
@@ -1494,7 +1567,7 @@ export default function AdminPage() {
                   Live Streams
                 </h3>
                 <Badge variant="outline" className="bg-red-500/10 border-red-500/30 text-red-500 w-fit">
-                  <Activity className="h-3 w-3 mr-1 animate-pulse" />
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-pulse" />
                   {liveStreams.filter((s) => s.is_live).length} Active
                 </Badge>
               </div>
@@ -1783,12 +1856,21 @@ export default function AdminPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                window.location.href = `/tokens?token=${song.coin_address}`
+                              }}
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View on /tokens
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                            <DropdownMenuItem
+                              className="text-red-500 focus:text-red-500"
+                              onClick={() => {
+                                handleRemoveTokenizedTrack(song.id)
+                              }}
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Remove
                             </DropdownMenuItem>

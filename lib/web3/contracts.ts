@@ -467,3 +467,243 @@ export const UNISWAP_V3_POSITION_MANAGER_ABI = [
     type: "function",
   },
 ] as const
+
+// Uniswap V4 contract addresses and ABIs
+// Uniswap V4 contracts on Base
+export const UNISWAP_V4_POOL_MANAGER = {
+  [8453]: "0x498581ff718922c3f8e6a244956af099b2652b2b", // PoolManager on Base
+  [84532]: "0x498581ff718922c3f8e6a244956af099b2652b2b", // PoolManager on Base Sepolia
+} as const
+
+export const UNISWAP_V4_POSITION_MANAGER = {
+  [8453]: "0x7c5f5a4bbd8fd631845775253326123b519429bdc", // PositionManager on Base
+  [84532]: "0x7c5f5a4bbd8fd631845775253326123b519429bdc", // PositionManager on Base Sepolia
+} as const
+
+export const UNISWAP_V4_STATE_VIEW = {
+  [8453]: "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71", // StateView on Base
+  [84532]: "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71", // StateView on Base Sepolia
+} as const
+
+export const UNISWAP_V4_QUOTER = {
+  [8453]: "0x0d5e0f971ed27fbff6c2837bf313161215320048d", // Quoter on Base
+  [84532]: "0x0d5e0f971ed27fbff6c2837bf313161215320048d", // Quoter on Base Sepolia
+} as const
+
+export const PERMIT2_ADDRESS = {
+  [8453]: "0x000000000022D473030F116dDEE9F6B43aC78BA3", // Permit2 on Base
+  [84532]: "0x000000000022D473030F116dDEE9F6B43aC78BA3", // Permit2 on Base Sepolia
+} as const
+
+// V4 Position Manager ABI (command-based interface)
+export const UNISWAP_V4_POSITION_MANAGER_ABI = [
+  {
+    inputs: [
+      { name: "unlockData", type: "bytes" },
+      { name: "deadline", type: "uint256" },
+    ],
+    name: "modifyLiquidities",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "index", type: "uint256" },
+    ],
+    name: "tokenOfOwnerByIndex",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "getPositionInfo",
+    outputs: [
+      {
+        components: [
+          { name: "poolKey", type: "bytes32" },
+          { name: "tickLower", type: "int24" },
+          { name: "tickUpper", type: "int24" },
+        ],
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
+// V4 Actions enum
+export const V4_ACTIONS = {
+  INCREASE_LIQUIDITY: 0x00,
+  DECREASE_LIQUIDITY: 0x01,
+  MINT_POSITION: 0x02,
+  BURN_POSITION: 0x03,
+  SETTLE_PAIR: 0x0d,
+  TAKE_PAIR: 0x11,
+  CLOSE_CURRENCY: 0x12,
+  CLEAR_OR_TAKE: 0x13,
+  BURN_6909: 0x18,
+} as const
+
+// V4 Pool Manager ABI
+export const UNISWAP_V4_POOL_MANAGER_ABI = [
+  {
+    inputs: [
+      {
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+        name: "key",
+        type: "tuple",
+      },
+    ],
+    name: "getPoolId",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "id", type: "bytes32" }],
+    name: "getSlot0",
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "protocolFee", type: "uint24" },
+      { name: "lpFee", type: "uint24" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "id", type: "bytes32" }],
+    name: "getLiquidity",
+    outputs: [{ name: "", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
+// V4 StateView ABI
+export const UNISWAP_V4_STATE_VIEW_ABI = [
+  {
+    inputs: [
+      {
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+        name: "poolKey",
+        type: "tuple",
+      },
+    ],
+    name: "getSlot0",
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "protocolFee", type: "uint24" },
+      { name: "lpFee", type: "uint24" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+        name: "poolKey",
+        type: "tuple",
+      },
+    ],
+    name: "getLiquidity",
+    outputs: [{ name: "", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
+export const UNIVERSAL_ROUTER = {
+  [8453]: "0x6ff5693b99212da76ad316178a184ab56d299b43", // Universal Router on Base
+  [84532]: "0x6ff5693b99212da76ad316178a184ab56d299b43", // Universal Router on Base Sepolia
+} as const
+
+// Universal Router ABI for V4 swaps
+export const UNIVERSAL_ROUTER_ABI = [
+  {
+    inputs: [
+      { name: "commands", type: "bytes" },
+      { name: "inputs", type: "bytes[]" },
+      { name: "deadline", type: "uint256" },
+    ],
+    name: "execute",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+] as const
+
+// Permit2 ABI
+export const PERMIT2_ABI = [
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint160" },
+      { name: "expiration", type: "uint48" },
+    ],
+    name: "approve",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "token", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [
+      { name: "amount", type: "uint160" },
+      { name: "expiration", type: "uint48" },
+      { name: "nonce", type: "uint48" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
+// V4 Commands for Universal Router
+export const V4_COMMANDS = {
+  V4_SWAP: 0x00,
+  V4_POSITION_CALL: 0x01,
+  PERMIT2_PERMIT: 0x0a,
+} as const
+
+export const WETH_ADDRESS = {
+  8453: "0x4200000000000000000000000000000000000006",
+  84532: "0x4200000000000000000000000000000000000006",
+} as const

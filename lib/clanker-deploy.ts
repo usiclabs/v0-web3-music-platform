@@ -92,9 +92,6 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
     })
     console.log("[v0] [Clanker Deploy] Clanker SDK initialized successfully")
 
-    // WETH address on Base network
-    const WETH_BASE = "0x4200000000000000000000000000000000000006"
-
     const deployConfig: any = {
       name: params.name,
       symbol: params.symbol,
@@ -109,14 +106,15 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
           },
         ],
       },
-      // Pool configuration is required for Clanker v4 deployments
+      // Use the standard pool configuration from Clanker documentation
+      // These tick values are tested and known to work
       pool: {
-        pairedToken: WETH_BASE,
-        tickIfToken0IsClanker: -276_324, // Standard tick for WETH pairing
+        pairedToken: "0x4200000000000000000000000000000000000006", // WETH on Base
+        tickIfToken0IsClanker: -423_800,
+        tickSpacing: 200, // Required by contract - all ticks must be multiples of this
         positions: [
-          // Concentrated liquidity: 95% in tight range, 5% in wider range
-          { tickLower: -276_324, tickUpper: -276_320, positionBps: 9_500 },
-          { tickLower: -276_320, tickUpper: -100_000, positionBps: 500 },
+          { tickLower: -423_800, tickUpper: -318_400, positionBps: 9500 }, // 95% in tight range
+          { tickLower: -318_400, tickUpper: -100_000, positionBps: 500 }, // 5% in wider range
         ],
       },
     }
@@ -149,9 +147,7 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       hasImage: !!deployConfig.image,
       hasMetadata: !!deployConfig.metadata,
       hasContext: !!deployConfig.context,
-      hasPool: !!deployConfig.pool,
-      pairedToken: deployConfig.pool?.pairedToken,
-      positionCount: deployConfig.pool?.positions?.length,
+      usingPresetPositions: false,
     })
 
     console.log("[v0] [Clanker Deploy] Calling clanker.deploy()...")

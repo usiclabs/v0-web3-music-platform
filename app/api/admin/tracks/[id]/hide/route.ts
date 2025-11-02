@@ -25,8 +25,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     console.log("[Admin] Updating track visibility:", trackId, { isHidden })
 
-    // Update track visibility
-    const { error } = await supabase.from("tracks").update({ is_hidden: isHidden }).eq("id", trackId)
+    const { error } = await supabase
+      .from("tracks")
+      .update({
+        is_hidden: isHidden,
+        is_active: !isHidden, // When hiding, set is_active to false; when restoring, set to true
+      })
+      .eq("id", trackId)
 
     if (error) {
       console.error("[Admin] Failed to update track visibility:", error)

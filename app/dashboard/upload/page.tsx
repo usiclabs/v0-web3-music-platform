@@ -9,15 +9,12 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Lock, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import { getRequiredTokenBalance, formatTokenBalance } from "@/lib/web3/token-gate"
+import { REQUIRED_TOKEN_BALANCE, formatTokenBalance } from "@/lib/web3/token-gate"
 
 export default function UploadPage() {
   const { address, isConnected } = useWallet()
   const chainId = useChainId()
   const router = useRouter()
-  const [requiredBalance, setRequiredBalance] = useState<bigint>(BigInt("0"))
-  const [isLoadingRequired, setIsLoadingRequired] = useState(true)
 
   const { data: usiBalance, isLoading } = useReadContract({
     address: chainId ? (USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] as `0x${string}`) : undefined,
@@ -29,20 +26,11 @@ export default function UploadPage() {
     },
   })
 
-  useEffect(() => {
-    if (chainId) {
-      getRequiredTokenBalance(chainId).then((balance) => {
-        setRequiredBalance(balance)
-        setIsLoadingRequired(false)
-      })
-    }
-  }, [chainId])
-
-  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= requiredBalance : false
+  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_TOKEN_BALANCE : false
   const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
-  const requiredBalanceFormatted = formatTokenBalance(requiredBalance)
+  const requiredBalanceFormatted = formatTokenBalance(REQUIRED_TOKEN_BALANCE)
 
-  if (isConnected && (isLoading || isLoadingRequired)) {
+  if (isConnected && isLoading) {
     return (
       <div className="min-h-screen pb-32">
         <main className="container py-12">

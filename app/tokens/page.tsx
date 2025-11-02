@@ -46,8 +46,17 @@ import {
   UNISWAP_V3_FACTORY_ABI,
   UNISWAP_V3_QUOTER,
   UNISWAP_V3_QUOTER_ABI,
+  UNIVERSAL_ROUTER,
+  UNIVERSAL_ROUTER_ABI,
 } from "@/lib/web3/contracts"
 import confetti from "canvas-confetti"
+import {
+  detectV4Pool,
+  getV4Quote,
+  encodeV4SwapParams,
+  getSwapDeadline,
+  type V4PoolKey,
+} from "@/lib/web3/uniswap-v4-swap"
 
 interface TokenizedTrack {
   id: string
@@ -91,7 +100,12 @@ export default function TokensPage() {
   const [swapAmount, setSwapAmount] = useState("")
   const [swapOutput, setSwapOutput] = useState("")
   const [isSwapping, setIsSwapping] = useState(false)
-  const [poolInfo, setPoolInfo] = useState<{ address: string; fee: number } | null>(null)
+  const [poolInfo, setPoolInfo] = useState<{
+    address: string
+    fee: number
+    version: "v3" | "v4"
+    poolKey?: V4PoolKey
+  } | null>(null)
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [detailToken, setDetailToken] = useState<TokenizedTrack | null>(null)
@@ -180,6 +194,7 @@ export default function TokensPage() {
         `)
         .or("coin_address.not.is.null,nft_contract_address.not.is.null")
         .eq("is_active", true)
+        .eq("is_hidden", false) // Also filter out hidden tracks
 
       if (sortBy === "recent") {
         query = query.order("created_at", { ascending: false })
@@ -283,13 +298,37 @@ export default function TokensPage() {
 
     try {
       const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
+
+      console.log("[v0] Checking for V4 pool...")
+      const v4PoolKey = await detectV4Pool(tokenAddress as `0x${string}`, chainId, publicClient)
+
+      if (v4PoolKey) {
+        console.log("[v0] V4 pool found:", v4PoolKey)
+        setPoolInfo({
+          address: "v4-pool",
+          fee: v4PoolKey.fee,
+          version: "v4",
+          poolKey: v4PoolKey,
+        })
+        return
+      }
+
+      console.log("[v0] No V4 pool found, checking for V3 pools...")
       const feeTiers = [500, 3000, 10000]
 
-      console.log("[v0] Checking fee tiers:", feeTiers)
+      const V3_POOL_ABI = [
+        {
+          inputs: [],
+          name: "liquidity",
+          outputs: [{ internalType: "uint128", name: "", type: "uint128" }],
+          stateMutability: "view",
+          type: "function",
+        },
+      ] as const
 
       for (const fee of feeTiers) {
         try {
-          console.log("[v0] Checking fee tier:", fee)
+          console.log("[v0] Checking V3 fee tier:", fee)
           const poolAddress = await publicClient.readContract({
             address: UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as `0x${string}`,
             abi: UNISWAP_V3_FACTORY_ABI,
@@ -297,21 +336,46 @@ export default function TokensPage() {
             args: [wethAddress as `0x${string}`, tokenAddress as `0x${string}`, fee],
           })
 
-          console.log("[v0] Pool address for fee tier", fee, ":", poolAddress)
+          console.log("[v0] V3 pool address for fee tier", fee, ":", poolAddress)
 
           if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
-            console.log("[v0] Pool found at:", poolAddress, "with fee:", fee)
-            setPoolInfo({ address: poolAddress as string, fee })
-            return
+            try {
+              const liquidity = await publicClient.readContract({
+                address: poolAddress as `0x${string}`,
+                abi: V3_POOL_ABI,
+                functionName: "liquidity",
+              })
+
+              console.log("[v0] V3 pool liquidity:", liquidity.toString())
+
+              if (liquidity && liquidity > 0n) {
+                console.log(
+                  "[v0] V3 pool found at:",
+                  poolAddress,
+                  "with fee:",
+                  fee,
+                  "and liquidity:",
+                  liquidity.toString(),
+                )
+                setPoolInfo({ address: poolAddress as string, fee, version: "v3" })
+                return
+              } else {
+                console.log("[v0] V3 pool exists but has no liquidity, skipping")
+              }
+            } catch (liquidityError) {
+              console.error("[v0] Failed to check V3 pool liquidity:", liquidityError)
+              // Pool might not be initialized, skip it
+              continue
+            }
           }
         } catch (error) {
-          console.error("[v0] Error checking fee tier", fee, ":", error)
-          // Continue to next fee tier
+          console.error("[v0] Error checking V3 fee tier", fee, ":", error)
+          continue
         }
       }
 
-      console.log("[v0] No pool found for token:", tokenAddress)
-      setQuoteError("No Uniswap V3 pool found for this token. Liquidity needs to be added first.")
+      console.log("[v0] No valid pool found for token:", tokenAddress)
+      setQuoteError("No active liquidity pool found. You can add liquidity to create a trading pool.")
     } catch (error) {
       console.error("[v0] Failed to check pool:", error)
       setQuoteError("Failed to check pool availability. Please try again.")
@@ -341,6 +405,16 @@ export default function TokensPage() {
       const amountIn = parseUnits(swapAmount, 18)
       const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS]
 
+      if (poolInfo.version === "v4" && poolInfo.poolKey) {
+        console.log("[v0] Fetching V4 quote...")
+        const zeroForOne = wethAddress.toLowerCase() === poolInfo.poolKey.currency0.toLowerCase()
+        const amountOut = await getV4Quote(poolInfo.poolKey, amountIn, zeroForOne, publicClient, chainId)
+        setSwapOutput(formatUnits(amountOut, 18))
+        setQuoteError(null)
+        return
+      }
+
+      console.log("[v0] Fetching V3 quote...")
       const quoteData = await publicClient.readContract({
         address: UNISWAP_V3_QUOTER[chainId as keyof typeof UNISWAP_V3_QUOTER] as `0x${string}`,
         abi: UNISWAP_V3_QUOTER_ABI,
@@ -376,6 +450,7 @@ export default function TokensPage() {
       const amountIn = parseUnits(swapAmount, 18)
       const tokenOut = track.coin_address as `0x${string}`
       const tokenIn = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS] as `0x${string}`
+      const amountOutMinimum = swapOutput ? parseUnits((Number.parseFloat(swapOutput) * 0.95).toString(), 18) : 0n // 5% slippage
 
       addToast({
         title: "Swap Pending",
@@ -383,23 +458,55 @@ export default function TokensPage() {
         variant: "default",
       })
 
-      const swapHash = await writeContractAsync({
-        address: UNISWAP_V3_ROUTER[chainId as keyof typeof UNISWAP_V3_ROUTER] as `0x${string}`,
-        abi: UNISWAP_V3_ROUTER_ABI,
-        functionName: "exactInputSingle",
-        args: [
+      if (poolInfo.version === "v4" && poolInfo.poolKey) {
+        console.log("[v0] Executing V4 swap...")
+
+        const swapParams = encodeV4SwapParams(
           {
             tokenIn,
             tokenOut,
-            fee: poolInfo.fee,
-            recipient: address,
             amountIn,
-            amountOutMinimum: 0n,
-            sqrtPriceLimitX96: 0n,
+            amountOutMinimum,
+            recipient: address,
+            chainId,
           },
-        ],
-        value: amountIn,
-      })
+          poolInfo.poolKey,
+        )
+
+        const deadline = getSwapDeadline()
+
+        const swapHash = await writeContractAsync({
+          address: UNIVERSAL_ROUTER[chainId as keyof typeof UNIVERSAL_ROUTER] as `0x${string}`,
+          abi: UNIVERSAL_ROUTER_ABI,
+          functionName: "execute",
+          args: [swapParams.commands, swapParams.inputs, deadline],
+          value: amountIn,
+        })
+
+        console.log("[v0] V4 swap transaction hash:", swapHash)
+      } else {
+        console.log("[v0] Executing V3 swap...")
+
+        const swapHash = await writeContractAsync({
+          address: UNISWAP_V3_ROUTER[chainId as keyof typeof UNISWAP_V3_ROUTER] as `0x${string}`,
+          abi: UNISWAP_V3_ROUTER_ABI,
+          functionName: "exactInputSingle",
+          args: [
+            {
+              tokenIn,
+              tokenOut,
+              fee: poolInfo.fee,
+              recipient: address,
+              amountIn,
+              amountOutMinimum,
+              sqrtPriceLimitX96: 0n,
+            },
+          ],
+          value: amountIn,
+        })
+
+        console.log("[v0] V3 swap transaction hash:", swapHash)
+      }
 
       confetti({
         particleCount: 150,
@@ -1108,7 +1215,7 @@ export default function TokensPage() {
               <div className="flex-1 min-w-0">
                 <SheetTitle className="text-2xl truncate">Swap for {selectedTrack?.title}</SheetTitle>
                 <SheetDescription className="truncate">
-                  Trade ETH for {selectedTrack?.title} tokens on Uniswap V3
+                  Trade ETH for {selectedTrack?.title} tokens on Uniswap {poolInfo?.version?.toUpperCase() || ""}
                 </SheetDescription>
               </div>
             </div>
@@ -1134,7 +1241,8 @@ export default function TokensPage() {
                 <CardContent className="pt-6">
                   <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    Pool found with {poolInfo.fee / 10000}% fee tier
+                    {poolInfo.version === "v4" ? "Uniswap V4" : "Uniswap V3"} pool found with {poolInfo.fee / 10000}%
+                    fee tier
                   </p>
                 </CardContent>
               </Card>

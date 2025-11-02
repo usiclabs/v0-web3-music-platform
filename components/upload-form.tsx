@@ -19,7 +19,7 @@ import { useSendTransaction, useWaitForTransactionReceipt, usePublicClient, useR
 import type { Address } from "viem"
 import { formatUnits } from "viem"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
-import "@/lib/web3/token-gate"
+import { REQUIRED_TOKEN_BALANCE, formatTokenBalance } from "@/lib/web3/token-gate"
 
 interface RoyaltySplit {
   address: string
@@ -45,24 +45,15 @@ export function UploadForm() {
   const [royaltySplits, setRoyaltySplits] = useState<RoyaltySplit[]>([{ address: address || "", percentage: 100 }])
 
   const [tokenizeTrack, setTokenizeTrack] = useState(false)
-  const [deploymentMethod, setDeploymentMethod] = useState<"zora" | "clanker">("zora")
+  const [deploymentMethod, setDeploymentMethod] = useState<"zora" | "clanker">("clanker")
   const [coinName, setCoinName] = useState("")
   const [coinSymbol, setCoinSymbol] = useState("")
   const [createdTrackId, setCreatedTrackId] = useState<string | null>(null)
   const [uploadedCoverUrl, setUploadedCoverUrl] = useState<string | null>(null)
   const [coinCreationStarted, setCoinCreationStarted] = useState(false)
-
-  const [requiredBalance, setRequiredBalance] = useState<bigint>(BigInt("0"))
-  const [isLoadingRequired, setIsLoadingRequired] = useState(true)
-
-  const { sendTransaction, data: txHash, reset: resetTx } = useSendTransaction()
-  const {
-    isLoading: isCoinCreating,
-    isSuccess: isCoinCreated,
-    data: receipt,
-  } = useWaitForTransactionReceipt({
-    hash: txHash,
-  })
+  const [isCoinCreated, setIsCoinCreated] = useState(false)
+  const [receipt, setReceipt] = useState<any | null>(null)
+  const [txHash, setTxHash] = useState<string | null>(null)
 
   const { data: usiBalance } = useReadContract({
     address: chainId ? USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] : undefined,
@@ -74,27 +65,25 @@ export function UploadForm() {
     },
   })
 
-  useEffect(() => {
-    if (chainId) {
-      ;(async () => {
-        try {
-          const { getRequiredTokenBalance } = await import("@/lib/web3/token-gate")
-          const balance = await getRequiredTokenBalance(chainId)
-          setRequiredBalance(balance)
-          setIsLoadingRequired(false)
-        } catch (error) {
-          console.error("[v0] Error fetching required balance:", error)
-          setIsLoadingRequired(false)
-        }
-      })()
-    }
-  }, [chainId])
-
-  const hasRequiredUSI = usiBalance && !isLoadingRequired ? (usiBalance as bigint) >= requiredBalance : false
+  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_TOKEN_BALANCE : false
   const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
-  const requiredBalanceFormatted = requiredBalance
-    ? Number(formatUnits(requiredBalance, 18)).toLocaleString(undefined, { maximumFractionDigits: 0 })
-    : "0"
+  const requiredBalanceFormatted = formatTokenBalance(REQUIRED_TOKEN_BALANCE)
+
+  const { sendTransaction } = useSendTransaction()
+  const { data: transactionReceipt, isFetching: isCoinCreating } = useWaitForTransactionReceipt({
+    hash: txHash ? txHash : undefined,
+    onSuccess: (receipt) => {
+      setIsCoinCreated(true)
+      setReceipt(receipt)
+    },
+    onError: (error) => {
+      console.error("[v0] Transaction error:", error)
+      setError("Transaction failed. Please try again.")
+      setIsLoading(false)
+      setCoinCreationStarted(false)
+      setTxHash(null)
+    },
+  })
 
   useEffect(() => {
     if (isCoinCreated && receipt && createdTrackId && coinCreationStarted) {
@@ -129,7 +118,8 @@ export function UploadForm() {
             setIsLoading(false)
             setUploadProgress("")
             setCoinCreationStarted(false)
-            resetTx()
+            setIsCoinCreated(false)
+            setTxHash(null)
             router.push("/dashboard")
           }, 2000)
         } catch (err) {
@@ -137,10 +127,12 @@ export function UploadForm() {
           setError("Coin created but failed to update track. Please check your dashboard.")
           setIsLoading(false)
           setCoinCreationStarted(false)
+          setIsCoinCreated(false)
+          setTxHash(null)
         }
       })()
     }
-  }, [isCoinCreated, receipt, createdTrackId, coinCreationStarted, txHash, router, resetTx])
+  }, [isCoinCreated, receipt, createdTrackId, coinCreationStarted, txHash, router])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
@@ -231,7 +223,8 @@ export function UploadForm() {
         setIsLoading(false)
         setUploadProgress("")
         setCoinCreationStarted(false)
-        resetTx()
+        setIsCoinCreated(false)
+        setTxHash(null)
         router.push("/dashboard")
       }, 2000)
     } catch (err) {
@@ -294,7 +287,7 @@ export function UploadForm() {
         to: to as Address,
         data: data as `0x${string}`,
         value: BigInt(value),
-      })
+      }).then((tx) => setTxHash(tx.hash))
     } catch (err) {
       console.error("[v0] Failed to create Zora coin:", err)
       const errorMessage = err instanceof Error ? err.message : "Unknown error"
@@ -319,7 +312,8 @@ export function UploadForm() {
     e.preventDefault()
     setError(null)
     setUploadProgress("")
-    resetTx()
+    setIsCoinCreated(false)
+    setTxHash(null)
     setCoinCreationStarted(false)
     setUploadedCoverUrl(null)
 
@@ -586,7 +580,8 @@ export function UploadForm() {
         setIsLoading(false)
         setUploadProgress("")
         setCoinCreationStarted(false)
-        resetTx()
+        setIsCoinCreated(false)
+        setTxHash(null)
         router.push("/dashboard")
       }, 1500)
     } catch (err) {
@@ -595,7 +590,13 @@ export function UploadForm() {
       setIsLoading(false)
       setUploadProgress("")
       setCoinCreationStarted(false)
+      setIsCoinCreated(false)
+      setTxHash(null)
     }
+  }
+
+  const resetTx = () => {
+    setTxHash(null)
   }
 
   return (
@@ -804,22 +805,24 @@ export function UploadForm() {
                 value={deploymentMethod}
                 onValueChange={(value) => setDeploymentMethod(value as "zora" | "clanker")}
               >
-                <div className="grid grid-cols-2 gap-4">
-                  <div
-                    className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                      deploymentMethod === "zora"
-                        ? "border-accent bg-accent/10"
-                        : "border-border/50 bg-card/30 hover:border-border"
-                    }`}
-                  >
-                    <RadioGroupItem value="zora" id="zora" className="mt-1" />
-                    <Label htmlFor="zora" className="flex-1 cursor-pointer">
-                      <div className="font-semibold mb-1">Zora</div>
-                      <div className="text-xs text-muted-foreground">
-                        Create a coin on Zora with custom bonding curve
-                      </div>
-                    </Label>
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
+                  {false && (
+                    <div
+                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                        deploymentMethod === "zora"
+                          ? "border-accent bg-accent/10"
+                          : "border-border/50 bg-card/30 hover:border-border"
+                      }`}
+                    >
+                      <RadioGroupItem value="zora" id="zora" className="mt-1" />
+                      <Label htmlFor="zora" className="flex-1 cursor-pointer">
+                        <div className="font-semibold mb-1">Zora</div>
+                        <div className="text-xs text-muted-foreground">
+                          Create a coin on Zora with custom bonding curve
+                        </div>
+                      </Label>
+                    </div>
+                  )}
                   <div
                     className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
                       deploymentMethod === "clanker"
@@ -839,11 +842,8 @@ export function UploadForm() {
 
             <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
               <p className="text-sm text-muted-foreground">
-                {deploymentMethod === "zora"
-                  ? "Creating a coin allows fans to invest in your " +
-                    contentType +
-                    ". They can buy, sell, and trade your coin on Zora, creating a market for your work."
-                  : "Clanker deploys a standard ERC20 token with automatic Uniswap v4 liquidity pool creation, making your token instantly tradeable with fair price distribution."}
+                Clanker deploys a standard ERC20 token with automatic Uniswap v4 liquidity pool creation, making your
+                token instantly tradeable with fair price distribution.
               </p>
             </div>
 
@@ -881,15 +881,13 @@ export function UploadForm() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Paired Token:</span>
-                <span className="font-medium">{deploymentMethod === "zora" ? "ETH" : "WETH"}</span>
+                <span className="font-medium">{false ? "ETH" : "WETH"}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Starting Market Cap:</span>
-                <span className="font-medium">
-                  {deploymentMethod === "zora" ? "Low (Accessible)" : "10 ETH (Default)"}
-                </span>
+                <span className="font-medium">{false ? "Low (Accessible)" : "10 ETH (Default)"}</span>
               </div>
-              {deploymentMethod === "clanker" && (
+              {false && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Liquidity Pool:</span>
                   <span className="font-medium">Uniswap v4 (Auto)</span>
