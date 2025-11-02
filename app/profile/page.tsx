@@ -1,7 +1,7 @@
 "use client"
 
 import { ProfileForm } from "@/components/profile-form"
-import { User, History, Heart, Users, ListMusic, Sparkles, Music, Play, TrendingUp, Edit2 } from "lucide-react"
+import { User, History, Heart, Users, ListMusic, Sparkles, Music, Play, TrendingUp, Edit2, Upload } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEffect, useState } from "react"
 import { ensureProfile } from "@/lib/supabase/helpers"
@@ -110,7 +110,10 @@ export default function ProfilePage() {
             .eq("artist_id", address.toLowerCase())
             .eq("ai_generated", true)
             .order("created_at", { ascending: false }),
-          supabase.from("tracks").select("id, play_count").eq("artist_id", address.toLowerCase()),
+          supabase
+            .from("streams")
+            .select("track_id, chunks_played, total_paid, tracks!inner(artist_id)")
+            .eq("tracks.artist_id", address.toLowerCase()),
         ])
 
       setListeningHistory(streamsRes.data || [])
@@ -152,7 +155,15 @@ export default function ProfilePage() {
         setAiTracks(aiTracksRes.data as TrackWithArtist[])
       }
 
-      const totalPlays = tracksRes.data?.reduce((sum, track) => sum + (track.play_count || 0), 0) || 0
+      const totalPlays = tracksRes.data?.reduce((sum, stream) => sum + stream.chunks_played, 0) || 0
+
+      console.log("[v0] Profile stats calculated:", {
+        totalPlays,
+        totalTracks: tracksRes.data?.length || 0,
+        totalFollowers: followersRes.data?.length || 0,
+        totalFollowing: followingRes.data?.length || 0,
+      })
+
       setStats({
         totalPlays,
         totalTracks: tracksRes.data?.length || 0,
@@ -201,7 +212,7 @@ export default function ProfilePage() {
     <div className="min-h-screen pb-32">
       <div className="relative">
         {/* Cover Photo */}
-        <div className="h-48 sm:h-64 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 relative overflow-hidden">
+        <div className="h-48 sm:h-64 bg-gradient-to-br from-primary/20 via-accent/20 to-primary/10 relative overflow-hidden group">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
           {profile?.cover_url && (
             <img
@@ -210,6 +221,20 @@ export default function ProfilePage() {
               className="w-full h-full object-cover opacity-60"
             />
           )}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-black/80 backdrop-blur-sm hover:bg-black/90"
+              onClick={() => {
+                // TODO: Implement cover photo upload
+                alert("Cover photo upload coming soon!")
+              }}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Change Cover
+            </Button>
+          </div>
         </div>
 
         {/* Profile Info */}
@@ -284,7 +309,7 @@ export default function ProfilePage() {
               <TabsList className="grid grid-cols-7 w-full h-auto p-1.5 gap-1 bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg">
                 <TabsTrigger
                   value="settings"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Settings"
                 >
                   <User className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -292,7 +317,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="ai-creations"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-accent/80 data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-accent data-[state=active]:to-accent/80 data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg transition-all text-foreground"
                   title="AI Creations"
                 >
                   <Sparkles className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -300,7 +325,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="liked"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Liked Songs"
                 >
                   <Heart className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -308,7 +333,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Listening History"
                 >
                   <History className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -316,7 +341,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="followers"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Followers"
                 >
                   <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -324,7 +349,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="following"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Following"
                 >
                   <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
@@ -332,7 +357,7 @@ export default function ProfilePage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="playlists"
-                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 sm:py-2.5 min-h-[48px] rounded-lg data-[state=active]:bg-gradient-to-br data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-foreground"
                   title="Playlists"
                 >
                   <ListMusic className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />

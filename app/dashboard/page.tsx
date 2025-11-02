@@ -262,7 +262,7 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground text-lg">Track your performance and manage your music</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button size="lg" asChild className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+                <Button size="lg" asChild className="bg-primary hover:bg-primary/90">
                   <Link href="/dashboard/upload">
                     <Upload className="h-5 w-5 mr-2" />
                     Upload Track
