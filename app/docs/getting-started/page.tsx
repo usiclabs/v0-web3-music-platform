@@ -24,9 +24,10 @@ export default function GettingStartedPage() {
             <h2 className="text-3xl font-bold mb-4">What is USIC?</h2>
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
               <p className="text-muted-foreground mb-4">
-                USIC is a revolutionary music streaming platform that uses blockchain technology to ensure artists get
-                paid fairly and instantly for every stream. Built on Base (Ethereum L2), USIC leverages the X402
-                micropayment protocol to enable real-time payments as you listen.
+                USIC is a revolutionary Web3 music platform that uses blockchain technology to ensure artists get paid
+                fairly and instantly for every stream. Built on Base (Ethereum L2), USIC leverages the X402 micropayment
+                protocol for real-time streaming payments, native Uniswap V4 integration for token swaps, and Clanker
+                for profile tokenization.
               </p>
               <div className="grid sm:grid-cols-2 gap-4 mt-6">
                 <div className="flex items-start gap-3">
@@ -163,8 +164,8 @@ export default function GettingStartedPage() {
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <h3 className="text-xl font-semibold mb-2">$USI Token</h3>
                 <p className="text-muted-foreground">
-                  The native platform token used for staking, governance, and earning rewards. Stake $USI to earn a
-                  share of platform fees.
+                  The native platform token used for governance and token gating. Hold 10M $USI to unlock profile
+                  tokenization and other premium features.
                 </p>
               </Card>
 
@@ -177,10 +178,26 @@ export default function GettingStartedPage() {
               </Card>
 
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
-                <h3 className="text-xl font-semibold mb-2">Creator Coins</h3>
+                <h3 className="text-xl font-semibold mb-2">Profile Tokens</h3>
                 <p className="text-muted-foreground">
-                  Each artist can launch their own token that fans can collect. These tokens may unlock exclusive
-                  content and benefits.
+                  Artists can tokenize their profile once using Clanker, creating a tradeable token that represents
+                  their brand. Requires 10M $USI and 5+ tracks.
+                </p>
+              </Card>
+
+              <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
+                <h3 className="text-xl font-semibold mb-2">Token-Gated Streaming</h3>
+                <p className="text-muted-foreground">
+                  Artists can enable free streaming for token holders. Fans who hold enough track tokens can bypass X402
+                  payments and stream for free.
+                </p>
+              </Card>
+
+              <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
+                <h3 className="text-xl font-semibold mb-2">Track Tokens</h3>
+                <p className="text-muted-foreground">
+                  Each track can be tokenized as ERC20 or NFT. Fans can collect tokens, trade them on Uniswap V4, and
+                  potentially unlock exclusive benefits.
                 </p>
               </Card>
 
@@ -188,7 +205,7 @@ export default function GettingStartedPage() {
                 <h3 className="text-xl font-semibold mb-2">Base Network</h3>
                 <p className="text-muted-foreground">
                   USIC is built on Base, Coinbase's Ethereum L2, offering fast transactions and low fees perfect for
-                  micropayments.
+                  micropayments and token trading.
                 </p>
               </Card>
             </div>

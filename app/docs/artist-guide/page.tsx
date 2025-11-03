@@ -104,17 +104,33 @@ export default function ArtistGuidePage() {
 
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
                 <Coins className="h-8 w-8 text-accent mb-3" />
-                <h3 className="text-xl font-semibold mb-2">Creator Coins</h3>
+                <h3 className="text-xl font-semibold mb-2">Tokenization</h3>
                 <p className="text-muted-foreground mb-3">
-                  Launch your own token that fans can collect. Set the supply and price to create scarcity.
+                  Tokenize individual tracks or your entire profile. Fans can trade your tokens on Uniswap V4, creating
+                  new revenue streams.
                 </p>
-                <Link href="/docs/smart-contracts">
+                <Link href="/docs/tokenization">
                   <Button variant="outline" size="sm" className="bg-transparent">
                     Learn More →
                   </Button>
                 </Link>
               </Card>
             </div>
+
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 mb-6">
+              <h3 className="text-xl font-semibold mb-4">Token-Gated Streaming</h3>
+              <p className="text-muted-foreground mb-4">
+                Enable free streaming for fans who hold your track tokens. Set a minimum token balance requirement
+                during upload, and token holders can bypass X402 payments. This incentivizes token ownership and builds
+                a dedicated community around your music.
+              </p>
+              <div className="bg-accent/10 rounded-lg p-4">
+                <p className="text-sm">
+                  <strong>Example:</strong> Require 100 tokens to stream for free. Fans who hold 100+ tokens can listen
+                  unlimited times without paying per stream.
+                </p>
+              </div>
+            </Card>
 
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
               <h3 className="text-xl font-semibold mb-4">Revenue Dashboard</h3>
@@ -132,7 +148,7 @@ export default function ArtistGuidePage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 rounded-full bg-primary" />
-                  Listener demographics
+                  Token market cap
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 rounded-full bg-primary" />
@@ -143,6 +159,52 @@ export default function ArtistGuidePage() {
           </section>
 
           <section className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            <h2 className="text-3xl font-bold mb-4">Profile Tokenization</h2>
+            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 mb-4">
+              <h3 className="text-xl font-semibold mb-4">Tokenize Your Artist Profile</h3>
+              <p className="text-muted-foreground mb-4">
+                Create a one-time profile token that represents your entire artist brand. This token is deployed via
+                Clanker on Base and can be traded on Uniswap V4.
+              </p>
+
+              <div className="space-y-4">
+                <div className="border-l-2 border-accent/50 pl-4">
+                  <h4 className="font-semibold mb-1">Requirements</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Hold 10,000,000 $USI tokens</li>
+                    <li>• Have uploaded at least 5 tracks</li>
+                    <li>• One-time action (cannot be repeated)</li>
+                  </ul>
+                </div>
+
+                <div className="border-l-2 border-accent/50 pl-4">
+                  <h4 className="font-semibold mb-1">Benefits</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Market cap displayed on your profile</li>
+                    <li>• Fans can invest in your success</li>
+                    <li>• Native swap functionality via Uniswap V4</li>
+                    <li>• Appears in token marketplace</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-accent/10 backdrop-blur-xl border border-accent/50 p-6">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Coins className="h-5 w-5 text-accent" />
+                How to Tokenize
+              </h4>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li>1. Meet the requirements (10M $USI + 5 tracks)</li>
+                <li>2. Go to your dashboard and click "Tokenize Profile"</li>
+                <li>3. Choose your token name and ticker symbol</li>
+                <li>4. Confirm the deployment transaction</li>
+                <li>5. Your profile token is now live and tradeable!</li>
+              </ol>
+            </Card>
+          </section>
+
+          <section className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
             <h2 className="text-3xl font-bold mb-4">Growing Your Audience</h2>
             <div className="space-y-4">
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
@@ -181,16 +243,14 @@ export default function ArtistGuidePage() {
             </div>
           </section>
 
-          <section className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
-            <Card className="bg-gradient-to-br from-primary/20 to-accent/20 backdrop-blur-xl border border-border/50 p-8">
-              <h2 className="text-3xl font-bold mb-4">Ready to Upload?</h2>
-              <p className="text-muted-foreground mb-6">
-                Start earning from your music today. Connect your wallet and upload your first track.
-              </p>
-              <Link href="/upload">
-                <Button size="lg">Upload Music</Button>
-              </Link>
-            </Card>
+          <section className="animate-slide-up" style={{ animationDelay: "0.4s" }}>
+            <h2 className="text-3xl font-bold mb-4">Ready to Upload?</h2>
+            <p className="text-muted-foreground mb-6">
+              Start earning from your music today. Connect your wallet and upload your first track.
+            </p>
+            <Link href="/upload">
+              <Button size="lg">Upload Music</Button>
+            </Link>
           </section>
         </div>
       </main>

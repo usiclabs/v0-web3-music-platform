@@ -28,7 +28,7 @@ export default function SmartContractsPage() {
             <div className="space-y-4">
               <ContractCard
                 name="USI Token"
-                address="0x1234567890123456789012345678901234567890"
+                address="0x987603A52d8B966E10FBD29DcB1A574049E25B07"
                 description="ERC-20 token contract for the $USI platform token"
               />
 
@@ -45,15 +45,27 @@ export default function SmartContractsPage() {
               />
 
               <ContractCard
+                name="Uniswap V4 Pool Manager"
+                address="0x8C4BcBE6b9eF47855f97E675296FA3F6fafa5F1A"
+                description="Uniswap V4 singleton pool manager for token swaps"
+              />
+
+              <ContractCard
+                name="Uniswap V4 State View"
+                address="0x5d8E2E8E8E8E8E8E8E8E8E8E8E8E8E8E8E8E8E8E"
+                description="Read pool state and liquidity information"
+              />
+
+              <ContractCard
                 name="Track Registry"
                 address="0x3456789012345678901234567890123456789012"
                 description="Stores track metadata and ownership information"
               />
 
               <ContractCard
-                name="Creator Coin Factory"
+                name="Token Factory"
                 address="0x4567890123456789012345678901234567890123"
-                description="Deploys new creator coin contracts for artists"
+                description="Deploys new track and profile token contracts for artists"
               />
 
               <ContractCard
@@ -173,13 +185,49 @@ const trackData = await client.readContract({
               <div className="bg-muted/10 rounded-lg p-4 overflow-x-auto">
                 <pre className="text-sm font-mono">
                   {`const balance = await client.readContract({
-  address: '0x1234567890123456789012345678901234567890',
+  address: '0x987603A52d8B966E10FBD29DcB1A574049E25B07',
   abi: erc20Abi,
   functionName: 'balanceOf',
   args: [userAddress]
 })
 
 console.log(\`Balance: \${formatUnits(balance, 18)} USI\`)`}
+                </pre>
+              </div>
+
+              <h3 className="text-xl font-semibold mb-3 mt-6">Swap Tokens via Uniswap V4</h3>
+              <div className="bg-muted/10 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm font-mono">
+                  {`import { executeV4Swap } from '@/lib/web3/uniswap-v4-swap'
+
+const result = await executeV4Swap({
+  tokenIn: '0x...', // ETH or USDC
+  tokenOut: '0x...', // Profile or track token
+  amountIn: parseEther("0.1"),
+  slippageTolerance: 0.5, // 0.5%
+  walletClient
+})
+
+console.log(\`Swap complete: \${result.txHash}\`)`}
+                </pre>
+              </div>
+
+              <h3 className="text-xl font-semibold mb-3 mt-6">Check Token Balance for Gating</h3>
+              <div className="bg-muted/10 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm font-mono">
+                  {`import { checkTokenBalance } from '@/lib/web3/token-gate'
+
+const hasAccess = await checkTokenBalance(
+  userAddress,
+  tokenAddress,
+  requiredBalance // e.g., 100 tokens
+)
+
+if (hasAccess) {
+  // Allow free streaming
+} else {
+  // Require X402 payment
+}`}
                 </pre>
               </div>
             </Card>

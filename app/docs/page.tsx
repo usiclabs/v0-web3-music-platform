@@ -10,7 +10,7 @@ export default function DocsPage() {
         <div className="mb-12 animate-slide-up">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">Documentation</h1>
           <p className="text-xl text-muted-foreground">
-            Everything you need to know about building on USI and using the X402 protocol.
+            Everything you need to know about building on USIC and using the X402 protocol.
           </p>
         </div>
 
@@ -20,7 +20,7 @@ export default function DocsPage() {
               <Zap className="h-10 w-10 text-primary mb-4" />
               <h3 className="text-xl font-semibold mb-2">Getting Started</h3>
               <p className="text-muted-foreground mb-4">
-                Learn the basics of USIC and how to get started as an artist or listener.
+                Learn about USIC's tokenization features, streaming payments, and how to get started.
               </p>
               <Button variant="link" className="p-0">
                 Read Guide →
@@ -35,7 +35,9 @@ export default function DocsPage() {
             >
               <Music className="h-10 w-10 text-accent mb-4" />
               <h3 className="text-xl font-semibold mb-2">Artist Guide</h3>
-              <p className="text-muted-foreground mb-4">Upload music, set royalty splits, and manage your earnings.</p>
+              <p className="text-muted-foreground mb-4">
+                Upload music, tokenize tracks and profiles, set royalty splits, and manage earnings.
+              </p>
               <Button variant="link" className="p-0">
                 Read Guide →
               </Button>

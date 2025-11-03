@@ -142,21 +142,22 @@ export default function WalletSetupPage() {
               </Card>
 
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
-                <h3 className="text-xl font-semibold mb-2">3. Use Built-in Swap</h3>
+                <h3 className="text-xl font-semibold mb-2">3. Native Token Swaps</h3>
                 <p className="text-muted-foreground mb-3">
-                  If you have ETH on Base, use our built-in swap feature to convert it to USDC.
+                  If you have ETH on Base, use our native Uniswap V4 integration to swap for USDC. USIC features
+                  built-in swap functionality for all profile and track tokens.
                 </p>
-                <Link href="/swap">
+                <Link href="/tokens">
                   <Button variant="outline" size="sm" className="bg-transparent">
-                    Go to Swap
+                    View Tokens
                   </Button>
                 </Link>
               </Card>
 
               <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-6">
-                <h3 className="text-xl font-semibold mb-2">4. DEX Swap</h3>
+                <h3 className="text-xl font-semibold mb-2">4. External DEX</h3>
                 <p className="text-muted-foreground mb-3">
-                  Use decentralized exchanges like Uniswap to swap other tokens for USDC on Base.
+                  Use external decentralized exchanges like Uniswap to swap other tokens for USDC on Base.
                 </p>
                 <Button variant="outline" size="sm" className="bg-transparent" asChild>
                   <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer">
