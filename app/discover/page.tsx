@@ -327,7 +327,7 @@ export default function DiscoverPage() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border-white/20 hover:bg-white/20"
+                        className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20"
                       >
                         View Details
                       </Button>
@@ -351,29 +351,6 @@ export default function DiscoverPage() {
                 />
               ))}
             </div>
-          )}
-
-          {featuredTracks.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/50 backdrop-blur-xl border border-white/20 hover:bg-black/70 hover:scale-110 transition-all"
-                onClick={() =>
-                  setCurrentFeaturedIndex((prev) => (prev - 1 + featuredTracks.length) % featuredTracks.length)
-                }
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/50 backdrop-blur-xl border border-white/20 hover:bg-black/70 hover:scale-110 transition-all"
-                onClick={() => setCurrentFeaturedIndex((prev) => (prev + 1) % featuredTracks.length)}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-            </>
           )}
         </section>
       )}
