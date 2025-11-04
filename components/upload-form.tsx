@@ -56,6 +56,8 @@ export function UploadForm() {
   const [isCoinCreated, setIsCoinCreated] = useState(false)
   const [receipt, setReceipt] = useState<any | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
+  const [isGeneratingGif, setIsGeneratingGif] = useState(false)
+  const [gifPreviewUrl, setGifPreviewUrl] = useState<string | null>(null)
 
   const { data: usiBalance } = useReadContract({
     address: chainId ? USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] : undefined,
@@ -86,6 +88,19 @@ export function UploadForm() {
       setTxHash(null)
     },
   })
+
+  useEffect(() => {
+    console.log("[v0] Upload form - Wallet address:", address)
+    console.log("[v0] Upload form - Chain ID:", chainId)
+    console.log(
+      "[v0] Upload form - $USI token address:",
+      chainId ? USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] : "undefined",
+    )
+    console.log("[v0] Upload form - $USI balance (raw):", usiBalance)
+    console.log("[v0] Upload form - $USI balance (formatted):", usiBalanceFormatted)
+    console.log("[v0] Upload form - Has required $USI:", hasRequiredUSI)
+    console.log("[v0] Upload form - Required balance:", requiredBalanceFormatted)
+  }, [address, chainId, usiBalance, usiBalanceFormatted, hasRequiredUSI, requiredBalanceFormatted])
 
   useEffect(() => {
     if (isCoinCreated && receipt && createdTrackId && coinCreationStarted) {
@@ -190,12 +205,21 @@ export function UploadForm() {
         }),
       })
 
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch (jsonError) {
+        // Response is not JSON, try to get text
+        const errorText = await response.text()
+        console.error("[v0] Non-JSON error response:", errorText)
+        throw new Error(`Server error: ${errorText || response.statusText}`)
+      }
+
       if (!response.ok) {
-        const errorData = await response.json()
         throw new Error(errorData.error || "Failed to deploy token via Clanker")
       }
 
-      const { tokenAddress } = await response.json()
+      const { tokenAddress } = errorData
       console.log("[v0] Clanker token deployed:", tokenAddress)
 
       setUploadProgress("Token deployed successfully!")
@@ -240,6 +264,7 @@ export function UploadForm() {
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
+        gravity: 1.2,
       })
 
       setTimeout(() => {
@@ -301,6 +326,7 @@ export function UploadForm() {
         spread: 70,
         origin: { y: 0.6 },
         colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
+        gravity: 1.2,
       })
 
       setTimeout(() => {
@@ -308,6 +334,29 @@ export function UploadForm() {
         router.push("/dashboard")
       }, 3000)
     }
+  }
+
+  const handleVideoFileChange = (file: File | null) => {
+    setVideoFile(file)
+    // Reset GIF preview when video changes
+    if (!coverFile) {
+      setGifPreviewUrl(null)
+    }
+  }
+
+  const handleCoverFileChange = (file: File | null) => {
+    if (file) {
+      const maxSize = 15 * 1024 * 1024 // 15MB
+      if (file.size > maxSize) {
+        setError(
+          `Thumbnail file is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 15MB. Please compress your GIF using tools like ezgif.com`,
+        )
+        return
+      }
+      // Clear any previous errors
+      setError(null)
+    }
+    setCoverFile(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -447,6 +496,11 @@ export function UploadForm() {
           } catch (thumbError) {
             console.error("[v0] Thumbnail upload error:", thumbError)
           }
+        } else if (gifPreviewUrl) {
+          // Use the generated GIF as thumbnail
+          thumbnailUrl = gifPreviewUrl
+          setUploadedCoverUrl(thumbnailUrl)
+          console.log("[v0] Using generated GIF as thumbnail:", thumbnailUrl)
         }
       } else if (contentType === "audio" && audioFile) {
         setUploadProgress("Uploading audio file...")
@@ -650,7 +704,33 @@ export function UploadForm() {
             />
           </div>
 
-          {contentType === "audio" ? (
+          {contentType === "video" ? (
+            <div>
+              <Label htmlFor="video">Video File</Label>
+              <Input
+                id="video"
+                type="file"
+                accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm"
+                onChange={(e) => handleVideoFileChange(e.target.files?.[0] || null)}
+                required
+                className="bg-card/50 backdrop-blur-xl border border-border/50"
+              />
+              {videoFile && <p className="text-sm text-muted-foreground mt-2">{videoFile.name}</p>}
+              {gifPreviewUrl && (
+                <div className="mt-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+                  <p className="text-xs text-accent mb-2">✓ Preview GIF generated automatically</p>
+                  <img
+                    src={gifPreviewUrl || "/placeholder.svg"}
+                    alt="Video preview"
+                    className="rounded-md max-w-[200px]"
+                  />
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                Supported formats: MP4, MOV, AVI, MKV, WebM (max 50MB)
+              </p>
+            </div>
+          ) : (
             <div>
               <Label htmlFor="audio">Audio File</Label>
               <Input
@@ -663,22 +743,6 @@ export function UploadForm() {
               />
               {audioFile && <p className="text-sm text-muted-foreground mt-2">{audioFile.name}</p>}
             </div>
-          ) : (
-            <div>
-              <Label htmlFor="video">Video File</Label>
-              <Input
-                id="video"
-                type="file"
-                accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm"
-                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                required
-                className="bg-card/50 backdrop-blur-xl border border-border/50"
-              />
-              {videoFile && <p className="text-sm text-muted-foreground mt-2">{videoFile.name}</p>}
-              <p className="text-xs text-muted-foreground mt-2">
-                Supported formats: MP4, MOV, AVI, MKV, WebM (max 500MB)
-              </p>
-            </div>
           )}
 
           <div>
@@ -686,11 +750,43 @@ export function UploadForm() {
             <Input
               id="cover"
               type="file"
-              accept="image/*"
-              onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+              accept="image/*,.gif"
+              onChange={(e) => handleCoverFileChange(e.target.files?.[0] || null)}
               className="bg-card/50 backdrop-blur-xl border border-border/50"
             />
-            {coverFile && <p className="text-sm text-muted-foreground mt-2">{coverFile.name}</p>}
+            {coverFile && (
+              <div className="mt-2 space-y-1">
+                <p className="text-sm text-muted-foreground">{coverFile.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Size: {(coverFile.size / 1024 / 1024).toFixed(2)}MB
+                  {coverFile.size > 10 * 1024 * 1024 && " (Large file - consider compressing)"}
+                </p>
+              </div>
+            )}
+            {contentType === "video" && (
+              <p className="text-xs text-muted-foreground mt-2">
+                💡 Tip: Upload an animated GIF for an eye-catching looping preview! Maximum size: 15MB. You can create
+                and compress GIFs using{" "}
+                <a
+                  href="https://ezgif.com/video-to-gif"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  ezgif.com
+                </a>{" "}
+                or{" "}
+                <a
+                  href="https://gifski.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent hover:underline"
+                >
+                  Gifski
+                </a>
+                .
+              </p>
+            )}
           </div>
 
           <div>

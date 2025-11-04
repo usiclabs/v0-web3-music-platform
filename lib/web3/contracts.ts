@@ -5,7 +5,7 @@ export const USDC_ADDRESS = {
 } as const
 
 export const USI_TOKEN_ADDRESS = {
-  [8453]: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", // Base mainnet
+  [8453]: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", // Base mainnet - Real $USI token
   [84532]: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", // Base Sepolia (same for demo)
 } as const
 

@@ -34,7 +34,17 @@ if (typeof window !== "undefined") {
   }
 }
 
-const BLAST_API_RPC = "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"
+const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ""
+const BASE_RPC = ALCHEMY_API_KEY
+  ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+  : "https://mainnet.base.org" // Fallback to public Base RPC
+const BASE_SEPOLIA_RPC = ALCHEMY_API_KEY
+  ? `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
+  : "https://sepolia.base.org" // Fallback to public Base Sepolia RPC
+
+if (!ALCHEMY_API_KEY) {
+  console.warn("NEXT_PUBLIC_ALCHEMY_API_KEY is not set. Using public RPC endpoints (rate limited).")
+}
 
 // Configure wagmi
 export const config = createConfig({
@@ -67,8 +77,8 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [base.id]: http(BLAST_API_RPC),
-    [baseSepolia.id]: http(),
+    [base.id]: http(BASE_RPC),
+    [baseSepolia.id]: http(BASE_SEPOLIA_RPC),
   },
 })
 

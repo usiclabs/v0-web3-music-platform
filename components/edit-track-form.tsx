@@ -29,6 +29,7 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
   const [isFetching, setIsFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updateProgress, setUpdateProgress] = useState<string>("")
+  const [contentType, setContentType] = useState<string>("audio")
 
   // Form state
   const [title, setTitle] = useState("")
@@ -56,7 +57,8 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
         }
 
         setTitle(track.title)
-        setCurrentCoverUrl(track.cover_url)
+        setContentType(track.content_type || "audio")
+        setCurrentCoverUrl(track.content_type === "video" ? track.thumbnail_url : track.cover_url)
         setPricePerChunk(track.price_per_chunk?.toString() || "0.005")
         setIsActive(track.is_active ?? true)
 
@@ -118,10 +120,10 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
 
       // Upload new cover if provided
       if (coverFile) {
-        setUpdateProgress("Uploading new cover image...")
+        setUpdateProgress(contentType === "video" ? "Uploading new thumbnail..." : "Uploading new cover image...")
         const coverFormData = new FormData()
         coverFormData.append("file", coverFile)
-        coverFormData.append("type", "cover")
+        coverFormData.append("type", contentType === "video" ? "thumbnail" : "cover")
 
         const coverResponse = await fetch("/api/upload/image", {
           method: "POST",
@@ -131,21 +133,33 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
         if (coverResponse.ok) {
           const { url } = await coverResponse.json()
           coverUrl = url
+          console.log("[v0] New image uploaded:", url)
         } else {
-          console.warn("[v0] Cover upload failed")
+          const errorData = await coverResponse.json()
+          console.warn("[v0] Image upload failed:", errorData)
+          throw new Error(errorData.error || "Failed to upload image")
         }
       }
 
       setUpdateProgress("Updating track...")
+      const updateData: any = {
+        title,
+        price_per_chunk: Number.parseFloat(pricePerChunk),
+        royalty_splits: royaltySplits,
+      }
+
+      if (contentType === "video") {
+        updateData.thumbnail_url = coverUrl
+      } else {
+        updateData.cover_url = coverUrl
+      }
+
+      console.log("[v0] Updating track with data:", updateData)
+
       const response = await fetch(`/api/tracks/${trackId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          cover_url: coverUrl,
-          price_per_chunk: Number.parseFloat(pricePerChunk),
-          royalty_splits: royaltySplits,
-        }),
+        body: JSON.stringify(updateData),
       })
 
       if (!response.ok) {
@@ -154,13 +168,15 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
       }
 
       setUpdateProgress("Update complete!")
-      router.push("/dashboard")
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } catch (err) {
       console.error("[v0] Update error:", err)
       setError(err instanceof Error ? err.message : "Failed to update track")
     } finally {
       setIsLoading(false)
-      setUpdateProgress("")
+      setTimeout(() => setUpdateProgress(""), 3000)
     }
   }
 
@@ -268,22 +284,46 @@ export function EditTrackForm({ trackId }: EditTrackFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="cover">Cover Image</Label>
+            <Label htmlFor="cover">{contentType === "video" ? "Video Thumbnail (GIF supported)" : "Cover Image"}</Label>
             {currentCoverUrl && !coverFile && (
               <div className="mb-4 relative w-32 h-32 rounded-lg overflow-hidden">
-                <Image src={currentCoverUrl || "/placeholder.svg"} alt="Current cover" fill className="object-cover" />
+                {currentCoverUrl.toLowerCase().endsWith(".gif") ? (
+                  <img
+                    src={currentCoverUrl || "/placeholder.svg"}
+                    alt="Current thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={currentCoverUrl || "/placeholder.svg"}
+                    alt="Current cover"
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
             )}
             <Input
               id="cover"
               type="file"
-              accept="image/*"
+              accept="image/*,.gif"
               onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
               className="bg-card/50 backdrop-blur-xl border border-border/50"
             />
-            {coverFile && <p className="text-sm text-muted-foreground mt-2">New: {coverFile.name}</p>}
+            {coverFile && (
+              <p className="text-sm text-muted-foreground mt-2">
+                New: {coverFile.name} ({(coverFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+            )}
             {!coverFile && currentCoverUrl && (
-              <p className="text-sm text-muted-foreground mt-2">Upload a new image to replace the current cover</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Upload a new image to replace the current {contentType === "video" ? "thumbnail" : "cover"}
+              </p>
+            )}
+            {contentType === "video" && (
+              <p className="text-xs text-muted-foreground mt-2">
+                💡 Tip: Animated GIFs work great as video thumbnails! Max 15MB.
+              </p>
             )}
           </div>
 

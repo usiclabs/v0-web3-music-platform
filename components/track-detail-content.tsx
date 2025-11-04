@@ -317,6 +317,9 @@ export function TrackDetailContent({
     console.log("[v0] Payment required for video chunk:", chunk)
   }
 
+  const coverUrl = track.content_type === "video" ? track.thumbnail_url : track.cover_url
+  const isGif = coverUrl?.toLowerCase().endsWith(".gif")
+
   return (
     <div className="min-h-screen pb-32 overflow-x-hidden relative">
       <div
@@ -364,13 +367,21 @@ export function TrackDetailContent({
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                <Image
-                  src={track.cover_url || "/placeholder.svg?height=400&width=400&query=album cover"}
-                  alt={track.title}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  priority
-                />
+                {isGif ? (
+                  <img
+                    src={coverUrl || "/placeholder.svg?height=400&width=400&query=album cover"}
+                    alt={track.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                ) : (
+                  <Image
+                    src={coverUrl || "/placeholder.svg?height=400&width=400&query=album cover"}
+                    alt={track.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    priority
+                  />
+                )}
 
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-t from-primary/30 to-transparent blur-2xl" />
               </div>

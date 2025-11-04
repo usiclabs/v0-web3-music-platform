@@ -144,6 +144,8 @@ export function TrackCard({ track, queue }: TrackCardProps) {
       ? track.thumbnail_url || "/video-thumbnail.png"
       : track.cover_url || "/abstract-soundscape.png"
 
+  const isGif = thumbnailUrl?.toLowerCase().endsWith(".gif")
+
   return (
     <Card className="bg-card/50 backdrop-blur-xl border border-border/50 group overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-primary/30">
       <div className="relative aspect-square overflow-hidden">
@@ -158,12 +160,21 @@ export function TrackCard({ track, queue }: TrackCardProps) {
             <span className="text-xs font-medium text-white">VIDEO</span>
           </div>
         )}
-        <Image
-          src={thumbnailUrl || "/placeholder.svg"}
-          alt={track.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        {isGif ? (
+          <img
+            src={thumbnailUrl || "/placeholder.svg"}
+            alt={track.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+          />
+        ) : (
+          <Image
+            src={thumbnailUrl || "/placeholder.svg"}
+            alt={track.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm flex items-center justify-center">
           {track.content_type === "video" ? (
             <Link href={`/track/${track.id}`}>

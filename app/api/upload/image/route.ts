@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File must be an image" }, { status: 400 })
     }
 
-    // Validate file size (max 5MB for images)
-    const maxSize = 5 * 1024 * 1024
+    // Validate file size (max 15MB for images/GIFs)
+    const maxSize = 15 * 1024 * 1024
     if (file.size > maxSize) {
-      return NextResponse.json({ error: "Image size must be less than 5MB" }, { status: 400 })
+      return NextResponse.json({ error: "Image size must be less than 15MB" }, { status: 400 })
     }
 
     // Determine bucket based on type

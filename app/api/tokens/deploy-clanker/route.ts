@@ -3,7 +3,14 @@ import { deployClankerERC20 } from "@/lib/erc20-deploy"
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error("[Clanker Token Deploy] Failed to parse request body:", parseError)
+      return NextResponse.json({ error: "Invalid request body: JSON parsing failed" }, { status: 400 })
+    }
+
     const { name, symbol, totalSupply, deployerAddress, trackId, coverImageUrl } = body
 
     console.log("[Clanker Token Deploy] Starting deployment:", { name, symbol, totalSupply, coverImageUrl })
@@ -37,8 +44,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[Clanker Token Deploy] Deployment failed:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
+
     return NextResponse.json(
       {
+        success: false,
         error: `Token deployment failed: ${errorMessage}`,
       },
       { status: 500 },
