@@ -6,6 +6,8 @@ import { TrackCard } from "@/components/track-card"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
+import Autoplay from "embla-carousel-autoplay"
 import { Play, ChevronRight, ChevronLeft, Music, Zap, Heart, TrendingUp, Sparkles, AlertCircle } from "lucide-react"
 import type { TrackWithArtist } from "@/types/database"
 import { useEffect, useState, useRef } from "react"
@@ -31,13 +33,15 @@ interface Category {
 
 export default function DiscoverPage() {
   const [featuredTracks, setFeaturedTracks] = useState<TrackWithStats[]>([])
-  const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0)
   const [newReleases, setNewReleases] = useState<TrackWithStats[]>([])
   const [trending, setTrending] = useState<TrackWithStats[]>([])
   const [forYou, setForYou] = useState<TrackWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { playTrack } = useAudioPlayer()
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>()
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [parallax, setParallax] = useState({ x: 0, y: 0 })
 
   const categories: Category[] = [
     {
@@ -79,14 +83,19 @@ export default function DiscoverPage() {
   }, [])
 
   useEffect(() => {
-    if (featuredTracks.length <= 1) return
+    if (!carouselApi) return
 
-    const interval = setInterval(() => {
-      setCurrentFeaturedIndex((prev) => (prev + 1) % featuredTracks.length)
-    }, 5000)
+    const onSelect = () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap())
+    }
 
-    return () => clearInterval(interval)
-  }, [featuredTracks.length])
+    carouselApi.on("select", onSelect)
+    onSelect()
+
+    return () => {
+      carouselApi.off("select", onSelect)
+    }
+  }, [carouselApi])
 
   async function loadAllContent() {
     setLoading(true)
@@ -263,89 +272,147 @@ export default function DiscoverPage() {
     </div>
   )
 
+  const handleParallaxMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    let clientX: number
+    let clientY: number
+
+    if ("touches" in e) {
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = (clientX - rect.left) / rect.width - 0.5
+    const y = (clientY - rect.top) / rect.height - 0.5
+
+    setParallax({ x: x * 20, y: y * 20 })
+  }
+
+  const handleParallaxLeave = () => {
+    setParallax({ x: 0, y: 0 })
+  }
+
   return (
     <div className="min-h-screen bg-black pb-32">
       {!loading && !error && featuredTracks.length > 0 && (
         <section className="relative h-[60vh] md:h-[70vh] overflow-hidden">
-          {featuredTracks.map((track, index) => (
-            <div
-              key={track.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index === currentFeaturedIndex ? "opacity-100 z-10" : "opacity-0 z-0"
-              }`}
-            >
-              <div className="absolute inset-0">
-                <Image
-                  src={track.cover_url || "/placeholder.svg?height=800&width=1600&query=music hero"}
-                  alt={track.title}
-                  fill
-                  className="object-cover"
-                  priority={index === 0}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent" />
-              </div>
-
-              <div className="relative container h-full flex items-end pb-12 px-4 sm:px-6">
-                <div className="max-w-2xl space-y-6 animate-fade-in">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-primary">Featured Track</span>
-                  </div>
-                  <h1 className="text-5xl md:text-7xl font-bold text-white text-balance leading-tight">
-                    {track.title}
-                  </h1>
-                  <Link href={`/artist/${track.artist_id}`}>
-                    <p className="text-xl md:text-2xl text-white/90 hover:text-primary transition-colors">
-                      {track.artist?.artist_name || `${track.artist_id.slice(0, 6)}...${track.artist_id.slice(-4)}`}
-                    </p>
-                  </Link>
-                  <div className="flex items-center gap-4 text-white/70">
-                    {track.play_count && track.play_count > 0 && (
-                      <span className="flex items-center gap-2">
-                        <Play className="h-4 w-4" />
-                        {track.play_count} plays
-                      </span>
-                    )}
-                    {track.like_count && track.like_count > 0 && (
-                      <span className="flex items-center gap-2">
-                        <Heart className="h-4 w-4" />
-                        {track.like_count} likes
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      size="lg"
-                      className="rounded-full px-8 h-14 text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform"
-                      onClick={() => playTrack(track, featuredTracks)}
+          <Carousel
+            setApi={setCarouselApi}
+            opts={{
+              loop: true,
+              duration: 30,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 5000,
+                stopOnInteraction: true,
+              }),
+            ]}
+            className="h-full"
+          >
+            <CarouselContent className="h-full ml-0">
+              {featuredTracks.map((track) => (
+                <CarouselItem key={track.id} className="pl-0 h-full">
+                  <div
+                    className="relative h-full"
+                    onMouseMove={handleParallaxMove}
+                    onMouseLeave={handleParallaxLeave}
+                    onTouchMove={handleParallaxMove}
+                    onTouchEnd={handleParallaxLeave}
+                    style={{
+                      perspective: "1000px",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 transition-transform duration-300 ease-out"
+                      style={{
+                        transform: `translate(${parallax.x * 0.3}px, ${parallax.y * 0.3}px) scale(1.1)`,
+                      }}
                     >
-                      <Play className="h-5 w-5 mr-2 fill-current" />
-                      Play Now
-                    </Button>
-                    <Link href={`/track/${track.id}`}>
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20"
-                      >
-                        View Details
-                      </Button>
-                    </Link>
+                      <Image
+                        src={track.cover_url || "/placeholder.svg?height=800&width=1600&query=music hero"}
+                        alt={track.title}
+                        fill
+                        className="object-cover"
+                        priority
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent" />
+                    </div>
+
+                    <div
+                      className="relative container h-full flex items-end pb-12 px-4 sm:px-6 transition-transform duration-300 ease-out"
+                      style={{
+                        transform: `translate(${parallax.x * 0.8}px, ${parallax.y * 0.8}px) rotateX(${-parallax.y * 0.3}deg) rotateY(${parallax.x * 0.3}deg)`,
+                        transformStyle: "preserve-3d",
+                      }}
+                    >
+                      <div className="max-w-2xl space-y-6 animate-fade-in">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-semibold text-primary">Featured Track</span>
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-bold text-white text-balance leading-tight">
+                          {track.title}
+                        </h1>
+                        <Link href={`/artist/${track.artist_id}`}>
+                          <p className="text-xl md:text-2xl text-white/90 hover:text-primary transition-colors">
+                            {track.artist?.artist_name ||
+                              `${track.artist_id.slice(0, 6)}...${track.artist_id.slice(-4)}`}
+                          </p>
+                        </Link>
+                        <div className="flex items-center gap-4 text-white/70">
+                          {track.play_count && track.play_count > 0 && (
+                            <span className="flex items-center gap-2">
+                              <Play className="h-4 w-4" />
+                              {track.play_count} plays
+                            </span>
+                          )}
+                          {track.like_count && track.like_count > 0 && (
+                            <span className="flex items-center gap-2">
+                              <Heart className="h-4 w-4" />
+                              {track.like_count} likes
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Button
+                            size="lg"
+                            className="rounded-full px-8 h-14 text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform"
+                            onClick={() => playTrack(track, featuredTracks)}
+                          >
+                            <Play className="h-5 w-5 mr-2 fill-current" />
+                            Play Now
+                          </Button>
+                          <Link href={`/track/${track.id}`}>
+                            <Button
+                              size="lg"
+                              variant="outline"
+                              className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20"
+                            >
+                              View Details
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
 
           {featuredTracks.length > 1 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
               {featuredTracks.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentFeaturedIndex(index)}
+                  onClick={() => carouselApi?.scrollTo(index)}
                   className={`h-2 rounded-full transition-all ${
-                    index === currentFeaturedIndex ? "w-8 bg-primary" : "w-2 bg-white/50 hover:bg-white/70"
+                    index === currentSlide ? "w-8 bg-primary" : "w-2 bg-white/50 hover:bg-white/70"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />

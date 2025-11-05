@@ -34,17 +34,8 @@ if (typeof window !== "undefined") {
   }
 }
 
-const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || ""
-const BASE_RPC = ALCHEMY_API_KEY
-  ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
-  : "https://mainnet.base.org" // Fallback to public Base RPC
-const BASE_SEPOLIA_RPC = ALCHEMY_API_KEY
-  ? `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
-  : "https://sepolia.base.org" // Fallback to public Base Sepolia RPC
-
-if (!ALCHEMY_API_KEY) {
-  console.warn("NEXT_PUBLIC_ALCHEMY_API_KEY is not set. Using public RPC endpoints (rate limited).")
-}
+const BASE_RPC = "https://mainnet.base.org"
+const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 
 // Configure wagmi
 export const config = createConfig({
