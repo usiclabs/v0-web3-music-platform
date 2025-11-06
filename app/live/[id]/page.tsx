@@ -104,22 +104,15 @@ export default function WatchStreamPage() {
     return () => clearInterval(interval)
   }, [stream?.id])
 
-  const playbackSrc = stream?.playback_id
-    ? [
-        {
-          src: `https://livepeercdn.studio/hls/${stream.playback_id}/index.m3u8`,
-          type: "application/vnd.apple.mpegurl" as const,
-        },
-      ]
-    : null
+  const playbackId = stream?.playback_id
 
   useEffect(() => {
-    if (playbackSrc) {
-      console.log("[v0] Playback source generated:", playbackSrc)
+    if (playbackId) {
+      console.log("[v0] Using playback ID:", playbackId)
     } else if (stream) {
-      console.log("[v0] No playback source - playback_id:", stream.playback_id)
+      console.log("[v0] No playback ID available")
     }
-  }, [playbackSrc, stream])
+  }, [playbackId, stream])
 
   if (loading) {
     return (
@@ -158,9 +151,9 @@ export default function WatchStreamPage() {
           <div className="lg:col-span-3">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
-                {playbackSrc ? (
+                {playbackId ? (
                   <Player.Root
-                    src={playbackSrc}
+                    src={playbackId}
                     autoPlay
                     onError={(error) => {
                       console.error("[v0] Livepeer Player error:", error)
