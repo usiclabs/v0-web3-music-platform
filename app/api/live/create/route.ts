@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract stream credentials
+    const livepeerStreamId = livepeerStream.id // The actual Livepeer stream ID
     const streamKey = livepeerStream.streamKey || livepeerStream.stream_key
     let playbackId = livepeerStream.playbackId || livepeerStream.playback_id || livepeerStream.id
 
@@ -94,9 +95,13 @@ export async function POST(request: NextRequest) {
       playbackId = playbackId.id || playbackId.playbackId
     }
 
-    console.log("[v0] Stream credentials extracted:", { hasStreamKey: !!streamKey, hasPlaybackId: !!playbackId })
+    console.log("[v0] Stream credentials extracted:", {
+      hasLivepeerStreamId: !!livepeerStreamId,
+      hasStreamKey: !!streamKey,
+      hasPlaybackId: !!playbackId,
+    })
 
-    if (!streamKey || !playbackId) {
+    if (!streamKey || !playbackId || !livepeerStreamId) {
       console.error("[v0] Missing stream credentials")
       return NextResponse.json({ error: "Invalid response from streaming service" }, { status: 500 })
     }
@@ -111,6 +116,7 @@ export async function POST(request: NextRequest) {
         artist_address: address.toLowerCase(),
         stream_key: streamKey,
         playback_id: playbackId,
+        livepeer_stream_id: livepeerStreamId, // Store the actual Livepeer stream ID
         title,
         description: description || "",
         is_live: false,

@@ -26,7 +26,7 @@ export default function StartLivePage() {
     trackCount: number
     requiredTracks: number
   } | null>(null)
-  const [checkingEligibility, setCheckingEligibility] = useState(false)
+  const [checkingEligibility, setCheckingEligibility] = useState(true) // Start as true to show loading initially
   const [eligibilityError, setEligibilityError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,25 +41,11 @@ export default function StartLivePage() {
       setCheckingEligibility(true)
       setEligibilityError(null)
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        console.log("[v0] Eligibility check timeout - aborting request")
-        controller.abort()
-      }, 10000) // 10 second timeout
-
       try {
-        console.log("[v0] Checking eligibility for address:", address)
-        const url = `/api/live/check-eligibility?address=${address}`
-        console.log("[v0] Fetching from URL:", url)
+        console.log("[v0] Fetching eligibility from API...")
+        const res = await fetch(`/api/live/check-eligibility?address=${address}`)
 
-        const res = await fetch(url, {
-          signal: controller.signal,
-        })
-
-        clearTimeout(timeoutId)
-        console.log("[v0] Eligibility check response received")
-        console.log("[v0] Eligibility check response status:", res.status)
-        console.log("[v0] Eligibility check response ok:", res.ok)
+        console.log("[v0] Eligibility API response status:", res.status)
 
         if (!res.ok) {
           const errorText = await res.text()
@@ -67,26 +53,15 @@ export default function StartLivePage() {
           throw new Error(`Failed to check eligibility: ${res.status}`)
         }
 
-        console.log("[v0] Parsing eligibility response...")
         const data = await res.json()
         console.log("[v0] Eligibility data received:", JSON.stringify(data))
-        console.log("[v0] Setting eligibility state to:", data)
         setEligibility(data)
-        console.log("[v0] Eligibility state updated successfully")
+        console.log("[v0] Eligibility state updated")
       } catch (error) {
-        clearTimeout(timeoutId)
         console.error("[v0] Error checking eligibility:", error)
-        console.error("[v0] Error type:", error instanceof Error ? error.constructor.name : typeof error)
-        console.error("[v0] Error message:", error instanceof Error ? error.message : String(error))
-
-        if (error instanceof Error && error.name === "AbortError") {
-          console.log("[v0] Request was aborted due to timeout")
-          setEligibilityError("Request timed out. Please check your connection and try again.")
-        } else {
-          setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
-        }
+        setEligibilityError(error instanceof Error ? error.message : "Failed to check eligibility")
       } finally {
-        console.log("[v0] Eligibility check complete, setting checkingEligibility to false")
+        console.log("[v0] Setting checkingEligibility to false")
         setCheckingEligibility(false)
       }
     }
@@ -94,12 +69,7 @@ export default function StartLivePage() {
     checkEligibility()
   }, [address, isConnected])
 
-  console.log("[v0] Render state:", {
-    isConnected,
-    checkingEligibility,
-    eligibilityError,
-    eligibility,
-  })
+  console.log("[v0] StartLivePage render - checkingEligibility:", checkingEligibility, "eligibility:", eligibility)
 
   const handleCreateStream = async () => {
     if (!title.trim()) {
@@ -160,6 +130,7 @@ export default function StartLivePage() {
   }
 
   if (checkingEligibility) {
+    console.log("[v0] Rendering loading spinner")
     return (
       <div className="min-h-screen pb-32 bg-black flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking eligibility..." />

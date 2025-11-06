@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import { VerifiedBadge } from "@/components/verified-badge"
 import type { Address } from "viem"
 
 type Artist = {
@@ -19,6 +20,7 @@ type Artist = {
   trackCount: number
   followerCount: number
   profile_token_address?: string | null
+  verified?: boolean // Add verified field to type
 }
 
 interface ArtistsFeedProps {
@@ -182,9 +184,12 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <h1 className="text-3xl md:text-6xl font-bold text-white text-balance leading-tight group-hover:text-primary transition-all duration-300 mb-1">
-                          {artist.artist_name || "Unknown Artist"}
-                        </h1>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h1 className="text-3xl md:text-6xl font-bold text-white text-balance leading-tight group-hover:text-primary transition-all duration-300">
+                            {artist.artist_name || "Unknown Artist"}
+                          </h1>
+                          {artist.verified && <VerifiedBadge size="lg" />}
+                        </div>
                         <p className="text-base md:text-lg text-white/70">{formatAddress(artist.wallet_address)}</p>
                       </div>
                     </div>

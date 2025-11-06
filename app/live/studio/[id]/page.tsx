@@ -14,6 +14,7 @@ import { createPublicClient, http, formatUnits } from "viem"
 import { base } from "viem/chains"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
 import Link from "next/link"
+import { LivestreamChat } from "@/components/livestream-chat"
 
 function BroadcastStateTracker({ onStateChange }: { onStateChange: (enabled: boolean) => void }) {
   const broadcast = useBroadcastContext()
@@ -331,8 +332,8 @@ export default function StudioPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-4">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
                 {ingestUrl ? (
@@ -541,82 +542,74 @@ export default function StudioPage() {
             )}
           </div>
 
-          <div className="space-y-4">
-            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4">
-              <h3 className="font-semibold mb-3">Stream Info</h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Title:</span>
-                  <p className="font-medium">{stream.title}</p>
-                </div>
-                {stream.description && (
-                  <div>
-                    <span className="text-muted-foreground">Description:</span>
-                    <p className="font-medium">{stream.description}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <p className="font-medium">
-                    {isLive ? (
-                      <span className="text-red-500 flex items-center gap-1">
-                        <Radio className="h-3 w-3" />
-                        Live
-                      </span>
-                    ) : isBroadcasting ? (
-                      <span className="text-green-500 flex items-center gap-1">
-                        <Video className="h-3 w-3" />
-                        Broadcasting (Not Public)
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Offline</span>
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Livepeer Status:</span>
-                  <p className="font-medium">
-                    {livepeerActive ? (
-                      <span className="text-green-500 flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Receiving Video
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">No Video</span>
-                    )}
-                  </p>
-                </div>
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 space-y-4">
+              <div className="h-[400px]">
+                <LivestreamChat streamId={stream.id} />
               </div>
-            </Card>
 
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                <strong>How to go live:</strong>
-                <ol className="list-decimal list-inside mt-2 space-y-1">
-                  <li>Click "Start Broadcast" to begin streaming</li>
-                  <li>Allow camera and microphone access</li>
-                  <li>Wait for "Livepeer Receiving" badge (5-10 sec)</li>
-                  <li>Click "Go Live" to make stream public</li>
-                  <li>Viewers can now see and hear you</li>
-                  <li>Click "End Stream" when finished</li>
-                </ol>
-              </AlertDescription>
-            </Alert>
+              <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4">
+                <h3 className="font-semibold mb-3">Stream Info</h3>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Title:</span>
+                    <p className="font-medium">{stream.title}</p>
+                  </div>
+                  {stream.description && (
+                    <div>
+                      <span className="text-muted-foreground">Description:</span>
+                      <p className="font-medium">{stream.description}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <p className="font-medium">
+                      {isLive ? (
+                        <span className="text-red-500 flex items-center gap-1">
+                          <Radio className="h-3 w-3" />
+                          Live
+                        </span>
+                      ) : isBroadcasting ? (
+                        <span className="text-green-500 flex items-center gap-1">
+                          <Video className="h-3 w-3" />
+                          Broadcasting (Not Public)
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Offline</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Livepeer Status:</span>
+                    <p className="font-medium">
+                      {livepeerActive ? (
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Receiving Video
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">No Video</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </Card>
 
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                <strong>Tips for success:</strong>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Ensure good lighting and stable internet</li>
-                  <li>Test audio levels before going live</li>
-                  <li>Position camera at eye level</li>
-                  <li>Engage with viewers in real-time</li>
-                  <li>Use a wired connection if possible</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>How to go live:</strong>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Click "Start Broadcast" to begin streaming</li>
+                    <li>Allow camera and microphone access</li>
+                    <li>Wait for "Livepeer Receiving" badge (5-10 sec)</li>
+                    <li>Click "Go Live" to make stream public</li>
+                    <li>Viewers can now see and hear you</li>
+                    <li>Click "End Stream" when finished</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
+            </div>
           </div>
         </div>
       </main>

@@ -3,28 +3,8 @@
 import { useState, useEffect } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Droplet,
-  Plus,
-  Minus,
-  Wallet,
-  Loader2,
-  Info,
-  AlertCircle,
-  Coins,
-  DollarSign,
-  BarChart3,
-  Settings,
-  ArrowUpRight,
-  ExternalLink,
-  Sparkles,
-  Activity,
-} from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Droplet, Wallet, DollarSign, BarChart3, ArrowUpRight } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import {
   UNISWAP_V3_POSITION_MANAGER,
@@ -39,7 +19,6 @@ import { useReadContract, useWriteContract, usePublicClient } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
 import confetti from "canvas-confetti"
 import { createClient } from "@/lib/supabase/client"
-import Image from "next/image"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -351,20 +330,48 @@ export default function LPManagerPage() {
 
       console.log(`[v0] Loading ${count} positions...`)
 
-      for (let i = 0; i < count; i++) {
-        const tokenId = await publicClient.readContract({
-          address: UNISWAP_V3_POSITION_MANAGER[chainId as keyof typeof UNISWAP_V3_POSITION_MANAGER] as `0x${string}`,
-          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-          functionName: "tokenOfOwnerByIndex",
-          args: [address, BigInt(i)],
-        })
+      const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-        const position = await publicClient.readContract({
-          address: UNISWAP_V3_POSITION_MANAGER[chainId as keyof typeof UNISWAP_V3_POSITION_MANAGER] as `0x${string}`,
-          abi: UNISWAP_V3_POSITION_MANAGER_ABI,
-          functionName: "positions",
-          args: [tokenId as bigint],
-        })
+      const retryWithBackoff = async <T,>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> => {
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await fn()
+          } catch (error: any) {
+            const isRateLimit = error?.message?.includes("rate limit") || error?.message?.includes("429")
+            if (isRateLimit && i < maxRetries - 1) {
+              const waitTime = baseDelay * Math.pow(2, i)
+              console.log(`[v0] Rate limited, waiting ${waitTime}ms before retry ${i + 1}/${maxRetries}`)
+              await delay(waitTime)
+              continue
+            }
+            throw error
+          }
+        }
+        throw new Error("Max retries exceeded")
+      }
+
+      for (let i = 0; i < count; i++) {
+        if (i > 0) {
+          await delay(500) // 500ms delay between requests
+        }
+
+        const tokenId = await retryWithBackoff(() =>
+          publicClient.readContract({
+            address: UNISWAP_V3_POSITION_MANAGER[chainId as keyof typeof UNISWAP_V3_POSITION_MANAGER] as `0x${string}`,
+            abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+            functionName: "tokenOfOwnerByIndex",
+            args: [address, BigInt(i)],
+          }),
+        )
+
+        const position = await retryWithBackoff(() =>
+          publicClient.readContract({
+            address: UNISWAP_V3_POSITION_MANAGER[chainId as keyof typeof UNISWAP_V3_POSITION_MANAGER] as `0x${string}`,
+            abi: UNISWAP_V3_POSITION_MANAGER_ABI,
+            functionName: "positions",
+            args: [tokenId as bigint],
+          }),
+        )
 
         if (position && Array.isArray(position)) {
           const pos: LiquidityPosition = {
@@ -750,541 +757,36 @@ export default function LPManagerPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-card via-card/80 to-card/50 border-border/50 backdrop-blur-xl hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Active Positions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                {positions.length}
-              </span>
-              <span className="text-sm text-muted-foreground">LP NFTs</span>
-            </div>
-            {positions.length > 0 && (
-              <div className="mt-2 flex items-center gap-1 text-xs text-green-500">
-                <Activity className="h-3 w-3 animate-pulse" />
-                <span>Earning fees</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border-blue-500/20 backdrop-blur-xl hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <Card className="bg-gradient-to-br from-card via-card/80 to-card/50 border-border/50 p-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <DollarSign className="h-4 w-4" />
-              Total Value Locked
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-blue-500">
-                ${totalTVL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
+              <span>Total Value Locked</span>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              Across {positions.length} {positions.length === 1 ? "position" : "positions"}
-            </div>
-          </CardContent>
+            <p className="text-3xl font-bold">${totalTVL.toFixed(2)}</p>
+          </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-green-500/20 backdrop-blur-xl hover:shadow-xl hover:shadow-green-500/10 transition-all duration-300">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Coins className="h-4 w-4" />
-              Unclaimed Fees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-green-500">
-                ${totalUnclaimedFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
+        <Card className="bg-gradient-to-br from-card via-card/80 to-card/50 border-border/50 p-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <BarChart3 className="h-4 w-4" />
+              <span>Active Positions</span>
             </div>
-            {totalUnclaimedFees > 0 && (
-              <div className="mt-2 flex items-center gap-1 text-xs text-green-500">
-                <ArrowUpRight className="h-3 w-3 animate-bounce" />
-                <span>Ready to collect</span>
-              </div>
-            )}
-          </CardContent>
+            <p className="text-3xl font-bold">{positions.length}</p>
+          </div>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-card via-card/80 to-card/50 border-border/50 p-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Droplet className="h-4 w-4" />
+              <span>Unclaimed Fees</span>
+            </div>
+            <p className="text-3xl font-bold">${totalUnclaimedFees.toFixed(2)}</p>
+          </div>
         </Card>
       </div>
-
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-muted/50">
-          <TabsTrigger value="positions" className="data-[state=active]:bg-background">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            My Positions
-          </TabsTrigger>
-          <TabsTrigger value="add" className="data-[state=active]:bg-background">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Liquidity
-          </TabsTrigger>
-          <TabsTrigger value="create" className="data-[state=active]:bg-background">
-            <Settings className="h-4 w-4 mr-2" />
-            Create Pool
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="positions" className="space-y-4 mt-6">
-          {isLoadingPositions ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="bg-gradient-to-br from-card to-card/50 border-border/50">
-                  <CardHeader>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex items-center -space-x-2">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                      </div>
-                      <div className="flex-1">
-                        <Skeleton className="h-5 w-32 mb-2" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-20 w-full rounded-lg" />
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Skeleton className="h-16 rounded-lg" />
-                      <Skeleton className="h-16 rounded-lg" />
-                    </div>
-                    <Skeleton className="h-24 rounded-lg" />
-                    <div className="flex gap-2">
-                      <Skeleton className="h-9 flex-1" />
-                      <Skeleton className="h-9 flex-1" />
-                      <Skeleton className="h-9 w-9" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : positions.length === 0 ? (
-            <Card className="border-dashed border-2">
-              <CardContent className="flex flex-col items-center justify-center py-20">
-                <div className="rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-8 mb-6 animate-pulse">
-                  <Droplet className="h-20 w-20 text-primary/50" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2">No Liquidity Positions</h3>
-                <p className="text-muted-foreground text-center max-w-md mb-8">
-                  You don't have any active liquidity positions yet. Add liquidity to start earning trading fees from
-                  every swap.
-                </p>
-                <Button onClick={() => setActiveTab("add")} size="lg" className="gap-2">
-                  <Plus className="h-5 w-5" />
-                  Add Your First Position
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {positions.map((position) => (
-                <Card
-                  key={position.tokenId.toString()}
-                  className="bg-gradient-to-br from-card via-card/90 to-card/50 border-border/50 backdrop-blur-xl hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 hover:scale-[1.02] group"
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center -space-x-3">
-                          {position.token0Metadata?.image && (
-                            <div className="relative h-12 w-12 rounded-full border-2 border-background overflow-hidden bg-muted ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
-                              <Image
-                                src={position.token0Metadata.image || "/placeholder.svg"}
-                                alt={position.token0Metadata.symbol}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                          {position.token1Metadata?.image && (
-                            <div className="relative h-12 w-12 rounded-full border-2 border-background overflow-hidden bg-muted ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
-                              <Image
-                                src={position.token1Metadata.image || "/placeholder.svg"}
-                                alt={position.token1Metadata.symbol}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl font-bold">
-                            {position.token0Metadata?.symbol || "???"} / {position.token1Metadata?.symbol || "???"}
-                          </CardTitle>
-                          <CardDescription className="text-xs">
-                            Position #{position.tokenId.toString().slice(0, 8)}...
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-semibold">
-                        {(position.fee / 10000).toFixed(2)}%
-                      </div>
-                    </div>
-
-                    {position.totalValueUSD !== undefined && position.totalValueUSD > 0 && (
-                      <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 border border-blue-500/20 rounded-xl p-4 backdrop-blur-sm">
-                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          Position Value
-                        </div>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                          $
-                          {position.totalValueUSD.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="bg-muted/50 rounded-lg p-3 hover:bg-muted/70 transition-colors">
-                        <p className="text-muted-foreground mb-1 text-xs flex items-center gap-1">
-                          <Droplet className="h-3 w-3" />
-                          Liquidity
-                        </p>
-                        <p className="font-semibold text-sm">{position.liquidity.toString().slice(0, 10)}...</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-3 hover:bg-muted/70 transition-colors">
-                        <p className="text-muted-foreground mb-1 text-xs flex items-center gap-1">
-                          <BarChart3 className="h-3 w-3" />
-                          Price Range
-                        </p>
-                        <p className="font-semibold text-xs">Full Range</p>
-                      </div>
-                    </div>
-
-                    {(position.tokensOwed0 > 0n || position.tokensOwed1 > 0n) && (
-                      <div className="rounded-xl bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 border border-green-500/20 p-4 backdrop-blur-sm hover:shadow-lg hover:shadow-green-500/20 transition-all">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="text-sm font-medium text-green-600 mb-1 flex items-center gap-1">
-                              <Coins className="h-4 w-4" />
-                              Unclaimed Fees
-                            </p>
-                            {position.feesUSD !== undefined && position.feesUSD > 0 && (
-                              <p className="text-2xl font-bold text-green-500">
-                                $
-                                {position.feesUSD.toLocaleString(undefined, {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </p>
-                            )}
-                          </div>
-                          <div className="rounded-full bg-green-500/20 p-3">
-                            <Coins className="h-6 w-6 text-green-500" />
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleCollectFees(position.tokenId)}
-                          className="w-full bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20"
-                        >
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          Collect Fees
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 bg-transparent hover:bg-primary/10" size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                      <Button variant="outline" className="flex-1 bg-transparent hover:bg-destructive/10" size="sm">
-                        <Minus className="h-4 w-4 mr-2" />
-                        Remove
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="bg-transparent hover:bg-muted"
-                        size="sm"
-                        onClick={() => {
-                          window.open(
-                            `https://basescan.org/token/${UNISWAP_V3_POSITION_MANAGER[chainId as keyof typeof UNISWAP_V3_POSITION_MANAGER]}?a=${position.tokenId}`,
-                            "_blank",
-                          )
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Add Liquidity Tab */}
-        <TabsContent value="add" className="space-y-6 mt-6">
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle>Add Liquidity to Pool</CardTitle>
-              <CardDescription>Provide liquidity to earn trading fees from swaps</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Quick Select Tokenized Tracks */}
-              {tokenizedTracks.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Quick Select: Tokenized Tracks</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {tokenizedTracks.slice(0, 4).map((track) => (
-                      <Button
-                        key={track.id}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setToken1Address(track.coin_address)
-                          setToken0Address(WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS])
-                        }}
-                        className="justify-start gap-2 bg-transparent"
-                      >
-                        {track.cover_url && (
-                          <div className="relative h-6 w-6 rounded overflow-hidden flex-shrink-0">
-                            <Image
-                              src={track.cover_url || "/placeholder.svg"}
-                              alt={track.title}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                        <span className="truncate">{track.title}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="token0">Token 0 Address</Label>
-                  <Input
-                    id="token0"
-                    placeholder="0x..."
-                    value={token0Address}
-                    onChange={(e) => setToken0Address(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="token1">Token 1 Address</Label>
-                  <Input
-                    id="token1"
-                    placeholder="0x..."
-                    value={token1Address}
-                    onChange={(e) => setToken1Address(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Fee Tier</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[500, 3000, 10000].map((fee) => (
-                    <Button
-                      key={fee}
-                      variant={feeTier === fee ? "default" : "outline"}
-                      onClick={() => setFeeTier(fee as any)}
-                      className={feeTier !== fee ? "bg-transparent" : ""}
-                    >
-                      {(fee / 10000).toFixed(2)}%
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {isCheckingPool && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Checking pool availability...</span>
-                </div>
-              )}
-
-              {poolExists === false && (
-                <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">Pool doesn't exist</p>
-                    <p className="text-xs mt-1">You need to create this pool first in the "Create Pool" tab</p>
-                  </div>
-                </div>
-              )}
-
-              {poolExists === true && (
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span>Pool exists - ready to add liquidity</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount0">Token 0 Amount</Label>
-                  <Input
-                    id="amount0"
-                    type="number"
-                    placeholder="0.0"
-                    value={amount0}
-                    onChange={(e) => setAmount0(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount1">Token 1 Amount</Label>
-                  <Input
-                    id="amount1"
-                    type="number"
-                    placeholder="0.0"
-                    value={amount1}
-                    onChange={(e) => setAmount1(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                <p>
-                  This will add liquidity across the full price range. You'll earn fees from all trades in this pool.
-                  Concentrated liquidity ranges coming soon.
-                </p>
-              </div>
-
-              <Button
-                onClick={handleAddLiquidity}
-                disabled={
-                  !token0Address || !token1Address || !amount0 || !amount1 || poolExists === false || isAddingLiquidity
-                }
-                className="w-full"
-                size="lg"
-              >
-                {isAddingLiquidity ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Adding Liquidity...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Liquidity
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Create Pool Tab */}
-        <TabsContent value="create" className="space-y-6 mt-6">
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle>Create New Uniswap V3 Pool</CardTitle>
-              <CardDescription>Initialize a new liquidity pool for a token pair</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="create-token0">Token 0 Address</Label>
-                  <Input
-                    id="create-token0"
-                    placeholder="0x..."
-                    value={createToken0}
-                    onChange={(e) => setCreateToken0(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="create-token1">Token 1 Address</Label>
-                  <Input
-                    id="create-token1"
-                    placeholder="0x..."
-                    value={createToken1}
-                    onChange={(e) => setCreateToken1(e.target.value)}
-                    className="bg-background/50"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Fee Tier</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[500, 3000, 10000].map((fee) => (
-                    <Button
-                      key={fee}
-                      variant={createFeeTier === fee ? "default" : "outline"}
-                      onClick={() => setCreateFeeTier(fee as any)}
-                      className={createFeeTier !== fee ? "bg-transparent" : ""}
-                    >
-                      {(fee / 10000).toFixed(2)}%
-                    </Button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  0.05% for stablecoins, 0.3% for most pairs, 1% for exotic pairs
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="initial-price">Initial Price (Token1/Token0)</Label>
-                <Input
-                  id="initial-price"
-                  type="number"
-                  placeholder="1.0"
-                  value={initialPrice}
-                  onChange={(e) => setInitialPrice(e.target.value)}
-                  className="bg-background/50"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Set the starting price for this pool. This determines the initial exchange rate.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2 text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium">Important</p>
-                  <p className="mt-1">
-                    Creating a pool is permanent and cannot be undone. Make sure the token addresses and initial price
-                    are correct.
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleCreatePool}
-                disabled={!createToken0 || !createToken1 || !initialPrice || isCreatingPool}
-                className="w-full"
-                size="lg"
-              >
-                {isCreatingPool ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating Pool...
-                  </>
-                ) : (
-                  <>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Create Pool
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

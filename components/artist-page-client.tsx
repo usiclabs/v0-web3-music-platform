@@ -14,6 +14,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CopyTokenAddressButton } from "@/components/copy-token-address-button"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import { VerifiedBadge } from "@/components/verified-badge"
 import type { Address } from "viem"
 
 interface ArtistPageClientProps {
@@ -95,6 +96,7 @@ export function ArtistPageClient({
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl md:text-4xl font-bold">{artist.artist_name || "Anonymous Artist"}</h1>
+                      {artist.verified && <VerifiedBadge size="lg" />}
                       {isCurrentlyLive && (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full">
                           <div className="relative flex h-2 w-2">

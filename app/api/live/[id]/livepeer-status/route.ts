@@ -10,10 +10,21 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Get stream from database
     const supabase = await createClient()
-    const { data: stream, error } = await supabase.from("live_streams").select("playback_id").eq("id", id).single()
+    const { data: stream, error } = await supabase
+      .from("live_streams")
+      .select("livepeer_stream_id, playback_id")
+      .eq("id", id)
+      .single()
 
     if (error || !stream) {
       return NextResponse.json({ error: "Stream not found" }, { status: 404 })
+    }
+
+    const streamIdToCheck = stream.livepeer_stream_id || stream.playback_id
+
+    if (!streamIdToCheck) {
+      console.error("[v0] No Livepeer stream ID found")
+      return NextResponse.json({ error: "Stream not properly configured" }, { status: 500 })
     }
 
     if (!LIVEPEER_API_KEY) {
@@ -21,22 +32,32 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Streaming service not configured" }, { status: 500 })
     }
 
-    // Check Livepeer stream status
-    const livepeerResponse = await fetch(`${LIVEPEER_API_URL}/stream/${stream.playback_id}`, {
+    const livepeerResponse = await fetch(`${LIVEPEER_API_URL}/stream/${streamIdToCheck}`, {
       headers: {
         Authorization: `Bearer ${LIVEPEER_API_KEY}`,
       },
     })
 
     if (!livepeerResponse.ok) {
-      console.error("[v0] Livepeer API error:", await livepeerResponse.text())
+      const errorText = await livepeerResponse.text()
+      console.error("[v0] Livepeer API error:", errorText)
+
+      if (livepeerResponse.status === 404) {
+        return NextResponse.json({
+          isActive: false,
+          isHealthy: false,
+          lastSeen: null,
+          issues: ["Stream not found in Livepeer - it may not have started yet"],
+        })
+      }
+
       return NextResponse.json({ error: "Failed to check stream status" }, { status: 500 })
     }
 
     const livepeerStream = await livepeerResponse.json()
 
     console.log("[v0] Livepeer stream status:", {
-      id: stream.playback_id,
+      id: streamIdToCheck,
       isActive: livepeerStream.isActive,
       isHealthy: livepeerStream.isHealthy,
     })

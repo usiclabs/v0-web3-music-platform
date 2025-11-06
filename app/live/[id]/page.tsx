@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Radio, Eye, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import * as Player from "@livepeer/react/player"
+import { LivestreamChat } from "@/components/livestream-chat"
 
 export default function WatchStreamPage() {
   const params = useParams()
@@ -153,8 +154,8 @@ export default function WatchStreamPage() {
           </Link>
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
                 {playbackSrc ? (
@@ -324,38 +325,10 @@ export default function WatchStreamPage() {
             </Card>
           </div>
 
-          <div>
-            <Card className="bg-card/50 backdrop-blur-xl border border-border/50 p-4">
-              <h3 className="font-semibold mb-3">Stream Info</h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <p className="font-medium">
-                    {stream.is_live ? (
-                      <span className="text-green-500">Live</span>
-                    ) : (
-                      <span className="text-muted-foreground">Offline</span>
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Video Status:</span>
-                  <p className="font-medium">
-                    {livepeerActive ? (
-                      <span className="text-green-500">Broadcasting</span>
-                    ) : (
-                      <span className="text-muted-foreground">No Video</span>
-                    )}
-                  </p>
-                </div>
-                {stream.started_at && (
-                  <div>
-                    <span className="text-muted-foreground">Started:</span>
-                    <p className="font-medium">{new Date(stream.started_at).toLocaleString()}</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 h-[calc(100vh-8rem)]">
+              <LivestreamChat streamId={stream.id} />
+            </div>
           </div>
         </div>
       </main>

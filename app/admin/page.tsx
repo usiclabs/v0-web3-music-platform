@@ -48,6 +48,7 @@ import {
   ArrowRight,
   Flag,
   X,
+  XCircle,
 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
@@ -2178,24 +2179,85 @@ export default function AdminPage() {
         </Tabs>
 
         <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>User Details</DialogTitle>
+              <DialogTitle className="text-xl">User Details</DialogTitle>
               <DialogDescription>View and manage user information</DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center">
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/10 border border-border/50">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-border/50 flex items-center justify-center flex-shrink-0">
                     <Users className="h-8 w-8 text-primary" />
                   </div>
-                  <div>
-                    <p className="font-semibold">{selectedUser.artist_name || "Anonymous"}</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {selectedUser.wallet_address.slice(0, 10)}...{selectedUser.wallet_address.slice(-8)}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-lg truncate">{selectedUser.artist_name || "Anonymous"}</p>
+                    <p className="text-sm text-muted-foreground font-mono truncate">{selectedUser.wallet_address}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Joined {new Date(selectedUser.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/10 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    {selectedUser.verified ? (
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-muted-foreground" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm">Verification Status</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedUser.verified ? "This profile is verified" : "This profile is not verified"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={selectedUser.verified ? "destructive" : "default"}
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/admin/users/${selectedUser.wallet_address}/verify`, {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "x-wallet-address": address || "",
+                          },
+                          body: JSON.stringify({ verified: !selectedUser.verified }),
+                        })
+
+                        if (!response.ok) {
+                          throw new Error("Failed to update verification status")
+                        }
+
+                        toast({
+                          title: selectedUser.verified ? "Verification Removed" : "Profile Verified",
+                          description: selectedUser.verified
+                            ? "User verification has been removed"
+                            : "User profile has been verified",
+                        })
+
+                        // Update local state
+                        setSelectedUser({ ...selectedUser, verified: !selectedUser.verified })
+                        setUsers(
+                          users.map((u) =>
+                            u.wallet_address === selectedUser.wallet_address ? { ...u, verified: !u.verified } : u,
+                          ),
+                        )
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to update verification status",
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                  >
+                    {selectedUser.verified ? "Remove Verification" : "Verify Profile"}
+                  </Button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <Card className="bg-muted/10 border-border/50 p-3">
                     <p className="text-xs text-muted-foreground mb-1">Tracks</p>

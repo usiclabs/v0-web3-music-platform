@@ -11,7 +11,6 @@ import {
   Music,
   Play,
   TrendingUp,
-  Edit2,
   Upload,
   DollarSign,
 } from "lucide-react"
@@ -294,10 +293,6 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground font-mono">{formatAddress(address!)}</p>
                     {profile?.bio && <p className="mt-2 text-sm sm:text-base text-muted-foreground">{profile.bio}</p>}
                   </div>
-                  <Button variant="outline" size="sm" className="shrink-0 bg-transparent">
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
                 </div>
 
                 {/* Stats Grid */}
