@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,17 +8,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Radio, Eye, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import * as Player from "@livepeer/react/player"
 import { LivestreamChat } from "@/components/livestream-chat"
 
 export default function WatchStreamPage() {
   const params = useParams()
   const router = useRouter()
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<any>(null)
+  const retryCountRef = useRef(0)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [stream, setStream] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [playerError, setPlayerError] = useState<string | null>(null)
   const [livepeerActive, setLivepeerActive] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [videoLoading, setVideoLoading] = useState(true)
+  const [retryMessage, setRetryMessage] = useState<string>("")
 
   useEffect(() => {
     const originalError = console.error
@@ -104,22 +110,198 @@ export default function WatchStreamPage() {
     return () => clearInterval(interval)
   }, [stream?.id])
 
-  const playbackSrc = stream?.playback_id
-    ? [
-        {
-          src: `https://livepeercdn.com/hls/${stream.playback_id}/index.m3u8`,
-          type: "application/vnd.apple.mpegurl" as const,
-        },
-      ]
-    : null
-
   useEffect(() => {
-    if (playbackSrc) {
-      console.log("[v0] Playback source generated:", playbackSrc)
-    } else if (stream) {
-      console.log("[v0] No playback source - playback_id:", stream.playback_id)
+    if (!stream?.playback_id || !videoRef.current) return
+
+    const video = videoRef.current
+    const hlsUrl = `https://livepeercdn.com/hls/${stream.playback_id}/index.m3u8`
+
+    console.log("[v0] Setting up video player with HLS URL:", hlsUrl)
+
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+
+    retryCountRef.current = 0
+    setRetryMessage("")
+
+    if (isSafari) {
+      console.log("[v0] Using native HLS support (Safari)")
+      video.src = hlsUrl
+      video.load()
+    } else {
+      console.log("[v0] Loading HLS.js for video playback")
+
+      const script = document.createElement("script")
+      script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest"
+      script.async = true
+
+      script.onload = () => {
+        if (window.Hls && window.Hls.isSupported()) {
+          console.log("[v0] HLS.js loaded and supported")
+
+          const initializeHls = () => {
+            if (hlsRef.current) {
+              hlsRef.current.destroy()
+            }
+
+            const hls = new window.Hls({
+              enableWorker: true,
+              lowLatencyMode: true,
+              maxBufferLength: 10,
+              maxMaxBufferLength: 20,
+            })
+
+            hlsRef.current = hls
+
+            hls.loadSource(hlsUrl)
+            hls.attachMedia(video)
+
+            hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+              console.log("[v0] HLS manifest parsed successfully")
+              setVideoLoading(false)
+              setRetryMessage("")
+              retryCountRef.current = 0
+              video.play().catch((e) => {
+                console.error("[v0] Autoplay failed:", e)
+                setPlayerError("Click play to start the stream")
+              })
+            })
+
+            hls.on(window.Hls.Events.ERROR, (event: any, data: any) => {
+              console.error("[v0] HLS.js error:", { type: data.type, details: data.details, fatal: data.fatal })
+
+              if (data.fatal) {
+                switch (data.type) {
+                  case window.Hls.ErrorTypes.NETWORK_ERROR:
+                    if (data.details === "manifestParsingError" || data.details === "manifestLoadError") {
+                      const maxRetries = 10
+                      const retryDelay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000)
+
+                      if (retryCountRef.current < maxRetries) {
+                        retryCountRef.current++
+                        console.log(
+                          `[v0] Manifest not ready, retry ${retryCountRef.current}/${maxRetries} in ${retryDelay}ms`,
+                        )
+                        setRetryMessage(`Stream is starting... (attempt ${retryCountRef.current}/${maxRetries})`)
+
+                        if (retryTimeoutRef.current) {
+                          clearTimeout(retryTimeoutRef.current)
+                        }
+
+                        retryTimeoutRef.current = setTimeout(() => {
+                          console.log("[v0] Retrying HLS initialization")
+                          initializeHls()
+                        }, retryDelay)
+                      } else {
+                        console.error("[v0] Max retries reached, giving up")
+                        setPlayerError("Stream is not available. The broadcaster may not have started streaming yet.")
+                        setVideoLoading(false)
+                        setRetryMessage("")
+                      }
+                    } else {
+                      console.error("[v0] Network error, trying to recover")
+                      hls.startLoad()
+                    }
+                    break
+                  case window.Hls.ErrorTypes.MEDIA_ERROR:
+                    console.error("[v0] Media error, trying to recover")
+                    hls.recoverMediaError()
+                    break
+                  default:
+                    console.error("[v0] Fatal error, cannot recover")
+                    setPlayerError("Stream playback error. Please refresh the page.")
+                    setVideoLoading(false)
+                    hls.destroy()
+                    break
+                }
+              }
+            })
+          }
+
+          initializeHls()
+        } else {
+          console.error("[v0] HLS.js not supported")
+          setPlayerError("Your browser doesn't support HLS playback")
+        }
+      }
+
+      script.onerror = () => {
+        console.error("[v0] Failed to load HLS.js")
+        setPlayerError("Failed to load video player")
+      }
+
+      document.head.appendChild(script)
+
+      return () => {
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        if (hlsRef.current) {
+          console.log("[v0] Cleaning up HLS.js")
+          hlsRef.current.destroy()
+          hlsRef.current = null
+        }
+        if (document.head.contains(script)) {
+          document.head.removeChild(script)
+        }
+      }
     }
-  }, [playbackSrc, stream])
+  }, [stream?.playback_id])
+
+  const handleVideoCanPlay = () => {
+    console.log("[v0] Video can play")
+    setVideoLoading(false)
+    setPlayerError(null)
+  }
+
+  const handleVideoPlaying = () => {
+    console.log("[v0] Video is playing")
+    setIsPlaying(true)
+    setVideoLoading(false)
+  }
+
+  const handleVideoWaiting = () => {
+    console.log("[v0] Video is buffering")
+    setVideoLoading(true)
+  }
+
+  const handleVideoError = (e: any) => {
+    const video = e.target as HTMLVideoElement
+    const error = video.error
+
+    console.error("[v0] Video error event:", {
+      hasError: !!error,
+      errorCode: error?.code,
+      errorMessage: error?.message,
+      videoSrc: video.src,
+      videoReadyState: video.readyState,
+      videoNetworkState: video.networkState,
+    })
+
+    if (error) {
+      let errorMessage = "Failed to load video stream"
+      switch (error.code) {
+        case 1:
+          errorMessage = "Video loading was aborted. Please refresh to try again."
+          break
+        case 2:
+          errorMessage = "Network error while loading video. Check your connection."
+          break
+        case 3:
+          errorMessage = "Video format error. The stream may have encoding issues."
+          break
+        case 4:
+          errorMessage = "Video source not supported. The stream may not be ready yet."
+          break
+      }
+
+      setPlayerError(errorMessage)
+    } else {
+      console.error("[v0] Video error with no error object - stream may not be ready")
+      setPlayerError("Stream is not ready yet. Please wait for the broadcaster to start streaming.")
+    }
+
+    setVideoLoading(false)
+  }
 
   if (loading) {
     return (
@@ -137,7 +319,10 @@ export default function WatchStreamPage() {
           <h2 className="text-2xl font-bold mb-2">Stream Not Found</h2>
           <p className="text-muted-foreground mb-6">{error || "This stream does not exist"}</p>
           <Button asChild>
-            <Link href="/live">Back to Live</Link>
+            <Link href="/live">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Live
+            </Link>
           </Button>
         </Card>
       </div>
@@ -158,24 +343,28 @@ export default function WatchStreamPage() {
           <div className="lg:col-span-3">
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
-                {playbackSrc ? (
-                  <Player.Root
-                    src={playbackSrc}
-                    autoPlay
-                    onError={(error) => {
-                      console.error("[v0] Livepeer Player error:", error)
-                      setPlayerError(error?.message || "Failed to load stream")
-                    }}
-                  >
-                    <Player.Container className="h-full w-full">
-                      <Player.Video className="h-full w-full" />
+                {stream?.playback_id ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full"
+                      controls
+                      autoPlay
+                      playsInline
+                      onCanPlay={handleVideoCanPlay}
+                      onPlaying={handleVideoPlaying}
+                      onWaiting={handleVideoWaiting}
+                      onError={handleVideoError}
+                    />
 
-                      <Player.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/80">
+                    {videoLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80">
                         <div className="text-center text-white">
                           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                           <p className="text-sm">
                             {livepeerActive ? "Connecting to stream..." : "Waiting for broadcast to start..."}
                           </p>
+                          {retryMessage && <p className="text-xs text-blue-400 mt-2">{retryMessage}</p>}
                           <p className="text-xs text-muted-foreground mt-2">
                             {stream.is_live
                               ? livepeerActive
@@ -183,77 +372,11 @@ export default function WatchStreamPage() {
                                 : "The broadcaster needs to start streaming from their studio."
                               : "This stream is currently offline"}
                           </p>
-                          {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
+                          {playerError && <p className="text-xs text-red-400 mt-2">{playerError}</p>}
                         </div>
-                      </Player.LoadingIndicator>
-
-                      <Player.Controls className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <div className="flex items-center gap-4">
-                          <Player.PlayPauseTrigger className="text-white hover:text-white/80 transition-colors">
-                            <Player.PlayingIndicator matcher={false}>
-                              <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </Player.PlayingIndicator>
-                            <Player.PlayingIndicator matcher={true}>
-                              <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                              </svg>
-                            </Player.PlayingIndicator>
-                          </Player.PlayPauseTrigger>
-
-                          <Player.Time className="text-white text-sm font-medium" />
-
-                          <Player.Seek className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
-                            <Player.Track className="h-full bg-white/40 relative">
-                              <Player.SeekBuffer className="absolute h-full bg-white/20" />
-                              <Player.Range className="absolute h-full bg-primary" />
-                            </Player.Track>
-                          </Player.Seek>
-
-                          <Player.MuteTrigger className="text-white hover:text-white/80 transition-colors">
-                            <Player.VolumeIndicator matcher={false}>
-                              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-                                />
-                              </svg>
-                            </Player.VolumeIndicator>
-                            <Player.VolumeIndicator matcher={true}>
-                              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                />
-                              </svg>
-                            </Player.VolumeIndicator>
-                          </Player.MuteTrigger>
-
-                          <Player.FullscreenTrigger className="text-white hover:text-white/80 transition-colors">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                              />
-                            </svg>
-                          </Player.FullscreenTrigger>
-                        </div>
-                      </Player.Controls>
-                    </Player.Container>
-                  </Player.Root>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-white">
                     <div className="text-center">

@@ -33,9 +33,15 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
+  useEffect(() => {
+    console.log("[v0] LivestreamChat mounted with streamId:", streamId)
+    console.log("[v0] Current wallet address:", address)
+  }, [streamId, address])
+
   // Load initial comments
   useEffect(() => {
     async function loadComments() {
+      console.log("[v0] Loading comments for stream:", streamId)
       try {
         const { data, error } = await supabase
           .from("livestream_comments")
@@ -44,7 +50,12 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
           .order("created_at", { ascending: true })
           .limit(100)
 
-        if (error) throw error
+        if (error) {
+          console.error("[v0] Error loading comments:", error)
+          throw error
+        }
+
+        console.log("[v0] Loaded comments:", data?.length || 0)
         setComments(data || [])
       } catch (error) {
         console.error("[v0] Error loading comments:", error)
@@ -53,11 +64,23 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
       }
     }
 
-    loadComments()
+    if (streamId) {
+      loadComments()
+    } else {
+      console.warn("[v0] No streamId provided to LivestreamChat")
+      setLoading(false)
+    }
   }, [streamId, supabase])
 
   // Subscribe to real-time comments
   useEffect(() => {
+    if (!streamId) {
+      console.warn("[v0] Cannot subscribe to comments without streamId")
+      return
+    }
+
+    console.log("[v0] Setting up real-time subscription for stream:", streamId)
+
     const channel = supabase
       .channel(`livestream:${streamId}`)
       .on(
@@ -69,13 +92,16 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
           filter: `stream_id=eq.${streamId}`,
         },
         (payload) => {
-          console.log("[v0] New comment received:", payload)
+          console.log("[v0] New comment received via real-time:", payload)
           setComments((prev) => [...prev, payload.new as Comment])
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log("[v0] Real-time subscription status:", status)
+      })
 
     return () => {
+      console.log("[v0] Cleaning up real-time subscription")
       supabase.removeChannel(channel)
     }
   }, [streamId, supabase])
@@ -91,15 +117,24 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
     e.preventDefault()
     if (!newComment.trim() || !address || sending) return
 
+    console.log("[v0] Sending comment:", { streamId, address, content: newComment.trim() })
     setSending(true)
     try {
-      const { error } = await supabase.from("livestream_comments").insert({
-        stream_id: streamId,
-        user_address: address,
-        content: newComment.trim(),
-      })
+      const { data, error } = await supabase
+        .from("livestream_comments")
+        .insert({
+          stream_id: streamId,
+          user_address: address,
+          content: newComment.trim(),
+        })
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error("[v0] Error sending comment:", error)
+        throw error
+      }
+
+      console.log("[v0] Comment sent successfully:", data)
       setNewComment("")
     } catch (error) {
       console.error("[v0] Error sending comment:", error)
