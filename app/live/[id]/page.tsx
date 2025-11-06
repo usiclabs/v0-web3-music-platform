@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Radio, Eye, Loader2, AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import * as Player from "@livepeer/react/player"
+import { Player } from "@livepeer/react"
 import { LivestreamChat } from "@/components/livestream-chat"
 
 export default function WatchStreamPage() {
@@ -152,101 +152,16 @@ export default function WatchStreamPage() {
             <Card className="bg-card/50 backdrop-blur-xl border border-border/50 overflow-hidden">
               <div className="aspect-video bg-black relative">
                 {playbackId ? (
-                  <Player.Root
-                    src={playbackId}
+                  <Player
+                    playbackId={playbackId}
                     autoPlay
+                    muted={false}
+                    className="h-full w-full"
                     onError={(error) => {
                       console.error("[v0] Livepeer Player error:", error)
                       setPlayerError(error?.message || "Failed to load stream")
                     }}
-                  >
-                    <Player.Container className="h-full w-full">
-                      <Player.Video className="h-full w-full" />
-
-                      <Player.LoadingIndicator className="absolute inset-0 flex items-center justify-center bg-black/80">
-                        <div className="text-center text-white">
-                          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                          <p className="text-sm">
-                            {livepeerActive ? "Connecting to stream..." : "Waiting for broadcast to start..."}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {stream.is_live
-                              ? livepeerActive
-                                ? "Stream is active, loading video..."
-                                : "The broadcaster needs to start streaming from their studio."
-                              : "This stream is currently offline"}
-                          </p>
-                          {playerError && <p className="text-xs text-red-400 mt-2">Error: {playerError}</p>}
-                        </div>
-                      </Player.LoadingIndicator>
-
-                      <Player.Controls className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                        <div className="flex items-center gap-4">
-                          <Player.PlayPauseTrigger className="text-white hover:text-white/80 transition-colors">
-                            <Player.PlayingIndicator matcher={false}>
-                              <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                            </Player.PlayingIndicator>
-                            <Player.PlayingIndicator matcher={true}>
-                              <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                              </svg>
-                            </Player.PlayingIndicator>
-                          </Player.PlayPauseTrigger>
-
-                          <Player.Time className="text-white text-sm font-medium" />
-
-                          <Player.Seek className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
-                            <Player.Track className="h-full bg-white/40 relative">
-                              <Player.SeekBuffer className="absolute h-full bg-white/20" />
-                              <Player.Range className="absolute h-full bg-primary" />
-                            </Player.Track>
-                          </Player.Seek>
-
-                          <Player.MuteTrigger className="text-white hover:text-white/80 transition-colors">
-                            <Player.VolumeIndicator matcher={false}>
-                              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-                                />
-                              </svg>
-                            </Player.VolumeIndicator>
-                            <Player.VolumeIndicator matcher={true}>
-                              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                />
-                              </svg>
-                            </Player.VolumeIndicator>
-                          </Player.MuteTrigger>
-
-                          <Player.FullscreenTrigger className="text-white hover:text-white/80 transition-colors">
-                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                              />
-                            </svg>
-                          </Player.FullscreenTrigger>
-                        </div>
-                      </Player.Controls>
-                    </Player.Container>
-                  </Player.Root>
+                  />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-white">
                     <div className="text-center">
