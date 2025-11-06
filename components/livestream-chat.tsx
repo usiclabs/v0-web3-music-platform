@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, RefreshCw } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 interface Comment {
@@ -30,15 +30,36 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   const [newComment, setNewComment] = useState("")
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>("disconnected")
   const scrollRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  async function refreshComments() {
+    setRefreshing(true)
+    try {
+      const { data, error } = await supabase
+        .from("livestream_comments")
+        .select("*")
+        .eq("stream_id", streamId)
+        .order("created_at", { ascending: true })
+        .limit(100)
+
+      if (error) throw error
+      setComments(data || [])
+      console.log("[v0] Manually refreshed comments:", data?.length || 0)
+    } catch (error) {
+      console.error("[v0] Error refreshing comments:", error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
     console.log("[v0] LivestreamChat mounted with streamId:", streamId)
     console.log("[v0] Current wallet address:", address)
   }, [streamId, address])
 
-  // Load initial comments
   useEffect(() => {
     async function loadComments() {
       console.log("[v0] Loading comments for stream:", streamId)
@@ -72,7 +93,6 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
     }
   }, [streamId, supabase])
 
-  // Subscribe to real-time comments
   useEffect(() => {
     if (!streamId) {
       console.warn("[v0] Cannot subscribe to comments without streamId")
@@ -82,7 +102,11 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
     console.log("[v0] Setting up real-time subscription for stream:", streamId)
 
     const channel = supabase
-      .channel(`livestream:${streamId}`)
+      .channel(`livestream-comments:${streamId}`, {
+        config: {
+          broadcast: { self: true },
+        },
+      })
       .on(
         "postgres_changes",
         {
@@ -92,21 +116,37 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
           filter: `stream_id=eq.${streamId}`,
         },
         (payload) => {
-          console.log("[v0] New comment received via real-time:", payload)
-          setComments((prev) => [...prev, payload.new as Comment])
+          console.log("[v0] ✅ New comment received via real-time:", payload)
+          const newComment = payload.new as Comment
+          setComments((prev) => {
+            if (prev.some((c) => c.id === newComment.id)) {
+              return prev
+            }
+            return [...prev, newComment]
+          })
         },
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log("[v0] Real-time subscription status:", status)
+        setSubscriptionStatus(status)
+        if (err) {
+          console.error("[v0] Real-time subscription error:", err)
+        }
+        if (status === "SUBSCRIBED") {
+          console.log("[v0] ✅ Successfully subscribed to livestream comments")
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("[v0] ❌ Channel error - real-time may not be enabled on this table")
+        } else if (status === "TIMED_OUT") {
+          console.error("[v0] ❌ Subscription timed out")
+        }
       })
 
     return () => {
       console.log("[v0] Cleaning up real-time subscription")
-      supabase.removeChannel(channel)
+      channel.unsubscribe()
     }
   }, [streamId, supabase])
 
-  // Auto-scroll to bottom when new comments arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -136,6 +176,10 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
 
       console.log("[v0] Comment sent successfully:", data)
       setNewComment("")
+
+      if (subscriptionStatus !== "SUBSCRIBED" && data && data[0]) {
+        setComments((prev) => [...prev, data[0] as Comment])
+      }
     } catch (error) {
       console.error("[v0] Error sending comment:", error)
       alert("Failed to send comment. Please try again.")
@@ -156,8 +200,25 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   return (
     <Card className="bg-card/50 backdrop-blur-xl border border-border/50 flex flex-col h-full">
       <div className="p-4 border-b border-border/50">
-        <h3 className="font-semibold">Live Chat</h3>
-        <p className="text-xs text-muted-foreground">{comments.length} messages</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold">Live Chat</h3>
+            <p className="text-xs text-muted-foreground">{comments.length} messages</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={refreshComments}
+            disabled={refreshing}
+            className="h-8 w-8"
+            title="Refresh messages"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
+        {subscriptionStatus !== "SUBSCRIBED" && (
+          <p className="text-xs text-yellow-500 mt-1">Real-time: {subscriptionStatus}</p>
+        )}
       </div>
 
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>

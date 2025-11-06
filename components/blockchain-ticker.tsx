@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { TrendingUp, DollarSign, Activity, BarChart3 } from "lucide-react"
+import { TokenMetricsModal } from "@/components/token-metrics-modal"
 
 interface TickerData {
   symbol: string
@@ -15,6 +16,7 @@ interface TickerData {
 export function BlockchainTicker() {
   const [data, setData] = useState<TickerData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     const fetchUSIData = async () => {
@@ -101,50 +103,65 @@ export function BlockchainTicker() {
   const isPositive = data.change.startsWith("+")
 
   return (
-    <div className="sticky top-14 sm:top-16 z-40 w-full border-b border-border/40 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 backdrop-blur-xl overflow-hidden">
-      <div className="relative h-8 flex items-center">
-        <div className="animate-scroll-left flex items-center gap-8 whitespace-nowrap px-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium text-foreground">
-                  {data.symbol}: <span className="font-mono text-primary font-semibold">{data.price}</span>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <TrendingUp className={`h-3 w-3 ${isPositive ? "text-green-500" : "text-red-500"}`} />
-                <span className="text-xs font-medium text-foreground">
-                  24h:{" "}
-                  <span className={`font-mono font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}>
-                    {data.change}
+    <>
+      <div
+        className="sticky top-14 sm:top-16 z-40 w-full border-b border-border/40 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 backdrop-blur-xl overflow-hidden cursor-pointer hover:from-primary/10 hover:via-accent/10 hover:to-primary/10 transition-all duration-300"
+        onClick={() => setModalOpen(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            setModalOpen(true)
+          }
+        }}
+        aria-label="View detailed token metrics"
+      >
+        <div className="relative h-8 flex items-center">
+          <div className="animate-scroll-left flex items-center gap-8 whitespace-nowrap px-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-8">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-3 w-3 text-primary" />
+                  <span className="text-xs font-medium text-foreground">
+                    {data.symbol}: <span className="font-mono text-primary font-semibold">{data.price}</span>
                   </span>
-                </span>
-              </div>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-3 w-3 text-blue-400" />
-                <span className="text-xs font-medium text-foreground">
-                  Volume: <span className="font-mono text-blue-400 font-semibold">{data.volume}</span>
-                </span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className={`h-3 w-3 ${isPositive ? "text-green-500" : "text-red-500"}`} />
+                  <span className="text-xs font-medium text-foreground">
+                    24h:{" "}
+                    <span className={`font-mono font-semibold ${isPositive ? "text-green-500" : "text-red-500"}`}>
+                      {data.change}
+                    </span>
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Activity className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium text-foreground">
-                  Market Cap: <span className="font-mono text-primary">{data.marketCap}</span>
-                </span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-3 w-3 text-blue-400" />
+                  <span className="text-xs font-medium text-foreground">
+                    Volume: <span className="font-mono text-blue-400 font-semibold">{data.volume}</span>
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs font-medium text-muted-foreground">Base Network</span>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3 w-3 text-primary" />
+                  <span className="text-xs font-medium text-foreground">
+                    Market Cap: <span className="font-mono text-primary">{data.marketCap}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-medium text-muted-foreground">Base Network</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+
+      <TokenMetricsModal open={modalOpen} onOpenChange={setModalOpen} tokenData={data} />
+    </>
   )
 }
