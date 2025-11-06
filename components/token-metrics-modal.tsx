@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/drawer"
 import { Card } from "@/components/ui/card"
 import { TokenPriceChart } from "@/components/token-price-chart"
-import { DollarSign, Activity, LineChart, ExternalLink, Copy, X } from "lucide-react"
+import { DollarSign, Activity, LineChart, ExternalLink, Copy, X, ArrowLeftRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import useSWR from "swr"
+import Link from "next/link"
 
 interface TokenMetricsModalProps {
   open: boolean
@@ -204,6 +205,12 @@ export function TokenMetricsModal({ open, onOpenChange, tokenData }: TokenMetric
                 </div>
 
                 <div className="flex flex-col gap-2 mt-4">
+                  <Button variant="default" className="w-full bg-primary hover:bg-primary/90" asChild>
+                    <Link href="/swap">
+                      <ArrowLeftRight className="h-4 w-4 mr-2" />
+                      Swap for $USI
+                    </Link>
+                  </Button>
                   <Button
                     variant="outline"
                     className="w-full bg-background/50 backdrop-blur-sm hover:bg-background/80"
