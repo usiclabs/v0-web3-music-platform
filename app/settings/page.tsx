@@ -371,7 +371,7 @@ export default function SettingsPage() {
                     <Input
                       id="avatar"
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.gif"
                       onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
                       className="hidden"
                     />

@@ -15,11 +15,28 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
   )
 }
 
-function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+function AvatarImage({ className, src, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  const isGif = typeof src === "string" && src.toLowerCase().endsWith(".gif")
+
+  if (isGif && src) {
+    // Use native img for GIFs to preserve animation
+    return (
+      <img
+        src={src || "/placeholder.svg"}
+        className={cn("aspect-square size-full object-cover object-center rounded-full", className)}
+        alt={props.alt || ""}
+        loading="lazy"
+        {...props}
+      />
+    )
+  }
+
+  // Use Radix AvatarImage for other formats (supports Next.js Image optimization)
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn("aspect-square size-full object-cover object-center", className)}
+      src={src}
       {...props}
     />
   )
