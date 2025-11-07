@@ -1,0 +1,18 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjAsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0",
+    "payload": "eyJkb21haW4iOiJteXVzaWMuYXBwIn0",
+    "signature": "MHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw"
+  },
+  "frame": {
+    "version": "1",
+    "name": "MyUSIC",
+    "iconUrl": "https://myusic.app/icon.svg",
+    "splashImageUrl": "https://myusic.app/splash.png",
+    "splashBackgroundColor": "#0a0a0a",
+    "homeUrl": "https://myusic.app",
+    "imageUrl": "https://myusic.app/og-image.png",
+    "buttonTitle": "Open MyUSIC",
+    "description": "Blockchain-powered music streaming with micropayments and NFTs. Stream music, earn $USI tokens, create playlists, and support artists directly with Web3 technology."
+  }
+}

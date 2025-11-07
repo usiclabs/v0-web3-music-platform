@@ -11,6 +11,7 @@
   "dependencies": {
     "@coinbase/coinbase-sdk": "latest",
     "@coinbase/onchainkit": "1.1.1",
+    "@farcaster/miniapp-sdk": "latest",
     "@livepeer/react": "latest",
     "@radix-ui/react-avatar": "latest",
     "@radix-ui/react-dialog": "latest",

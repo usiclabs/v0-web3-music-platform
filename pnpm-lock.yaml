@@ -14,6 +14,9 @@ importers:
       '@coinbase/onchainkit':
         specifier: 1.1.1
         version: 1.1.1(@tanstack/query-core@5.90.7)(@types/react-dom@19.0.0)(@types/react@19.0.0)(bufferutil@4.0.9)(immer@10.2.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.4.0(react@19.0.0))(utf-8-validate@5.0.10)(viem@2.38.6(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@4.1.12))(wagmi@2.19.2(@tanstack/query-core@5.90.7)(@tanstack/react-query@5.90.7(react@19.0.0))(@types/react@19.0.0)(@vercel/blob@2.0.0)(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(utf-8-validate@5.0.10)(viem@2.38.6(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@4.1.12))(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@4.1.12))(zod@4.1.12)
+      '@farcaster/miniapp-sdk':
+        specifier: latest
+        version: 0.2.1(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@4.1.12)
       '@livepeer/react':
         specifier: latest
         version: 4.3.6(@types/react-dom@19.0.0)(@types/react@19.0.0)(immer@10.2.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -320,8 +323,14 @@ packages:
   '@farcaster/miniapp-core@0.3.9':
     resolution: {integrity: sha512-7k2AHYycFABUEQFHGqsuZr6P6UQOE2WO4/Qj/kQ1ydKA8QjrWxO4HjiPfnTdvqH0xOKtdavbFOV5lK5bDLkemw==}
 
+  '@farcaster/miniapp-core@0.4.1':
+    resolution: {integrity: sha512-20FxHTRToYUKx7CQ8PvIy9OoQ6XjdmF1pRMS7dsj37qdqjVDeEkYoK8yXwnoReZoJRcYwIg8P3i6V8bTWNR5mg==}
+
   '@farcaster/miniapp-sdk@0.1.10':
     resolution: {integrity: sha512-ueoEAH3N7hIrV+L9pXdLJZpOY1GsOuwKN7MckouSEWY98H5A7KVajyGmGSDDVzjRWpu7Vndu4NZUHoOhF4nTOA==}
+
+  '@farcaster/miniapp-sdk@0.2.1':
+    resolution: {integrity: sha512-2SnDeOtDdlN1lGQt7UyH2jkrZRQDOkmhcrlzNWazYChyPh9XfV8+9fMS+Lr/E2pEws9Q40Xl9POrCzdpUC19lg==}
 
   '@farcaster/miniapp-wagmi-connector@1.1.0':
     resolution: {integrity: sha512-gf0nDx9nNJ6hJXbFBCgiTitb0eEqBvCU/njcyTXf7ebZhT0pzOrarOod2dkeisU5Py+WWjFyOVcqmeo4G3IvDA==}
@@ -5662,9 +5671,34 @@ snapshots:
       - typescript
       - utf-8-validate
 
+  '@farcaster/miniapp-core@0.4.1(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)':
+    dependencies:
+      '@solana/web3.js': 1.98.4(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)
+      ox: 0.4.4(typescript@5.0.2)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+
   '@farcaster/miniapp-sdk@0.1.10(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@4.1.12)':
     dependencies:
       '@farcaster/miniapp-core': 0.3.9(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)
+      '@farcaster/quick-auth': 0.0.6(typescript@5.0.2)
+      comlink: 4.4.2
+      eventemitter3: 5.0.1
+      ox: 0.4.4(typescript@5.0.2)(zod@4.1.12)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+      - zod
+
+  '@farcaster/miniapp-sdk@0.2.1(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@4.1.12)':
+    dependencies:
+      '@farcaster/miniapp-core': 0.4.1(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)
       '@farcaster/quick-auth': 0.0.6(typescript@5.0.2)
       comlink: 4.4.2
       eventemitter3: 5.0.1

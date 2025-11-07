@@ -16,6 +16,8 @@ import { PresenceTracker } from "@/components/presence-tracker"
 import { PageTransition } from "@/components/page-transition"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { IOSInstallPrompt } from "@/components/ios-install-prompt"
+import { FarcasterProvider } from "@/lib/farcaster-provider"
+import { FarcasterBadge } from "@/components/farcaster-badge"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -32,6 +34,28 @@ export const metadata: Metadata = {
     title: "MyUSIC",
   },
   themeColor: "#0a0a0a",
+  openGraph: {
+    title: "MyUSIC - Web3 Music Streaming",
+    description: "Blockchain-powered music streaming with micropayments and NFTs",
+    url: "https://myusic.app",
+    siteName: "MyUSIC",
+    images: [
+      {
+        url: "https://myusic.app/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MyUSIC - Web3 Music Platform",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MyUSIC - Web3 Music Streaming",
+    description: "Blockchain-powered music streaming with micropayments and NFTs",
+    images: ["https://myusic.app/og-image.png"],
+  },
 }
 
 export default function RootLayout({
@@ -56,22 +80,25 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.className} antialiased`}>
         <ErrorBoundary>
-          <Web3Provider>
-            <AudioPlayerProvider>
-              <ToastProvider>
-                <Header />
-                <BlockchainTicker />
-                <PageTransition>{children}</PageTransition>
-                <AudioPlayer />
-                <X402PaymentModal />
-                <MobileBottomNav />
-                <OnboardingModal />
-                <RealtimeNotifications />
-                <PresenceTracker />
-                <IOSInstallPrompt />
-              </ToastProvider>
-            </AudioPlayerProvider>
-          </Web3Provider>
+          <FarcasterProvider>
+            <Web3Provider>
+              <AudioPlayerProvider>
+                <ToastProvider>
+                  <Header />
+                  <BlockchainTicker />
+                  <FarcasterBadge />
+                  <PageTransition>{children}</PageTransition>
+                  <AudioPlayer />
+                  <X402PaymentModal />
+                  <MobileBottomNav />
+                  <OnboardingModal />
+                  <RealtimeNotifications />
+                  <PresenceTracker />
+                  <IOSInstallPrompt />
+                </ToastProvider>
+              </AudioPlayerProvider>
+            </Web3Provider>
+          </FarcasterProvider>
         </ErrorBoundary>
         <Analytics />
       </body>
