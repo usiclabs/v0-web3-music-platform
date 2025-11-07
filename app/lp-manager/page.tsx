@@ -787,6 +787,401 @@ export default function LPManagerPage() {
           </div>
         </Card>
       </div>
+
+      <div className="flex gap-2 border-b border-border">
+        <button
+          onClick={() => setActiveTab("positions")}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "positions"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Your Positions
+        </button>
+        <button
+          onClick={() => setActiveTab("add")}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "add"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Add Liquidity
+        </button>
+        <button
+          onClick={() => setActiveTab("create")}
+          className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "create"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Create Pool
+        </button>
+      </div>
+
+      {activeTab === "positions" && (
+        <div className="space-y-4">
+          {isLoadingPositions ? (
+            <Card className="p-12 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                <p className="text-muted-foreground">Loading your liquidity positions...</p>
+              </div>
+            </Card>
+          ) : positions.length === 0 ? (
+            <Card className="p-12 text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="rounded-full bg-muted p-6">
+                  <Droplet className="h-12 w-12 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">No Liquidity Positions</h3>
+                <p className="text-muted-foreground">
+                  You don't have any active liquidity positions yet. Add liquidity to start earning trading fees.
+                </p>
+              </div>
+              <Button onClick={() => setActiveTab("add")} className="gap-2">
+                <Droplet className="h-4 w-4" />
+                Add Liquidity
+              </Button>
+            </Card>
+          ) : (
+            positions.map((position) => (
+              <Card key={position.tokenId.toString()} className="p-6 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center -space-x-3">
+                      {position.token0Metadata?.image && (
+                        <img
+                          src={position.token0Metadata.image || "/placeholder.svg"}
+                          alt={position.token0Metadata.symbol}
+                          className="h-12 w-12 rounded-full border-2 border-background"
+                        />
+                      )}
+                      {position.token1Metadata?.image && (
+                        <img
+                          src={position.token1Metadata.image || "/placeholder.svg"}
+                          alt={position.token1Metadata.symbol}
+                          className="h-12 w-12 rounded-full border-2 border-background"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">
+                        {position.token0Metadata?.symbol} / {position.token1Metadata?.symbol}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">Fee Tier: {position.fee / 10000}%</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">${position.totalValueUSD?.toFixed(2) || "0.00"}</p>
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Position ID</p>
+                    <p className="font-mono text-sm">#{position.tokenId.toString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Unclaimed Fees</p>
+                    <p className="text-lg font-semibold text-green-500">${position.feesUSD?.toFixed(2) || "0.00"}</p>
+                  </div>
+                </div>
+
+                {position.feesUSD && position.feesUSD > 0 && (
+                  <Button
+                    onClick={() => handleCollectFees(position.tokenId)}
+                    className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    Collect Fees
+                  </Button>
+                )}
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "add" && (
+        <Card className="p-6 space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Add Liquidity to Pool</h2>
+            <p className="text-muted-foreground">Provide liquidity to a Uniswap V3 pool and earn trading fees</p>
+          </div>
+
+          <div className="space-y-4">
+            {/* Token Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token 0 Address</label>
+                <input
+                  type="text"
+                  value={token0Address}
+                  onChange={(e) => setToken0Address(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token 1 Address</label>
+                <input
+                  type="text"
+                  value={token1Address}
+                  onChange={(e) => setToken1Address(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Quick select from tokenized tracks */}
+            {tokenizedTracks.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quick Select Tokenized Tracks</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {tokenizedTracks.slice(0, 6).map((track) => (
+                    <button
+                      key={track.id}
+                      onClick={() => setToken0Address(track.coin_address)}
+                      className="p-3 bg-muted hover:bg-muted/80 rounded-lg text-left transition-colors text-sm"
+                    >
+                      <p className="font-medium truncate">{track.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fee Tier */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fee Tier</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => setFeeTier(500)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    feeTier === 500 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">0.05%</p>
+                  <p className="text-xs text-muted-foreground">Best for stable pairs</p>
+                </button>
+                <button
+                  onClick={() => setFeeTier(3000)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    feeTier === 3000 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">0.3%</p>
+                  <p className="text-xs text-muted-foreground">Best for most pairs</p>
+                </button>
+                <button
+                  onClick={() => setFeeTier(10000)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    feeTier === 10000 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">1%</p>
+                  <p className="text-xs text-muted-foreground">Best for exotic pairs</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Pool Status */}
+            {isCheckingPool ? (
+              <div className="p-4 bg-muted/50 rounded-lg flex items-center gap-3">
+                <div className="h-5 w-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                <p className="text-sm">Checking pool status...</p>
+              </div>
+            ) : poolExists === false ? (
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                  ⚠️ This pool doesn't exist yet. Create it first in the "Create Pool" tab.
+                </p>
+              </div>
+            ) : poolExists === true ? (
+              <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p className="text-sm text-green-600 dark:text-green-400">✓ Pool exists! You can add liquidity.</p>
+              </div>
+            ) : null}
+
+            {/* Amount inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount Token 0</label>
+                <input
+                  type="number"
+                  value={amount0}
+                  onChange={(e) => setAmount0(e.target.value)}
+                  placeholder="0.0"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount Token 1</label>
+                <input
+                  type="number"
+                  value={amount1}
+                  onChange={(e) => setAmount1(e.target.value)}
+                  placeholder="0.0"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handleAddLiquidity}
+              disabled={
+                isAddingLiquidity || !token0Address || !token1Address || !amount0 || !amount1 || poolExists === false
+              }
+              className="w-full gap-2"
+              size="lg"
+            >
+              {isAddingLiquidity ? (
+                <>
+                  <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Adding Liquidity...
+                </>
+              ) : (
+                <>
+                  <Droplet className="h-5 w-5" />
+                  Add Liquidity
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === "create" && (
+        <Card className="p-6 space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Create New Pool</h2>
+            <p className="text-muted-foreground">Create a new Uniswap V3 liquidity pool with your chosen token pair</p>
+          </div>
+
+          <div className="space-y-4">
+            {/* Token Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token 0 Address</label>
+                <input
+                  type="text"
+                  value={createToken0}
+                  onChange={(e) => setCreateToken0(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token 1 Address</label>
+                <input
+                  type="text"
+                  value={createToken1}
+                  onChange={(e) => setCreateToken1(e.target.value)}
+                  placeholder="0x..."
+                  className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Quick select from tokenized tracks */}
+            {tokenizedTracks.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Quick Select Tokenized Tracks</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {tokenizedTracks.slice(0, 6).map((track) => (
+                    <button
+                      key={track.id}
+                      onClick={() => setCreateToken0(track.coin_address)}
+                      className="p-3 bg-muted hover:bg-muted/80 rounded-lg text-left transition-colors text-sm"
+                    >
+                      <p className="font-medium truncate">{track.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fee Tier */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fee Tier</label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => setCreateFeeTier(500)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    createFeeTier === 500 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">0.05%</p>
+                  <p className="text-xs text-muted-foreground">Stable pairs</p>
+                </button>
+                <button
+                  onClick={() => setCreateFeeTier(3000)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    createFeeTier === 3000 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">0.3%</p>
+                  <p className="text-xs text-muted-foreground">Most pairs</p>
+                </button>
+                <button
+                  onClick={() => setCreateFeeTier(10000)}
+                  className={`p-4 rounded-lg border-2 transition-colors ${
+                    createFeeTier === 10000 ? "border-primary bg-primary/10" : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-bold">1%</p>
+                  <p className="text-xs text-muted-foreground">Exotic pairs</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Initial Price */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Initial Price (Token1 per Token0)</label>
+              <input
+                type="number"
+                value={initialPrice}
+                onChange={(e) => setInitialPrice(e.target.value)}
+                placeholder="1.0"
+                step="0.000001"
+                className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground">
+                This sets the starting price ratio for the pool. Choose carefully as it affects initial liquidity
+                distribution.
+              </p>
+            </div>
+
+            <Button
+              onClick={handleCreatePool}
+              disabled={isCreatingPool || !createToken0 || !createToken1 || !initialPrice}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {isCreatingPool ? (
+                <>
+                  <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Creating Pool...
+                </>
+              ) : (
+                <>
+                  <Droplet className="h-5 w-5" />
+                  Create Pool
+                </>
+              )}
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
