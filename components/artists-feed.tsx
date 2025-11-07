@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Music, DollarSign, Users, TrendingUp } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { FriendActivityBadge } from "@/components/friend-activity-badge"
 import Link from "next/link"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -184,6 +185,9 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FriendActivityBadge userAddress={artist.wallet_address} />
+                        </div>
                         <div className="flex items-center gap-2 mb-1">
                           <h1 className="text-3xl md:text-6xl font-bold text-white text-balance leading-tight group-hover:text-primary transition-all duration-300">
                             {artist.artist_name || "Unknown Artist"}

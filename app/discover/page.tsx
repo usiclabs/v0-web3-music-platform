@@ -7,6 +7,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
+import { FriendActivitySidebar } from "@/components/friend-activity-sidebar"
 import Autoplay from "embla-carousel-autoplay"
 import { Play, ChevronRight, ChevronLeft, Music, Zap, Heart, TrendingUp, Sparkles, AlertCircle } from "lucide-react"
 import type { TrackWithArtist } from "@/types/database"
@@ -422,203 +423,209 @@ export default function DiscoverPage() {
         </section>
       )}
 
-      <main className="container py-12 px-4 sm:px-6 space-y-12">
-        {error && <ErrorState />}
+      <div className="flex gap-6 container px-4 sm:px-6">
+        <main className="flex-1 py-12 space-y-12">
+          {error && <ErrorState />}
 
-        {!loading && !error && newReleases.length === 0 && <EmptyState />}
+          {!loading && !error && newReleases.length === 0 && <EmptyState />}
 
-        {!loading && !error && newReleases.length > 0 && (
-          <section ref={categoriesRef} data-section="categories" className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h2 className="text-3xl font-bold">Browse All</h2>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categories.map((category, index) => (
-                <Link key={category.id} href={category.href}>
-                  <Card
-                    className={`relative overflow-hidden bg-gradient-to-br ${category.gradient} border-0 cursor-pointer group transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 active:scale-95`}
-                    style={{
-                      animation: `fade-in 0.5s ease-out ${index * 0.1}s both`,
-                    }}
-                  >
-                    <div className="p-6 h-40 flex flex-col justify-between">
-                      <div className="space-y-2">
-                        <div className="text-white transform group-hover:scale-110 transition-transform">
-                          {category.icon}
+          {!loading && !error && newReleases.length > 0 && (
+            <section ref={categoriesRef} data-section="categories" className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-bold">Browse All</h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {categories.map((category, index) => (
+                  <Link key={category.id} href={category.href}>
+                    <Card
+                      className={`relative overflow-hidden bg-gradient-to-br ${category.gradient} border-0 cursor-pointer group transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 active:scale-95`}
+                      style={{
+                        animation: `fade-in 0.5s ease-out ${index * 0.1}s both`,
+                      }}
+                    >
+                      <div className="p-6 h-40 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="text-white transform group-hover:scale-110 transition-transform">
+                            {category.icon}
+                          </div>
+                          <h3 className="text-xl font-bold text-white">{category.name}</h3>
+                          <p className="text-sm text-white/80 line-clamp-2">{category.description}</p>
                         </div>
-                        <h3 className="text-xl font-bold text-white">{category.name}</h3>
-                        <p className="text-sm text-white/80 line-clamp-2">{category.description}</p>
                       </div>
-                    </div>
-                    <div className="absolute -bottom-4 -right-4 opacity-20 group-hover:opacity-30 transition-opacity">
-                      <Music className="h-32 w-32 text-white" />
-                    </div>
-                  </Card>
+                      <div className="absolute -bottom-4 -right-4 opacity-20 group-hover:opacity-30 transition-opacity">
+                        <Music className="h-32 w-32 text-white" />
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!loading && !error && newReleases.length > 0 && (
+            <section
+              ref={newReleasesSectionRef}
+              data-section="newReleases"
+              className="space-y-6 animate-fade-in"
+              style={{ animationDelay: "0.2s" }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold">New Releases</h2>
+                  <p className="text-foreground/70 mt-1">Fresh tracks just dropped</p>
+                </div>
+                <Link href="/explore?sort=newest">
+                  <Button variant="ghost" className="gap-2 hover:text-primary">
+                    See all
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {!loading && !error && newReleases.length > 0 && (
-          <section
-            ref={newReleasesSectionRef}
-            data-section="newReleases"
-            className="space-y-6 animate-fade-in"
-            style={{ animationDelay: "0.2s" }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold">New Releases</h2>
-                <p className="text-foreground/70 mt-1">Fresh tracks just dropped</p>
               </div>
-              <Link href="/explore?sort=newest">
-                <Button variant="ghost" className="gap-2 hover:text-primary">
-                  See all
-                  <ChevronRight className="h-4 w-4" />
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(newReleasesRef, "left")}
+                >
+                  <ChevronLeft className="h-6 w-6" />
                 </Button>
-              </Link>
-            </div>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(newReleasesRef, "left")}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <div ref={newReleasesRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
-                {newReleases.map((track) => (
-                  <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
-                    <TrackCard track={track} queue={newReleases} />
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(newReleasesRef, "right")}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-            </div>
-          </section>
-        )}
-
-        {!loading && !error && trending.length > 0 && (
-          <section
-            ref={trendingSectionRef}
-            data-section="trending"
-            className={`space-y-6 transition-all duration-700 ${
-              sectionsVisible.trending ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold">Trending Now</h2>
-                <p className="text-foreground/70 mt-1">What everyone's listening to</p>
-              </div>
-              <Link href="/trending">
-                <Button variant="ghost" className="gap-2 hover:text-primary">
-                  See all
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(trendingRef, "left")}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <div ref={trendingRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
-                {trending.map((track) => (
-                  <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
-                    <TrackCard track={track} queue={trending} />
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(trendingRef, "right")}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-            </div>
-          </section>
-        )}
-
-        {!loading && !error && forYou.length > 0 && (
-          <section
-            ref={forYouSectionRef}
-            data-section="forYou"
-            className={`space-y-6 transition-all duration-700 ${
-              sectionsVisible.forYou ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold">Made For You</h2>
-                <p className="text-foreground/70 mt-1">Personalized picks just for you</p>
-              </div>
-            </div>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(forYouRef, "left")}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <div ref={forYouRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
-                {forYou.map((track) => (
-                  <div key={track.id} className="flex-none w-[180px]">
-                    <TrackCard track={track} queue={forYou} />
-                  </div>
-                ))}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
-                onClick={() => scroll(forYouRef, "right")}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-            </div>
-          </section>
-        )}
-
-        {loading && (
-          <div className="space-y-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-40 bg-card/50 rounded-xl animate-pulse" />
-              ))}
-            </div>
-            {[1, 2, 3].map((section) => (
-              <div key={section} className="space-y-4">
-                <div className="h-8 w-48 bg-card/50 rounded animate-pulse" />
-                <div className="flex gap-4 overflow-hidden">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="flex-none w-[180px]">
-                      <SkeletonCard />
+                <div ref={newReleasesRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                  {newReleases.map((track) => (
+                    <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
+                      <TrackCard track={track} queue={newReleases} />
                     </div>
                   ))}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(newReleasesRef, "right")}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
+            </section>
+          )}
+
+          {!loading && !error && trending.length > 0 && (
+            <section
+              ref={trendingSectionRef}
+              data-section="trending"
+              className={`space-y-6 transition-all duration-700 ${
+                sectionsVisible.trending ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold">Trending Now</h2>
+                  <p className="text-foreground/70 mt-1">What everyone's listening to</p>
+                </div>
+                <Link href="/trending">
+                  <Button variant="ghost" className="gap-2 hover:text-primary">
+                    See all
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(trendingRef, "left")}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <div ref={trendingRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                  {trending.map((track) => (
+                    <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
+                      <TrackCard track={track} queue={trending} />
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(trendingRef, "right")}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {!loading && !error && forYou.length > 0 && (
+            <section
+              ref={forYouSectionRef}
+              data-section="forYou"
+              className={`space-y-6 transition-all duration-700 ${
+                sectionsVisible.forYou ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold">Made For You</h2>
+                  <p className="text-foreground/70 mt-1">Personalized picks just for you</p>
+                </div>
+              </div>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(forYouRef, "left")}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <div ref={forYouRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                  {forYou.map((track) => (
+                    <div key={track.id} className="flex-none w-[180px]">
+                      <TrackCard track={track} queue={forYou} />
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  onClick={() => scroll(forYouRef, "right")}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {loading && (
+            <div className="space-y-12">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-40 bg-card/50 rounded-xl animate-pulse" />
+                ))}
+              </div>
+              {[1, 2, 3].map((section) => (
+                <div key={section} className="space-y-4">
+                  <div className="h-8 w-48 bg-card/50 rounded animate-pulse" />
+                  <div className="flex gap-4 overflow-hidden">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="flex-none w-[180px]">
+                        <SkeletonCard />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+
+        <aside className="hidden xl:block w-80 flex-shrink-0 py-12 sticky top-20 self-start">
+          <FriendActivitySidebar />
+        </aside>
+      </div>
     </div>
   )
 }

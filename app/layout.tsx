@@ -12,6 +12,7 @@ import { Header } from "@/components/header"
 import { BlockchainTicker } from "@/components/blockchain-ticker"
 import { OnboardingModal } from "@/components/onboarding-modal"
 import { RealtimeNotifications } from "@/components/realtime-notifications"
+import { PresenceTracker } from "@/components/presence-tracker"
 import { PageTransition } from "@/components/page-transition"
 import { ErrorBoundary } from "@/components/error-boundary"
 import "./globals.css"
@@ -45,6 +46,7 @@ export default function RootLayout({
                 <MobileBottomNav />
                 <OnboardingModal />
                 <RealtimeNotifications />
+                <PresenceTracker />
               </ToastProvider>
             </AudioPlayerProvider>
           </Web3Provider>

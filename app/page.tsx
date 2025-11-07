@@ -31,6 +31,7 @@ import {
   Droplets,
   Radio,
   Info,
+  Activity,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -64,6 +65,13 @@ const navItems: NavItem[] = [
     icon: TrendingUp,
     description: "What's hot now",
     gradient: "from-orange-500 to-red-500",
+  },
+  {
+    title: "Activity Feed",
+    href: "/activity-feed",
+    icon: Activity,
+    description: "Live platform activity",
+    gradient: "from-violet-500 to-fuchsia-500",
   },
   {
     title: "Explore",

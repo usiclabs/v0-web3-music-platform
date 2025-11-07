@@ -11,6 +11,7 @@ import { MobileMenu } from "@/components/mobile-menu"
 import { MobileWalletModal } from "@/components/mobile-wallet-modal"
 import { useConnect } from "wagmi"
 import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
+import { NotificationCenter } from "@/components/notification-center"
 
 export function Header() {
   const { address, isConnected, connect, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
@@ -65,6 +66,19 @@ export function Header() {
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
                   isActive("/trending") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
+              href="/activity-feed"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/activity-feed") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Activity
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/activity-feed") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>
@@ -136,6 +150,8 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <NotificationCenter />
+
             {isConnected && address ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

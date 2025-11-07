@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/components/ui/toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp, Coins } from "lucide-react"
+import { Music, TrendingUp, Coins, Heart, MessageCircle, UserPlus } from "lucide-react"
 
 export function RealtimeNotifications() {
   const { addToast } = useToast()
@@ -17,6 +17,130 @@ export function RealtimeNotifications() {
   useEffect(() => {
     console.log("[v0] RealtimeNotifications component mounted")
     console.log("[v0] Current wallet address:", address)
+
+    const notificationChannel = supabase
+      .channel("user-notifications-toasts")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: address ? `recipient_address=eq.${address}` : undefined,
+        },
+        async (payload) => {
+          try {
+            console.log("[v0] ✅ Notification received:", payload)
+
+            const notification = payload.new as {
+              type: string
+              sender_address: string
+              track_id?: string
+              comment_id?: string
+              content?: string
+            }
+
+            // Fetch sender profile
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("artist_name")
+              .eq("wallet_address", notification.sender_address)
+              .maybeSingle()
+
+            const senderName =
+              profile?.artist_name ||
+              `${notification.sender_address.slice(0, 6)}...${notification.sender_address.slice(-4)}`
+
+            // Show toast based on notification type
+            if (notification.type === "follow") {
+              addToast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-blue-500" />
+                    <span>New Follower</span>
+                  </div>
+                ),
+                description: (
+                  <div
+                    className="cursor-pointer hover:underline"
+                    onClick={() => {
+                      router.push(`/artist/${notification.sender_address}`)
+                    }}
+                  >
+                    <span className="font-medium">{senderName}</span> started following you
+                  </div>
+                ),
+                variant: "default",
+                duration: 8000,
+              })
+            } else if (notification.type === "like" && notification.track_id) {
+              const { data: track } = await supabase
+                .from("tracks")
+                .select("title")
+                .eq("id", notification.track_id)
+                .maybeSingle()
+
+              addToast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-red-500" />
+                    <span>New Like</span>
+                  </div>
+                ),
+                description: (
+                  <div
+                    className="cursor-pointer hover:underline"
+                    onClick={() => {
+                      router.push(`/track/${notification.track_id}`)
+                    }}
+                  >
+                    <span className="font-medium">{senderName}</span> liked your track{" "}
+                    <span className="font-medium text-red-500">{track?.title || "Unknown"}</span>
+                  </div>
+                ),
+                variant: "default",
+                duration: 8000,
+              })
+            } else if ((notification.type === "comment" || notification.type === "reply") && notification.track_id) {
+              const { data: track } = await supabase
+                .from("tracks")
+                .select("title")
+                .eq("id", notification.track_id)
+                .maybeSingle()
+
+              addToast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-green-500" />
+                    <span>{notification.type === "reply" ? "New Reply" : "New Comment"}</span>
+                  </div>
+                ),
+                description: (
+                  <div
+                    className="cursor-pointer hover:underline"
+                    onClick={() => {
+                      router.push(`/track/${notification.track_id}`)
+                    }}
+                  >
+                    <span className="font-medium">{senderName}</span>{" "}
+                    {notification.type === "reply" ? "replied to your comment" : "commented on"}{" "}
+                    {notification.type === "comment" && (
+                      <span className="font-medium text-green-500">{track?.title || "your track"}</span>
+                    )}
+                  </div>
+                ),
+                variant: "default",
+                duration: 8000,
+              })
+            }
+          } catch (error) {
+            console.error("[v0] ❌ Error processing notification:", error)
+          }
+        },
+      )
+      .subscribe((status) => {
+        console.log("[v0] Notification channel subscription status:", status)
+      })
 
     console.log("[v0] Setting up stream notifications channel...")
     const streamChannel = supabase
@@ -238,10 +362,11 @@ export function RealtimeNotifications() {
         }
       })
 
-    console.log("[v0] Both notification channels set up")
+    console.log("[v0] All notification channels set up")
 
     return () => {
       console.log("[v0] Cleaning up notification subscriptions")
+      supabase.removeChannel(notificationChannel)
       supabase.removeChannel(streamChannel)
       supabase.removeChannel(swapChannel)
       hasShownErrorToast.current = false

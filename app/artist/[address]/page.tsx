@@ -4,9 +4,14 @@ import { ArtistPageClient } from "@/components/artist-page-client"
 
 export default async function ArtistPage({ params }: { params: { address: string } }) {
   const { address } = params
+  const normalizedAddress = address.toLowerCase()
   const supabase = await createClient()
 
-  const { data: artist } = await supabase.from("profiles").select("*").eq("wallet_address", address).maybeSingle()
+  const { data: artist } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("wallet_address", normalizedAddress)
+    .maybeSingle()
 
   if (!artist) {
     notFound()
@@ -40,12 +45,12 @@ export default async function ArtistPage({ params }: { params: { address: string
   const { count: followerCount } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("following_address", address.toLowerCase())
+    .eq("following_address", normalizedAddress)
 
   const { count: followingCount } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("follower_address", address.toLowerCase())
+    .eq("follower_address", normalizedAddress)
 
   // Fetch artist's tracks
   const { data: tracks } = await supabase
@@ -54,7 +59,7 @@ export default async function ArtistPage({ params }: { params: { address: string
       *,
       artist:profiles!tracks_artist_id_fkey(*)
     `)
-    .eq("artist_id", address.toLowerCase())
+    .eq("artist_id", normalizedAddress)
     .or("is_hidden.is.null,is_hidden.eq.false")
     .order("created_at", { ascending: false })
 
@@ -84,14 +89,14 @@ export default async function ArtistPage({ params }: { params: { address: string
         artist:profiles!tracks_artist_id_fkey(*)
       )
     `)
-    .eq("listener_address", address.toLowerCase())
+    .eq("listener_address", normalizedAddress)
     .order("last_played_at", { ascending: false })
     .limit(50)
 
   const { data: liveStreams } = await supabase
     .from("live_streams")
     .select("*")
-    .eq("artist_address", address.toLowerCase())
+    .eq("artist_address", normalizedAddress)
     .order("created_at", { ascending: false })
     .limit(10)
 
@@ -100,7 +105,7 @@ export default async function ArtistPage({ params }: { params: { address: string
   const { data: followersData } = await supabase
     .from("follows")
     .select("follower_address, created_at")
-    .eq("following_address", address.toLowerCase())
+    .eq("following_address", normalizedAddress)
     .order("created_at", { ascending: false })
 
   let followers: any[] = []
@@ -125,7 +130,7 @@ export default async function ArtistPage({ params }: { params: { address: string
   const { data: followingData } = await supabase
     .from("follows")
     .select("following_address, created_at")
-    .eq("follower_address", address.toLowerCase())
+    .eq("follower_address", normalizedAddress)
     .order("created_at", { ascending: false })
 
   let following: any[] = []
@@ -154,7 +159,7 @@ export default async function ArtistPage({ params }: { params: { address: string
       *,
       artist:profiles!tracks_artist_id_fkey(*)
     `)
-    .eq("artist_id", address.toLowerCase())
+    .eq("artist_id", normalizedAddress)
     .eq("ai_generated", true)
     .or("is_hidden.is.null,is_hidden.eq.false")
     .order("created_at", { ascending: false })
