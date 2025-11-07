@@ -297,9 +297,9 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black pb-32">
+    <div className="min-h-screen bg-black pb-24 md:pb-32">
       {!loading && !error && featuredTracks.length > 0 && (
-        <section className="relative h-[60vh] md:h-[70vh] overflow-hidden">
+        <section className="relative h-[50vh] md:h-[70vh] overflow-hidden">
           <Carousel
             setApi={setCarouselApi}
             opts={{
@@ -345,54 +345,54 @@ export default function DiscoverPage() {
                     </div>
 
                     <div
-                      className="relative container h-full flex items-end pb-12 px-4 sm:px-6 transition-transform duration-300 ease-out"
+                      className="relative container h-full flex items-end pb-8 md:pb-12 px-4 md:px-6 transition-transform duration-300 ease-out"
                       style={{
                         transform: `translate(${parallax.x * 0.8}px, ${parallax.y * 0.8}px) rotateX(${-parallax.y * 0.3}deg) rotateY(${parallax.x * 0.3}deg)`,
                         transformStyle: "preserve-3d",
                       }}
                     >
-                      <div className="max-w-2xl space-y-6 animate-fade-in">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
-                          <Sparkles className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-semibold text-primary">Featured Track</span>
+                      <div className="max-w-2xl space-y-3 md:space-y-6 animate-fade-in">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/20 backdrop-blur-xl border border-primary/30">
+                          <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+                          <span className="text-xs md:text-sm font-semibold text-primary">Featured Track</span>
                         </div>
-                        <h1 className="text-5xl md:text-7xl font-bold text-white text-balance leading-tight">
+                        <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-white text-balance leading-tight">
                           {track.title}
                         </h1>
                         <Link href={`/artist/${track.artist_id}`}>
-                          <p className="text-xl md:text-2xl text-white/90 hover:text-primary transition-colors">
+                          <p className="text-lg md:text-xl lg:text-2xl text-white/90 hover:text-primary transition-colors">
                             {track.artist?.artist_name ||
                               `${track.artist_id.slice(0, 6)}...${track.artist_id.slice(-4)}`}
                           </p>
                         </Link>
-                        <div className="flex items-center gap-4 text-white/70">
+                        <div className="flex items-center gap-3 md:gap-4 text-sm md:text-base text-white/70">
                           {track.play_count && track.play_count > 0 && (
-                            <span className="flex items-center gap-2">
-                              <Play className="h-4 w-4" />
+                            <span className="flex items-center gap-1.5 md:gap-2">
+                              <Play className="h-3 w-3 md:h-4 md:w-4" />
                               {track.play_count} plays
                             </span>
                           )}
                           {track.like_count && track.like_count > 0 && (
-                            <span className="flex items-center gap-2">
-                              <Heart className="h-4 w-4" />
+                            <span className="flex items-center gap-1.5 md:gap-2">
+                              <Heart className="h-3 w-3 md:h-4 md:w-4" />
                               {track.like_count} likes
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
                           <Button
                             size="lg"
-                            className="rounded-full px-8 h-14 text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform"
+                            className="rounded-full px-6 md:px-8 h-12 md:h-14 text-base md:text-lg font-semibold shadow-2xl shadow-primary/50 hover:scale-105 transition-transform w-full sm:w-auto"
                             onClick={() => playTrack(track, featuredTracks)}
                           >
-                            <Play className="h-5 w-5 mr-2 fill-current" />
+                            <Play className="h-4 w-4 md:h-5 md:w-5 mr-2 fill-current" />
                             Play Now
                           </Button>
-                          <Link href={`/track/${track.id}`}>
+                          <Link href={`/track/${track.id}`} className="w-full sm:w-auto">
                             <Button
                               size="lg"
                               variant="outline"
-                              className="rounded-full px-8 h-14 text-lg font-semibold bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20"
+                              className="rounded-full px-6 md:px-8 h-12 md:h-14 text-base md:text-lg font-semibold bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 w-full"
                             >
                               View Details
                             </Button>
@@ -407,13 +407,13 @@ export default function DiscoverPage() {
           </Carousel>
 
           {featuredTracks.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+            <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
               {featuredTracks.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => carouselApi?.scrollTo(index)}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentSlide ? "w-8 bg-primary" : "w-2 bg-white/50 hover:bg-white/70"
+                  className={`h-1.5 md:h-2 rounded-full transition-all ${
+                    index === currentSlide ? "w-6 md:w-8 bg-primary" : "w-1.5 md:w-2 bg-white/50 hover:bg-white/70"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -423,18 +423,18 @@ export default function DiscoverPage() {
         </section>
       )}
 
-      <div className="flex gap-6 container px-4 sm:px-6">
-        <main className="flex-1 py-12 space-y-12">
+      <div className="flex gap-6 container px-4 md:px-6">
+        <main className="flex-1 py-8 md:py-12 space-y-8 md:space-y-12 min-w-0">
           {error && <ErrorState />}
 
           {!loading && !error && newReleases.length === 0 && <EmptyState />}
 
           {!loading && !error && newReleases.length > 0 && (
-            <section ref={categoriesRef} data-section="categories" className="space-y-6 animate-fade-in">
+            <section ref={categoriesRef} data-section="categories" className="space-y-4 md:space-y-6 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold">Browse All</h2>
+                <h2 className="text-2xl md:text-3xl font-bold">Browse All</h2>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {categories.map((category, index) => (
                   <Link key={category.id} href={category.href}>
                     <Card
@@ -443,17 +443,17 @@ export default function DiscoverPage() {
                         animation: `fade-in 0.5s ease-out ${index * 0.1}s both`,
                       }}
                     >
-                      <div className="p-6 h-40 flex flex-col justify-between">
-                        <div className="space-y-2">
+                      <div className="p-4 md:p-6 h-32 md:h-40 flex flex-col justify-between">
+                        <div className="space-y-1 md:space-y-2">
                           <div className="text-white transform group-hover:scale-110 transition-transform">
                             {category.icon}
                           </div>
-                          <h3 className="text-xl font-bold text-white">{category.name}</h3>
-                          <p className="text-sm text-white/80 line-clamp-2">{category.description}</p>
+                          <h3 className="text-base md:text-xl font-bold text-white">{category.name}</h3>
+                          <p className="text-xs md:text-sm text-white/80 line-clamp-2">{category.description}</p>
                         </div>
                       </div>
                       <div className="absolute -bottom-4 -right-4 opacity-20 group-hover:opacity-30 transition-opacity">
-                        <Music className="h-32 w-32 text-white" />
+                        <Music className="h-24 w-24 md:h-32 md:w-32 text-white" />
                       </div>
                     </Card>
                   </Link>
@@ -466,16 +466,16 @@ export default function DiscoverPage() {
             <section
               ref={newReleasesSectionRef}
               data-section="newReleases"
-              className="space-y-6 animate-fade-in"
+              className="space-y-4 md:space-y-6 animate-fade-in"
               style={{ animationDelay: "0.2s" }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold">New Releases</h2>
-                  <p className="text-foreground/70 mt-1">Fresh tracks just dropped</p>
+                  <h2 className="text-2xl md:text-3xl font-bold">New Releases</h2>
+                  <p className="text-sm md:text-base text-foreground/70 mt-1">Fresh tracks just dropped</p>
                 </div>
                 <Link href="/explore?sort=newest">
-                  <Button variant="ghost" className="gap-2 hover:text-primary">
+                  <Button variant="ghost" className="gap-2 hover:text-primary text-sm md:text-base">
                     See all
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -485,14 +485,17 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(newReleasesRef, "left")}
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
-                <div ref={newReleasesRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                <div
+                  ref={newReleasesRef}
+                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                >
                   {newReleases.map((track) => (
-                    <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
+                    <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
                       <TrackCard track={track} queue={newReleases} />
                     </div>
                   ))}
@@ -500,7 +503,7 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(newReleasesRef, "right")}
                 >
                   <ChevronRight className="h-6 w-6" />
@@ -513,17 +516,17 @@ export default function DiscoverPage() {
             <section
               ref={trendingSectionRef}
               data-section="trending"
-              className={`space-y-6 transition-all duration-700 ${
+              className={`space-y-4 md:space-y-6 transition-all duration-700 ${
                 sectionsVisible.trending ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold">Trending Now</h2>
-                  <p className="text-foreground/70 mt-1">What everyone's listening to</p>
+                  <h2 className="text-2xl md:text-3xl font-bold">Trending Now</h2>
+                  <p className="text-sm md:text-base text-foreground/70 mt-1">What everyone's listening to</p>
                 </div>
                 <Link href="/trending">
-                  <Button variant="ghost" className="gap-2 hover:text-primary">
+                  <Button variant="ghost" className="gap-2 hover:text-primary text-sm md:text-base">
                     See all
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -533,14 +536,17 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(trendingRef, "left")}
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
-                <div ref={trendingRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                <div
+                  ref={trendingRef}
+                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                >
                   {trending.map((track) => (
-                    <div key={track.id} className="flex-none w-[180px] md:w-[200px]">
+                    <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
                       <TrackCard track={track} queue={trending} />
                     </div>
                   ))}
@@ -548,7 +554,7 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(trendingRef, "right")}
                 >
                   <ChevronRight className="h-6 w-6" />
@@ -561,28 +567,31 @@ export default function DiscoverPage() {
             <section
               ref={forYouSectionRef}
               data-section="forYou"
-              className={`space-y-6 transition-all duration-700 ${
+              className={`space-y-4 md:space-y-6 transition-all duration-700 ${
                 sectionsVisible.forYou ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-3xl font-bold">Made For You</h2>
-                  <p className="text-foreground/70 mt-1">Personalized picks just for you</p>
+                  <h2 className="text-2xl md:text-3xl font-bold">Made For You</h2>
+                  <p className="text-sm md:text-base text-foreground/70 mt-1">Personalized picks just for you</p>
                 </div>
               </div>
               <div className="relative">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(forYouRef, "left")}
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </Button>
-                <div ref={forYouRef} className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4">
+                <div
+                  ref={forYouRef}
+                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                >
                   {forYou.map((track) => (
-                    <div key={track.id} className="flex-none w-[180px]">
+                    <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
                       <TrackCard track={track} queue={forYou} />
                     </div>
                   ))}
@@ -590,7 +599,7 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
                   onClick={() => scroll(forYouRef, "right")}
                 >
                   <ChevronRight className="h-6 w-6" />

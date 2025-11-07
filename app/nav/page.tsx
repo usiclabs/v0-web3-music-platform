@@ -226,7 +226,7 @@ export default function NavPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-      <div className="container max-w-6xl px-4 py-8 sm:py-12 mx-auto flex flex-col items-center">
+      <div className="container max-w-6xl px-4 py-8 sm:py-12 pb-24 mx-auto flex flex-col items-center">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
