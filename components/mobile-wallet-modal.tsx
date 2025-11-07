@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { Wallet, ExternalLink, QrCode, Smartphone } from "lucide-react"
 
@@ -65,19 +65,19 @@ export function MobileWalletModal({ open, onOpenChange, onSelectWalletConnect }:
 
   if (showInstructions) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md bg-gradient-to-br from-background via-background to-muted/20 border-primary/20">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl">
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="bg-gradient-to-br from-background via-background to-muted/20 border-primary/20 max-h-[90vh] overflow-y-auto">
+          <DrawerHeader className="text-left">
+            <DrawerTitle className="flex items-center gap-2 text-2xl">
               <Smartphone className="h-6 w-6 text-primary" />
               How to Connect on Mobile
-            </DialogTitle>
-            <DialogDescription className="text-base leading-relaxed pt-2">
+            </DrawerTitle>
+            <DrawerDescription className="text-base leading-relaxed pt-2">
               To use this app on mobile Safari, you need to open it in a Web3 wallet browser:
-            </DialogDescription>
-          </DialogHeader>
+            </DrawerDescription>
+          </DrawerHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 px-4 pb-8">
             <div className="space-y-3">
               <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border border-border/50">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
@@ -126,25 +126,25 @@ export function MobileWalletModal({ open, onOpenChange, onSelectWalletConnect }:
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
     )
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-background via-background to-muted/20 border-primary/20">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="bg-gradient-to-br from-background via-background to-muted/20 border-primary/20 max-h-[90vh] overflow-y-auto">
+        <DrawerHeader className="text-left">
+          <DrawerTitle className="flex items-center gap-2 text-2xl">
             <Wallet className="h-6 w-6 text-primary" />
             Connect Your Wallet
-          </DialogTitle>
-          <DialogDescription className="text-base leading-relaxed pt-2">
+          </DrawerTitle>
+          <DrawerDescription className="text-base leading-relaxed pt-2">
             Choose how you'd like to connect your wallet on mobile
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-3 py-4">
+        <div className="space-y-3 px-4 pb-4">
           {wallets.map((wallet) => {
             const Icon = wallet.icon
             return (
@@ -172,7 +172,7 @@ export function MobileWalletModal({ open, onOpenChange, onSelectWalletConnect }:
           })}
         </div>
 
-        <div className="border-t border-border/50 pt-4">
+        <div className="border-t border-border/50 px-4 py-4">
           <Button
             variant="ghost"
             onClick={() => setShowInstructions(true)}
@@ -181,7 +181,7 @@ export function MobileWalletModal({ open, onOpenChange, onSelectWalletConnect }:
             Need help? View instructions
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   )
 }
