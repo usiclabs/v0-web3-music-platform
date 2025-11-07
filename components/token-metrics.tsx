@@ -168,7 +168,7 @@ export function TokenMetrics() {
           </div>
         </div>
         <div className="text-2xl sm:text-3xl font-bold mb-1 break-all">
-          {metrics.totalSupply > 0 ? `${(metrics.totalSupply / 1000000).toFixed(2)}M` : "0M"}
+          {metrics.totalSupply > 0 ? `${(metrics.totalSupply / 1000000000).toFixed(0)} Billion` : "0"}
         </div>
         <div className="text-xs sm:text-sm text-muted-foreground">Total Supply</div>
       </Card>
@@ -180,7 +180,7 @@ export function TokenMetrics() {
           </div>
         </div>
         <div className="text-2xl sm:text-3xl font-bold mb-1 break-all">
-          {metrics.circulatingSupply > 0 ? `${(metrics.circulatingSupply / 1000000).toFixed(2)}M` : "0M"}
+          {metrics.circulatingSupply > 0 ? `${(metrics.circulatingSupply / 1000000000).toFixed(0)} Billion` : "0"}
         </div>
         <div className="text-xs sm:text-sm text-muted-foreground">Circulating Supply</div>
       </Card>

@@ -27,9 +27,11 @@ interface ActivityItem {
   user_address: string
   user_name?: string
   user_avatar?: string
+  user_has_profile?: boolean // Added flag to track if user has a profile
   target_user_address?: string
   target_user_name?: string
   target_user_avatar?: string
+  target_user_has_profile?: boolean // Added flag to track if target user has a profile
   track_id?: string
   track_title?: string
   track_cover?: string
@@ -90,9 +92,11 @@ export default function ActivityFeedPage() {
             user_address: follow.follower_address,
             user_name: followerProfile?.artist_name,
             user_avatar: followerProfile?.avatar_url,
+            user_has_profile: !!followerProfile, // Track if user has profile
             target_user_address: follow.following_address,
             target_user_name: followingProfile?.artist_name,
             target_user_avatar: followingProfile?.avatar_url,
+            target_user_has_profile: !!followingProfile, // Track if target user has profile
             created_at: follow.created_at,
           })
         })
@@ -131,6 +135,7 @@ export default function ActivityFeedPage() {
             user_address: like.user_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             track_id: like.track_id,
             track_title: track?.title,
             track_cover: track?.cover_url,
@@ -172,6 +177,7 @@ export default function ActivityFeedPage() {
             user_address: comment.user_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             track_id: comment.track_id,
             track_title: track?.title,
             track_cover: track?.cover_url,
@@ -214,6 +220,7 @@ export default function ActivityFeedPage() {
             user_address: comment.user_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             stream_id: comment.stream_id,
             stream_title: stream?.title,
             comment_content: comment.content,
@@ -255,6 +262,7 @@ export default function ActivityFeedPage() {
             user_address: stream.listener_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             track_id: stream.track_id,
             track_title: track?.title,
             track_cover: track?.cover_url,
@@ -289,6 +297,7 @@ export default function ActivityFeedPage() {
             user_address: stream.artist_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             stream_id: stream.id,
             stream_title: stream.title,
             created_at: stream.started_at || stream.created_at,
@@ -322,6 +331,7 @@ export default function ActivityFeedPage() {
             user_address: swap.user_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             token_symbol: swap.token_out,
             token_amount: swap.amount_out,
             created_at: swap.created_at,
@@ -355,6 +365,7 @@ export default function ActivityFeedPage() {
             user_address: playlist.owner_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
+            user_has_profile: !!profile, // Track if user has profile
             playlist_id: playlist.id,
             playlist_name: playlist.name,
             created_at: playlist.created_at,
@@ -390,9 +401,11 @@ export default function ActivityFeedPage() {
           user_address: follow.follower_address,
           user_name: followerProfile?.artist_name,
           user_avatar: followerProfile?.avatar_url,
+          user_has_profile: !!followerProfile, // Track if user has profile
           target_user_address: follow.following_address,
           target_user_name: followingProfile?.artist_name,
           target_user_avatar: followingProfile?.avatar_url,
+          target_user_has_profile: !!followingProfile, // Track if target user has profile
           created_at: follow.created_at,
         }
 
@@ -478,6 +491,8 @@ export default function ActivityFeedPage() {
   function getActivityText(activity: ActivityItem) {
     const userName = activity.user_name || `${activity.user_address.slice(0, 6)}...${activity.user_address.slice(-4)}`
 
+    const isAICurator = activity.user_address === "0xAI000000000000000000000000000000CURATOR1"
+
     switch (activity.type) {
       case "follow":
         const targetName =
@@ -485,30 +500,42 @@ export default function ActivityFeedPage() {
           `${activity.target_user_address?.slice(0, 6)}...${activity.target_user_address?.slice(-4)}`
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-blue-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-blue-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" started following "}
-            <Link
-              href={`/artist/${activity.target_user_address}`}
-              className="font-semibold hover:text-blue-400 transition-colors"
-            >
-              {targetName}
-            </Link>
+            {activity.target_user_has_profile ? (
+              <Link
+                href={`/artist/${activity.target_user_address}`}
+                className="font-semibold hover:text-blue-400 transition-colors"
+              >
+                {targetName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{targetName}</span>
+            )}
           </>
         )
       case "like":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-red-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-red-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" liked "}
             <Link href={`/track/${activity.track_id}`} className="font-semibold hover:text-red-400 transition-colors">
               {activity.track_title}
@@ -518,12 +545,16 @@ export default function ActivityFeedPage() {
       case "comment":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-green-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-green-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" commented on "}
             <Link href={`/track/${activity.track_id}`} className="font-semibold hover:text-green-400 transition-colors">
               {activity.track_title}
@@ -538,12 +569,16 @@ export default function ActivityFeedPage() {
       case "livestream_comment":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-green-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-green-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" commented on live stream "}
             <Link
               href={`/live/${activity.stream_id}`}
@@ -563,12 +598,16 @@ export default function ActivityFeedPage() {
       case "stream":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-purple-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-purple-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" is listening to "}
             <Link
               href={`/track/${activity.track_id}`}
@@ -581,12 +620,16 @@ export default function ActivityFeedPage() {
       case "live_stream_start":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-orange-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-orange-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" started a live stream "}
             <Link
               href={`/live/${activity.stream_id}`}
@@ -607,12 +650,16 @@ export default function ActivityFeedPage() {
         const amount = activity.token_amount ? Number.parseFloat(activity.token_amount).toFixed(2) : "0"
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-yellow-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-yellow-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" bought "}
             <span className="font-semibold text-yellow-400 flex items-center gap-1">
               <Sparkles className="h-4 w-4" />
@@ -623,14 +670,27 @@ export default function ActivityFeedPage() {
       case "playlist_create":
         return (
           <>
-            <Link
-              href={`/artist/${activity.user_address}`}
-              className="font-semibold hover:text-cyan-400 transition-colors"
-            >
-              {userName}
-            </Link>
+            {isAICurator ? (
+              <Link href="/ai-curator" className="font-semibold hover:text-cyan-400 transition-colors">
+                {userName}
+              </Link>
+            ) : activity.user_has_profile ? (
+              <Link
+                href={`/artist/${activity.user_address}`}
+                className="font-semibold hover:text-cyan-400 transition-colors"
+              >
+                {userName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
+            )}
             {" created a playlist "}
-            <span className="font-semibold text-cyan-400">{activity.playlist_name}</span>
+            <Link
+              href={`/playlist/${activity.playlist_id}`}
+              className="font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              {activity.playlist_name}
+            </Link>
           </>
         )
       default:
@@ -725,7 +785,7 @@ export default function ActivityFeedPage() {
         ) : filteredActivities.length === 0 ? (
           <Card className="p-12 text-center bg-card/30 backdrop-blur-xl border-border/50">
             <div className="relative inline-block">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
               <ActivityIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4 relative z-10" />
             </div>
             <h3 className="text-xl font-semibold mb-2">No activity yet</h3>
@@ -744,21 +804,46 @@ export default function ActivityFeedPage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
 
                 <div className="flex items-start gap-4">
-                  <Link href={`/artist/${activity.user_address}`} className="flex-shrink-0 relative group/avatar">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-500 rounded-full opacity-0 group-hover/avatar:opacity-50 blur transition-opacity duration-300" />
-                    <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/avatar:border-primary transition-all relative z-10">
-                      <AvatarImage
-                        src={
-                          activity.user_avatar ||
-                          `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.user_address || "/placeholder.svg"}`
-                        }
-                        alt={activity.user_name || activity.user_address}
-                      />
-                      <AvatarFallback className="bg-primary/20 text-primary font-semibold">
-                        {(activity.user_name?.[0] || activity.user_address.slice(2, 4)).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
+                  {activity.user_has_profile ||
+                  activity.user_address === "0xAI000000000000000000000000000000CURATOR1" ? (
+                    <Link
+                      href={
+                        activity.user_address === "0xAI000000000000000000000000000000CURATOR1"
+                          ? "/ai-curator"
+                          : `/artist/${activity.user_address}`
+                      }
+                      className="flex-shrink-0 relative group/avatar"
+                    >
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-500 rounded-full opacity-0 group-hover/avatar:opacity-50 blur transition-opacity duration-300" />
+                      <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/avatar:border-primary transition-all relative z-10">
+                        <AvatarImage
+                          src={
+                            activity.user_avatar ||
+                            `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.user_address || "/placeholder.svg"}`
+                          }
+                          alt={activity.user_name || activity.user_address}
+                        />
+                        <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                          {(activity.user_name?.[0] || activity.user_address.slice(2, 4)).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  ) : (
+                    <div className="flex-shrink-0 relative opacity-70 cursor-not-allowed">
+                      <Avatar className="h-12 w-12 border-2 border-border/50">
+                        <AvatarImage
+                          src={
+                            activity.user_avatar ||
+                            `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.user_address || "/placeholder.svg"}`
+                          }
+                          alt={activity.user_name || activity.user_address}
+                        />
+                        <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                          {(activity.user_name?.[0] || activity.user_address.slice(2, 4)).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  )}
 
                   {(activity.type === "like" || activity.type === "stream" || activity.type === "comment") &&
                     activity.track_cover && (
@@ -776,28 +861,51 @@ export default function ActivityFeedPage() {
                     )}
 
                   {activity.type === "follow" && activity.target_user_avatar && (
-                    <Link
-                      href={`/artist/${activity.target_user_address}`}
-                      className="flex-shrink-0 relative group/target"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full opacity-0 group-hover/target:opacity-50 blur transition-opacity duration-300" />
-                      <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/target:border-blue-500 transition-all relative z-10">
-                        <AvatarImage
-                          src={
-                            activity.target_user_avatar ||
-                            `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.target_user_address || "/placeholder.svg"}`
-                          }
-                          alt={activity.target_user_name || activity.target_user_address || ""}
-                        />
-                        <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold">
-                          {(
-                            activity.target_user_name?.[0] ||
-                            activity.target_user_address?.slice(2, 4) ||
-                            "U"
-                          ).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Link>
+                    <>
+                      {activity.target_user_has_profile ? (
+                        <Link
+                          href={`/artist/${activity.target_user_address}`}
+                          className="flex-shrink-0 relative group/target"
+                        >
+                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full opacity-0 group-hover/target:opacity-50 blur transition-opacity duration-300" />
+                          <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/target:border-blue-500 transition-all relative z-10">
+                            <AvatarImage
+                              src={
+                                activity.target_user_avatar ||
+                                `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.target_user_address || "/placeholder.svg"}`
+                              }
+                              alt={activity.target_user_name || activity.target_user_address || ""}
+                            />
+                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold">
+                              {(
+                                activity.target_user_name?.[0] ||
+                                activity.target_user_address?.slice(2, 4) ||
+                                "U"
+                              ).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                      ) : (
+                        <div className="flex-shrink-0 relative opacity-70 cursor-not-allowed">
+                          <Avatar className="h-12 w-12 border-2 border-border/50">
+                            <AvatarImage
+                              src={
+                                activity.target_user_avatar ||
+                                `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.target_user_address || "/placeholder.svg"}`
+                              }
+                              alt={activity.target_user_name || activity.target_user_address || ""}
+                            />
+                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold">
+                              {(
+                                activity.target_user_name?.[0] ||
+                                activity.target_user_address?.slice(2, 4) ||
+                                "U"
+                              ).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="flex-1 min-w-0">

@@ -27,7 +27,7 @@
     "@tanstack/query-core": "latest",
     "@tanstack/react-query": "latest",
     "@vercel/analytics": "latest",
-    "@vercel/blob": "2.0.0",
+    "@vercel/blob": "latest",
     "@wagmi/core": "latest",
     "@zoralabs/coins-sdk": "latest",
     "abitype": "latest",

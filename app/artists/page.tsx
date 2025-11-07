@@ -35,61 +35,111 @@ export default function ArtistsPage() {
     async function loadArtists() {
       const supabase = createBrowserClient()
 
-      const { data: artistsData } = await supabase.from("profiles").select("*").not("artist_name", "is", null)
+      console.log("[v0] Starting artist data load...")
 
-      if (!artistsData) {
+      const { data: artistsData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .not("artist_name", "is", null)
+
+      if (profilesError) {
+        console.error("[v0] Error loading profiles:", profilesError)
         setLoading(false)
         return
       }
 
-      const artistsWithData = await Promise.all(
-        artistsData.map(async (artist) => {
-          const { count: trackCount } = await supabase
-            .from("tracks")
-            .select("*", { count: "exact", head: true })
-            .eq("artist_id", artist.wallet_address.toLowerCase())
+      if (!artistsData || artistsData.length === 0) {
+        console.log("[v0] No artists found")
+        setLoading(false)
+        return
+      }
 
-          const { data: earnings } = await supabase
-            .from("streams")
-            .select("total_paid, tracks!inner(artist_id)")
-            .eq("tracks.artist_id", artist.wallet_address.toLowerCase())
+      console.log(`[v0] Loaded ${artistsData.length} artist profiles`)
 
-          const totalEarned = earnings?.reduce((sum, stream) => sum + (stream.total_paid || 0), 0) || 0
+      const artistAddresses = artistsData.map((a) => a.wallet_address.toLowerCase())
 
-          const { count: totalStreams } = await supabase
-            .from("streams")
-            .select("*, tracks!inner(artist_id)", { count: "exact", head: true })
-            .eq("tracks.artist_id", artist.wallet_address.toLowerCase())
+      const { data: tracksData } = await supabase.from("tracks").select("artist_id").in("artist_id", artistAddresses)
 
-          const { count: followerCount } = await supabase
-            .from("follows")
-            .select("*", { count: "exact", head: true })
-            .eq("following_address", artist.wallet_address)
+      const trackCounts = new Map<string, number>()
+      tracksData?.forEach((track) => {
+        const addr = track.artist_id.toLowerCase()
+        trackCounts.set(addr, (trackCounts.get(addr) || 0) + 1)
+      })
+      console.log("[v0] Loaded track counts")
 
-          let marketCap = 0
-          if (artist.profile_token_address) {
-            try {
-              const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
-              if (res.ok) {
-                const metrics = await res.json()
-                marketCap = metrics.marketCap || 0
-              }
-            } catch (error) {
-              console.error(`[v0] Failed to fetch market cap for ${artist.wallet_address}:`, error)
+      const { data: earningsData } = await supabase
+        .from("streams")
+        .select("total_paid, tracks!inner(artist_id)")
+        .in("tracks.artist_id", artistAddresses)
+
+      const earningsMap = new Map<string, number>()
+      earningsData?.forEach((stream) => {
+        const addr = stream.tracks?.artist_id?.toLowerCase()
+        if (addr) {
+          earningsMap.set(addr, (earningsMap.get(addr) || 0) + (stream.total_paid || 0))
+        }
+      })
+      console.log("[v0] Loaded earnings data")
+
+      const { data: streamsData } = await supabase
+        .from("streams")
+        .select("tracks!inner(artist_id)")
+        .in("tracks.artist_id", artistAddresses)
+
+      const streamCounts = new Map<string, number>()
+      streamsData?.forEach((stream) => {
+        const addr = stream.tracks?.artist_id?.toLowerCase()
+        if (addr) {
+          streamCounts.set(addr, (streamCounts.get(addr) || 0) + 1)
+        }
+      })
+      console.log("[v0] Loaded stream counts")
+
+      const { data: followsData } = await supabase
+        .from("follows")
+        .select("following_address")
+        .in(
+          "following_address",
+          artistsData.map((a) => a.wallet_address),
+        )
+
+      const followerCounts = new Map<string, number>()
+      followsData?.forEach((follow) => {
+        const addr = follow.following_address.toLowerCase()
+        followerCounts.set(addr, (followerCounts.get(addr) || 0) + 1)
+      })
+      console.log("[v0] Loaded follower counts")
+
+      const artistsWithData: Artist[] = artistsData.map((artist) => {
+        const addr = artist.wallet_address.toLowerCase()
+        return {
+          ...artist,
+          totalEarned: earningsMap.get(addr) || 0,
+          trackCount: trackCounts.get(addr) || 0,
+          followerCount: followerCounts.get(addr) || 0,
+          totalStreams: streamCounts.get(addr) || 0,
+          marketCap: 0, // Will fetch below for artists with tokens
+        }
+      })
+
+      const artistsWithTokens = artistsWithData.filter((a) => a.profile_token_address)
+      console.log(`[v0] Fetching market caps for ${artistsWithTokens.length} artists with tokens...`)
+
+      await Promise.all(
+        artistsWithTokens.map(async (artist) => {
+          try {
+            const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
+            if (res.ok) {
+              const metrics = await res.json()
+              artist.marketCap = metrics.marketCap || 0
             }
-          }
-
-          return {
-            ...artist,
-            totalEarned,
-            trackCount: trackCount || 0,
-            followerCount: followerCount || 0,
-            totalStreams: totalStreams || 0,
-            marketCap,
+          } catch (error) {
+            console.error(`[v0] Failed to fetch market cap for ${artist.wallet_address}:`, error)
           }
         }),
       )
 
+      console.log("[v0] Artist data load complete")
       setArtists(artistsWithData)
       setLoading(false)
     }

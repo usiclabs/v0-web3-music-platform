@@ -32,6 +32,7 @@ import {
   Radio,
   Info,
   Activity,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -67,11 +68,25 @@ const navItems: NavItem[] = [
     gradient: "from-orange-500 to-red-500",
   },
   {
+    title: "Community Update",
+    href: "/community-update",
+    icon: Sparkles,
+    description: "X402 & ERC-8004 Integration",
+    gradient: "from-violet-500 via-purple-500 to-fuchsia-500",
+  },
+  {
     title: "Activity Feed",
     href: "/activity-feed",
     icon: Activity,
     description: "Live platform activity",
     gradient: "from-violet-500 to-fuchsia-500",
+  },
+  {
+    title: "AI Curator",
+    href: "/ai-curator",
+    icon: Sparkles,
+    description: "AI-powered playlists",
+    gradient: "from-violet-500 via-fuchsia-500 to-violet-600",
   },
   {
     title: "Explore",
