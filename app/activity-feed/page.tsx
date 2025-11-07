@@ -733,7 +733,11 @@ export default function ActivityFeedPage() {
             variant={filter === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("all")}
-            className="rounded-full backdrop-blur-sm bg-card/50 border-border/50 hover:bg-card/70 transition-all"
+            className={`rounded-full backdrop-blur-sm transition-all ${
+              filter === "all"
+                ? "bg-primary hover:bg-primary/90 border-primary shadow-lg shadow-primary/50"
+                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-primary/30"
+            }`}
           >
             <ActivityIcon className="h-4 w-4 mr-2" />
             All Activity
@@ -742,7 +746,11 @@ export default function ActivityFeedPage() {
             variant={filter === "social" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("social")}
-            className="rounded-full backdrop-blur-sm bg-card/50 border-border/50 hover:bg-card/70 transition-all"
+            className={`rounded-full backdrop-blur-sm transition-all ${
+              filter === "social"
+                ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 border-red-500 shadow-lg shadow-red-500/50 text-white"
+                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-red-500/30"
+            }`}
           >
             <Heart className="h-4 w-4 mr-2" />
             Social
@@ -751,7 +759,11 @@ export default function ActivityFeedPage() {
             variant={filter === "financial" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("financial")}
-            className="rounded-full backdrop-blur-sm bg-card/50 border-border/50 hover:bg-card/70 transition-all"
+            className={`rounded-full backdrop-blur-sm transition-all ${
+              filter === "financial"
+                ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 border-yellow-500 shadow-lg shadow-yellow-500/50 text-white"
+                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-yellow-500/30"
+            }`}
           >
             <Coins className="h-4 w-4 mr-2" />
             Financial
@@ -760,7 +772,11 @@ export default function ActivityFeedPage() {
             variant={filter === "live" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("live")}
-            className="rounded-full backdrop-blur-sm bg-card/50 border-border/50 hover:bg-card/70 transition-all"
+            className={`rounded-full backdrop-blur-sm transition-all ${
+              filter === "live"
+                ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-orange-500 shadow-lg shadow-orange-500/50 text-white animate-pulse"
+                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-orange-500/30"
+            }`}
           >
             <Radio className="h-4 w-4 mr-2" />
             Live
