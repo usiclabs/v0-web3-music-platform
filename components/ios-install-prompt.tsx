@@ -46,8 +46,8 @@ export function IOSInstallPrompt() {
 
   return (
     <div className="fixed inset-x-0 bottom-20 z-50 mx-4 mb-4 animate-in slide-in-from-bottom-5">
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500/20 via-purple-600/10 to-background backdrop-blur-xl shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent" />
+      <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-black/80 backdrop-blur-2xl shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-violet-600/5" />
 
         <div className="relative p-6">
           <button
