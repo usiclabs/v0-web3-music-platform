@@ -31,6 +31,7 @@ import { PlaylistCard } from "@/components/playlist-card"
 import { Button } from "@/components/ui/button"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
 import type { Address } from "viem"
+import { RecentlyPlayed } from "@/components/recently-played"
 
 export default function ProfilePage() {
   const { address, isConnected } = useWallet()
@@ -261,7 +262,6 @@ export default function ProfilePage() {
               size="sm"
               className="bg-black/80 backdrop-blur-sm hover:bg-black/90"
               onClick={() => {
-                // TODO: Implement cover photo upload
                 alert("Cover photo upload coming soon!")
               }}
             >
@@ -376,6 +376,11 @@ export default function ProfilePage() {
 
       <main className="container py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
+          {/* Recently Played Widget */}
+          <div className="mb-8">
+            <RecentlyPlayed />
+          </div>
+
           <Tabs defaultValue="settings" className="w-full">
             <div className="mb-6 sm:mb-8">
               <TabsList className="grid grid-cols-7 w-full h-auto p-1.5 gap-1 bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg">

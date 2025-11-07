@@ -15,15 +15,23 @@ import { RealtimeNotifications } from "@/components/realtime-notifications"
 import { PresenceTracker } from "@/components/presence-tracker"
 import { PageTransition } from "@/components/page-transition"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { IOSInstallPrompt } from "@/components/ios-install-prompt"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
 const geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "USIC - Web3 Music Streaming",
+  title: "MyUSIC - Web3 Music Streaming",
   description: "Blockchain-powered music streaming with micropayments and NFTs",
   generator: "v0.app",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "MyUSIC",
+  },
+  themeColor: "#8b5cf6",
 }
 
 export default function RootLayout({
@@ -33,6 +41,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/icon-120.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="MyUSIC" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
+      </head>
       <body className={`${geistSans.className} antialiased`}>
         <ErrorBoundary>
           <Web3Provider>
@@ -47,6 +68,7 @@ export default function RootLayout({
                 <OnboardingModal />
                 <RealtimeNotifications />
                 <PresenceTracker />
+                <IOSInstallPrompt />
               </ToastProvider>
             </AudioPlayerProvider>
           </Web3Provider>

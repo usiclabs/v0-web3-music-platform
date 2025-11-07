@@ -30,6 +30,7 @@ import {
 } from "@/lib/web3/contracts"
 import confetti from "canvas-confetti"
 import { TrackComments } from "@/components/track-comments"
+import { SimilarTracks } from "@/components/similar-tracks"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -617,6 +618,10 @@ export function TrackDetailContent({
           <TrackComments trackId={track.id} />
         </div>
       </main>
+
+      <div className="container max-w-7xl mx-auto px-4 py-8 relative z-10">
+        <SimilarTracks trackId={track.id} />
+      </div>
 
       <Sheet open={swapDrawerOpen} onOpenChange={setSwapDrawerOpen}>
         <SheetContent
