@@ -14,7 +14,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(settings)
   } catch (error) {
     console.error("[Auto-Investment] Get settings error:", error)
-    return NextResponse.json({ error: "Failed to get settings" }, { status: 500 })
+    return NextResponse.json({
+      enabled: false,
+      daily_limit: 10.0,
+      per_track_limit: 1.0,
+      auto_unlock_full_songs: false,
+      preferred_artists: [],
+    })
   }
 }
 

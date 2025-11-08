@@ -16,6 +16,7 @@ import { SkeletonCard } from "@/components/skeleton-loader"
 import Link from "next/link"
 import Image from "next/image"
 import { useAudioPlayer } from "@/lib/audio-player-context"
+// import { StoriesCarousel } from "@/components/stories-carousel"
 
 type TrackWithStats = TrackWithArtist & {
   total_earned?: number
@@ -425,6 +426,8 @@ export default function DiscoverPage() {
 
       <div className="flex gap-6 container px-4 md:px-6">
         <main className="flex-1 py-8 md:py-12 space-y-8 md:space-y-12 min-w-0">
+          {!loading && !error && <section className="animate-fade-in">{/* <StoriesCarousel /> */}</section>}
+
           {error && <ErrorState />}
 
           {!loading && !error && newReleases.length === 0 && <EmptyState />}

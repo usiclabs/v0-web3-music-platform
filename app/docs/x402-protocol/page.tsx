@@ -78,14 +78,14 @@ export default function X402ProtocolPage() {
                 <h3 className="text-xl font-semibold mb-3">2. Streaming & Payment Chunks</h3>
                 <p className="text-muted-foreground mb-4">
                   As the track plays, the client sends signed payment chunks to the server. Each chunk represents a
-                  portion of the stream (e.g., 10 seconds = $0.01).
+                  portion of the stream (e.g., 30 seconds at the artist's set price).
                 </p>
                 <div className="bg-muted/10 rounded-lg p-4 overflow-x-auto">
                   <pre className="text-sm font-mono">
                     {`{
   "trackId": "abc123",
   "chunkIndex": 5,
-  "amount": "10000", // 0.01 USDC
+  "amount": "10000", // 0.01 USDC (example, set by artist)
   "timestamp": 1234567890,
   "signature": "0xdef..."
 }`}
@@ -177,7 +177,7 @@ export default function X402ProtocolPage() {
   body: JSON.stringify({
     trackId,
     chunkIndex,
-    amount: parseUnits("0.01", 6),
+    amount: parseUnits("0.01", 6), // Artist-set price
     signature
   })
 })`}

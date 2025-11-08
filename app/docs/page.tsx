@@ -140,18 +140,18 @@ export default function DocsPage() {
             </Card>
           </Link>
 
-          <Link href="/auto-invest">
+          <Link href="/docs/auto-investment">
             <Card
               className="bg-card/50 backdrop-blur-xl border border-border/50 p-6 hover-lift animate-slide-up cursor-pointer h-full"
               style={{ animationDelay: "0.7s" }}
             >
-              <TrendingUp className="h-10 w-10 text-purple-500 mb-4" />
+              <Sparkles className="h-10 w-10 text-[#e53e3e] mb-4" />
               <h3 className="text-xl font-semibold mb-2">Auto-Investment</h3>
               <p className="text-muted-foreground mb-4">
-                Dollar-cost average into artist tokens automatically with EIP-3009.
+                Learn how frictionless automated payments transform the music streaming experience.
               </p>
               <Button variant="link" className="p-0">
-                Learn More →
+                Read Guide →
               </Button>
             </Card>
           </Link>

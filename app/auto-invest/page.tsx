@@ -25,10 +25,8 @@ import {
   Settings,
   Info,
   Wallet,
-  Database,
   ArrowRight,
   Activity,
-  Target,
 } from "lucide-react"
 
 export default function AutoInvestPage() {
@@ -48,7 +46,6 @@ export default function AutoInvestPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [setupRequired, setSetupRequired] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -64,11 +61,10 @@ export default function AutoInvestPage() {
   const loadSettings = async () => {
     try {
       const response = await fetch(`/api/auto-investment/settings?userAddress=${address}`)
-      if (response.status === 404) {
-        setSetupRequired(true)
+      if (!response.ok) {
+        console.error("Failed to load settings")
         return
       }
-      if (!response.ok) throw new Error("Failed to load settings")
       const data = await response.json()
       if (data && typeof data === "object") {
         setSettings({
@@ -86,11 +82,10 @@ export default function AutoInvestPage() {
   const loadSessionStatus = async () => {
     try {
       const response = await fetch(`/api/auto-investment/session/status?userAddress=${address}`)
-      if (response.status === 404) {
-        setSetupRequired(true)
+      if (!response.ok) {
+        console.error("Failed to load session status")
         return
       }
-      if (!response.ok) throw new Error("Failed to load session status")
       const data = await response.json()
       setSessionStatus(data)
     } catch (error) {
@@ -175,78 +170,6 @@ export default function AutoInvestPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (setupRequired) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/10">
-        <div className="container mx-auto px-4 py-16">
-          <div
-            className={`max-w-3xl mx-auto transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-          >
-            <Card className="border-2 border-[#e53e3e]/30 bg-[#e53e3e]/5 backdrop-blur-xl shadow-2xl shadow-[#e53e3e]/10">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto mb-4 h-20 w-20 rounded-2xl bg-gradient-to-br from-[#e53e3e] to-[#dc2626] flex items-center justify-center shadow-lg shadow-[#e53e3e]/30 animate-glow-pulse">
-                  <Database className="h-10 w-10 text-white" />
-                </div>
-                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#e53e3e] to-[#dc2626] bg-clip-text text-transparent">
-                  Database Setup Required
-                </CardTitle>
-                <CardDescription className="text-base mt-2">
-                  The auto-investment feature requires database tables to be created
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 pb-8">
-                <Alert className="border-[#e53e3e]/30 bg-[#e53e3e]/5 backdrop-blur-sm">
-                  <AlertCircle className="h-5 w-5 text-[#e53e3e]" />
-                  <AlertDescription className="ml-2">
-                    <p className="font-semibold mb-2 text-[#e53e3e]">Missing Database Tables</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      The following tables need to be created:{" "}
-                      <code className="text-xs px-1.5 py-0.5 rounded bg-muted">session_keys</code>,{" "}
-                      <code className="text-xs px-1.5 py-0.5 rounded bg-muted">auto_investment_settings</code>, and{" "}
-                      <code className="text-xs px-1.5 py-0.5 rounded bg-muted">auto_investment_transactions</code>
-                    </p>
-                  </AlertDescription>
-                </Alert>
-
-                <div className="p-6 rounded-xl bg-muted/30 border border-border/50 backdrop-blur-sm">
-                  <p className="text-sm font-semibold mb-4 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-[#e53e3e]" />
-                    Setup Instructions
-                  </p>
-                  <ol className="text-sm text-muted-foreground space-y-3 list-decimal list-inside">
-                    <li className="flex items-start gap-2">
-                      <span className="flex-1">
-                        Locate the SQL script:{" "}
-                        <code className="text-xs px-1.5 py-0.5 rounded bg-muted/50">
-                          scripts/add-auto-investment-tables.sql
-                        </code>
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="flex-1">Run the script in your Supabase SQL editor</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="flex-1">Refresh this page to continue</span>
-                    </li>
-                  </ol>
-                </div>
-
-                <Button
-                  onClick={() => window.location.reload()}
-                  className="w-full bg-gradient-to-r from-[#e53e3e] to-[#dc2626] hover:from-[#dc2626] hover:to-[#b91c1c] shadow-lg shadow-[#e53e3e]/30 hover:shadow-xl hover:shadow-[#e53e3e]/40 transition-all duration-300 hover:scale-[1.02]"
-                  size="lg"
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  I've Run the Script - Refresh
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   if (!address) {

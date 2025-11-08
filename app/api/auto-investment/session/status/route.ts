@@ -29,6 +29,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[Auto-Investment] Session status error:", error)
-    return NextResponse.json({ error: "Failed to get session status" }, { status: 500 })
+    return NextResponse.json({ active: false, sessionKey: null })
   }
 }

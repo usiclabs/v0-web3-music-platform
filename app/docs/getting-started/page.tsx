@@ -34,7 +34,9 @@ export default function GettingStartedPage() {
                   <Coins className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold mb-1">Instant Payments</h4>
-                    <p className="text-sm text-muted-foreground">Artists earn $0.01 USDC per stream, paid instantly</p>
+                    <p className="text-sm text-muted-foreground">
+                      Artists set their own price per stream, paid instantly via X402 micropayments
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -79,8 +81,9 @@ export default function GettingStartedPage() {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Fund Your Wallet</h3>
                     <p className="text-muted-foreground">
-                      Add USDC to your wallet on the Base network. You'll need USDC to pay for streams ($0.01 per
-                      stream). You can get USDC from exchanges like Coinbase or use the built-in swap feature.
+                      Add USDC to your wallet on the Base network. You'll need USDC to pay for streams (prices set by
+                      each artist, typically fractions of a cent). You can get USDC from exchanges like Coinbase or use
+                      the built-in swap feature.
                     </p>
                   </div>
                 </div>
@@ -94,8 +97,8 @@ export default function GettingStartedPage() {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Start Streaming</h3>
                     <p className="text-muted-foreground">
-                      Browse the trending feed, discover new artists, and start streaming! Each stream costs $0.01 USDC
-                      and goes directly to the artist.
+                      Browse the trending feed, discover new artists, and start streaming! Each stream costs the price
+                      set by the artist, paid directly via X402 micropayments.
                     </p>
                   </div>
                 </div>
@@ -149,8 +152,9 @@ export default function GettingStartedPage() {
                   <div>
                     <h3 className="text-xl font-semibold mb-2">Earn from Streams</h3>
                     <p className="text-muted-foreground">
-                      Every time someone streams your track, you earn $0.01 USDC instantly. Track your earnings in
-                      real-time on your dashboard.
+                      Set your own price per stream and earn USDC instantly with every play. Thanks to X402
+                      micropayments, you can charge as little as fractions of a cent. Track your earnings in real-time
+                      on your dashboard.
                     </p>
                   </div>
                 </div>

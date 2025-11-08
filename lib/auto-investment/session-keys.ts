@@ -130,8 +130,7 @@ export async function getAutoInvestmentSettings(userAddress: string): Promise<Au
     .maybeSingle()
 
   if (!data) {
-    // Create default settings
-    const { data: newSettings } = await supabase
+    const { data: newSettings, error } = await supabase
       .from("auto_investment_settings")
       .insert({
         user_address: userAddress.toLowerCase(),
@@ -143,6 +142,18 @@ export async function getAutoInvestmentSettings(userAddress: string): Promise<Au
       })
       .select()
       .single()
+
+    if (error) {
+      console.error("[Auto-Investment] Error creating default settings:", error)
+      // Return defaults even if insert fails
+      return {
+        enabled: false,
+        daily_limit: 10.0,
+        per_track_limit: 1.0,
+        auto_unlock_full_songs: false,
+        preferred_artists: [],
+      }
+    }
 
     return newSettings
   }

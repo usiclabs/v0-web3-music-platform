@@ -89,10 +89,13 @@ export default function ArtistGuidePage() {
                 <DollarSign className="h-8 w-8 text-primary mb-3" />
                 <h3 className="text-xl font-semibold mb-2">Stream Payments</h3>
                 <p className="text-muted-foreground mb-3">
-                  Earn $0.01 USDC per stream, paid instantly to your wallet. No waiting for monthly payouts.
+                  Set your own price per stream and earn USDC paid instantly to your wallet. Thanks to X402
+                  micropayments, you can charge as low as fractions of a cent. No waiting for monthly payouts.
                 </p>
                 <div className="bg-primary/10 rounded-lg p-3">
                   <p className="text-sm font-mono">
+                    Example at $0.01/stream:
+                    <br />
                     1,000 streams = $10 USDC
                     <br />
                     10,000 streams = $100 USDC
