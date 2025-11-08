@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { TrendingUp, Flame } from "lucide-react"
+import { TrendingUp, Flame, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TrackCard } from "@/components/track-card"
@@ -23,6 +23,7 @@ interface Track {
   price_per_chunk?: number
   unlock_type?: string
   content_type?: string
+  total_earnings: number
 }
 
 const TIME_FILTERS = [
@@ -125,6 +126,15 @@ export function TrendingWidget() {
               >
                 {index + 1}
               </div>
+
+              {/* Earnings Badge */}
+              {track.total_earnings > 0 && (
+                <div className="absolute -top-2 -right-2 z-10 px-2 py-1 rounded-full bg-green-500 text-white text-xs font-bold flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  {track.total_earnings.toFixed(2)}
+                </div>
+              )}
+
               <TrackCard track={track} />
             </div>
           ))}

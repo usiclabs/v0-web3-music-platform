@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { data: streams } = await supabase
     .from("streams")
-    .select("track_id, chunks_played, listener_address, last_played_at")
+    .select("track_id, chunks_played, listener_address, last_played_at, total_paid")
     .gte("last_played_at", timeWindow.toISOString())
     .order("last_played_at", { ascending: false })
 
@@ -28,12 +28,13 @@ export async function GET(request: Request) {
     return NextResponse.json([])
   }
 
-  const trackStats = new Map<string, { plays: number; listeners: Set<string> }>()
+  const trackStats = new Map<string, { plays: number; listeners: Set<string>; earnings: number }>()
 
   for (const stream of streams) {
-    const existing = trackStats.get(stream.track_id) || { plays: 0, listeners: new Set() }
+    const existing = trackStats.get(stream.track_id) || { plays: 0, listeners: new Set(), earnings: 0 }
     existing.plays += stream.chunks_played
     existing.listeners.add(stream.listener_address)
+    existing.earnings += Number(stream.total_paid) || 0
     trackStats.set(stream.track_id, existing)
   }
 
@@ -71,6 +72,7 @@ export async function GET(request: Request) {
       avatar_url: track.artist?.avatar_url,
       total_plays: stats.plays,
       total_listeners: stats.listeners.size,
+      total_earnings: stats.earnings,
     }
   })
 

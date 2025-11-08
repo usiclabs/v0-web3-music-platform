@@ -46,11 +46,19 @@ export async function GET() {
   })
 
   const playCountMap = new Map<string, number>()
+  const earningsMap = new Map<string, number>()
+
   for (const [artistId, trackIds] of artistTrackMap.entries()) {
-    const { data: streams } = await supabase.from("streams").select("chunks_played").in("track_id", trackIds)
+    const { data: streams } = await supabase
+      .from("streams")
+      .select("chunks_played, total_paid")
+      .in("track_id", trackIds)
 
     const totalPlays = streams?.reduce((sum, s) => sum + s.chunks_played, 0) || 0
+    const totalEarnings = streams?.reduce((sum, s) => sum + (Number(s.total_paid) || 0), 0) || 0
+
     playCountMap.set(artistId, totalPlays)
+    earningsMap.set(artistId, totalEarnings)
   }
 
   const artistsWithStats = artists.map((artist) => ({
@@ -58,6 +66,7 @@ export async function GET() {
     trackCount: trackCountMap.get(artist.wallet_address) || 0,
     followerCount: followerCountMap.get(artist.wallet_address) || 0,
     playCount: playCountMap.get(artist.wallet_address) || 0,
+    totalEarnings: earningsMap.get(artist.wallet_address) || 0,
   }))
 
   artistsWithStats.forEach((artist: any) => {

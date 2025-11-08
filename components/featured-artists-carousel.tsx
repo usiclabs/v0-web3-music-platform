@@ -15,6 +15,7 @@ interface Artist {
   trackCount: number
   followerCount: number
   playCount: number
+  totalEarnings: number
 }
 
 export function FeaturedArtistsCarousel() {
@@ -139,6 +140,11 @@ export function FeaturedArtistsCarousel() {
                         <TrendingUp className="h-3 w-3" />
                         <span>{artist.playCount.toLocaleString()}</span>
                       </div>
+                    </div>
+
+                    {/* Earnings */}
+                    <div className="mt-2 text-sm font-semibold text-green-500">
+                      ${artist.totalEarnings.toFixed(2)} earned
                     </div>
                   </div>
                 </Card>
