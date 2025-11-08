@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { TrendingUp, Flame, DollarSign } from "lucide-react"
+import { TrendingUp, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TrackCard } from "@/components/track-card"
@@ -129,9 +129,8 @@ export function TrendingWidget() {
 
               {/* Earnings Badge */}
               {track.total_earnings > 0 && (
-                <div className="absolute -top-2 -right-2 z-10 px-2 py-1 rounded-full bg-green-500 text-white text-xs font-bold flex items-center gap-1">
-                  <DollarSign className="h-3 w-3" />
-                  {track.total_earnings.toFixed(2)}
+                <div className="absolute -top-2 -right-2 z-10 px-2 py-1 rounded-full bg-emerald-500/90 text-white text-xs font-semibold flex items-center gap-0.5 shadow-lg">
+                  {track.total_earnings.toFixed(4)} USDC
                 </div>
               )}
 

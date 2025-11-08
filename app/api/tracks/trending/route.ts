@@ -77,9 +77,10 @@ export async function GET(request: Request) {
   })
 
   tracksWithStats.sort((a, b) => {
-    const aIndex = topTrackIds.indexOf(a.id)
-    const bIndex = topTrackIds.indexOf(b.id)
-    return aIndex - bIndex
+    if (b.total_earnings !== a.total_earnings) {
+      return b.total_earnings - a.total_earnings
+    }
+    return b.total_plays - a.total_plays
   })
 
   return NextResponse.json(tracksWithStats)

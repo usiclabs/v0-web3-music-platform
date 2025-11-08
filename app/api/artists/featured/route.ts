@@ -70,10 +70,15 @@ export async function GET() {
   }))
 
   artistsWithStats.forEach((artist: any) => {
-    artist.score = artist.playCount * 2 + artist.followerCount * 10 + artist.trackCount * 5
+    artist.score = artist.totalEarnings * 50 + artist.playCount * 2 + artist.followerCount * 10 + artist.trackCount * 5
   })
 
-  artistsWithStats.sort((a: any, b: any) => b.score - a.score)
+  artistsWithStats.sort((a: any, b: any) => {
+    if (b.totalEarnings !== a.totalEarnings) {
+      return b.totalEarnings - a.totalEarnings
+    }
+    return b.score - a.score
+  })
 
   return NextResponse.json(artistsWithStats.slice(0, 20))
 }

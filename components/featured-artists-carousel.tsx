@@ -143,8 +143,8 @@ export function FeaturedArtistsCarousel() {
                     </div>
 
                     {/* Earnings */}
-                    <div className="mt-2 text-sm font-semibold text-green-500">
-                      ${artist.totalEarnings.toFixed(2)} earned
+                    <div className="mt-2 text-sm font-semibold text-emerald-500">
+                      {artist.totalEarnings.toFixed(4)} USDC earned
                     </div>
                   </div>
                 </Card>
