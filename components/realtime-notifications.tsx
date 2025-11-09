@@ -3,12 +3,11 @@
 import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Music, TrendingUp, Coins, Heart, MessageCircle, UserPlus } from "lucide-react"
 
 export function RealtimeNotifications() {
-  const { addToast } = useToast()
+  const { toast } = useToast()
   const router = useRouter()
   const { address } = useWallet()
   const supabase = createClient()
@@ -40,7 +39,6 @@ export function RealtimeNotifications() {
               content?: string
             }
 
-            // Fetch sender profile
             const { data: profile } = await supabase
               .from("profiles")
               .select("artist_name")
@@ -51,27 +49,11 @@ export function RealtimeNotifications() {
               profile?.artist_name ||
               `${notification.sender_address.slice(0, 6)}...${notification.sender_address.slice(-4)}`
 
-            // Show toast based on notification type
             if (notification.type === "follow") {
-              addToast({
-                title: (
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4 text-blue-500" />
-                    <span>New Follower</span>
-                  </div>
-                ),
-                description: (
-                  <div
-                    className="cursor-pointer hover:underline"
-                    onClick={() => {
-                      router.push(`/artist/${notification.sender_address}`)
-                    }}
-                  >
-                    <span className="font-medium">{senderName}</span> started following you
-                  </div>
-                ),
+              toast({
+                title: "New Follower",
+                description: `${senderName} started following you`,
                 variant: "default",
-                duration: 8000,
               })
             } else if (notification.type === "like" && notification.track_id) {
               const { data: track } = await supabase
@@ -80,26 +62,10 @@ export function RealtimeNotifications() {
                 .eq("id", notification.track_id)
                 .maybeSingle()
 
-              addToast({
-                title: (
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-red-500" />
-                    <span>New Like</span>
-                  </div>
-                ),
-                description: (
-                  <div
-                    className="cursor-pointer hover:underline"
-                    onClick={() => {
-                      router.push(`/track/${notification.track_id}`)
-                    }}
-                  >
-                    <span className="font-medium">{senderName}</span> liked your track{" "}
-                    <span className="font-medium text-red-500">{track?.title || "Unknown"}</span>
-                  </div>
-                ),
+              toast({
+                title: "New Like",
+                description: `${senderName} liked your track "${track?.title || "Unknown"}"`,
                 variant: "default",
-                duration: 8000,
               })
             } else if ((notification.type === "comment" || notification.type === "reply") && notification.track_id) {
               const { data: track } = await supabase
@@ -108,29 +74,13 @@ export function RealtimeNotifications() {
                 .eq("id", notification.track_id)
                 .maybeSingle()
 
-              addToast({
-                title: (
-                  <div className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4 text-green-500" />
-                    <span>{notification.type === "reply" ? "New Reply" : "New Comment"}</span>
-                  </div>
-                ),
-                description: (
-                  <div
-                    className="cursor-pointer hover:underline"
-                    onClick={() => {
-                      router.push(`/track/${notification.track_id}`)
-                    }}
-                  >
-                    <span className="font-medium">{senderName}</span>{" "}
-                    {notification.type === "reply" ? "replied to your comment" : "commented on"}{" "}
-                    {notification.type === "comment" && (
-                      <span className="font-medium text-green-500">{track?.title || "your track"}</span>
-                    )}
-                  </div>
-                ),
+              const action = notification.type === "reply" ? "replied to your comment" : "commented on"
+              const trackText = notification.type === "comment" ? ` "${track?.title || "your track"}"` : ""
+
+              toast({
+                title: notification.type === "reply" ? "New Reply" : "New Comment",
+                description: `${senderName} ${action}${trackText}`,
                 variant: "default",
-                duration: 8000,
               })
             }
           } catch (error) {
@@ -196,27 +146,10 @@ export function RealtimeNotifications() {
 
             console.log("[v0] Showing stream unlock notification:", { username, trackTitle })
 
-            addToast({
-              title: (
-                <div className="flex items-center gap-2">
-                  <Music className="h-4 w-4 text-green-500" />
-                  <span>Song Unlocked</span>
-                </div>
-              ),
-              description: (
-                <div
-                  className="cursor-pointer hover:underline"
-                  onClick={() => {
-                    console.log("[v0] Navigating to track:", stream.track_id)
-                    router.push(`/track/${stream.track_id}`)
-                  }}
-                >
-                  <span className="font-medium">{username}</span> just unlocked{" "}
-                  <span className="font-medium text-green-500">{trackTitle}</span>
-                </div>
-              ),
+            toast({
+              title: "Song Unlocked",
+              description: `${username} just unlocked "${trackTitle}"`,
               variant: "default",
-              duration: 8000,
             })
           } catch (error) {
             console.error("[v0] ❌ Error processing stream notification:", error)
@@ -295,58 +228,21 @@ export function RealtimeNotifications() {
                 amount,
               })
 
-              addToast({
-                title: (
-                  <div className="flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-accent" />
-                    <span>Token Purchased</span>
-                  </div>
-                ),
-                description: (
-                  <div
-                    className="cursor-pointer hover:underline"
-                    onClick={() => {
-                      console.log("[v0] Navigating to tokens page")
-                      router.push("/tokens")
-                    }}
-                  >
-                    <span className="font-medium">{username}</span> bought{" "}
-                    <span className="font-medium text-accent">
-                      {amount} ${track.title}
-                    </span>{" "}
-                    tokens
-                  </div>
-                ),
+              toast({
+                title: "Token Purchased",
+                description: `${username} bought ${amount} $${track.title} tokens`,
                 variant: "default",
-                duration: 8000,
               })
             } else if (swap.token_out === "USI") {
               const amount = Number.parseFloat(swap.amount_out).toFixed(2)
               console.log("[v0] Showing USI purchase notification:", { username, amount })
 
-              addToast({
-                title: (
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-accent" />
-                    <span>Platform Token Activity</span>
-                  </div>
-                ),
-                description: (
-                  <div
-                    className="cursor-pointer hover:underline"
-                    onClick={() => {
-                      console.log("[v0] Navigating to swap page")
-                      router.push("/swap")
-                    }}
-                  >
-                    <span className="font-medium">{username}</span> bought{" "}
-                    <span className="font-medium text-accent">{amount} $USI</span>
-                  </div>
-                ),
+              toast({
+                title: "Platform Token Activity",
+                description: `${username} bought ${amount} $USI`,
                 variant: "default",
-                duration: 8000,
               })
-              console.log("[v0] addToast called successfully")
+              console.log("[v0] toast called successfully")
             } else {
               console.log("[v0] Skipping notification - not a music token or USI purchase")
             }
@@ -371,7 +267,7 @@ export function RealtimeNotifications() {
       supabase.removeChannel(swapChannel)
       hasShownErrorToast.current = false
     }
-  }, [address, addToast, router, supabase])
+  }, [address, toast, router, supabase])
 
   return null
 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -225,7 +225,7 @@ export default function PairingPage() {
             <Shield className="h-10 w-10 text-destructive" />
           </div>
           <h1 className="text-3xl font-bold mb-3">Admin Access Required</h1>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-sm text-muted-foreground">
             {!isConnected
               ? "Please connect your wallet to access the USI Pairing Engine."
               : "You do not have permission to access this page. This tool is restricted to platform administrators."}

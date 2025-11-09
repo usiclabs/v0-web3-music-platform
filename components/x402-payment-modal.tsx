@@ -18,7 +18,7 @@ import {
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useState, useEffect } from "react"
 import { X402_CONFIG } from "@/lib/web3/contracts"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useAccount, useReadContract } from "wagmi"
 import { USDC_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"

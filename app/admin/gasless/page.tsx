@@ -18,7 +18,7 @@ import {
   CheckCircle2,
   Sparkles,
 } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { formatUnits } from "viem"
 

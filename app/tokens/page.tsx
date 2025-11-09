@@ -38,7 +38,7 @@ import {
   DollarSign,
   User,
 } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast" // Updated import path
 import { createClient } from "@/lib/supabase/client"
 import { useWriteContract, usePublicClient } from "wagmi"
 import { parseUnits, formatUnits } from "viem"

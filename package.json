@@ -41,7 +41,7 @@
     "crypto": "1.0.1",
     "date-fns": "latest",
     "embla-carousel": "8.6.0",
-    "embla-carousel-autoplay": "latest",
+    "embla-carousel-autoplay": "8.6.0",
     "embla-carousel-react": "8.6.0",
     "ethers": "6.15.0",
     "fs": "0.0.1-security",

@@ -7,7 +7,7 @@ import { AudioPlayerProvider } from "@/lib/audio-player-context"
 import { AudioPlayer } from "@/components/audio-player"
 import { X402PaymentModal } from "@/components/x402-payment-modal"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
-import { ToastProvider } from "@/components/ui/toast"
+import { Toaster } from "@/components/ui/toaster"
 import { Header } from "@/components/header"
 import { BlockchainTicker } from "@/components/blockchain-ticker"
 import { OnboardingModal } from "@/components/onboarding-modal"
@@ -83,19 +83,18 @@ export default function RootLayout({
           <FarcasterProvider>
             <Web3Provider>
               <AudioPlayerProvider>
-                <ToastProvider>
-                  <Header />
-                  <BlockchainTicker />
-                  <FarcasterBadge />
-                  <PageTransition>{children}</PageTransition>
-                  <AudioPlayer />
-                  <X402PaymentModal />
-                  <MobileBottomNav />
-                  <OnboardingModal />
-                  <RealtimeNotifications />
-                  <PresenceTracker />
-                  <IOSInstallPrompt />
-                </ToastProvider>
+                <Header />
+                <BlockchainTicker />
+                <FarcasterBadge />
+                <PageTransition>{children}</PageTransition>
+                <AudioPlayer />
+                <X402PaymentModal />
+                <MobileBottomNav />
+                <OnboardingModal />
+                <RealtimeNotifications />
+                <PresenceTracker />
+                <IOSInstallPrompt />
+                <Toaster />
               </AudioPlayerProvider>
             </Web3Provider>
           </FarcasterProvider>

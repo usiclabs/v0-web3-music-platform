@@ -19,7 +19,7 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import {
   USDC_ADDRESS,
   USI_TOKEN_ADDRESS,

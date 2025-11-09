@@ -20,7 +20,7 @@ import {
   Clock,
   Wallet,
 } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
 import { useReadContract, useWriteContract } from "wagmi"
 import { parseUnits, formatUnits } from "viem"
