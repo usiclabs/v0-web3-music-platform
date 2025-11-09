@@ -18,6 +18,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { IOSInstallPrompt } from "@/components/ios-install-prompt"
 import { FarcasterProvider } from "@/lib/farcaster-provider"
 import { FarcasterBadge } from "@/components/farcaster-badge"
+import { EarningsToastListener } from "@/components/earnings-toast-listener"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -94,6 +95,7 @@ export default function RootLayout({
                 <RealtimeNotifications />
                 <PresenceTracker />
                 <IOSInstallPrompt />
+                <EarningsToastListener />
                 <Toaster />
               </AudioPlayerProvider>
             </Web3Provider>

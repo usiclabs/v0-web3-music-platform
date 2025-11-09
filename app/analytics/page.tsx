@@ -127,7 +127,6 @@ async function getPlatformMetrics() {
     .sort((a, b) => b.streams - a.streams)
     .slice(0, 10)
 
-  // Get recent activity
   const { data: recentStreams } = await supabase
     .from("streams")
     .select(
@@ -137,6 +136,7 @@ async function getPlatformMetrics() {
       listener_address,
       chunks_played,
       total_paid,
+      track_id,
       tracks!streams_track_id_fkey (
         id,
         title,
@@ -149,7 +149,60 @@ async function getPlatformMetrics() {
     `,
     )
     .order("started_at", { ascending: false })
-    .limit(20)
+    .limit(50)
+
+  // Get auto-investment transactions
+  const { data: autoInvestTxs } = await supabase
+    .from("auto_investment_transactions")
+    .select(
+      `
+      id,
+      created_at,
+      user_address,
+      amount,
+      chunk_index,
+      status,
+      track_id,
+      tracks!auto_investment_transactions_track_id_fkey (
+        id,
+        title,
+        cover_url,
+        artist_id,
+        profiles!tracks_artist_id_fkey (
+          artist_name
+        )
+      )
+    `,
+    )
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(50)
+
+  // Combine and sort all activity
+  const allActivity = [
+    ...(recentStreams || []).map((s) => ({
+      id: s.id,
+      timestamp: s.started_at,
+      type: "stream" as const,
+      listener_address: s.listener_address,
+      chunks_played: s.chunks_played,
+      total_paid: s.total_paid,
+      track_id: s.track_id,
+      tracks: s.tracks,
+    })),
+    ...(autoInvestTxs || []).map((tx) => ({
+      id: tx.id,
+      timestamp: tx.created_at,
+      type: "auto_invest" as const,
+      listener_address: tx.user_address,
+      chunks_played: 1,
+      total_paid: tx.amount,
+      track_id: tx.track_id,
+      tracks: tx.tracks,
+    })),
+  ]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 30)
 
   return {
     totalTracks: totalTracks || 0,
@@ -162,7 +215,7 @@ async function getPlatformMetrics() {
     streamHistory: streamHistory || [],
     topTracks: sortedTopTracks,
     topArtists,
-    recentActivity: recentStreams || [],
+    recentActivity: allActivity,
   }
 }
 

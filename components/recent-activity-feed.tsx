@@ -11,10 +11,12 @@ import { createClient } from "@/lib/supabase/client"
 interface RecentActivityFeedProps {
   activity: Array<{
     id: string
-    started_at: string
+    timestamp: string
+    type: "stream" | "auto_invest"
     listener_address: string
     chunks_played: number
     total_paid: number
+    track_id: string
     tracks: {
       id: string
       title: string
@@ -33,8 +35,8 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
   useEffect(() => {
     console.log("[v0] Setting up real-time activity feed subscription...")
 
-    const channel = supabase
-      .channel("activity-feed")
+    const streamsChannel = supabase
+      .channel("activity-feed-streams")
       .on(
         "postgres_changes",
         {
@@ -63,6 +65,7 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
               listener_address,
               chunks_played,
               total_paid,
+              track_id,
               tracks!streams_track_id_fkey (
                 id,
                 title,
@@ -78,18 +81,95 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
             .single()
 
           if (streamData) {
-            console.log("[v0] Adding new activity to feed:", streamData)
-            setActivity((prev) => [streamData, ...prev].slice(0, 20))
+            console.log("[v0] Adding new stream activity to feed:", streamData)
+            const activityItem = {
+              id: streamData.id,
+              timestamp: streamData.started_at,
+              type: "stream" as const,
+              listener_address: streamData.listener_address,
+              chunks_played: streamData.chunks_played,
+              total_paid: streamData.total_paid,
+              track_id: streamData.track_id,
+              tracks: streamData.tracks,
+            }
+            setActivity((prev) => [activityItem, ...prev].slice(0, 30))
           }
         },
       )
       .subscribe((status) => {
-        console.log("[v0] Activity feed subscription status:", status)
+        console.log("[v0] Streams channel subscription status:", status)
+      })
+
+    const autoInvestChannel = supabase
+      .channel("activity-feed-auto-invest")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "auto_investment_transactions",
+        },
+        async (payload) => {
+          console.log("[v0] New auto-invest activity received:", payload)
+
+          const newTx = payload.new as {
+            id: string
+            created_at: string
+            user_address: string
+            amount: number
+            status: string
+            track_id: string
+          }
+
+          if (newTx.status === "completed") {
+            const { data: txData } = await supabase
+              .from("auto_investment_transactions")
+              .select(
+                `
+                id,
+                created_at,
+                user_address,
+                amount,
+                track_id,
+                tracks!auto_investment_transactions_track_id_fkey (
+                  id,
+                  title,
+                  cover_url,
+                  artist_id,
+                  profiles!tracks_artist_id_fkey (
+                    artist_name
+                  )
+                )
+              `,
+              )
+              .eq("id", newTx.id)
+              .single()
+
+            if (txData) {
+              console.log("[v0] Adding new auto-invest activity to feed:", txData)
+              const activityItem = {
+                id: txData.id,
+                timestamp: txData.created_at,
+                type: "auto_invest" as const,
+                listener_address: txData.user_address,
+                chunks_played: 1,
+                total_paid: txData.amount,
+                track_id: txData.track_id,
+                tracks: txData.tracks,
+              }
+              setActivity((prev) => [activityItem, ...prev].slice(0, 30))
+            }
+          }
+        },
+      )
+      .subscribe((status) => {
+        console.log("[v0] Auto-invest channel subscription status:", status)
       })
 
     return () => {
-      console.log("[v0] Cleaning up activity feed subscription")
-      supabase.removeChannel(channel)
+      console.log("[v0] Cleaning up activity feed subscriptions")
+      supabase.removeChannel(streamsChannel)
+      supabase.removeChannel(autoInvestChannel)
     }
   }, [supabase])
 
@@ -136,7 +216,9 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
                   <span className="font-mono text-primary">
                     {item.listener_address.slice(0, 6)}...{item.listener_address.slice(-4)}
                   </span>
-                  <span className="text-muted-foreground"> played </span>
+                  <span className="text-muted-foreground">
+                    {item.type === "auto_invest" ? " auto-unlocked " : " played "}
+                  </span>
                   {item.tracks ? (
                     <Link
                       href={`/track/${item.tracks.id}`}
@@ -147,9 +229,19 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
                   ) : (
                     <span className="font-medium">Unknown Track</span>
                   )}
+                  {item.type === "stream" && Number(item.total_paid) === 0 && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                      Token Gated
+                    </span>
+                  )}
+                  {item.type === "auto_invest" && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                      Auto-Invest
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {formatDistanceToNow(new Date(item.started_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
                 </div>
               </div>
 

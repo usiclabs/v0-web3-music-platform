@@ -448,6 +448,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    try {
+      const { data: trackData } = await supabase.from("tracks").select("title").eq("id", trackId).maybeSingle()
+
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/earnings/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          artistAddress: track.artist_id,
+          amount: Number(track.price_per_chunk),
+          trackId,
+          trackTitle: trackData?.title || null,
+        }),
+      })
+    } catch (broadcastError) {
+      console.error("[v0] Failed to broadcast earnings event:", broadcastError)
+      // Don't fail the main transaction if broadcast fails
+    }
+
     console.log("[v0] Payment settled successfully for chunk:", chunkIndex)
 
     return NextResponse.json({
