@@ -7,7 +7,20 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
-import { Heart, MessageCircle, UserPlus, Radio, Coins, Play, Clock, ActivityIcon, List, Sparkles } from "lucide-react"
+import {
+  Heart,
+  MessageCircle,
+  UserPlus,
+  Radio,
+  Coins,
+  Play,
+  Clock,
+  ActivityIcon,
+  List,
+  Sparkles,
+  TrendingUp,
+  Zap,
+} from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 
@@ -699,127 +712,161 @@ export default function ActivityFeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-primary/5 to-black pb-32">
-      <div className="container px-4 sm:px-6 py-12 max-w-4xl">
-        <div className="mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 blur-3xl -z-10" />
-          <div className="bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl animate-pulse" />
-                <ActivityIcon className="h-10 w-10 text-primary relative z-10" />
+    <div className="min-h-screen bg-black relative overflow-hidden pb-32">
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-purple-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-pink-500/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-grid-white/[0.02]" />
+      </div>
+
+      <div className="container px-4 sm:px-6 lg:px-8 py-16 max-w-5xl">
+        <div className="mb-12">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-2xl blur-2xl opacity-40" />
+                  <div className="relative bg-gradient-to-br from-primary/20 to-purple-500/20 backdrop-blur-xl p-4 rounded-2xl border border-white/10">
+                    <Zap className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-2">Activity Feed</h1>
+                  <p className="text-lg text-white/60 tracking-wide">Real-time platform pulse</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Activity Feed
-                </h1>
-                <p className="text-foreground/70 text-sm">Real-time platform pulse</p>
+
+              <div className="flex items-center gap-4 ml-24">
+                <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-sm border border-green-500/20 rounded-full px-4 py-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  <span className="text-sm text-green-400 font-medium tracking-wide">LIVE</span>
+                </div>
+                <div className="h-1 w-1 rounded-full bg-white/20" />
+                <span className="text-sm text-white/40 tracking-wide">{filteredActivities.length} activities</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-4">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-              </span>
-              <span className="text-sm text-green-500 font-medium">Live updates enabled</span>
-              <span className="text-sm text-muted-foreground">· {filteredActivities.length} activities</span>
+            <div className="hidden lg:flex items-center gap-4">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 min-w-[140px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Today</span>
+                </div>
+                <div className="text-2xl font-bold text-white">
+                  {
+                    filteredActivities.filter(
+                      (a) => new Date(a.created_at).toDateString() === new Date().toDateString(),
+                    ).length
+                  }
+                </div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 min-w-[140px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <ActivityIcon className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Total</span>
+                </div>
+                <div className="text-2xl font-bold text-white">{filteredActivities.length}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-          <Button
-            variant={filter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("all")}
-            className={`rounded-full backdrop-blur-sm transition-all ${
-              filter === "all"
-                ? "bg-primary hover:bg-primary/90 border-primary shadow-lg shadow-primary/50"
-                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-primary/30"
-            }`}
-          >
-            <ActivityIcon className="h-4 w-4 mr-2" />
-            All Activity
-          </Button>
-          <Button
-            variant={filter === "social" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("social")}
-            className={`rounded-full backdrop-blur-sm transition-all ${
-              filter === "social"
-                ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 border-red-500 shadow-lg shadow-red-500/50 text-white"
-                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-red-500/30"
-            }`}
-          >
-            <Heart className="h-4 w-4 mr-2" />
-            Social
-          </Button>
-          <Button
-            variant={filter === "financial" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("financial")}
-            className={`rounded-full backdrop-blur-sm transition-all ${
-              filter === "financial"
-                ? "bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 border-yellow-500 shadow-lg shadow-yellow-500/50 text-white"
-                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-yellow-500/30"
-            }`}
-          >
-            <Coins className="h-4 w-4 mr-2" />
-            Financial
-          </Button>
-          <Button
-            variant={filter === "live" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("live")}
-            className={`rounded-full backdrop-blur-sm transition-all ${
-              filter === "live"
-                ? "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-orange-500 shadow-lg shadow-orange-500/50 text-white animate-pulse"
-                : "bg-card/50 border-border/50 hover:bg-card/70 hover:border-orange-500/30"
-            }`}
-          >
-            <Radio className="h-4 w-4 mr-2" />
-            Live
-          </Button>
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            <Button
+              variant={filter === "all" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("all")}
+              className={`rounded-full px-6 py-2 h-auto font-medium tracking-wide transition-all duration-300 ${
+                filter === "all"
+                  ? "bg-white text-black hover:bg-white/90 shadow-lg shadow-white/20"
+                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10"
+              }`}
+            >
+              <ActivityIcon className="h-4 w-4 mr-2" />
+              All Activity
+            </Button>
+            <Button
+              variant={filter === "social" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("social")}
+              className={`rounded-full px-6 py-2 h-auto font-medium tracking-wide transition-all duration-300 ${
+                filter === "social"
+                  ? "bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 shadow-lg shadow-red-500/20"
+                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10"
+              }`}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Social
+            </Button>
+            <Button
+              variant={filter === "financial" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("financial")}
+              className={`rounded-full px-6 py-2 h-auto font-medium tracking-wide transition-all duration-300 ${
+                filter === "financial"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/20"
+                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10"
+              }`}
+            >
+              <Coins className="h-4 w-4 mr-2" />
+              Financial
+            </Button>
+            <Button
+              variant={filter === "live" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFilter("live")}
+              className={`rounded-full px-6 py-2 h-auto font-medium tracking-wide transition-all duration-300 ${
+                filter === "live"
+                  ? "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 shadow-lg shadow-orange-500/20"
+                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10"
+              }`}
+            >
+              <Radio className="h-4 w-4 mr-2" />
+              Live
+            </Button>
+          </div>
         </div>
 
         {loading ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="p-4 bg-card/30 backdrop-blur-xl border-border/50 animate-pulse">
-                <div className="flex items-start gap-4">
-                  <div className="h-12 w-12 rounded-full bg-muted/50" />
-                  {i % 2 === 0 && <div className="h-12 w-12 rounded-lg bg-muted/50" />}
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/4 bg-muted/50 rounded" />
-                    <div className="h-3 w-1/4 bg-muted/50 rounded" />
+              <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 animate-pulse">
+                <div className="flex items-start gap-6">
+                  <div className="h-14 w-14 rounded-full bg-white/10" />
+                  {i % 2 === 0 && <div className="h-14 w-14 rounded-xl bg-white/10" />}
+                  <div className="flex-1 space-y-3">
+                    <div className="h-5 w-3/4 bg-white/10 rounded-lg" />
+                    <div className="h-4 w-1/4 bg-white/10 rounded-lg" />
                   </div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         ) : filteredActivities.length === 0 ? (
-          <Card className="p-12 text-center bg-card/30 backdrop-blur-xl border-border/50">
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-              <ActivityIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4 relative z-10" />
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-16 text-center">
+            <div className="relative inline-block mb-6">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+              <ActivityIcon className="h-20 w-20 text-white/40 relative z-10" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No activity yet</h3>
-            <p className="text-foreground/70">Check back soon to see what's happening!</p>
-          </Card>
+            <h3 className="text-2xl font-bold text-white mb-2">No activity yet</h3>
+            <p className="text-white/60 text-lg">Check back soon to see what's happening!</p>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredActivities.map((activity, index) => (
               <Card
                 key={activity.id}
-                className="group relative p-4 bg-card/30 backdrop-blur-xl border-border/50 hover:bg-card/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 overflow-hidden"
+                className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/[0.07] hover:border-white/20 transition-all duration-500 overflow-hidden"
                 style={{
-                  animation: `slideIn 0.3s ease-out ${index * 0.05}s backwards`,
+                  animation: `slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.05}s backwards`,
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-purple-500/0 to-pink-500/0 group-hover:from-primary/5 group-hover:via-purple-500/5 group-hover:to-pink-500/5 transition-all duration-500 -z-10" />
 
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-6">
                   {activity.user_has_profile ||
                   activity.user_address === "0xAI000000000000000000000000000000CURATOR1" ? (
                     <Link
@@ -830,8 +877,8 @@ export default function ActivityFeedPage() {
                       }
                       className="flex-shrink-0 relative group/avatar"
                     >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-500 rounded-full opacity-0 group-hover/avatar:opacity-50 blur transition-opacity duration-300" />
-                      <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/avatar:border-primary transition-all relative z-10">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-full opacity-0 group-hover/avatar:opacity-100 blur-lg transition-all duration-500" />
+                      <Avatar className="h-14 w-14 border-2 border-white/20 group-hover/avatar:border-white/40 group-hover/avatar:scale-110 transition-all duration-500 relative z-10">
                         <AvatarImage
                           src={
                             activity.user_avatar ||
@@ -839,23 +886,20 @@ export default function ActivityFeedPage() {
                           }
                           alt={activity.user_name || activity.user_address}
                         />
-                        <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                        <AvatarFallback className="bg-white/10 text-white font-semibold text-lg">
                           {(activity.user_name?.[0] || activity.user_address.slice(2, 4)).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </Link>
                   ) : (
-                    <div className="flex-shrink-0 relative opacity-70 cursor-not-allowed">
-                      <Avatar className="h-12 w-12 border-2 border-border/50">
+                    <div className="flex-shrink-0 relative opacity-60">
+                      <Avatar className="h-14 w-14 border-2 border-white/10">
                         <AvatarImage
-                          src={
-                            activity.user_avatar ||
-                            `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.user_address || "/placeholder.svg"}`
-                          }
-                          alt={activity.user_name || activity.user_address}
+                          src={`https://api.dicebear.com/7.x/shapes/svg?seed=${activity.user_address}`}
+                          alt={activity.user_address}
                         />
-                        <AvatarFallback className="bg-primary/20 text-primary font-semibold">
-                          {(activity.user_name?.[0] || activity.user_address.slice(2, 4)).toUpperCase()}
+                        <AvatarFallback className="bg-white/10 text-white font-semibold text-lg">
+                          {activity.user_address.slice(2, 4).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -864,8 +908,8 @@ export default function ActivityFeedPage() {
                   {(activity.type === "like" || activity.type === "stream" || activity.type === "comment") &&
                     activity.track_cover && (
                       <Link href={`/track/${activity.track_id}`} className="flex-shrink-0 relative group/track">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg opacity-0 group-hover/track:opacity-50 blur transition-opacity duration-300" />
-                        <div className="relative z-10 h-12 w-12 rounded-lg overflow-hidden border-2 border-border/50 group-hover/track:border-primary transition-all">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl opacity-0 group-hover/track:opacity-100 blur-lg transition-all duration-500" />
+                        <div className="relative z-10 h-14 w-14 rounded-xl overflow-hidden border-2 border-white/20 group-hover/track:border-white/40 group-hover/track:scale-110 transition-all duration-500">
                           <Image
                             src={activity.track_cover || "/placeholder.svg"}
                             alt={activity.track_title || "Track"}
@@ -883,8 +927,8 @@ export default function ActivityFeedPage() {
                           href={`/artist/${activity.target_user_address}`}
                           className="flex-shrink-0 relative group/target"
                         >
-                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full opacity-0 group-hover/target:opacity-50 blur transition-opacity duration-300" />
-                          <Avatar className="h-12 w-12 border-2 border-border/50 group-hover/target:border-blue-500 transition-all relative z-10">
+                          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full opacity-0 group-hover/target:opacity-100 blur-lg transition-all duration-500" />
+                          <Avatar className="h-14 w-14 border-2 border-white/20 group-hover/target:border-white/40 group-hover/target:scale-110 transition-all duration-500 relative z-10">
                             <AvatarImage
                               src={
                                 activity.target_user_avatar ||
@@ -892,7 +936,7 @@ export default function ActivityFeedPage() {
                               }
                               alt={activity.target_user_name || activity.target_user_address || ""}
                             />
-                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold">
+                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold text-lg">
                               {(
                                 activity.target_user_name?.[0] ||
                                 activity.target_user_address?.slice(2, 4) ||
@@ -902,21 +946,14 @@ export default function ActivityFeedPage() {
                           </Avatar>
                         </Link>
                       ) : (
-                        <div className="flex-shrink-0 relative opacity-70 cursor-not-allowed">
-                          <Avatar className="h-12 w-12 border-2 border-border/50">
+                        <div className="flex-shrink-0 relative opacity-60">
+                          <Avatar className="h-14 w-14 border-2 border-white/10">
                             <AvatarImage
-                              src={
-                                activity.target_user_avatar ||
-                                `https://api.dicebear.com/7.x/shapes/svg?seed=${activity.target_user_address || "/placeholder.svg"}`
-                              }
-                              alt={activity.target_user_name || activity.target_user_address || ""}
+                              src={`https://api.dicebear.com/7.x/shapes/svg?seed=${activity.target_user_address}`}
+                              alt={activity.target_user_address || ""}
                             />
-                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold">
-                              {(
-                                activity.target_user_name?.[0] ||
-                                activity.target_user_address?.slice(2, 4) ||
-                                "U"
-                              ).toUpperCase()}
+                            <AvatarFallback className="bg-blue-500/20 text-blue-400 font-semibold text-lg">
+                              {(activity.target_user_address?.slice(2, 4) || "U").toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                         </div>
@@ -925,13 +962,17 @@ export default function ActivityFeedPage() {
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
                       <div className="flex-1">
-                        <p className="text-sm text-foreground/90 leading-relaxed">{getActivityText(activity)}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}</span>
+                        <p className="text-base text-white/90 leading-relaxed tracking-wide">
+                          {getActivityText(activity)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-3 text-sm text-white/40">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span className="tracking-wide">
+                            {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -944,15 +985,29 @@ export default function ActivityFeedPage() {
       </div>
 
       <style jsx>{`
-        @keyframes slideIn {
+        @keyframes slideInUp {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        .bg-grid-white\/\[0\.02\] {
+          background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+          background-size: 4rem 4rem;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </div>

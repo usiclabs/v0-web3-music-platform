@@ -72,6 +72,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       if (newChunkIndex !== currentChunk) {
         setCurrentChunk(newChunkIndex)
 
+        if (currentTrack && address) {
+          logStreamActivity(currentTrack.id, address, newChunkIndex)
+        }
+
         if (!unlockedChunks.has(newChunkIndex)) {
           audio.pause()
           setIsPlaying(false)
@@ -321,6 +325,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
         setUnlockedChunks(allChunks)
 
+        if (address) {
+          logStreamActivity(track.id, address, 0)
+        }
+
         audioRef.current.play().catch((err) => {
           console.log("[v0] Autoplay blocked:", err)
           setError("Press play to listen to your track")
@@ -339,17 +347,31 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
               const totalChunks = Math.ceil(track.duration / X402_CONFIG.CHUNK_DURATION)
               const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
               setUnlockedChunks(allChunks)
+
+              logStreamActivity(track.id, address, 0)
             } else {
               console.log("[v0] User doesn't have enough tokens - using X402 payment")
               setUnlockedChunks(new Set([0]))
+
+              if (address) {
+                logStreamActivity(track.id, address, 0)
+              }
             }
           })
           .catch((err) => {
             console.error("[v0] Error checking token balance:", err)
             setUnlockedChunks(new Set([0]))
+
+            if (address) {
+              logStreamActivity(track.id, address, 0)
+            }
           })
       } else {
         setUnlockedChunks(new Set([0]))
+
+        if (address) {
+          logStreamActivity(track.id, address, 0)
+        }
       }
 
       audioRef.current.play().catch((err) => {
@@ -678,4 +700,22 @@ export function useAudioPlayer() {
     throw new Error("useAudioPlayer must be used within AudioPlayerProvider")
   }
   return context
+}
+
+async function logStreamActivity(trackId: string, listenerAddress: string, chunkIndex: number) {
+  try {
+    await fetch("/api/streams/log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trackId,
+        listenerAddress: listenerAddress.toLowerCase(),
+        chunkIndex,
+        streamType: chunkIndex === 0 ? "preview" : "continued",
+      }),
+    })
+  } catch (err) {
+    console.warn("[v0] Failed to log stream activity:", err)
+    // Don't throw - logging should not block playback
+  }
 }
