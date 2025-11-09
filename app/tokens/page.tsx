@@ -1328,9 +1328,38 @@ export default function TokensPage() {
                 </CardContent>
               </Card>
             ) : quoteError ? (
-              <Card className="bg-destructive/10 border-destructive/20">
-                <CardContent className="pt-6">
-                  <p className="text-sm text-destructive">{quoteError}</p>
+              <Card className="bg-red-500/10 border-red-500/30">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-2">
+                      <p className="text-sm font-medium text-red-200">Pool Not Detected</p>
+                      <p className="text-sm text-red-100/80">
+                        This token may use custom hooks (like Clanker tokens) that aren't auto-detected yet. You can
+                        still swap on Uniswap directly.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* UPDATE START */}
+                  <Button
+                    className="w-full bg-black/40 backdrop-blur-xl border border-white/10 hover:bg-black/60 hover:border-primary/30 text-white shadow-lg hover:shadow-xl transition-all"
+                    asChild
+                  >
+                    <a
+                      href={`https://app.uniswap.org/swap?outputCurrency=${selectedTrack?.coin_address}&chain=base`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Swap on Uniswap
+                      <ExternalLink className="h-4 w-4 ml-2" />
+                    </a>
+                  </Button>
+                  {/* UPDATE END */}
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    Uniswap will automatically find the best route for your trade
+                  </p>
                 </CardContent>
               </Card>
             ) : poolInfo ? (

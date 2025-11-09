@@ -52,74 +52,6 @@ export async function detectV4Pool(
   try {
     console.log("[v0] Detecting V4 pool for token:", tokenAddress)
 
-    // First, try to get pool info from DexScreener
-    const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`)
-
-    if (response.ok) {
-      const data = await response.json()
-
-      if (data.pairs && data.pairs.length > 0) {
-        // Find Base chain V4 pair with highest liquidity
-        const v4Pairs = data.pairs.filter(
-          (pair: any) => pair.chainId === "base" && (pair.dexId === "uniswap-v4" || pair.dexId?.includes("v4")),
-        )
-
-        if (v4Pairs.length > 0) {
-          // Sort by liquidity and take the highest
-          const mainPair = v4Pairs.sort(
-            (a: any, b: any) => Number.parseFloat(b.liquidity?.usd || "0") - Number.parseFloat(a.liquidity?.usd || "0"),
-          )[0]
-
-          console.log("[v0] Found V4 pair on DexScreener:", {
-            pairAddress: mainPair.pairAddress,
-            dexId: mainPair.dexId,
-            liquidity: mainPair.liquidity?.usd,
-          })
-
-          const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS] as Address
-
-          // Get token addresses from the pair
-          const baseTokenAddr = (mainPair.baseToken?.address || "").toLowerCase()
-          const quoteTokenAddr = (mainPair.quoteToken?.address || "").toLowerCase()
-          const tokenAddr = tokenAddress.toLowerCase()
-
-          // Determine currency0 and currency1 (sorted by address)
-          let currency0: Address
-          let currency1: Address
-          let otherToken: string
-
-          if (baseTokenAddr === tokenAddr) {
-            otherToken = quoteTokenAddr
-          } else {
-            otherToken = baseTokenAddr
-          }
-
-          // Sort addresses
-          if (tokenAddr < otherToken) {
-            currency0 = tokenAddr as Address
-            currency1 = otherToken as Address
-          } else {
-            currency0 = otherToken as Address
-            currency1 = tokenAddr as Address
-          }
-
-          // V4 pools created by Clanker typically use 1% fee (10000 basis points) and 200 tick spacing
-          const poolKey: V4PoolKey = {
-            currency0,
-            currency1,
-            fee: 10000,
-            tickSpacing: 200,
-            hooks: "0x0000000000000000000000000000000000000000" as Address,
-          }
-
-          console.log("[v0] Constructed V4 pool key from DexScreener:", poolKey)
-          return poolKey
-        }
-      }
-    }
-
-    console.log("[v0] No V4 pool found on DexScreener, trying manual detection...")
-
     const wethAddress = WETH_ADDRESS[chainId as keyof typeof WETH_ADDRESS] as Address
     const stateViewAddress = UNISWAP_V4_STATE_VIEW[chainId as keyof typeof UNISWAP_V4_STATE_VIEW] as Address
 
@@ -134,47 +66,82 @@ export async function detectV4Pool(
 
     console.log("[v0] Checking V4 pools for pair:", { currency0, currency1 })
 
-    // Common fee tiers and tick spacings for V4
+    const COMMON_HOOK_ADDRESSES = [
+      "0x0000000000000000000000000000000000000000" as Address, // No hooks (standard)
+      // Add known Clanker hook addresses here as they are discovered
+      // Clanker often deploys with custom hooks for dynamic fees, TWAMM, etc.
+    ] as const
+
+    // Prioritize common fee tiers and hook combinations
     const poolConfigs = [
-      { fee: 10000, tickSpacing: 200 }, // 1% fee (Clanker default)
-      { fee: 3000, tickSpacing: 60 }, // 0.3% fee
-      { fee: 500, tickSpacing: 10 }, // 0.05% fee
-      { fee: 100, tickSpacing: 1 }, // 0.01% fee
+      // Most common Clanker configurations - check first
+      { fee: 10000, tickSpacing: 200, hooks: COMMON_HOOK_ADDRESSES }, // 1% fee with various hooks
+      // Standard Uniswap V3-style tiers with no hooks
+      { fee: 3000, tickSpacing: 60, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.3% fee
+      { fee: 500, tickSpacing: 10, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.05% fee
+      // Alternative tick spacings for 1%
+      { fee: 10000, tickSpacing: 60, hooks: [COMMON_HOOK_ADDRESSES[0]] },
+      { fee: 10000, tickSpacing: 100, hooks: [COMMON_HOOK_ADDRESSES[0]] },
+      // Less common but possible
+      { fee: 100, tickSpacing: 1, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.01% fee
+      { fee: 5000, tickSpacing: 100, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.5% fee
+      { fee: 2500, tickSpacing: 50, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.25% fee
+      { fee: 1000, tickSpacing: 20, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 0.1% fee
+      { fee: 30000, tickSpacing: 600, hooks: [COMMON_HOOK_ADDRESSES[0]] }, // 3% fee
     ]
 
-    // Try each pool configuration
-    for (const { fee, tickSpacing } of poolConfigs) {
-      const poolKey: V4PoolKey = {
-        currency0,
-        currency1,
-        fee,
-        tickSpacing,
-        hooks: "0x0000000000000000000000000000000000000000" as Address,
+    const batchSize = 2
+    for (let i = 0; i < poolConfigs.length; i += batchSize) {
+      const batch = poolConfigs.slice(i, i + batchSize)
+
+      const results = await Promise.allSettled(
+        batch.flatMap(({ fee, tickSpacing, hooks }) =>
+          hooks.map(async (hookAddress) => {
+            const poolKey: V4PoolKey = {
+              currency0,
+              currency1,
+              fee,
+              tickSpacing,
+              hooks: hookAddress,
+            }
+
+            console.log("[v0] Checking V4 pool config:", { fee, tickSpacing, hooks: hookAddress })
+
+            try {
+              const liquidity = (await publicClient.readContract({
+                address: stateViewAddress,
+                abi: UNISWAP_V4_STATE_VIEW_ABI,
+                functionName: "getLiquidity",
+                args: [poolKey],
+              })) as bigint
+
+              if (liquidity && liquidity > 0n) {
+                console.log("[v0] Found V4 pool:", {
+                  fee,
+                  tickSpacing,
+                  hooks: hookAddress,
+                  liquidity: liquidity.toString(),
+                })
+                return poolKey
+              }
+              return null
+            } catch (error) {
+              console.log("[v0] V4 pool check failed for config:", { fee, tickSpacing, hooks: hookAddress })
+              return null
+            }
+          }),
+        ),
+      )
+
+      // Return first valid pool found
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          return result.value
+        }
       }
 
-      try {
-        console.log("[v0] Checking V4 pool config:", { fee, tickSpacing })
-
-        const liquidity = await publicClient.readContract({
-          address: stateViewAddress,
-          abi: UNISWAP_V4_STATE_VIEW_ABI,
-          functionName: "getLiquidity",
-          args: [poolKey],
-        })
-
-        console.log("[v0] V4 Pool liquidity:", liquidity)
-
-        // If liquidity > 0, pool exists
-        if (liquidity && liquidity > 0n) {
-          console.log("[v0] Found V4 pool:", { fee, tickSpacing, liquidity: liquidity.toString() })
-          return poolKey
-        } else {
-          console.log("[v0] V4 pool has no liquidity for config:", { fee, tickSpacing })
-        }
-      } catch (error) {
-        // Pool doesn't exist with this config, try next
-        console.log("[v0] V4 pool check failed for config:", { fee, tickSpacing, error: String(error) })
-        continue
+      if (i + batchSize < poolConfigs.length) {
+        await new Promise((resolve) => setTimeout(resolve, 50))
       }
     }
 
