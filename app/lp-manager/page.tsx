@@ -5,7 +5,7 @@ import { useWallet } from "@/lib/web3/wallet-context"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Droplet, Wallet, DollarSign, BarChart3, ArrowUpRight } from "lucide-react"
-import { useToast } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 import {
   UNISWAP_V3_POSITION_MANAGER,
   UNISWAP_V3_POSITION_MANAGER_ABI,
@@ -58,7 +58,7 @@ const tokenMetadataCache = new Map<string, TokenMetadata>()
 
 export default function LPManagerPage() {
   const { address, isConnected, chainId, connect } = useWallet()
-  const { addToast } = useToast()
+  const { toast } = useToast()
   const publicClient = usePublicClient()
   const { writeContractAsync } = useWriteContract()
 
@@ -444,10 +444,10 @@ export default function LPManagerPage() {
       console.log(`[v0] Loaded ${loadedPositions.length} positions`)
     } catch (error) {
       console.error("[v0] Failed to load positions:", error)
-      addToast({
+      toast({
         title: "Error",
         description: "Failed to load liquidity positions",
-        variant: "error",
+        variant: "destructive",
       })
     } finally {
       setIsLoadingPositions(false)
@@ -462,10 +462,9 @@ export default function LPManagerPage() {
       const price = Number.parseFloat(initialPrice)
       const sqrtPriceX96 = BigInt(Math.floor(Math.sqrt(price) * 2 ** 96))
 
-      addToast({
+      toast({
         title: "Creating Pool",
         description: "Please confirm the transaction in your wallet...",
-        variant: "default",
       })
 
       const hash = await writeContractAsync({
@@ -482,10 +481,9 @@ export default function LPManagerPage() {
         colors: ["#E53E3E", "#DC2626", "#F87171"],
       })
 
-      addToast({
+      toast({
         title: "Pool Created!",
         description: "Uniswap V3 pool has been successfully created",
-        variant: "success",
       })
 
       setCreateToken0("")
@@ -493,10 +491,10 @@ export default function LPManagerPage() {
       setInitialPrice("")
     } catch (error: any) {
       console.error("[v0] Failed to create pool:", error)
-      addToast({
+      toast({
         title: "Pool Creation Failed",
         description: error.message?.includes("User rejected") ? "Transaction rejected" : "Failed to create pool",
-        variant: "error",
+        variant: "destructive",
       })
     } finally {
       setIsCreatingPool(false)
@@ -511,11 +509,9 @@ export default function LPManagerPage() {
       const amount0Parsed = parseUnits(amount0, 18)
       const amount1Parsed = parseUnits(amount1, 18)
 
-      // Approve tokens first
-      addToast({
+      toast({
         title: "Approval Required",
         description: "Approving tokens for liquidity pool...",
-        variant: "default",
       })
 
       await writeContractAsync({
@@ -538,10 +534,9 @@ export default function LPManagerPage() {
         ],
       })
 
-      addToast({
+      toast({
         title: "Adding Liquidity",
         description: "Please confirm the transaction in your wallet...",
-        variant: "default",
       })
 
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200)
@@ -574,10 +569,9 @@ export default function LPManagerPage() {
         colors: ["#E53E3E", "#DC2626", "#F87171"],
       })
 
-      addToast({
+      toast({
         title: "Liquidity Added!",
         description: "Successfully added liquidity to the pool",
-        variant: "success",
       })
 
       setAmount0("")
@@ -585,10 +579,10 @@ export default function LPManagerPage() {
       loadPositions()
     } catch (error: any) {
       console.error("[v0] Failed to add liquidity:", error)
-      addToast({
+      toast({
         title: "Failed to Add Liquidity",
         description: error.message?.includes("User rejected") ? "Transaction rejected" : "Failed to add liquidity",
-        variant: "error",
+        variant: "destructive",
       })
     } finally {
       setIsAddingLiquidity(false)
@@ -599,10 +593,9 @@ export default function LPManagerPage() {
     if (!address || !chainId) return
 
     try {
-      addToast({
+      toast({
         title: "Collecting Fees",
         description: "Please confirm the transaction in your wallet...",
-        variant: "default",
       })
 
       await writeContractAsync({
@@ -626,19 +619,18 @@ export default function LPManagerPage() {
         colors: ["#10B981", "#34D399", "#6EE7B7"],
       })
 
-      addToast({
+      toast({
         title: "Fees Collected!",
         description: "Successfully collected trading fees",
-        variant: "success",
       })
 
       loadPositions()
     } catch (error: any) {
       console.error("[v0] Failed to collect fees:", error)
-      addToast({
+      toast({
         title: "Failed to Collect Fees",
         description: error.message?.includes("User rejected") ? "Transaction rejected" : "Failed to collect fees",
-        variant: "error",
+        variant: "destructive",
       })
     }
   }
@@ -650,7 +642,7 @@ export default function LPManagerPage() {
           <div className="relative">
             {/* Background gradient effects */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5 rounded-3xl blur-3xl" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-primary via-purple-500 to-blue-500 rounded-full blur-3xl animate-pulse" />
 
             <div className="relative bg-gradient-to-br from-card/80 via-card/50 to-card/30 backdrop-blur-xl border border-border/50 rounded-3xl p-12 shadow-2xl">
               <div className="flex flex-col items-center text-center space-y-8">
@@ -679,7 +671,7 @@ export default function LPManagerPage() {
                   size="lg"
                   className="gap-3 px-8 py-6 text-lg font-semibold bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105 group"
                 >
-                  <Wallet className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+                  <Wallet className="h-6 w-6 text-primary group-hover:rotate-12 transition-transform" />
                   Connect Wallet
                   <ArrowUpRight className="h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                 </Button>
