@@ -261,7 +261,6 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
             }
 
             const isPurchase = item.type === "stream" && totalPaid > 0
-            const isTokenGated = item.type === "stream" && totalPaid === 0
             const isAutoInvest = item.type === "auto_invest"
 
             return (
@@ -305,11 +304,6 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
                     {isPurchase && (
                       <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 font-semibold">
                         Purchase
-                      </span>
-                    )}
-                    {isTokenGated && (
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
-                        Token Gated
                       </span>
                     )}
                     {isAutoInvest && (

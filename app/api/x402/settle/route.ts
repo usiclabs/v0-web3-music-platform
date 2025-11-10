@@ -437,6 +437,7 @@ export async function POST(request: NextRequest) {
           chunks_played: existingStream.chunks_played + 1,
           total_paid: Number(existingStream.total_paid) + Number(track.price_per_chunk),
           last_played_at: new Date().toISOString(),
+          started_at: new Date().toISOString(), // Update to current time for recent activity sorting
         })
         .eq("id", existingStream.id)
     } else {
@@ -445,6 +446,7 @@ export async function POST(request: NextRequest) {
         listener_address: listenerAddress,
         chunks_played: 1,
         total_paid: track.price_per_chunk,
+        started_at: new Date().toISOString(), // Update to current time for recent activity sorting
       })
     }
 
