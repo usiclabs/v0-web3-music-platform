@@ -224,22 +224,22 @@ export default function ArtistsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Button
         onClick={() => setShowFilters(!showFilters)}
-        className="fixed top-24 right-6 z-50 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 hover:scale-110 active:scale-95 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-300 md:hidden"
+        className="fixed top-20 right-4 z-50 h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 hover:scale-110 active:scale-95 backdrop-blur-xl border border-primary/20 shadow-2xl transition-all duration-300 md:hidden"
         aria-label={showFilters ? "Close filters" : "Open filters"}
       >
         {showFilters ? <X className="h-5 w-5 text-white" /> : <SlidersHorizontal className="h-5 w-5 text-white" />}
       </Button>
 
       {showFilters && (
-        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden animate-fade-in">
-          <div className="absolute top-0 right-0 w-full max-w-md h-full bg-background border-l border-border overflow-y-auto p-6 animate-slide-in-right">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Filters</h2>
-              <p className="text-muted-foreground">Refine your artist search</p>
-            </div>
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-md animate-fade-in"
+            onClick={() => setShowFilters(false)}
+          />
+          <div className="absolute top-0 right-0 w-full max-w-sm h-full bg-gradient-to-b from-background via-background/98 to-background/95 border-l border-border shadow-2xl overflow-y-auto p-6 animate-slide-in-right">
             <ArtistsFilter
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -255,13 +255,7 @@ export default function ArtistsPage() {
         </div>
       )}
 
-      <div className="hidden md:block fixed left-0 top-16 bottom-0 w-80 bg-background/95 backdrop-blur-xl border-r border-border overflow-y-auto p-6 z-30">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-white via-primary to-accent bg-clip-text text-transparent">
-            Filters
-          </h2>
-          <p className="text-muted-foreground">Refine your artist search</p>
-        </div>
+      <div className="hidden md:block fixed left-0 top-16 bottom-0 w-96 bg-gradient-to-b from-background via-background/98 to-background/95 backdrop-blur-xl border-r border-border/50 overflow-y-auto p-8 z-30 shadow-xl">
         <ArtistsFilter
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -275,7 +269,7 @@ export default function ArtistsPage() {
         />
       </div>
 
-      <div className="md:ml-80">
+      <div className="md:ml-96">
         <ArtistsFeed artists={filteredArtists} />
       </div>
     </div>
