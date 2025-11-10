@@ -55,6 +55,8 @@ interface ActivityItem {
   comment_content?: string
   token_symbol?: string
   token_amount?: string
+  total_paid?: number
+  chunks_played?: number
   created_at: string
 }
 
@@ -275,10 +277,12 @@ export default function ActivityFeedPage() {
             user_address: stream.listener_address,
             user_name: profile?.artist_name,
             user_avatar: profile?.avatar_url,
-            user_has_profile: !!profile, // Track if user has profile
+            user_has_profile: !!profile,
             track_id: stream.track_id,
             track_title: track?.title,
             track_cover: track?.cover_url,
+            total_paid: Number(stream.total_paid) || 0,
+            chunks_played: stream.chunks_played || 0,
             created_at: stream.started_at,
           })
         })
@@ -426,9 +430,60 @@ export default function ActivityFeedPage() {
       })
       .subscribe()
 
+    const streamsChannel = supabase
+      .channel("activity-streams")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "streams" }, async (payload) => {
+        const stream = payload.new
+        const [profileRes, trackRes] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("wallet_address, artist_name, avatar_url")
+            .eq("wallet_address", stream.listener_address.toLowerCase())
+            .single(),
+          supabase.from("tracks").select("id, title, cover_url").eq("id", stream.track_id).single(),
+        ])
+
+        const newActivity: ActivityItem = {
+          id: `stream-${stream.id}`,
+          type: "stream",
+          user_address: stream.listener_address,
+          user_name: profileRes.data?.artist_name,
+          user_avatar: profileRes.data?.avatar_url,
+          user_has_profile: !!profileRes.data,
+          track_id: stream.track_id,
+          track_title: trackRes.data?.title,
+          track_cover: trackRes.data?.cover_url,
+          total_paid: Number(stream.total_paid) || 0,
+          chunks_played: stream.chunks_played || 0,
+          created_at: stream.started_at,
+        }
+
+        setActivities((prev) => [newActivity, ...prev])
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "streams" }, async (payload) => {
+        const stream = payload.new
+
+        setActivities((prev) =>
+          prev
+            .map((activity) => {
+              if (activity.id === `stream-${stream.id}`) {
+                return {
+                  ...activity,
+                  total_paid: Number(stream.total_paid) || 0,
+                  chunks_played: stream.chunks_played || 0,
+                  created_at: stream.started_at, // Update timestamp to show most recent activity
+                }
+              }
+              return activity
+            })
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+        )
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(followsChannel)
-      // ... existing cleanup ...
+      supabase.removeChannel(streamsChannel)
     }
   }
 
@@ -609,25 +664,34 @@ export default function ActivityFeedPage() {
           </>
         )
       case "stream":
+        const isPaidUnlock = activity.total_paid && activity.total_paid > 0
+        const displayAmount = isPaidUnlock ? activity.total_paid.toFixed(4) : null
+
         return (
           <>
             {activity.user_has_profile ? (
               <Link
                 href={`/artist/${activity.user_address}`}
-                className="font-semibold hover:text-purple-400 transition-colors"
+                className={`font-semibold transition-colors ${isPaidUnlock ? "hover:text-yellow-400" : "hover:text-purple-400"}`}
               >
                 {userName}
               </Link>
             ) : (
               <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
             )}
-            {" is listening to "}
+            {isPaidUnlock ? " streamed " : " is listening to "}
             <Link
               href={`/track/${activity.track_id}`}
-              className="font-semibold hover:text-purple-400 transition-colors"
+              className={`font-semibold transition-colors ${isPaidUnlock ? "hover:text-yellow-400" : "hover:text-purple-400"}`}
             >
               {activity.track_title}
             </Link>
+            {isPaidUnlock && displayAmount && (
+              <span className="inline-flex items-center gap-1 ml-2 text-yellow-400 font-semibold">
+                <Coins className="h-4 w-4" />
+                {displayAmount} USDC
+              </span>
+            )}
           </>
         )
       case "live_stream_start":
@@ -848,7 +912,7 @@ export default function ActivityFeedPage() {
         ) : filteredActivities.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-16 text-center">
             <div className="relative inline-block mb-6">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+              <div className="absolute -inset-1 bg-primary/20 blur-3xl rounded-full" />
               <ActivityIcon className="h-20 w-20 text-white/40 relative z-10" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-2">No activity yet</h3>
