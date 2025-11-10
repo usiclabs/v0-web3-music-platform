@@ -1,13 +1,11 @@
-import { Coinbase, Wallet } from "@coinbase/coinbase-sdk"
-
 // CDP Client singleton
-let cdpClient: Coinbase | null = null
+let cdpClient: any | null = null
 
 /**
  * Initialize CDP client with API credentials
  * Requires CDP_API_KEY_NAME and CDP_API_KEY_PRIVATE_KEY environment variables
  */
-export function getCDPClient(): Coinbase {
+export async function getCDPClient(): Promise<any> {
   if (cdpClient) {
     return cdpClient
   }
@@ -20,6 +18,8 @@ export function getCDPClient(): Coinbase {
       "CDP API credentials not configured. Please set CDP_API_KEY_NAME and CDP_API_KEY_PRIVATE_KEY environment variables.",
     )
   }
+
+  const { Coinbase } = await import("@coinbase/coinbase-sdk")
 
   // Handle multiline private keys (replace escaped newlines with actual newlines)
   const formattedPrivateKey = privateKey.replace(/\\n/g, "\n")
@@ -40,8 +40,9 @@ export function getCDPClient(): Coinbase {
  * - Gasless transaction sponsorship
  * - Platform operations
  */
-export async function getServerWallet(): Promise<Wallet> {
-  getCDPClient()
+export async function getServerWallet(): Promise<any> {
+  const { Wallet, Coinbase } = await import("@coinbase/coinbase-sdk")
+  await getCDPClient()
 
   // Try to load existing wallet from environment
   const walletData = process.env.CDP_SERVER_WALLET_DATA
@@ -106,7 +107,7 @@ export async function getServerWallet(): Promise<Wallet> {
 /**
  * Get wallet balance for a specific asset
  */
-export async function getWalletBalance(wallet: Wallet, assetId = "usdc"): Promise<string> {
+export async function getWalletBalance(wallet: any, assetId = "usdc"): Promise<string> {
   const balance = await wallet.getBalance(assetId)
   return balance.toString()
 }
@@ -177,7 +178,9 @@ export function isCDPConfigured(): boolean {
 }
 
 // Additional functionality for handling different networks
-export async function getWalletForNetwork(networkId: string): Promise<Wallet> {
+export async function getWalletForNetwork(networkId: string): Promise<any> {
+  const { Wallet } = await import("@coinbase/coinbase-sdk")
+
   const walletData = process.env[`CDP_SERVER_WALLET_DATA_${networkId.toUpperCase()}`]
 
   if (walletData) {

@@ -205,21 +205,21 @@ export function UploadForm() {
         }),
       })
 
-      let errorData
+      const responseText = await response.text()
+      let responseData
+
       try {
-        errorData = await response.json()
-      } catch (jsonError) {
-        // Response is not JSON, try to get text
-        const errorText = await response.text()
-        console.error("[v0] Non-JSON error response:", errorText)
-        throw new Error(`Server error: ${errorText || response.statusText}`)
+        responseData = JSON.parse(responseText)
+      } catch (parseError) {
+        // If response is not JSON, use the text as error message
+        throw new Error(responseText || "Failed to deploy token via Clanker")
       }
 
       if (!response.ok) {
-        throw new Error(errorData.error || "Failed to deploy token via Clanker")
+        throw new Error(responseData.error || "Failed to deploy token via Clanker")
       }
 
-      const { tokenAddress } = errorData
+      const { tokenAddress } = responseData
       console.log("[v0] Clanker token deployed:", tokenAddress)
 
       setUploadProgress("Token deployed successfully!")
@@ -256,7 +256,9 @@ export function UploadForm() {
     } catch (err) {
       console.error("[v0] Failed to create Clanker token:", err)
       const errorMessage = err instanceof Error ? err.message : "Unknown error"
-      setError(`✅ Track uploaded successfully! However, token deployment failed: ${errorMessage}`)
+      setError(
+        `✅ Track uploaded successfully! However, token deployment failed: ${errorMessage}\n\nYou can try deploying the token again from your dashboard, or contact support if the issue persists.`,
+      )
       setCoinCreationStarted(false)
 
       confetti({
@@ -981,19 +983,13 @@ export function UploadForm() {
                 <span className="font-medium">Base</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Paired Token:</span>
-                <span className="font-medium">{false ? "ETH" : "WETH"}</span>
+                <span className="text-muted-foreground">Configuration:</span>
+                <span className="font-medium">Low Preset (Recommended)</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Starting Market Cap:</span>
-                <span className="font-medium">{false ? "Low (Accessible)" : "10 ETH (Default)"}</span>
+                <span className="text-muted-foreground">Liquidity Pool:</span>
+                <span className="font-medium">Uniswap v4 (Auto)</span>
               </div>
-              {false && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Liquidity Pool:</span>
-                  <span className="font-medium">Uniswap v4 (Auto)</span>
-                </div>
-              )}
             </div>
 
             <div className="bg-gradient-to-br from-accent/5 to-primary/5 border border-accent/20 rounded-lg p-4 space-y-4">
