@@ -75,9 +75,6 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       name: params.name,
       symbol: params.symbol,
       tokenAdmin: params.deployerAddress as Address,
-      pool: {
-        initialMarketCap: "1", // 1 ETH for initial liquidity
-      },
     }
 
     console.log("[v0] [Clanker] Calling deploy() with minimal config:", deployConfig)

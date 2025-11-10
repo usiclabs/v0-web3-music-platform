@@ -151,6 +151,16 @@ async function getPlatformMetrics() {
     .order("started_at", { ascending: false })
     .limit(50)
 
+  console.log("[v0] [Analytics] Recent streams fetched:", recentStreams?.length || 0)
+  console.log(
+    "[v0] [Analytics] Streams with payments:",
+    recentStreams?.filter((s) => Number(s.total_paid) > 0).length || 0,
+  )
+  console.log(
+    "[v0] [Analytics] Sample paid stream:",
+    recentStreams?.find((s) => Number(s.total_paid) > 0),
+  )
+
   // Get auto-investment transactions
   const { data: autoInvestTxs } = await supabase
     .from("auto_investment_transactions")
@@ -203,6 +213,9 @@ async function getPlatformMetrics() {
   ]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, 30)
+
+  console.log("[v0] [Analytics] Combined activity items:", allActivity.length)
+  console.log("[v0] [Analytics] Activity with payments:", allActivity.filter((a) => Number(a.total_paid) > 0).length)
 
   return {
     totalTracks: totalTracks || 0,
