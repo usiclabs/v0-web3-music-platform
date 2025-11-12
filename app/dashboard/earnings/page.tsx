@@ -308,7 +308,7 @@ export default function EarningsPage() {
               config={{
                 earnings: {
                   label: "Earnings (USDC)",
-                  color: "hsl(var(--primary))",
+                  color: "hsl(180 100% 60%)",
                 },
               }}
               className="h-[300px] w-full"
@@ -330,8 +330,8 @@ export default function EarningsPage() {
                     dataKey="earnings"
                     stroke="var(--color-earnings)"
                     strokeWidth={2}
-                    dot={{ fill: "var(--color-earnings)", r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ fill: "var(--color-earnings)", r: 5, strokeWidth: 2, stroke: "hsl(180 100% 80%)" }}
+                    activeDot={{ r: 7, fill: "hsl(180 100% 70%)", strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
