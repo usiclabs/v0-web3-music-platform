@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { Play, Pause, Heart, Share2, TrendingUp, Users } from "lucide-react"
+import { Play, Pause, Heart, Share2, TrendingUp, Users } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useWallet } from "@/lib/web3/wallet-context"
@@ -256,7 +256,7 @@ export function TrendingFeed({ tracks }: TrendingFeedProps) {
               }}
             >
               <Image
-                src={track.cover_url || "/placeholder.svg?height=1920&width=1080"}
+                src={track.cover_url || "/images/usic-logo.png"}
                 alt={track.title}
                 fill
                 className="object-cover"

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Sparkles } from "lucide-react"
+import { Sparkles } from 'lucide-react'
 import { Card } from "@/components/ui/card"
 import { TrackCard } from "@/components/track-card"
 
@@ -26,7 +26,7 @@ interface SimilarTracksProps {
   trackId: string
 }
 
-export function SimilarTracks({ trackId }: SimilarTracksProps) {
+export default function SimilarTracks({ trackId }: SimilarTracksProps) {
   const [tracks, setTracks] = useState<Track[]>([])
   const [loading, setLoading] = useState(true)
 

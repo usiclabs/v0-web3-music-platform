@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Copy, Users, Gift, Check, Share2 } from "lucide-react"
+import { Copy, Users, Gift, Check, Share2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
+import SocialShareButtons from "@/components/social-share-buttons"
+import ReferralAchievements from "@/components/referral-achievements"
+import ReferralLeaderboard from "@/components/referral-leaderboard"
 
 export default function ReferralsPage() {
   const [referralData, setReferralData] = useState<any>(null)
@@ -70,7 +73,7 @@ export default function ReferralsPage() {
       </div>
 
       <main className="container relative z-10 py-12 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
@@ -127,6 +130,31 @@ export default function ReferralsPage() {
               Share this link with friends. You'll earn 100 airdrop points for each active referral!
             </p>
           </Card>
+
+          {/* Social Sharing Section */}
+          <Card className="bg-card/50 backdrop-blur-xl border-border/50 p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-4">Share & Earn</h2>
+            <p className="text-muted-foreground mb-6">
+              Share your referral link on social media to reach more people and maximize your rewards!
+            </p>
+            <SocialShareButtons
+              type="profile"
+              id={referralData?.referralCode || ""}
+              title="Join USI"
+              referralCode={referralData?.referralCode}
+              className="justify-center"
+            />
+          </Card>
+
+          {/* Achievements Section */}
+          <div className="mb-8">
+            <ReferralAchievements />
+          </div>
+
+          {/* Leaderboard Section */}
+          <div className="mb-8">
+            <ReferralLeaderboard />
+          </div>
 
           {/* How It Works */}
           <Card className="bg-card/50 backdrop-blur-xl border-border/50 p-8 mb-8">

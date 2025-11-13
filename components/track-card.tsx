@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Play, Heart, VideoIcon, Coins } from "lucide-react"
+import { Play, Heart, VideoIcon, Coins } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import type { TrackWithArtist } from "@/types/database"
@@ -141,7 +141,7 @@ export function TrackCard({ track, queue }: TrackCardProps) {
 
   const thumbnailUrl =
     track.content_type === "video"
-      ? track.thumbnail_url || "/video-thumbnail.png"
+      ? track.thumbnail_url || "/images/usic-logo.png"
       : track.cover_url || "/abstract-soundscape.png"
 
   const isGif = thumbnailUrl?.toLowerCase().endsWith(".gif")

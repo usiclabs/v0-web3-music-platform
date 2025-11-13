@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight } from "lucide-react"
+import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import { PlayTrackButton } from "@/components/play-track-button"
@@ -30,7 +30,8 @@ import {
 } from "@/lib/web3/contracts"
 import confetti from "canvas-confetti"
 import { TrackComments } from "@/components/track-comments"
-import { SimilarTracks } from "@/components/similar-tracks"
+import SimilarTracks from "@/components/similar-tracks"
+import SocialShareButtons from "@/components/social-share-buttons"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -77,6 +78,7 @@ export function TrackDetailContent({
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [showReportDialog, setShowReportDialog] = useState(false)
+  const [referralCode, setReferralCode] = useState<string | null>(null)
 
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient()
@@ -321,6 +323,22 @@ export function TrackDetailContent({
   const coverUrl = track.content_type === "video" ? track.thumbnail_url : track.cover_url
   const isGif = coverUrl?.toLowerCase().endsWith(".gif")
 
+  useEffect(() => {
+    async function loadReferralCode() {
+      if (!address) return
+      try {
+        const res = await fetch("/api/referrals")
+        if (res.ok) {
+          const data = await res.json()
+          setReferralCode(data.referralCode)
+        }
+      } catch (error) {
+        console.error("Failed to load referral code:", error)
+      }
+    }
+    loadReferralCode()
+  }, [address])
+
   return (
     <div className="min-h-screen pb-32 overflow-x-hidden relative">
       <div
@@ -366,6 +384,7 @@ export function TrackDetailContent({
                   transform: `translateY(${scrollY * 0.15}px) scale(${1 - scrollY * 0.0002})`,
                 }}
               >
+                <div className="absolute inset-0 bg-primary/30 blur-lg rounded-lg animate-pulse" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 {isGif ? (
@@ -611,6 +630,18 @@ export function TrackDetailContent({
                 </div>
               </Card>
             )}
+
+            {/* Social sharing section */}
+            <Card className="bg-card/50 backdrop-blur-xl border-border/50 p-6">
+              <h3 className="font-semibold mb-4 text-foreground">Share this track</h3>
+              <SocialShareButtons
+                type="track"
+                id={track.id}
+                title={track.title}
+                description={`Listen to ${track.title} by ${track.artist?.artist_name || "Unknown Artist"} on USI`}
+                referralCode={referralCode || undefined}
+              />
+            </Card>
           </div>
         </div>
 
