@@ -19,6 +19,7 @@ import { IOSInstallPrompt } from "@/components/ios-install-prompt"
 import { FarcasterProvider } from "@/lib/farcaster-provider"
 import { FarcasterBadge } from "@/components/farcaster-badge"
 import { EarningsToastListener } from "@/components/earnings-toast-listener"
+import { LavaLampBackground } from "@/components/lava-lamp-background"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -84,6 +85,7 @@ export default function RootLayout({
           <FarcasterProvider>
             <Web3Provider>
               <AudioPlayerProvider>
+                <LavaLampBackground />
                 <Header />
                 <BlockchainTicker />
                 <FarcasterBadge />

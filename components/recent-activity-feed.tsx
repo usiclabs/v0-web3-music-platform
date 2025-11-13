@@ -58,6 +58,7 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
               `
               id,
               started_at,
+              last_played_at,
               listener_address,
               chunks_played,
               total_paid,
@@ -79,7 +80,7 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
           if (streamData) {
             const activityItem = {
               id: streamData.id,
-              timestamp: streamData.started_at,
+              timestamp: streamData.last_played_at || streamData.started_at,
               type: "stream" as const,
               listener_address: streamData.listener_address,
               chunks_played: streamData.chunks_played,
@@ -114,6 +115,7 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
               `
               id,
               started_at,
+              last_played_at,
               listener_address,
               chunks_played,
               total_paid,
@@ -140,14 +142,17 @@ export function RecentActivityFeed({ activity: initialActivity }: RecentActivity
                 const updated = [...prev]
                 updated[existingIndex] = {
                   ...updated[existingIndex],
+                  timestamp: streamData.last_played_at || streamData.started_at,
                   chunks_played: streamData.chunks_played,
                   total_paid: streamData.total_paid,
                 }
-                return updated
+                // Move updated item to top
+                const [updatedItem] = updated.splice(existingIndex, 1)
+                return [updatedItem, ...updated].slice(0, 30)
               } else {
                 const activityItem = {
                   id: streamData.id,
-                  timestamp: streamData.started_at,
+                  timestamp: streamData.last_played_at || streamData.started_at,
                   type: "stream" as const,
                   listener_address: streamData.listener_address,
                   chunks_played: streamData.chunks_played,

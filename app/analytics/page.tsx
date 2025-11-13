@@ -133,6 +133,7 @@ async function getPlatformMetrics() {
       `
       id,
       started_at,
+      last_played_at,
       listener_address,
       chunks_played,
       total_paid,
@@ -148,7 +149,7 @@ async function getPlatformMetrics() {
       )
     `,
     )
-    .order("started_at", { ascending: false })
+    .order("last_played_at", { ascending: false })
     .limit(50)
 
   console.log("[v0] [Analytics] Recent streams fetched:", recentStreams?.length || 0)
@@ -192,7 +193,7 @@ async function getPlatformMetrics() {
   const allActivity = [
     ...(recentStreams || []).map((s) => ({
       id: s.id,
-      timestamp: s.started_at,
+      timestamp: s.last_played_at || s.started_at,
       type: "stream" as const,
       listener_address: s.listener_address,
       chunks_played: s.chunks_played,
