@@ -103,12 +103,19 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(
+
+        const signaturePromise = signTypedData(
           domain,
           TRANSFER_WITH_AUTHORIZATION_TYPES,
           authorization,
           "TransferWithAuthorization",
         )
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Signature request timeout - please check your wallet")), 120000) // 2 minutes
+        })
+
+        const signature = await Promise.race([signaturePromise, timeoutPromise])
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)
@@ -123,7 +130,26 @@ export function useEIP3009(): UseEIP3009Return {
         }
       } catch (err) {
         console.error("[v0] Failed to sign transfer authorization:", err)
-        const error = err instanceof Error ? err : new Error("Failed to sign authorization")
+        let errorMessage = "Failed to sign authorization"
+
+        if (err instanceof Error) {
+          if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+            errorMessage = "Wallet signature timeout. Please ensure your wallet app is open and responsive."
+          } else if (
+            err.message.includes("rejected") ||
+            err.message.includes("denied") ||
+            err.message.includes("User rejected")
+          ) {
+            errorMessage = "Signature request was rejected. Please approve the signature in your wallet."
+          } else if (err.message.includes("Not Supported") || err.message.includes("not supported")) {
+            errorMessage =
+              "Your wallet doesn't support EIP-712 signing. Please try a different wallet (MetaMask, Rainbow, or Trust Wallet recommended)."
+          } else {
+            errorMessage = err.message
+          }
+        }
+
+        const error = new Error(errorMessage)
         setError(error)
         throw error
       } finally {
@@ -169,12 +195,19 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(
+
+        const signaturePromise = signTypedData(
           domain,
           RECEIVE_WITH_AUTHORIZATION_TYPES,
           authorization,
           "ReceiveWithAuthorization",
         )
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Signature request timeout - please check your wallet")), 120000) // 2 minutes
+        })
+
+        const signature = await Promise.race([signaturePromise, timeoutPromise])
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)
@@ -189,7 +222,26 @@ export function useEIP3009(): UseEIP3009Return {
         }
       } catch (err) {
         console.error("[v0] Failed to sign receive authorization:", err)
-        const error = err instanceof Error ? err : new Error("Failed to sign authorization")
+        let errorMessage = "Failed to sign authorization"
+
+        if (err instanceof Error) {
+          if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+            errorMessage = "Wallet signature timeout. Please ensure your wallet app is open and responsive."
+          } else if (
+            err.message.includes("rejected") ||
+            err.message.includes("denied") ||
+            err.message.includes("User rejected")
+          ) {
+            errorMessage = "Signature request was rejected. Please approve the signature in your wallet."
+          } else if (err.message.includes("Not Supported") || err.message.includes("not supported")) {
+            errorMessage =
+              "Your wallet doesn't support EIP-712 signing. Please try a different wallet (MetaMask, Rainbow, or Trust Wallet recommended)."
+          } else {
+            errorMessage = err.message
+          }
+        }
+
+        const error = new Error(errorMessage)
         setError(error)
         throw error
       } finally {
@@ -225,7 +277,14 @@ export function useEIP3009(): UseEIP3009Return {
         console.log("[v0] EIP-712 domain:", domain)
 
         console.log("[v0] Requesting signature from wallet...")
-        const signature = await signTypedData(domain, CANCEL_AUTHORIZATION_TYPES, authorization, "CancelAuthorization")
+
+        const signaturePromise = signTypedData(domain, CANCEL_AUTHORIZATION_TYPES, authorization, "CancelAuthorization")
+
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Signature request timeout - please check your wallet")), 120000) // 2 minutes
+        })
+
+        const signature = await Promise.race([signaturePromise, timeoutPromise])
 
         console.log("[v0] Signature received, parsing...")
         const { v, r, s } = parseSignature(signature)
@@ -240,7 +299,26 @@ export function useEIP3009(): UseEIP3009Return {
         }
       } catch (err) {
         console.error("[v0] Failed to sign cancel authorization:", err)
-        const error = err instanceof Error ? err : new Error("Failed to sign authorization")
+        let errorMessage = "Failed to sign authorization"
+
+        if (err instanceof Error) {
+          if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+            errorMessage = "Wallet signature timeout. Please ensure your wallet app is open and responsive."
+          } else if (
+            err.message.includes("rejected") ||
+            err.message.includes("denied") ||
+            err.message.includes("User rejected")
+          ) {
+            errorMessage = "Signature request was rejected. Please approve the signature in your wallet."
+          } else if (err.message.includes("Not Supported") || err.message.includes("not supported")) {
+            errorMessage =
+              "Your wallet doesn't support EIP-712 signing. Please try a different wallet (MetaMask, Rainbow, or Trust Wallet recommended)."
+          } else {
+            errorMessage = err.message
+          }
+        }
+
+        const error = new Error(errorMessage)
         setError(error)
         throw error
       } finally {

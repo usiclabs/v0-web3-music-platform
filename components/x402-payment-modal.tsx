@@ -191,12 +191,29 @@ export function X402PaymentModal() {
       console.error("[v0] Payment failed:", err)
       setPaymentStep("error")
 
-      const errorMessage = err instanceof Error ? err.message : "Payment failed. Please try again."
+      let errorMessage = "Payment failed. Please try again."
+
+      if (err instanceof Error) {
+        if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+          errorMessage =
+            "Payment timeout. On mobile, please ensure your wallet app is open and responsive, then try again."
+        } else if (err.message.includes("rejected") || err.message.includes("denied")) {
+          errorMessage = "Payment was rejected. Please approve the signature request in your wallet."
+        } else if (err.message.includes("Not Supported") || err.message.includes("not supported")) {
+          errorMessage =
+            "Your wallet doesn't support this payment method. Try using MetaMask, Rainbow, or Trust Wallet."
+        } else if (err.message.includes("Network") || err.message.includes("network")) {
+          errorMessage = "Network error. Please check your connection and try again."
+        } else {
+          errorMessage = err.message
+        }
+      }
+
       addToast({
         title: "Payment Failed",
         description: errorMessage,
         variant: "error",
-        duration: 5000,
+        duration: 7000, // Longer duration for mobile users to read
       })
 
       setTimeout(() => {

@@ -159,24 +159,59 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       const valueInUSDC = Math.floor(Number.parseFloat(paymentInstructions.amount) * 1e6)
 
-      const signedAuth = await signTransferAuthorization(
-        paymentInstructions.recipient as `0x${string}`,
-        BigInt(valueInUSDC),
-        0n, // validAfter: now
-        BigInt(Math.floor(Date.now() / 1000) + (mobile ? 14400 : 3600)), // validBefore: 1-4 hours
-      )
+      const validityPeriod = mobile ? 14400 : 3600 // 4 hours for mobile, 1 hour for desktop
+
+      let signedAuth
+      const retries = mobile ? 2 : 0 // Allow 2 retries on mobile
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          if (attempt > 0) {
+            console.log(`[v0] Retry attempt ${attempt} for signature`)
+            onProgress?.("signing", undefined)
+            await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait 1s between retries
+          }
+
+          signedAuth = await signTransferAuthorization(
+            paymentInstructions.recipient as `0x${string}`,
+            BigInt(valueInUSDC),
+            0n, // validAfter: now
+            BigInt(Math.floor(Date.now() / 1000) + validityPeriod),
+          )
+
+          break // Success, exit retry loop
+        } catch (signError) {
+          if (attempt === retries) {
+            // Last attempt failed
+            throw signError
+          }
+          console.log(`[v0] Signature attempt ${attempt + 1} failed, retrying...`, signError)
+        }
+      }
+
+      if (!signedAuth) {
+        throw new Error("Failed to get signature after retries")
+      }
 
       console.log("[v0] Authorization signed successfully")
 
       onProgress?.("verifying")
       console.log("[v0] Submitting payment...")
 
-      const result = await submitAuthorization(signedAuth, {
+      const submitPromise = submitAuthorization(signedAuth, {
         trackId: currentTrack.id,
         chunkIndex,
         userId: address,
         purpose: "x402_streaming",
+        walletType,
+        isMobile: mobile,
       })
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("Payment submission timeout - please try again")), mobile ? 60000 : 30000)
+      })
+
+      const result = await Promise.race([submitPromise, timeoutPromise])
 
       if (!result.success) {
         throw new Error(result.error || "Failed to submit payment")
