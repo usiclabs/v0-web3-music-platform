@@ -70,15 +70,15 @@ export function Header() {
               />
             </Link>
             <Link
-              href="/activity-feed"
+              href="/analytics"
               className={`text-sm font-medium transition-all relative group ${
-                isActive("/activity-feed") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                isActive("/analytics") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Activity
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/activity-feed") ? "w-full" : "w-0 group-hover:w-full"
+                  isActive("/analytics") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>

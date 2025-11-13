@@ -30,22 +30,79 @@ function getServerAccount() {
   return privateKeyToAccount(formattedPrivateKey as `0x${string}`)
 }
 
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY
+
+const BASE_RPC_ENDPOINTS = ALCHEMY_API_KEY
+  ? [`https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`]
+  : [
+      "https://mainnet.base.org",
+      "https://base.blockpi.network/v1/rpc/public",
+      "https://base-rpc.publicnode.com",
+      "https://1rpc.io/base",
+    ]
+
+const BASE_SEPOLIA_RPC_ENDPOINTS = ALCHEMY_API_KEY
+  ? [`https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`]
+  : [
+      "https://sepolia.base.org",
+      "https://base-sepolia.blockpi.network/v1/rpc/public",
+      "https://base-sepolia-rpc.publicnode.com",
+    ]
+
+async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 1000): Promise<T> {
+  let lastError: Error | undefined
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      lastError = error
+
+      // Check if it's a rate limit error
+      const isRateLimitError =
+        error?.message?.includes("rate limit") ||
+        error?.message?.includes("429") ||
+        error?.details?.includes("rate limit")
+
+      if (!isRateLimitError || i === maxRetries - 1) {
+        throw error
+      }
+
+      // Exponential backoff with jitter
+      const delay = baseDelay * Math.pow(2, i) + Math.random() * 1000
+      console.log(`[Relayer] Rate limited, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
+
+  throw lastError || new Error("Max retries exceeded")
+}
+
 /**
- * Create viem clients for blockchain interaction
+ * Create viem clients for blockchain interaction with fallback RPC endpoints
  */
 function getClients() {
   const chain = getChain()
   const account = getServerAccount()
 
+  const rpcEndpoints = chain.id === base.id ? BASE_RPC_ENDPOINTS : BASE_SEPOLIA_RPC_ENDPOINTS
+
   const publicClient = createPublicClient({
     chain,
-    transport: http(),
+    transport: http(rpcEndpoints[0], {
+      batch: true,
+      retryCount: 3,
+      retryDelay: 1000,
+    }),
   })
 
   const walletClient = createWalletClient({
     account,
     chain,
-    transport: http(),
+    transport: http(rpcEndpoints[0], {
+      retryCount: 3,
+      retryDelay: 1000,
+    }),
   })
 
   return { publicClient, walletClient, account }
@@ -75,12 +132,13 @@ export async function relayTransferAuthorization(
     const { publicClient, walletClient, account } = getClients()
     const usdcAddress = getUSDCAddress()
 
-    // Check if authorization has already been used
-    const isUsed = await publicClient.readContract({
-      address: usdcAddress,
-      abi: EIP3009_ABI,
-      functionName: "authorizationState",
-      args: [from, nonce],
+    const isUsed = await retryWithBackoff(async () => {
+      return await publicClient.readContract({
+        address: usdcAddress,
+        abi: EIP3009_ABI,
+        functionName: "authorizationState",
+        args: [from, nonce],
+      })
     })
 
     if (isUsed) {
@@ -97,14 +155,15 @@ export async function relayTransferAuthorization(
       return { success: false, error: "Authorization has expired" }
     }
 
-    // Simulate the transaction first to catch errors
     try {
-      await publicClient.simulateContract({
-        address: usdcAddress,
-        abi: EIP3009_ABI,
-        functionName: "transferWithAuthorization",
-        args: [from, to, value, validAfter, validBefore, nonce, v, r, s],
-        account,
+      await retryWithBackoff(async () => {
+        return await publicClient.simulateContract({
+          address: usdcAddress,
+          abi: EIP3009_ABI,
+          functionName: "transferWithAuthorization",
+          args: [from, to, value, validAfter, validBefore, nonce, v, r, s],
+          account,
+        })
       })
     } catch (simulateError) {
       console.error("[Relayer] Transaction simulation failed:", simulateError)
@@ -152,11 +211,13 @@ export async function checkAuthorizationState(authorizer: Address, nonce: Hex): 
     const { publicClient } = getClients()
     const usdcAddress = getUSDCAddress()
 
-    const isUsed = await publicClient.readContract({
-      address: usdcAddress,
-      abi: EIP3009_ABI,
-      functionName: "authorizationState",
-      args: [authorizer, nonce],
+    const isUsed = await retryWithBackoff(async () => {
+      return await publicClient.readContract({
+        address: usdcAddress,
+        abi: EIP3009_ABI,
+        functionName: "authorizationState",
+        args: [authorizer, nonce],
+      })
     })
 
     return isUsed as boolean

@@ -34,8 +34,18 @@ if (typeof window !== "undefined") {
   }
 }
 
-const BASE_RPC = "https://mainnet.base.org"
-const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
+const BASE_RPC_ENDPOINTS = [
+  "https://mainnet.base.org",
+  "https://base.blockpi.network/v1/rpc/public",
+  "https://base-rpc.publicnode.com",
+  "https://1rpc.io/base",
+]
+
+const BASE_SEPOLIA_RPC_ENDPOINTS = [
+  "https://sepolia.base.org",
+  "https://base-sepolia.blockpi.network/v1/rpc/public",
+  "https://base-sepolia-rpc.publicnode.com",
+]
 
 // Configure wagmi
 export const config = createConfig({
@@ -68,8 +78,18 @@ export const config = createConfig({
     }),
   ],
   transports: {
-    [base.id]: http(BASE_RPC),
-    [baseSepolia.id]: http(BASE_SEPOLIA_RPC),
+    [base.id]: http(BASE_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
+    [baseSepolia.id]: http(BASE_SEPOLIA_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
   },
 })
 

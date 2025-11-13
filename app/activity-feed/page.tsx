@@ -667,6 +667,8 @@ export default function ActivityFeedPage() {
         const isPaidUnlock = activity.total_paid && activity.total_paid > 0
         const displayAmount = isPaidUnlock ? activity.total_paid.toFixed(4) : null
 
+        const cleanTrackTitle = activity.track_title?.trim() || ""
+
         return (
           <>
             {activity.user_has_profile ? (
@@ -679,12 +681,12 @@ export default function ActivityFeedPage() {
             ) : (
               <span className="font-semibold text-foreground/70 cursor-not-allowed">{userName}</span>
             )}
-            {isPaidUnlock ? " streamed " : " is listening to "}
+            {" streamed "}
             <Link
               href={`/track/${activity.track_id}`}
               className={`font-semibold transition-colors ${isPaidUnlock ? "hover:text-yellow-400" : "hover:text-purple-400"}`}
             >
-              {activity.track_title}
+              {cleanTrackTitle}
             </Link>
             {isPaidUnlock && displayAmount && (
               <span className="inline-flex items-center gap-1 ml-2 text-yellow-400 font-semibold">

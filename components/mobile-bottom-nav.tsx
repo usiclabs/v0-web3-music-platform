@@ -14,7 +14,7 @@ export function MobileBottomNav() {
     { href: "/artists", icon: Users, label: "Artists" },
     { href: "/trending", icon: TrendingUp, label: "Trending" },
     { href: "/explore", icon: Compass, label: "Explore" },
-    { href: "/activity-feed", icon: Activity, label: "Activity" },
+    { href: "/analytics", icon: Activity, label: "Activity" },
     { href: "/profile", icon: User, label: "Profile" },
   ]
 
