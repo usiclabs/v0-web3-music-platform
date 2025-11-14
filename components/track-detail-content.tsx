@@ -11,7 +11,7 @@ import { LikeButton } from "@/components/like-button"
 import { ReportTrackDialog } from "@/components/report-track-dialog"
 import { TrackAnalyticsCharts } from "@/components/track-analytics-charts"
 import { VideoPlayer } from "@/components/video-player"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
@@ -62,7 +62,6 @@ export function TrackDetailContent({
   avgEarningsPerStream,
 }: TrackDetailContentProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [scrollY, setScrollY] = useState(0)
   const [statsVisible, setStatsVisible] = useState(false)
   const [analyticsVisible, setAnalyticsVisible] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
@@ -93,8 +92,9 @@ export function TrackDetailContent({
       return res.json()
     },
     {
-      refreshInterval: 30000, // Refresh every 30 seconds
-      revalidateOnFocus: true,
+      refreshInterval: 60000, // Refresh every 60 seconds instead of 30
+      revalidateOnFocus: false, // Prevent refetch on tab focus
+      dedupingInterval: 30000, // Prevent duplicate requests within 30s
     },
   )
 
@@ -104,13 +104,6 @@ export function TrackDetailContent({
     setAnalyticsVisible(true)
   }, [])
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -126,7 +119,10 @@ export function TrackDetailContent({
           }
         })
       },
-      { threshold: 0.1 },
+      {
+        threshold: 0.1,
+        rootMargin: '50px' // Start loading slightly before element enters viewport
+      },
     )
 
     if (statsRef.current) observer.observe(statsRef.current)
@@ -320,8 +316,13 @@ export function TrackDetailContent({
     console.log("[v0] Payment required for video chunk:", chunk)
   }
 
-  const coverUrl = track.content_type === "video" ? track.thumbnail_url : track.cover_url
-  const isGif = coverUrl?.toLowerCase().endsWith(".gif")
+  const coverUrl = useMemo(() => {
+    return track.content_type === "video" ? track.thumbnail_url : track.cover_url
+  }, [track.content_type, track.thumbnail_url, track.cover_url])
+
+  const isGif = useMemo(() => {
+    return coverUrl?.toLowerCase().endsWith(".gif")
+  }, [coverUrl])
 
   useEffect(() => {
     async function loadReferralCode() {
@@ -348,6 +349,7 @@ export function TrackDetailContent({
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
+          willChange: "transform",
         }}
       >
         {/* Blur layer */}
@@ -380,9 +382,6 @@ export function TrackDetailContent({
             ) : (
               <div
                 className="relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary/20 via-card/50 to-accent/20 backdrop-blur-xl border border-border/50 group"
-                style={{
-                  transform: `translateY(${scrollY * 0.15}px) scale(${1 - scrollY * 0.0002})`,
-                }}
               >
                 <div className="absolute inset-0 bg-primary/30 blur-lg rounded-lg animate-pulse" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -392,6 +391,7 @@ export function TrackDetailContent({
                     src={coverUrl || "/placeholder.svg?height=400&width=400&query=album cover"}
                     alt={track.title}
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    loading="lazy"
                   />
                 ) : (
                   <Image
@@ -400,6 +400,7 @@ export function TrackDetailContent({
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                     priority
+                    quality={90}
                   />
                 )}
 
