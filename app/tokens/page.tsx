@@ -16,28 +16,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { AnimatedCounter } from "@/components/animated-counter"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
 import type { Address } from "viem"
-import {
-  Play,
-  Pause,
-  Coins,
-  TrendingUp,
-  ExternalLink,
-  Search,
-  Music,
-  Zap,
-  Droplet,
-  Heart,
-  X,
-  BarChart3,
-  Activity,
-  Filter,
-  SlidersHorizontal,
-  ArrowRight,
-  Loader2,
-  AlertCircle,
-  DollarSign,
-  User,
-} from "lucide-react"
+import { Play, Pause, Coins, TrendingUp, ExternalLink, Search, Music, Zap, Droplet, Heart, X, BarChart3, Activity, Filter, SlidersHorizontal, ArrowRight, Loader2, AlertCircle, DollarSign, User } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast" // Updated import path
 import { createClient } from "@/lib/supabase/client"
 import { useWriteContract, usePublicClient } from "wagmi"
@@ -130,7 +109,7 @@ export default function TokensPage() {
   const [showProfileSwapModal, setShowProfileSwapModal] = useState(false)
   const [selectedProfileToken, setSelectedProfileToken] = useState<TokenizedTrack | null>(null)
 
-  const { data: aggregateMetrics, error: metricsError } = useSWR(
+  const { data: aggregateMetrics, error: metricsError, isLoading: isLoadingAggregateMetrics } = useSWR(
     "/api/tokens/aggregate-metrics",
     async (url) => {
       const response = await fetch(url)
@@ -138,10 +117,11 @@ export default function TokensPage() {
       return response.json()
     },
     {
-      refreshInterval: 30000,
+      refreshInterval: 60000, // Increased from 30s to 60s for better mobile performance
       revalidateOnFocus: false,
-      dedupingInterval: 10000,
-      fallbackData: { totalVolume24h: 0, totalMarketCap: 0 }, // Added fallback data
+      dedupingInterval: 30000, // Increased deduplication interval
+      fallbackData: { totalVolume24h: 0, totalMarketCap: 0, tokenCount: 0 },
+      keepPreviousData: true,
       onError: (err) => {
         console.error("[v0] Failed to fetch aggregate metrics:", err)
       },
@@ -665,14 +645,14 @@ export default function TokensPage() {
 
   const stats = useMemo(() => {
     return {
-      totalTokens: tracks.length,
+      totalTokens: aggregateMetrics?.tokenCount ?? tracks.length, // Use tokenCount from metrics if available
       totalFavorites: favorites.size,
       recentlyAdded: tracks.filter((t) => {
         const dayAgo = Date.now() - 24 * 60 * 60 * 1000
         return new Date(t.created_at).getTime() > dayAgo
       }).length,
     }
-  }, [tracks, favorites])
+  }, [tracks, favorites, aggregateMetrics?.tokenCount])
 
   const formatCurrency = (value: number): string => {
     if (value >= 1_000_000) {
@@ -803,13 +783,17 @@ export default function TokensPage() {
                 <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">
-                  <AnimatedCounter
-                    value={aggregateMetrics?.totalVolume24h || 0}
-                    formatFn={formatCurrency}
-                    duration={1800}
-                  />
-                </p>
+                {isLoadingAggregateMetrics ? (
+                  <Skeleton className="h-7 w-20 sm:h-8 sm:w-24" />
+                ) : (
+                  <p className="text-xl sm:text-2xl font-bold">
+                    <AnimatedCounter
+                      value={aggregateMetrics?.totalVolume24h ?? 0}
+                      formatFn={formatCurrency}
+                      duration={1800}
+                    />
+                  </p>
+                )}
                 <p className="text-xs sm:text-sm text-muted-foreground">24h Volume</p>
               </div>
             </div>
@@ -820,13 +804,17 @@ export default function TokensPage() {
                 <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-xl sm:text-2xl font-bold">
-                  <AnimatedCounter
-                    value={aggregateMetrics?.totalMarketCap || 0}
-                    formatFn={formatCurrency}
-                    duration={1800}
-                  />
-                </p>
+                {isLoadingAggregateMetrics ? (
+                  <Skeleton className="h-7 w-20 sm:h-8 sm:w-24" />
+                ) : (
+                  <p className="text-xl sm:text-2xl font-bold">
+                    <AnimatedCounter
+                      value={aggregateMetrics?.totalMarketCap ?? 0}
+                      formatFn={formatCurrency}
+                      duration={1800}
+                    />
+                  </p>
+                )}
                 <p className="text-xs sm:text-sm text-muted-foreground">Market Cap</p>
               </div>
             </div>

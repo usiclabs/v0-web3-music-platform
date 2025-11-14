@@ -45,14 +45,22 @@ export async function GET() {
     }
 
     if (!tracks || tracks.length === 0) {
-      return NextResponse.json({
-        totalVolume24h: 0,
-        totalMarketCap: 0,
-        tokenCount: 0,
-      })
+      return NextResponse.json(
+        {
+          totalVolume24h: 0,
+          totalMarketCap: 0,
+          tokenCount: 0,
+        },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          },
+        }
+      )
     }
 
     console.log(`[v0] Fetching metrics for ${tracks.length} tokenized tracks`)
+    console.log("[v0] Fetched tracks:", tracks.length, "profile tokens:", 0)
 
     const apiStartTime = Date.now()
     const metricsPromises = tracks.map(async (track) => {
@@ -62,7 +70,7 @@ export async function GET() {
           headers: {
             Accept: "application/json",
           },
-          next: { revalidate: 120 },
+          next: { revalidate: 180 },
         })
 
         console.log(`[v0] [PERF] DexScreener API call for ${track.coin_address} took ${Date.now() - tokenStartTime}ms`)
@@ -103,11 +111,18 @@ export async function GET() {
     console.log(`[v0] [PERF] Total aggregate metrics fetch took ${Date.now() - startTime}ms`)
     console.log(`[v0] Aggregate metrics: Volume=$${totalVolume24h.toFixed(2)}, MarketCap=$${totalMarketCap.toFixed(2)}`)
 
-    return NextResponse.json({
-      totalVolume24h,
-      totalMarketCap,
-      tokenCount: tracks.length,
-    })
+    return NextResponse.json(
+      {
+        totalVolume24h,
+        totalMarketCap,
+        tokenCount: tracks.length,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      }
+    )
   } catch (error) {
     console.error("[v0] Error fetching aggregate token metrics:", error)
     return NextResponse.json(
@@ -117,7 +132,12 @@ export async function GET() {
         totalMarketCap: 0,
         tokenCount: 0,
       },
-      { status: 500 },
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      },
     )
   }
 }
