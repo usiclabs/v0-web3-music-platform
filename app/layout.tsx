@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from "@vercel/analytics/next"
 import { Web3Provider } from "@/lib/web3/providers"
 import { AudioPlayerProvider } from "@/lib/audio-player-context"
@@ -19,7 +19,6 @@ import { IOSInstallPrompt } from "@/components/ios-install-prompt"
 import { FarcasterProvider } from "@/lib/farcaster-provider"
 import { FarcasterBadge } from "@/components/farcaster-badge"
 import { EarningsToastListener } from "@/components/earnings-toast-listener"
-import { LavaLampBackground } from "@/components/lava-lamp-background"
 import "./globals.css"
 
 const geistSans = Geist({ subsets: ["latin"] })
@@ -85,7 +84,6 @@ export default function RootLayout({
           <FarcasterProvider>
             <Web3Provider>
               <AudioPlayerProvider>
-                <LavaLampBackground />
                 <Header />
                 <BlockchainTicker />
                 <FarcasterBadge />
