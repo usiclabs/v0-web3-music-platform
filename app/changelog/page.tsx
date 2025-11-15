@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function ChangelogPage() {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["2025-11-06"]))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["2025-11-15"]))
 
   const toggleSection = (date: string) => {
     const newExpanded = new Set(expandedSections)
@@ -27,7 +27,268 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries */}
         <div className="space-y-4">
-          {/* November 6, 2025 - Today's Changes */}
+          {/* November 15, 2025 - Latest Changes */}
+          <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection("2025-11-15")}
+              className="w-full p-6 flex items-center justify-between hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 to-purple-500">
+                  <span className="text-xl">🎯</span>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-bold">November 15, 2025</h2>
+                  <p className="text-sm text-muted-foreground">Referral System, Builder Codes & Auth Upgrades</p>
+                </div>
+              </div>
+              {expandedSections.has("2025-11-15") ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+
+            {expandedSections.has("2025-11-15") && (
+              <div className="px-6 pb-6 space-y-8 border-t">
+                <section className="space-y-3 pt-6">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    <span className="text-base">🚀</span>
+                    Comprehensive Referral & Rewards System
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Built complete referral system with unique codes, tracking, and multi-tier rewards (USDC + credits)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Added social sharing buttons with pre-filled content for Twitter, Farcaster, Telegram, and native sharing
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Implemented referral leaderboard showing top referrers with medals, points earned, and USDC rewards
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Created achievement system with 6 milestone tiers (3, 5, 10, 25, 50, 100 referrals) with visual progress bars
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Integrated social share tracking into track detail pages for viral growth
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-pink-500">•</span>
+                      <span>
+                        Added reward distribution tables, campaign management, and analytics dashboard
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">
+                    <span className="text-base">🏗️</span>
+                    ERC-8021 Builder Codes
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Implemented ERC-8021 builder code standard for third-party app revenue sharing
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Developers can now build apps on top of MYUSIC and earn 10% of platform fees automatically
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Created builder code registry with automatic revenue tracking and leaderboard
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Integrated builder codes into x402 payment metadata for seamless revenue splits
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Added /builder-codes portal for developers to register and manage their codes
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Enables ecosystem of third-party music players, AI agents, and trading terminals
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                    <span className="text-base">🔐</span>
+                    Hybrid Authentication with Privy
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Integrated Privy embedded wallets alongside existing Wagmi wallet connection
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Users can now login with email, Google, Twitter, Discord, or Farcaster (no wallet needed)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Embedded wallets auto-created for social login users with hardware-secured SOC 2 compliance
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Traditional crypto wallet option still available for power users (MetaMask, Coinbase Wallet)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Created unified wallet context that manages both auth methods seamlessly
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Solves mobile wallet connectivity issues and enables automatic signing for micropayments
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                    <span className="text-base">🎨</span>
+                    Content Management & UX Improvements
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Admins and creators can now edit/upload thumbnails for tokenized songs via new ThumbnailUploadDialog
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Platform logo now used as default thumbnail for videos without featured images
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Improved scroll performance on track detail pages by removing janky parallax and optimizing renders
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Fixed duplicate close button in onboarding modal by correcting Dialog component props
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Added thumbnail editing capability to admin panel for managing tracks in bulk
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                    <span className="text-base">📊</span>
+                    Token Metrics & Analytics
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Fixed token metrics not displaying on mobile by adding retry logic and timeout protection
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Profile tokens now included in aggregate metrics (24h volume and market cap)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Added comprehensive logging and error handling for DexScreener API calls
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Implemented fallback values and skeleton loaders for better loading states
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Enhanced cache headers and SWR configuration for reliable mobile performance
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <div className="grid gap-4 sm:grid-cols-3 pt-4">
+                  <div className="rounded-lg border bg-gradient-to-br from-pink-500/10 to-purple-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                      3
+                    </div>
+                    <div className="text-sm text-muted-foreground">Major Systems</div>
+                  </div>
+                  <div className="rounded-lg border bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                      25+
+                    </div>
+                    <div className="text-sm text-muted-foreground">New Features</div>
+                  </div>
+                  <div className="rounded-lg border bg-gradient-to-br from-green-500/10 to-emerald-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                      10+
+                    </div>
+                    <div className="text-sm text-muted-foreground">Bug Fixes</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* November 6, 2025 - ERC-8004 Integration */}
           <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
             <button
               onClick={() => toggleSection("2025-11-06")}

@@ -11,6 +11,7 @@ export interface X402PaymentInstructions {
     chunkIndex: number
     totalChunks: number
     chunkDuration: number
+    builderCode?: string // Builder code for revenue attribution
   }
 }
 
@@ -28,11 +29,18 @@ export interface X402PaymentPayload {
     r: string
     s: string
   }
+  builderCode?: string
 }
 
 // Request a chunk and get payment instructions
-export async function requestChunk(trackId: string, chunkIndex: number): Promise<X402PaymentInstructions> {
-  const response = await fetch(`/api/x402/stream/${trackId}?chunk=${chunkIndex}`)
+export async function requestChunk(trackId: string, chunkIndex: number, builderCode?: string): Promise<X402PaymentInstructions> {
+  const url = new URL(`/api/x402/stream/${trackId}`, window.location.origin)
+  url.searchParams.set('chunk', chunkIndex.toString())
+  if (builderCode) {
+    url.searchParams.set('builderCode', builderCode)
+  }
+  
+  const response = await fetch(url.toString())
 
   if (response.status !== 402) {
     throw new Error("Expected 402 Payment Required response")
@@ -69,6 +77,7 @@ export async function settlePayment(
       trackId,
       listenerAddress,
       chunkIndex,
+      builderCode: paymentPayload.builderCode,
     }),
   })
 

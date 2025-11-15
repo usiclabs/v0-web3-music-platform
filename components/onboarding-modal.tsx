@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Music, Coins, TrendingUp, Wallet, Sparkles, ArrowRight, X } from "lucide-react"
+import { Music, Coins, TrendingUp, Wallet, Sparkles, ArrowRight, X } from 'lucide-react'
 import { useWallet } from "@/lib/web3/wallet-context"
 
 const ONBOARDING_STORAGE_KEY = "usic-onboarding-completed"
@@ -95,7 +95,7 @@ export function OnboardingModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogPortal>
         <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="max-w-2xl border-0 bg-transparent p-0 shadow-none" hideClose>
+        <DialogContent className="max-w-2xl border-0 bg-transparent p-0 shadow-none" showCloseButton={false}>
           {/* Glassmorphic Container */}
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl">
             {/* Animated Background Gradient */}

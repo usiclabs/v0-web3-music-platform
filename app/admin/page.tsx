@@ -15,41 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import {
-  Shield,
-  Users,
-  Music,
-  DollarSign,
-  TrendingUp,
-  Activity,
-  CheckCircle,
-  Clock,
-  Zap,
-  Database,
-  Search,
-  Download,
-  RefreshCw,
-  Eye,
-  Play,
-  Heart,
-  Ban,
-  Trash2,
-  Star,
-  Radio,
-  Settings,
-  Power,
-  MoreVertical,
-  AlertTriangle,
-  List,
-  Grid,
-  Coins,
-  Plus,
-  Sparkles,
-  ArrowRight,
-  Flag,
-  X,
-  XCircle,
-} from "lucide-react"
+import { Shield, Users, Music, DollarSign, TrendingUp, Activity, CheckCircle, Clock, Zap, Database, Search, Download, RefreshCw, Eye, Play, Heart, Ban, Trash2, Star, Radio, Settings, Power, MoreVertical, AlertTriangle, List, Grid, Coins, Plus, Sparkles, ArrowRight, Flag, X, XCircle, ImageIcon } from 'lucide-react'
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
 import { createBrowserClient } from "@/lib/supabase/client"
@@ -61,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import ThumbnailUploadDialog from "@/components/thumbnail-upload-dialog" // Added for thumbnail editing
 
 // Admin wallet address - only this address can access the admin panel
 const ADMIN_ADDRESS = "0x7D1a4B4941200FB2907638202782E9248b9b9887"
@@ -139,6 +106,9 @@ export default function AdminPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string } | null>(null)
   const [showStreamDialog, setShowStreamDialog] = useState(false) // Added state for stream dialog
+
+  const [showThumbnailDialog, setShowThumbnailDialog] = useState(false) // Added for thumbnail editing
+  const [thumbnailTrack, setThumbnailTrack] = useState<any>(null) // Added for thumbnail editing
 
   const [showEditTrackDialog, setShowEditTrackDialog] = useState(false)
   const [editTrackData, setEditTrackData] = useState({
@@ -996,6 +966,18 @@ export default function AdminPage() {
         variant: "destructive",
       })
     }
+  }
+
+  // ADDED HANDLER FOR EDITING THUMBNAIL
+  const handleEditThumbnail = (track: any) => {
+    setThumbnailTrack(track)
+    setShowThumbnailDialog(true)
+  }
+
+  // ADDED HANDLER FOR THUMBNAIL SUCCESS
+  const handleThumbnailSuccess = () => {
+    // Refresh tracks list
+    loadAllTracks()
   }
 
   // Access denied screen
@@ -2693,6 +2675,73 @@ export default function AdminPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {selectedTrack && (
+          <Dialog open={showTrackDialog} onOpenChange={setShowTrackDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Track Details</DialogTitle>
+                <DialogDescription>View details and perform actions on this track</DialogDescription>
+              </DialogHeader>
+              {selectedTrack && (
+                <div className="py-4">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/10 border border-border/50">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-border/50 flex items-center justify-center flex-shrink-0">
+                      <Music className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{selectedTrack.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {selectedTrack.artist?.artist_name || "Unknown"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button variant="outline" onClick={() => setShowTrackDialog(false)} className="w-full sm:w-auto">
+                  Close
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    handleEditThumbnail(selectedTrack)
+                    setShowTrackDialog(false)
+                  }}
+                  className="w-full"
+                >
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Edit Thumbnail/Cover
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setDeleteTarget({ type: "track", id: selectedTrack.id })
+                    setShowDeleteConfirm(true)
+                    setShowTrackDialog(false)
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  {selectedTrack.is_active === false ? "Restore" : "Hide"} Track
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {thumbnailTrack && (
+          <ThumbnailUploadDialog
+            open={showThumbnailDialog}
+            onOpenChange={setShowThumbnailDialog}
+            trackId={thumbnailTrack.id}
+            trackTitle={thumbnailTrack.title}
+            currentThumbnail={thumbnailTrack.thumbnail_url}
+            currentCover={thumbnailTrack.cover_url}
+            isVideo={thumbnailTrack.content_type === "video"}
+            onSuccess={handleThumbnailSuccess}
+          />
+        )}
       </main>
     </div>
   )

@@ -112,21 +112,49 @@ export default function TokensPage() {
   const { data: aggregateMetrics, error: metricsError, isLoading: isLoadingAggregateMetrics } = useSWR(
     "/api/tokens/aggregate-metrics",
     async (url) => {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error("Failed to fetch aggregate metrics")
-      return response.json()
+      console.log("[v0] [CLIENT] Fetching aggregate metrics...")
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+        if (!response.ok) {
+          console.error("[v0] [CLIENT] Aggregate metrics fetch failed:", response.status)
+          throw new Error("Failed to fetch aggregate metrics")
+        }
+        const data = await response.json()
+        console.log("[v0] [CLIENT] Aggregate metrics received:", data)
+        return data
+      } catch (error: any) {
+        console.error("[v0] [CLIENT] Error fetching aggregate metrics:", error.message)
+        throw error
+      }
     },
     {
-      refreshInterval: 60000, // Increased from 30s to 60s for better mobile performance
+      refreshInterval: 60000,
       revalidateOnFocus: false,
-      dedupingInterval: 30000, // Increased deduplication interval
+      dedupingInterval: 30000,
       fallbackData: { totalVolume24h: 0, totalMarketCap: 0, tokenCount: 0 },
       keepPreviousData: true,
       onError: (err) => {
-        console.error("[v0] Failed to fetch aggregate metrics:", err)
+        console.error("[v0] [CLIENT] SWR error for aggregate metrics:", err)
+      },
+      onSuccess: (data) => {
+        console.log("[v0] [CLIENT] SWR success for aggregate metrics:", data)
       },
     },
   )
+
+  useEffect(() => {
+    if (metricsError) {
+      console.error("[v0] [CLIENT] Metrics error in component:", metricsError)
+    }
+    if (aggregateMetrics) {
+      console.log("[v0] [CLIENT] Current aggregate metrics in state:", aggregateMetrics)
+    }
+  }, [metricsError, aggregateMetrics])
+
 
   const [tokenMetrics, setTokenMetrics] = useState<Record<string, TokenMetrics>>({})
   const [loadingMetrics, setLoadingMetrics] = useState<Set<string>>(new Set())

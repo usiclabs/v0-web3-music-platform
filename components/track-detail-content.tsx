@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight } from 'lucide-react'
+import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight, ImageIcon } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import { PlayTrackButton } from "@/components/play-track-button"
@@ -32,6 +32,7 @@ import confetti from "canvas-confetti"
 import { TrackComments } from "@/components/track-comments"
 import SimilarTracks from "@/components/similar-tracks"
 import SocialShareButtons from "@/components/social-share-buttons"
+import ThumbnailUploadDialog from "@/components/thumbnail-upload-dialog"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -77,6 +78,7 @@ export function TrackDetailContent({
   const [isCheckingPool, setIsCheckingPool] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [showReportDialog, setShowReportDialog] = useState(false)
+  const [showThumbnailUpload, setShowThumbnailUpload] = useState(false)
   const [referralCode, setReferralCode] = useState<string | null>(null)
 
   const { writeContractAsync } = useWriteContract()
@@ -340,6 +342,17 @@ export function TrackDetailContent({
     loadReferralCode()
   }, [address])
 
+  // Check if current user is admin or track owner
+  const adminAddresses = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.toLowerCase().split(",") || []
+  const isAdmin = address ? adminAddresses.includes(address.toLowerCase()) : false
+  const isOwner = address ? track.artist_id.toLowerCase() === address.toLowerCase() : false
+  const canEditThumbnail = isAdmin || isOwner
+
+  const handleThumbnailUpdate = () => {
+    // Refresh the page to show new thumbnail
+    window.location.reload()
+  }
+
   return (
     <div className="min-h-screen pb-32 overflow-x-hidden relative">
       <div
@@ -451,6 +464,17 @@ export function TrackDetailContent({
               >
                 <Flag className="h-5 w-5" />
               </Button>
+              {canEditThumbnail && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setShowThumbnailUpload(true)}
+                  className="bg-transparent hover:bg-primary/10 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                  title="Edit thumbnail/cover image"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -854,6 +878,17 @@ export function TrackDetailContent({
         trackTitle={track.title}
         open={showReportDialog}
         onOpenChange={setShowReportDialog}
+      />
+
+      <ThumbnailUploadDialog
+        open={showThumbnailUpload}
+        onOpenChange={setShowThumbnailUpload}
+        trackId={track.id}
+        trackTitle={track.title}
+        currentThumbnail={track.thumbnail_url}
+        currentCover={track.cover_url}
+        isVideo={track.content_type === "video"}
+        onSuccess={handleThumbnailUpdate}
       />
     </div>
   )

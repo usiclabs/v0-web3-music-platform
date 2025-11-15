@@ -3,9 +3,9 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Wallet } from "lucide-react"
+import { Wallet } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { usePathname } from "next/navigation"
+import { usePathname } from 'next/navigation'
 import Image from "next/image"
 import { MobileMenu } from "@/components/mobile-menu"
 import { MobileWalletModal } from "@/components/mobile-wallet-modal"
@@ -14,7 +14,7 @@ import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
 import { NotificationCenter } from "@/components/notification-center"
 
 export function Header() {
-  const { address, isConnected, connect, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
+  const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
   const pathname = usePathname()
   const { connectAsync, connectors } = useConnect()
 
@@ -31,6 +31,8 @@ export function Header() {
       console.error("[v0] Failed to connect via WalletConnect:", error)
     }
   }
+
+  const displayName = address ? formatAddress(address) : ""
 
   return (
     <>
@@ -161,7 +163,7 @@ export function Header() {
                     className="gap-1.5 sm:gap-2 bg-primary/10 border-primary/20 hover:bg-primary/20 hover:scale-105 transition-all text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
                   >
                     <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                    <span className="font-mono">{formatAddress(address)}</span>
+                    <span className="font-mono">{displayName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -174,7 +176,7 @@ export function Header() {
                   <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/dashboard">Dashboard</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => disconnect()} className="cursor-pointer text-destructive">
+                  <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-destructive">
                     Disconnect
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -183,7 +185,7 @@ export function Header() {
               <Button
                 size="sm"
                 className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
-                onClick={connect}
+                onClick={setShowMobileWalletModal}
               >
                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Connect</span>

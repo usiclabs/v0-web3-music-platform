@@ -13,6 +13,7 @@
     "@coinbase/onchainkit": "1.1.1",
     "@farcaster/miniapp-sdk": "latest",
     "@livepeer/react": "latest",
+    "@privy-io/react-auth": "3.7.0",
     "@radix-ui/react-avatar": "latest",
     "@radix-ui/react-dialog": "latest",
     "@radix-ui/react-dropdown-menu": "latest",
