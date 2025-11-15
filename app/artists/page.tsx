@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { ArtistsFilter, type SortOption } from "@/components/artists-filter"
 import { ArtistsFeed } from "@/components/artists-feed"
 import { Button } from "@/components/ui/button"
-import { SlidersHorizontal, X } from "lucide-react"
+import { SlidersHorizontal, X } from 'lucide-react'
 
 type Artist = {
   wallet_address: string
@@ -127,14 +127,42 @@ export default function ArtistsPage() {
 
       await Promise.all(
         artistsWithTokens.map(async (artist) => {
-          try {
-            const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
-            if (res.ok) {
-              const metrics = await res.json()
-              artist.marketCap = metrics.marketCap || 0
+          let retries = 3
+          let delay = 1000
+
+          while (retries > 0) {
+            try {
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+
+              const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`, {
+                signal: controller.signal,
+                headers: {
+                  'Accept': 'application/json',
+                },
+              })
+              
+              clearTimeout(timeoutId)
+
+              if (res.ok) {
+                const metrics = await res.json()
+                artist.marketCap = metrics.marketCap || 0
+                console.log(`[v0] Fetched market cap for ${artist.artist_name}: $${artist.marketCap}`)
+              } else {
+                artist.marketCap = 0
+              }
+              break // Success, exit retry loop
+            } catch (error: any) {
+              retries--
+              console.error(`[v0] Failed to fetch market cap for ${artist.wallet_address} (${retries} retries left):`, error.message)
+              
+              if (retries === 0) {
+                artist.marketCap = 0 // Set default on final failure
+              } else {
+                await new Promise(resolve => setTimeout(resolve, delay))
+                delay *= 2
+              }
             }
-          } catch (error) {
-            console.error(`[v0] Failed to fetch market cap for ${artist.wallet_address}:`, error)
           }
         }),
       )

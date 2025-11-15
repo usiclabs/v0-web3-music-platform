@@ -60,15 +60,22 @@ export async function GET(request: Request, { params }: { params: { address: str
       return NextResponse.json({ error: "Token address is required" }, { status: 400 })
     }
 
-    // Fetch data from DexScreener API
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
+
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`, {
       headers: {
         Accept: "application/json",
+        'User-Agent': 'Mozilla/5.0 (compatible; MusicPlatform/1.0)',
       },
+      signal: controller.signal,
       next: { revalidate: 60 }, // Cache for 60 seconds
     })
 
+    clearTimeout(timeoutId)
+
     if (!response.ok) {
+      console.error(`[v0] DexScreener API error: ${response.status} for ${address}`)
       throw new Error(`DexScreener API error: ${response.status}`)
     }
 
@@ -76,6 +83,7 @@ export async function GET(request: Request, { params }: { params: { address: str
 
     // If no pairs found, return default data
     if (!data.pairs || data.pairs.length === 0) {
+      console.log(`[v0] No pairs found for token ${address}`)
       return NextResponse.json({
         price: 0,
         priceChange24h: 0,
@@ -111,11 +119,11 @@ export async function GET(request: Request, { params }: { params: { address: str
       pairAddress: mainPair.pairAddress,
       dexId: mainPair.dexId,
     })
-  } catch (error) {
-    console.error("[v0] Error fetching token metrics:", error)
+  } catch (error: any) {
+    console.error("[v0] Error fetching token metrics:", error.message)
+    
     return NextResponse.json(
       {
-        error: "Failed to fetch token metrics",
         price: 0,
         priceChange24h: 0,
         marketCap: 0,
@@ -124,7 +132,12 @@ export async function GET(request: Request, { params }: { params: { address: str
         holders: 0,
         txns24h: 0,
       },
-      { status: 500 },
+      { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      },
     )
   }
 }

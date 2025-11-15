@@ -678,26 +678,79 @@ export default function TokensPage() {
       fetchedTokensRef.current.add(tokenAddress)
       setLoadingMetrics((prev) => new Set(prev).add(tokenAddress))
 
-      try {
-        const response = await fetch(`/api/token/metrics/${tokenAddress}`)
-        if (!response.ok) throw new Error("Failed to fetch token metrics")
+      let retries = 3
+      let delay = 1000
 
-        const data = await response.json()
-        setTokenMetrics((prev) => ({
-          ...prev,
-          [tokenAddress]: data,
-        }))
-      } catch (error) {
-        console.error("[v0] Failed to fetch token metrics:", error)
-        // Remove from fetched set so we can retry later
-        fetchedTokensRef.current.delete(tokenAddress)
-      } finally {
-        setLoadingMetrics((prev) => {
-          const newSet = new Set(prev)
-          newSet.delete(tokenAddress)
-          return newSet
-        })
+      while (retries > 0) {
+        try {
+          // Add timeout for mobile networks
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+
+          const response = await fetch(`/api/token/metrics/${tokenAddress}`, {
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+            },
+          })
+          
+          clearTimeout(timeoutId)
+
+          if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`)
+          }
+
+          const data = await response.json()
+          
+          // Even if API returns error, set the data with defaults
+          setTokenMetrics((prev) => ({
+            ...prev,
+            [tokenAddress]: {
+              price: data.price || 0,
+              priceChange24h: data.priceChange24h || 0,
+              marketCap: data.marketCap || 0,
+              volume24h: data.volume24h || 0,
+              liquidity: data.liquidity || 0,
+              holders: data.holders || 0,
+              txns24h: data.txns24h || 0,
+            },
+          }))
+          
+          console.log(`[v0] Successfully fetched metrics for ${tokenAddress}`)
+          break // Success, exit retry loop
+        } catch (error: any) {
+          retries--
+          console.error(`[v0] Failed to fetch token metrics (${retries} retries left):`, error.message)
+          
+          if (retries === 0) {
+            // Set default values on final failure
+            setTokenMetrics((prev) => ({
+              ...prev,
+              [tokenAddress]: {
+                price: 0,
+                priceChange24h: 0,
+                marketCap: 0,
+                volume24h: 0,
+                liquidity: 0,
+                holders: 0,
+                txns24h: 0,
+              },
+            }))
+            fetchedTokensRef.current.delete(tokenAddress)
+          } else {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay))
+            delay *= 2 // Exponential backoff
+          }
+        }
       }
+      // </CHANGE>
+
+      setLoadingMetrics((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(tokenAddress)
+        return newSet
+      })
     },
     [loadingMetrics, tokenMetrics],
   )
