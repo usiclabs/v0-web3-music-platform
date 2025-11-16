@@ -3,7 +3,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client"
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { trackId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const walletAddress = request.headers.get("x-wallet-address")
@@ -18,7 +18,7 @@ export async function PATCH(
     }
 
     const supabase = createBrowserClient()
-    const { trackId } = params
+    const trackId = params.id
 
     // Check if user is admin or track owner
     const adminAddresses = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.toLowerCase().split(",") || []
