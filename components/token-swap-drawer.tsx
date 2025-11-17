@@ -55,27 +55,31 @@ export function TokenSwapDrawer({
     if (!chainId || !publicClient || !open) return
 
     const fetchPool = async () => {
-      console.log("[v0] Detecting pool for token:", tokenAddress)
+      console.log("[v0] TokenSwapDrawer - Detecting pool for token:", tokenAddress)
+      console.log("[v0] TokenSwapDrawer - chainId:", chainId)
+      console.log("[v0] TokenSwapDrawer - publicClient:", !!publicClient)
       setIsLoadingPool(true)
       setError(null)
 
       try {
         const pool = await detectV4Pool(tokenAddress, chainId, publicClient)
+        console.log("[v0] TokenSwapDrawer - detectV4Pool result:", pool)
 
         if (!pool) {
           // No V4 pool found - this is likely a V3 pool
-          console.log("[v0] No V4 pool found, assuming V3")
+          console.log("[v0] TokenSwapDrawer - No V4 pool found, assuming V3")
           setIsV4Pool(false)
         } else {
           // V4 pool found - use in-app swap
-          console.log("[v0] V4 pool found:", pool)
+          console.log("[v0] TokenSwapDrawer - V4 pool found:", pool)
           setPoolKey(pool)
           setIsV4Pool(true)
         }
       } catch (err: any) {
-        console.error("[v0] Failed to detect pool:", err)
+        console.error("[v0] TokenSwapDrawer - Failed to detect pool:", err)
         setError(`Failed to load pool information: ${err.message || "Unknown error"}`)
       } finally {
+        console.log("[v0] TokenSwapDrawer - Pool detection complete. isV4Pool:", isV4Pool)
         setIsLoadingPool(false)
       }
     }
