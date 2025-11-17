@@ -32,6 +32,25 @@ export function Header() {
     }
   }
 
+  const handleConnectClick = () => {
+    const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
+    const hasInjectedWallet = typeof window !== "undefined" && window.ethereum
+    
+    // On desktop with browser wallet, connect directly via injected provider
+    if (!isMobile && hasInjectedWallet) {
+      console.log("[v0] Desktop with injected wallet detected, connecting directly...")
+      const injectedConnector = connectors.find((c) => c.type === "injected")
+      if (injectedConnector) {
+        connectAsync({ connector: injectedConnector, chainId: 8453 }).catch((error) => {
+          console.error("[v0] Failed to connect:", error)
+        })
+      }
+    } else {
+      // On mobile or no injected wallet, show the modal
+      setShowMobileWalletModal(true)
+    }
+  }
+
   const displayName = address ? formatAddress(address) : ""
 
   return (
@@ -185,7 +204,7 @@ export function Header() {
               <Button
                 size="sm"
                 className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
-                onClick={setShowMobileWalletModal}
+                onClick={handleConnectClick}
               >
                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Connect</span>

@@ -31,13 +31,39 @@ export function FarcasterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function initFarcaster() {
       try {
+        // Detect Farcaster by checking for the miniapp SDK in the window object
+        if (typeof window === 'undefined') {
+          setIsReady(true)
+          return
+        }
+
+        // Check if we're running in Farcaster by looking for Farcaster-specific indicators
+        const isFarcasterEnv = window.location.hostname.includes('farcaster') || 
+                              window.location.href.includes('fc://') ||
+                              (window as any).__FARCASTER__
+
+        if (!isFarcasterEnv) {
+          console.log("[v0] Not in Farcaster environment, skipping SDK initialization")
+          setIsReady(true)
+          setIsFarcaster(false)
+          return
+        }
+
         console.log("[v0] Initializing Farcaster SDK...")
 
         // Dynamically import the SDK only on client side
         const { sdk } = await import("@farcaster/miniapp-sdk")
 
-        // Check if running inside Farcaster
-        const context = await sdk.context
+        let context
+        try {
+          context = await sdk.context
+        } catch (contextError) {
+          console.log("[v0] Could not access Farcaster context (cross-origin restriction):", contextError)
+          setIsReady(true)
+          setIsFarcaster(false)
+          return
+        }
+
         setIsFarcaster(!!context)
 
         if (context) {
