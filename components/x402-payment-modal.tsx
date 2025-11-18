@@ -374,6 +374,20 @@ export function X402PaymentModal() {
             </p>
           </div>
 
+          {isSmartWallet && !supportsGaslessPayments && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-3">
+              <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                  Base App Smart Wallet Support
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Your Base App wallet will use standard ERC-20 approval. You'll approve the transaction and the relayer handles the transfer (small gas fee applies, usually &lt; $0.01).
+                </p>
+              </div>
+            </div>
+          )}
+
           {isConnected && hasInsufficientBalance && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
@@ -390,20 +404,6 @@ export function X402PaymentModal() {
                     Get USDC
                   </Button>
                 </Link>
-              </div>
-            </div>
-          )}
-
-          {isSmartWallet && !supportsGaslessPayments && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mt-3">
-              <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 space-y-1">
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                  Base App Smart Wallet Detected
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  EIP-3009 gasless payments don't support smart contract wallets. Please use MetaMask or another standard wallet for now.
-                </p>
               </div>
             </div>
           )}

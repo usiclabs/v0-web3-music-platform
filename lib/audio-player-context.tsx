@@ -7,6 +7,7 @@ import { X402_CONFIG } from "@/lib/web3/contracts"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEIP3009 } from "@/lib/web3/use-eip3009"
 import { submitAuthorization, getGasSubsidyInfo } from "@/lib/web3/eip3009-client"
+import { executeSmartWalletPayment } from "@/lib/web3/smart-wallet-payment"
 
 interface AudioPlayerContextType {
   currentTrack: TrackWithArtist | null
@@ -140,15 +141,15 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       throw new Error("Wallet not connected")
     }
 
-    if (isSmartWallet && !supportsGaslessPayments) {
-      console.log("[v0] ❌ Base App smart wallet detected - EIP-3009 not supported")
+    if (isSmartWallet) {
+      console.log("[v0] Smart wallet detected - using approve + transferFrom flow")
+      return payForChunkSmartWallet(chunkIndex, onProgress)
+    }
+
+    if (!supportsGaslessPayments) {
       const errorMsg = 
-        "Your Base App smart wallet doesn't support EIP-3009 gasless payments.\n\n" +
-        "EIP-3009's transferWithAuthorization only works with standard wallets (EOA), not smart contract wallets.\n\n" +
-        "To continue:\n" +
-        "1. Switch to a standard wallet like MetaMask, or\n" +
-        "2. Wait for our upcoming smart wallet payment integration\n\n" +
-        "Reference: https://eips.ethereum.org/EIPS/eip-3009"
+        "Your wallet doesn't support gasless payments.\n\n" +
+        "Please try using MetaMask or another standard wallet."
       setError(errorMsg)
       throw new Error(errorMsg)
     }
@@ -325,6 +326,73 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         } else {
           errorMessage = err.message
         }
+      }
+      
+      setError(errorMessage)
+      throw err
+    }
+  }
+
+  const payForChunkSmartWallet = async (chunkIndex: number, onProgress?: (step: string, txHash?: string) => void) => {
+    if (!currentTrack || !address) {
+      throw new Error("Wallet not connected")
+    }
+
+    try {
+      setError(null)
+      paymentJustSucceededRef.current = false
+      console.log("[v0] Requesting smart wallet payment for chunk", chunkIndex)
+
+      const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex)
+      console.log("[v0] Payment instructions:", paymentInstructions)
+
+      onProgress?.("approving")
+      console.log("[v0] Requesting approval from Base App...")
+
+      const valueInUSDC = BigInt(Math.floor(Number.parseFloat(paymentInstructions.amount) * 1e6))
+
+      const result = await executeSmartWalletPayment({
+        from: address,
+        to: paymentInstructions.recipient as `0x${string}`,
+        amount: valueInUSDC,
+        trackId: currentTrack.id,
+        chunkIndex,
+      })
+
+      if (!result.success) {
+        throw new Error(result.error || "Payment failed")
+      }
+
+      console.log("[v0] Smart wallet payment successful! Transaction:", result.txHash)
+      onProgress?.("complete", result.txHash)
+
+      paymentJustSucceededRef.current = true
+      setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
+
+      if (currentTrack.unlock_type === "full_song") {
+        const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
+        const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
+        setUnlockedChunks(allChunks)
+        console.log("[v0] Full song unlocked - all", totalChunks, "chunks available")
+      }
+
+      setPaymentRequired(false)
+      setError(null)
+      setShowPaymentModal(false)
+
+      if (audioRef.current && currentTrack) {
+        audioRef.current.play().catch((err) => {
+          console.log("[v0] Autoplay after payment blocked:", err)
+        })
+        setIsPlaying(true)
+      }
+    } catch (err) {
+      console.error("[v0] Smart wallet payment error:", err)
+      paymentJustSucceededRef.current = false
+      
+      let errorMessage = "Payment failed. Please try again."
+      if (err instanceof Error) {
+        errorMessage = err.message
       }
       
       setError(errorMessage)
