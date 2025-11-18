@@ -2,19 +2,7 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Coins,
-  Zap,
-  Shield,
-  Clock,
-  CheckCircle2,
-  ExternalLink,
-  Music,
-  AlertCircle,
-  Sparkles,
-  Lock,
-  Loader2,
-} from "lucide-react"
+import { Coins, Zap, Shield, Clock, CheckCircle2, ExternalLink, Music, AlertCircle, Sparkles, Lock, Loader2 } from 'lucide-react'
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useState, useEffect } from "react"
 import { X402_CONFIG } from "@/lib/web3/contracts"
@@ -25,6 +13,7 @@ import { USDC_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
 import { base } from "wagmi/chains"
 import { formatUnits } from "viem"
 import Link from "next/link"
+import { useEIP3009 } from "@/lib/web3/use-eip3009"
 
 type PaymentStep = "idle" | "signing" | "verifying" | "settling" | "confirming" | "success" | "error"
 
@@ -37,6 +26,8 @@ export function X402PaymentModal() {
   const { address } = useAccount()
   const [hasInsufficientBalance, setHasInsufficientBalance] = useState(false)
   const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
+  
+  const { isSmartWallet, supportsGaslessPayments } = useEIP3009()
 
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: USDC_ADDRESS[base.id],
@@ -129,6 +120,19 @@ export function X402PaymentModal() {
       return
     }
 
+    if (isSmartWallet && !supportsGaslessPayments) {
+      addToast({
+        title: "Wallet Not Supported",
+        description: 
+          "Your Base App smart wallet doesn't support EIP-3009 gasless payments. " +
+          "EIP-3009's transferWithAuthorization only works with standard wallets (EOA). " +
+          "Please switch to MetaMask or another standard wallet.",
+        variant: "error",
+        duration: 8000,
+      })
+      return
+    }
+
     if (!isConnected) {
       try {
         await connect()
@@ -166,6 +170,7 @@ export function X402PaymentModal() {
 
     try {
       await payForChunk(currentChunk, (step, hash) => {
+        console.log("[v0] Payment step update:", step, hash ? `hash: ${hash}` : '')
         setPaymentStep(step as PaymentStep)
         if (hash) setTxHash(hash)
       })
@@ -196,7 +201,7 @@ export function X402PaymentModal() {
       if (err instanceof Error) {
         if (err.message.includes("timeout") || err.message.includes("Timeout")) {
           errorMessage =
-            "Payment timeout. On mobile, please ensure your wallet app is open and responsive, then try again."
+            "Payment timeout. On mobile, please ensure MetaMask is open and check for pending signature requests. You may need to switch to the MetaMask app manually."
         } else if (err.message.includes("rejected") || err.message.includes("denied")) {
           errorMessage = "Payment was rejected. Please approve the signature request in your wallet."
         } else if (err.message.includes("Not Supported") || err.message.includes("not supported")) {
@@ -213,7 +218,7 @@ export function X402PaymentModal() {
         title: "Payment Failed",
         description: errorMessage,
         variant: "error",
-        duration: 7000, // Longer duration for mobile users to read
+        duration: 10000, // Longer duration for mobile users to read error
       })
 
       setTimeout(() => {
@@ -228,7 +233,7 @@ export function X402PaymentModal() {
   const getStepMessage = () => {
     switch (paymentStep) {
       case "signing":
-        return "Please sign the payment authorization in your wallet..."
+        return "Please sign the payment authorization in your wallet... (On mobile, you may need to switch to MetaMask app)"
       case "verifying":
         return "Verifying payment signature..."
       case "settling":
@@ -389,6 +394,20 @@ export function X402PaymentModal() {
             </div>
           )}
 
+          {isSmartWallet && !supportsGaslessPayments && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mt-3">
+              <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Base App Smart Wallet Detected
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  EIP-3009 gasless payments don't support smart contract wallets. Please use MetaMask or another standard wallet for now.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2">
@@ -428,40 +447,6 @@ export function X402PaymentModal() {
             </div>
           </div>
 
-          {isProcessing && getStepMessage() && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
-              <Loader2 className="h-4 w-4 animate-spin text-accent flex-shrink-0" />
-              <p className="text-sm text-accent">{getStepMessage()}</p>
-            </div>
-          )}
-
-          <div className="space-y-2 pt-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">X402 Benefits</p>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">100% Gasless</p>
-                  <p className="text-xs text-muted-foreground">We pay all gas fees - you only pay for content</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Zap className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Instant Streaming</p>
-                  <p className="text-xs text-muted-foreground">Sign once and start listening immediately</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Shield className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Secure & Private</p>
-                  <p className="text-xs text-muted-foreground">Cryptographic payment authorization</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="flex gap-2 pt-2">
             <Button variant="outline" onClick={skipTrack} className="flex-1 bg-transparent" disabled={isProcessing}>
               Skip Track
@@ -469,7 +454,7 @@ export function X402PaymentModal() {
             <Button
               onClick={handlePayment}
               className="flex-1"
-              disabled={isProcessing || (isConnected && hasInsufficientBalance)}
+              disabled={isProcessing || (isConnected && hasInsufficientBalance) || (isSmartWallet && !supportsGaslessPayments)}
             >
               {isProcessing ? (
                 <>
@@ -479,7 +464,9 @@ export function X402PaymentModal() {
               ) : (
                 <>
                   <Coins className="h-4 w-4 mr-2" />
-                  {!isConnected ? "Connect Wallet" : `Pay ${isValidPrice ? currentTrack.price_per_chunk : "0"} USDC`}
+                  {!isConnected ? "Connect Wallet" : 
+                   (isSmartWallet && !supportsGaslessPayments) ? "Wallet Not Supported" :
+                   `Pay ${isValidPrice ? currentTrack.price_per_chunk : "0"} USDC`}
                 </>
               )}
             </Button>

@@ -50,7 +50,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const paymentJustSucceededRef = useRef(false)
   const { address, signTypedData } = useWallet()
-  const { signTransferAuthorization, isSigning } = useEIP3009()
+  const { signTransferAuthorization, isSigning, isSmartWallet, supportsGaslessPayments } = useEIP3009()
   const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
 
   const [queue, setQueue] = useState<TrackWithArtist[]>([])
@@ -140,6 +140,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       throw new Error("Wallet not connected")
     }
 
+    if (isSmartWallet && !supportsGaslessPayments) {
+      console.log("[v0] ❌ Base App smart wallet detected - EIP-3009 not supported")
+      const errorMsg = 
+        "Your Base App smart wallet doesn't support EIP-3009 gasless payments.\n\n" +
+        "EIP-3009's transferWithAuthorization only works with standard wallets (EOA), not smart contract wallets.\n\n" +
+        "To continue:\n" +
+        "1. Switch to a standard wallet like MetaMask, or\n" +
+        "2. Wait for our upcoming smart wallet payment integration\n\n" +
+        "Reference: https://eips.ethereum.org/EIPS/eip-3009"
+      setError(errorMsg)
+      throw new Error(errorMsg)
+    }
+
     try {
       setError(null)
       paymentJustSucceededRef.current = false
@@ -162,14 +175,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const validityPeriod = mobile ? 14400 : 3600 // 4 hours for mobile, 1 hour for desktop
 
       let signedAuth
-      const retries = mobile ? 2 : 0 // Allow 2 retries on mobile
+      const maxRetries = mobile ? 3 : 1
+      let lastError: Error | null = null
 
-      for (let attempt = 0; attempt <= retries; attempt++) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-          if (attempt > 0) {
-            console.log(`[v0] Retry attempt ${attempt} for signature`)
+          if (attempt > 1) {
+            const backoffMs = 2000 * (attempt - 1) // 2s, 4s backoff
+            console.log(`[v0] Retry attempt ${attempt}/${maxRetries} after ${backoffMs}ms delay`)
             onProgress?.("signing", undefined)
-            await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait 1s between retries
+            await new Promise((resolve) => setTimeout(resolve, backoffMs))
           }
 
           signedAuth = await signTransferAuthorization(
@@ -179,18 +194,21 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
             BigInt(Math.floor(Date.now() / 1000) + validityPeriod),
           )
 
+          console.log(`[v0] Authorization signed successfully on attempt ${attempt}`)
           break // Success, exit retry loop
         } catch (signError) {
-          if (attempt === retries) {
-            // Last attempt failed
-            throw signError
+          lastError = signError as Error
+          console.error(`[v0] Signature attempt ${attempt} failed:`, signError)
+          
+          if (attempt === maxRetries) {
+            // All retries exhausted
+            throw lastError
           }
-          console.log(`[v0] Signature attempt ${attempt + 1} failed, retrying...`, signError)
         }
       }
 
       if (!signedAuth) {
-        throw new Error("Failed to get signature after retries")
+        throw lastError || new Error("Failed to get signature after retries")
       }
 
       console.log("[v0] Authorization signed successfully")
@@ -198,6 +216,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       onProgress?.("verifying")
       console.log("[v0] Submitting payment...")
 
+      const submitTimeout = mobile ? 60000 : 30000
+      
       const submitPromise = submitAuthorization(signedAuth, {
         trackId: currentTrack.id,
         chunkIndex,
@@ -208,7 +228,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       })
 
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error("Payment submission timeout - please try again")), mobile ? 60000 : 30000)
+        setTimeout(() => reject(new Error("Payment submission timeout - please try again")), submitTimeout)
       })
 
       const result = await Promise.race([submitPromise, timeoutPromise])
@@ -263,6 +283,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         })
       } catch (err) {
         console.warn("[v0] Failed to record payment in database:", err)
+        // Don't throw - recording failure shouldn't block playback
       }
 
       paymentJustSucceededRef.current = true
@@ -281,8 +302,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       onProgress?.("complete", result.txHash)
 
-      const subsidyInfo = await getGasSubsidyInfo()
-      setGasSubsidyAvailable(subsidyInfo.available)
+      getGasSubsidyInfo()
+        .then((subsidyInfo) => setGasSubsidyAvailable(subsidyInfo.available))
+        .catch((err) => console.warn("[v0] Failed to check gas subsidy:", err))
 
       if (audioRef.current && currentTrack) {
         audioRef.current.play().catch((err) => {
@@ -293,7 +315,18 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("[v0] Payment error:", err)
       paymentJustSucceededRef.current = false
-      const errorMessage = err instanceof Error ? err.message : "Payment failed. Please try again."
+      
+      let errorMessage = "Payment failed. Please try again."
+      if (err instanceof Error) {
+        if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+          errorMessage = mobile 
+            ? "Payment timeout. On mobile, please ensure MetaMask is open and check for pending signature requests. You may need to switch to the MetaMask app manually."
+            : "Payment timeout. Please check your wallet and try again."
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
       setError(errorMessage)
       throw err
     }
