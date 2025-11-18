@@ -72,9 +72,11 @@ export async function executeSmartWalletPayment(
       transport: custom(window.ethereum),
     })
 
+    const usdcAddress = USDC_ADDRESS[base.id]
+
     // Check balance first
     const balance = await publicClient.readContract({
-      address: USDC_ADDRESS,
+      address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "balanceOf",
       args: [params.from],
@@ -91,7 +93,7 @@ export async function executeSmartWalletPayment(
 
     // Check current allowance
     const currentAllowance = await publicClient.readContract({
-      address: USDC_ADDRESS,
+      address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "allowance",
       args: [params.from, params.to],
@@ -104,7 +106,7 @@ export async function executeSmartWalletPayment(
       console.log("[v0] Requesting approval for", params.amount.toString(), "USDC")
 
       const approveTxHash = await walletClient.writeContract({
-        address: USDC_ADDRESS,
+        address: usdcAddress,
         abi: ERC20_ABI,
         functionName: "approve",
         args: [params.to, params.amount],
