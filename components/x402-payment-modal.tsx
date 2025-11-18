@@ -120,19 +120,6 @@ export function X402PaymentModal() {
       return
     }
 
-    if (isSmartWallet && !supportsGaslessPayments) {
-      addToast({
-        title: "Wallet Not Supported",
-        description: 
-          "Your Base App smart wallet doesn't support EIP-3009 gasless payments. " +
-          "EIP-3009's transferWithAuthorization only works with standard wallets (EOA). " +
-          "Please switch to MetaMask or another standard wallet.",
-        variant: "error",
-        duration: 8000,
-      })
-      return
-    }
-
     if (!isConnected) {
       try {
         await connect()
@@ -375,14 +362,14 @@ export function X402PaymentModal() {
           </div>
 
           {isSmartWallet && !supportsGaslessPayments && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 mt-3">
-              <Sparkles className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mt-3">
+              <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
-                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                  Base App Smart Wallet Support
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Base App Payment Notice
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Your Base App wallet will use standard ERC-20 approval. You'll approve the transaction and the relayer handles the transfer (small gas fee applies, usually &lt; $0.01).
+                  Your Base App wallet will use the standard payment flow. Gas fees may apply (~$0.01).
                 </p>
               </div>
             </div>
@@ -454,7 +441,7 @@ export function X402PaymentModal() {
             <Button
               onClick={handlePayment}
               className="flex-1"
-              disabled={isProcessing || (isConnected && hasInsufficientBalance) || (isSmartWallet && !supportsGaslessPayments)}
+              disabled={isProcessing || (isConnected && hasInsufficientBalance)}
             >
               {isProcessing ? (
                 <>
@@ -464,9 +451,7 @@ export function X402PaymentModal() {
               ) : (
                 <>
                   <Coins className="h-4 w-4 mr-2" />
-                  {!isConnected ? "Connect Wallet" : 
-                   (isSmartWallet && !supportsGaslessPayments) ? "Wallet Not Supported" :
-                   `Pay ${isValidPrice ? currentTrack.price_per_chunk : "0"} USDC`}
+                  {!isConnected ? "Connect Wallet" : `Pay ${isValidPrice ? currentTrack.price_per_chunk : "0"} USDC`}
                 </>
               )}
             </Button>
