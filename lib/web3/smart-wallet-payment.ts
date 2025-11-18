@@ -3,6 +3,9 @@ import { createPublicClient, createWalletClient, custom, http } from "viem"
 import { base } from "viem/chains"
 import { USDC_ADDRESS } from "./contracts"
 
+// This must match the address derived from SERVER_WALLET_PRIVATE_KEY in the backend
+const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS as Address
+
 const ERC20_ABI = [
   {
     name: "approve",
@@ -61,6 +64,16 @@ export async function executeSmartWalletPayment(
       return { success: false, error: "No wallet provider found" }
     }
 
+    if (!RELAYER_ADDRESS) {
+      console.error("[v0] NEXT_PUBLIC_RELAYER_ADDRESS not configured")
+      return { 
+        success: false, 
+        error: "Payment system not configured. Please contact support." 
+      }
+    }
+
+    console.log("[v0] Using relayer address:", RELAYER_ADDRESS)
+
     // Create clients
     const publicClient = createPublicClient({
       chain: base,
@@ -91,25 +104,24 @@ export async function executeSmartWalletPayment(
       }
     }
 
-    // Check current allowance
     const currentAllowance = await publicClient.readContract({
       address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "allowance",
-      args: [params.from, params.to],
+      args: [params.from, RELAYER_ADDRESS], // Check allowance for relayer
     })
 
-    console.log("[v0] Current allowance:", currentAllowance.toString())
+    console.log("[v0] Current allowance for relayer:", currentAllowance.toString())
 
     // If allowance is insufficient, request approval
     if (currentAllowance < params.amount) {
-      console.log("[v0] Requesting approval for", params.amount.toString(), "USDC")
+      console.log("[v0] Requesting approval for relayer to spend", params.amount.toString(), "USDC")
 
       const approveTxHash = await walletClient.writeContract({
         address: usdcAddress,
         abi: ERC20_ABI,
         functionName: "approve",
-        args: [params.to, params.amount],
+        args: [RELAYER_ADDRESS, params.amount], // Approve relayer
         account: params.from,
       })
 
@@ -121,13 +133,13 @@ export async function executeSmartWalletPayment(
         confirmations: 1,
       })
 
-      console.log("[v0] Approval confirmed!")
+      console.log("[v0] Approval confirmed! Relayer can now spend USDC")
     } else {
-      console.log("[v0] Sufficient allowance already exists")
+      console.log("[v0] Sufficient allowance already exists for relayer")
     }
 
     // Now trigger backend to execute the transfer
-    console.log("[v0] Requesting backend to execute transfer...")
+    console.log("[v0] Requesting backend relayer to execute transfer...")
 
     const response = await fetch("/api/x402/smart-wallet-transfer", {
       method: "POST",
