@@ -28,6 +28,23 @@ const ERC20_ABI = [
   },
 ] as const
 
+function normalizePrivateKey(key: string): `0x${string}` {
+  // Remove any whitespace
+  key = key.trim()
+  
+  // If it doesn't start with 0x, add it
+  if (!key.startsWith("0x")) {
+    key = `0x${key}`
+  }
+  
+  // Validate it's a valid hex string of 64 characters (32 bytes) plus 0x prefix
+  if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
+    throw new Error(`Invalid private key format. Expected 64 hex characters, got ${key.length - 2}`)
+  }
+  
+  return key as `0x${string}`
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -52,6 +69,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment service not configured" }, { status: 500 })
     }
 
+    let normalizedPrivateKey: `0x${string}`
+    try {
+      normalizedPrivateKey = normalizePrivateKey(relayerPrivateKey)
+    } catch (error) {
+      console.error("[v0] Invalid SERVER_WALLET_PRIVATE_KEY format:", error)
+      return NextResponse.json({ error: "Payment service misconfigured" }, { status: 500 })
+    }
+
     // Create clients
     const publicClient = createPublicClient({
       chain: base,
@@ -62,7 +87,7 @@ export async function POST(request: Request) {
       ),
     })
 
-    const relayerAccount = privateKeyToAccount(relayerPrivateKey as `0x${string}`)
+    const relayerAccount = privateKeyToAccount(normalizedPrivateKey)
     const relayerWalletClient = createWalletClient({
       account: relayerAccount,
       chain: base,
@@ -75,9 +100,11 @@ export async function POST(request: Request) {
 
     console.log("[v0] Relayer address:", relayerAccount.address)
 
+    const usdcAddress = USDC_ADDRESS[base.id]
+    
     // Check allowance
     const allowance = await publicClient.readContract({
-      address: USDC_ADDRESS,
+      address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "allowance",
       args: [from as Address, relayerAccount.address],
@@ -97,7 +124,7 @@ export async function POST(request: Request) {
     // Execute transferFrom using relayer
     console.log("[v0] Executing transferFrom...")
     const txHash = await relayerWalletClient.writeContract({
-      address: USDC_ADDRESS,
+      address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "transferFrom",
       args: [from as Address, to as Address, BigInt(amount)],
