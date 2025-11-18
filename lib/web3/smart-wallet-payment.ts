@@ -4,7 +4,7 @@ import { base } from "viem/chains"
 import { USDC_ADDRESS } from "./contracts"
 
 // This must match the address derived from SERVER_WALLET_PRIVATE_KEY in the backend
-const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS as Address
+// const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS as Address
 
 const ERC20_ABI = [
   {
@@ -51,6 +51,20 @@ export interface SmartWalletPaymentResult {
 }
 
 /**
+ * Fetch the relayer address from the backend
+ */
+async function getRelayerAddress(): Promise<Address> {
+  const response = await fetch("/api/x402/relayer-address")
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch relayer address")
+  }
+  
+  const data = await response.json()
+  return data.address as Address
+}
+
+/**
  * Execute a payment from a smart wallet (ERC-4337) using standard ERC-20 approve + backend transfer
  * This is an alternative to EIP-3009 which doesn't support smart contract wallets
  */
@@ -64,15 +78,9 @@ export async function executeSmartWalletPayment(
       return { success: false, error: "No wallet provider found" }
     }
 
-    if (!RELAYER_ADDRESS) {
-      console.error("[v0] NEXT_PUBLIC_RELAYER_ADDRESS not configured")
-      return { 
-        success: false, 
-        error: "Payment system not configured. Please contact support." 
-      }
-    }
-
-    console.log("[v0] Using relayer address:", RELAYER_ADDRESS)
+    console.log("[v0] Fetching relayer address from backend...")
+    const relayerAddress = await getRelayerAddress()
+    console.log("[v0] Using relayer address:", relayerAddress)
 
     // Create clients
     const publicClient = createPublicClient({
@@ -108,7 +116,7 @@ export async function executeSmartWalletPayment(
       address: usdcAddress,
       abi: ERC20_ABI,
       functionName: "allowance",
-      args: [params.from, RELAYER_ADDRESS], // Check allowance for relayer
+      args: [params.from, relayerAddress], // Use fetched relayer address
     })
 
     console.log("[v0] Current allowance for relayer:", currentAllowance.toString())
@@ -121,7 +129,7 @@ export async function executeSmartWalletPayment(
         address: usdcAddress,
         abi: ERC20_ABI,
         functionName: "approve",
-        args: [RELAYER_ADDRESS, params.amount], // Approve relayer
+        args: [relayerAddress, params.amount], // Approve fetched relayer address
         account: params.from,
       })
 
