@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sparkles, Music, Video, Loader2, Play, Pause, Save, Wand2, AlertCircle, ExternalLink, FileText, Settings, Download, RefreshCw, Check, Lock, TrendingUp } from 'lucide-react'
+import { Sparkles, Music, Video, Loader2, Play, Pause, Save, Wand2, AlertCircle, ExternalLink, FileText, Settings, Download, RefreshCw, Check, Lock, TrendingUp, Mic2, Radio, Headphones } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useWallet } from "@/lib/web3/wallet-context"
 import { createBrowserClient } from "@/lib/supabase/client"
@@ -18,6 +18,9 @@ import confetti from "canvas-confetti"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { checkTokenGate } from "@/lib/web3/token-gate"
+import { LavaLampBackground } from "@/components/lava-lamp-background"
+import { AnimatedCounter } from "@/components/animated-counter"
+import Link from "next/link"
 
 const GENRES = [
   "Pop",
@@ -95,6 +98,15 @@ interface GeneratedTrack {
   lyrics?: string
 }
 
+type SunoModel = "V3_5" | "V4" | "V4_5" | "V4_5PLUS" | "V5"
+
+// Define interface for platform stats
+interface PlatformStats {
+  tracksCreated: number
+  artists: number
+  maxDuration: number
+}
+
 export default function CreatePage() {
   const router = useRouter()
   const { address, chainId } = useWallet()
@@ -119,7 +131,7 @@ export default function CreatePage() {
   const [lyrics, setLyrics] = useState("")
   const [instrumental, setInstrumental] = useState(false)
   const [customMode, setCustomMode] = useState(false)
-  const [model, setModel] = useState<"V3_5" | "V4">("V4")
+  const [model, setModel] = useState<SunoModel>("V5")
   const [negativeTags, setNegativeTags] = useState("")
   const [vocalGender, setVocalGender] = useState<"m" | "f" | "any">("any")
   const [styleWeight, setStyleWeight] = useState(0.65)
@@ -131,6 +143,12 @@ export default function CreatePage() {
   const [selectedTrackIndex, setSelectedTrackIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null)
+
+  const [platformStats, setPlatformStats] = useState<PlatformStats>({
+    tracksCreated: 0,
+    artists: 0,
+    maxDuration: 8,
+  })
 
   const selectedTrack = generatedTracks[selectedTrackIndex]
 
@@ -182,6 +200,20 @@ export default function CreatePage() {
 
     checkApiKey()
     fetchCredits()
+  }, [])
+
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      try {
+        const response = await fetch('/api/platform/stats')
+        const data = await response.json()
+        setPlatformStats(data)
+      } catch (error) {
+        console.error('[v0] Error fetching platform stats:', error)
+      }
+    }
+
+    fetchPlatformStats()
   }, [])
 
   const buildStyleString = () => {
@@ -530,7 +562,7 @@ export default function CreatePage() {
 
   if (isCheckingAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/5 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-accent mx-auto mb-4" />
           <p className="text-muted-foreground">Checking access...</p>
@@ -541,41 +573,152 @@ export default function CreatePage() {
 
   if (!address) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-border/50 p-8 text-center animate-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-            <Lock className="h-8 w-8 text-accent" />
+      <div className="relative min-h-screen bg-black overflow-hidden">
+        {/* Animated Background */}
+        <LavaLampBackground 
+          count={6}
+          duration={25}
+          intensity={120}
+          colors={[
+            "rgba(229, 62, 62, 0.35)",
+            "rgba(220, 38, 38, 0.3)",
+            "rgba(239, 68, 68, 0.25)",
+            "rgba(185, 28, 28, 0.3)",
+          ]}
+        />
+        
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000,transparent)] pointer-events-none" />
+
+        {/* Mouse tracking gradient */}
+        <div className="absolute inset-0 opacity-30 transition-all duration-300 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at 50% 50%, rgba(229, 62, 62, 0.2), transparent 50%)`,
+          }}
+        />
+
+        {/* Content */}
+        <div className="relative z-10 container mx-auto px-4 py-24 md:py-32">
+          <div className="max-w-5xl mx-auto text-center space-y-12">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-card/30 backdrop-blur-2xl border border-accent/30 rounded-full px-6 py-3 text-sm shadow-2xl shadow-accent/10 animate-in fade-in slide-in-from-top-4 duration-700 hover:shadow-accent/30 hover:scale-105 hover:border-accent/50 transition-all">
+              <Sparkles className="h-4 w-4 text-accent animate-pulse" />
+              <span className="font-medium bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Powered by Suno AI v5 • Up to 8 Minutes • Commercial Rights
+              </span>
+            </div>
+
+            {/* Hero Title */}
+            <h1 className="text-5xl md:text-7xl lg:text-9xl font-bold leading-[0.95] animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100 text-balance">
+              Create music{" "}
+              <span className="bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(229,62,62,0.3)]">
+                with AI
+              </span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-xl md:text-3xl text-foreground/80 mb-6 text-pretty leading-relaxed max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 font-medium">
+              From idea to release-ready track in minutes. No instruments required.
+            </p>
+
+            {/* Features */}
+            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+              {[
+                { icon: Wand2, title: "AI Generation", desc: "Describe your vision, get studio-quality music" },
+                { icon: Video, title: "Music Videos", desc: "Auto-generate professional music videos" },
+                { icon: Music, title: "Full Rights", desc: "Keep 100% ownership and commercial rights" },
+              ].map((feature, i) => (
+                <Card key={i} className="bg-card/20 backdrop-blur-xl border border-border/50 p-6 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300 hover:scale-105"
+                  style={{ animationDelay: `${i * 100}ms` }}>
+                  <feature.icon className="h-10 w-10 text-accent mx-auto mb-4" />
+                  <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
+                </Card>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
+              <Button
+                size="lg"
+                onClick={() => router.push("/")}
+                className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white text-black hover:bg-white/90 transition-all hover:scale-105 shadow-2xl hover:shadow-white/20 group relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Mic2 className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10" />
+                <span className="relative z-10 font-bold">Connect Wallet to Create</span>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-card/20 hover:bg-card/40 backdrop-blur-2xl border-2 border-border hover:scale-105 hover:border-accent/50 transition-all duration-300 group relative overflow-hidden"
+              >
+                <Link href="/explore">
+                  <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Headphones className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10" />
+                  <span className="relative z-10 font-bold">Explore AI Music</span>
+                </Link>
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto pt-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+              {[
+                { value: platformStats.tracksCreated, label: "Tracks Created", icon: Music },
+                { value: platformStats.artists, label: "Artists", icon: Sparkles },
+                { value: platformStats.maxDuration, label: "Min Duration", icon: Radio },
+              ].map((stat, i) => (
+                <div key={i} className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300">
+                  <stat.icon className="h-6 w-6 text-accent mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                  <div className="text-4xl font-bold text-accent mb-2 group-hover:scale-110 transition-transform duration-300">
+                    <AnimatedCounter value={stat.value} duration={2000} />
+                    {stat.label === "Min Duration" && ""}
+                  </div>
+                  <div className="text-sm text-foreground/60 font-medium">{stat.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-          <p className="text-muted-foreground mb-6">Please connect your wallet to access AI music creation</p>
-          <Button onClick={() => router.push("/")} size="lg" className="w-full">
-            Connect Wallet
-          </Button>
-        </Card>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer group">
+          <div className="w-6 h-10 rounded-full border-2 border-foreground/20 flex items-start justify-center p-2 group-hover:border-accent/50 transition-colors">
+            <div className="w-1 h-2 bg-accent/60 rounded-full animate-pulse" />
+          </div>
+        </div>
       </div>
     )
   }
 
   if (hasAccess === false) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-border/50 p-8 text-center animate-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 mb-4">
-            <Lock className="h-8 w-8 text-amber-500" />
+      <div className="relative min-h-screen bg-black flex items-center justify-center p-4 overflow-hidden">
+        <LavaLampBackground count={4} duration={20} intensity={100} />
+        
+        <Card className="max-w-md w-full bg-card/50 backdrop-blur-2xl border border-border/50 p-8 text-center animate-in slide-in-from-bottom-4 duration-700 relative z-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/10 border-2 border-accent/30 mb-6 animate-pulse-slow">
+            <Lock className="h-10 w-10 text-accent" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
-          <p className="text-muted-foreground mb-6">
-            AI music creation requires holding at least{" "}
-            <span className="font-bold text-foreground">5,000,000,000 $USI</span> tokens in your connected wallet
+          <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-foreground via-foreground to-accent bg-clip-text text-transparent">Premium Feature</h2>
+          <p className="text-muted-foreground mb-2 leading-relaxed">
+            AI music creation requires holding at least
+          </p>
+          <p className="text-2xl font-bold text-accent mb-6">
+            5,000,000,000 $USI
+          </p>
+          <p className="text-sm text-muted-foreground mb-8">
+            in your connected wallet to access this studio
           </p>
           <div className="flex flex-col gap-3">
-            <Button asChild size="lg" className="w-full">
+            <Button asChild size="lg" className="w-full hover:scale-105 transition-all shadow-lg hover:shadow-xl">
               <a href="/swap" className="flex items-center justify-center gap-2">
                 <TrendingUp className="h-5 w-5" />
                 Get $USI Tokens
               </a>
             </Button>
-            <Button variant="outline" onClick={() => router.push("/")} size="lg" className="w-full bg-transparent">
+            <Button variant="outline" onClick={() => router.push("/")} size="lg" className="w-full bg-transparent hover:scale-105 transition-all">
               Go Back
             </Button>
           </div>
@@ -585,25 +728,28 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-accent/5">
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+    <div className="min-h-screen bg-black">
+      {/* Subtle background */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/5 via-transparent to-transparent pointer-events-none" />
+      
+      <div className="container mx-auto px-4 py-12 max-w-6xl relative z-10">
         {/* Header */}
         <div className="text-center mb-12 animate-in slide-in-from-bottom-4 duration-700">
           <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-2 mb-4">
             <Sparkles className="h-4 w-4 text-accent" />
-            <span className="text-sm font-medium text-accent">AI-Powered Music Creation</span>
+            <span className="text-sm font-medium text-accent">AI Studio • Suno v5</span>
             {credits !== null && (
               <>
                 <span className="text-muted-foreground">•</span>
-                <span className="text-sm font-medium text-muted-foreground">{credits} credits remaining</span>
+                <span className="text-sm font-medium text-muted-foreground">{credits} credits</span>
               </>
             )}
           </div>
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-accent bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-accent bg-clip-text text-transparent">
             Create Music with AI
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Describe your vision and let AI compose original music and videos for you
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Describe your vision and let AI compose original music and videos
           </p>
         </div>
 
@@ -745,12 +891,12 @@ export default function CreatePage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex flex-col gap-3 p-4 bg-muted/30 rounded-lg border border-border/50">
                   <div>
                     <Label className="font-semibold">AI Model</Label>
                     <p className="text-sm text-muted-foreground">Choose the generation model</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                     <Button
                       type="button"
                       variant={model === "V3_5" ? "default" : "outline"}
@@ -767,8 +913,45 @@ export default function CreatePage() {
                       onClick={() => setModel("V4")}
                       className={model === "V4" ? "" : "bg-transparent"}
                     >
-                      V4 (Latest)
+                      V4
                     </Button>
+                    <Button
+                      type="button"
+                      variant={model === "V4_5" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setModel("V4_5")}
+                      className={model === "V4_5" ? "" : "bg-transparent"}
+                      title="Smart Prompts - Excellent prompt understanding with faster generation speeds"
+                    >
+                      V4.5
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={model === "V4_5PLUS" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setModel("V4_5PLUS")}
+                      className={model === "V4_5PLUS" ? "" : "bg-transparent"}
+                      title="Richer Tones - Enhanced tonal variation and creative approaches"
+                    >
+                      V4.5+
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={model === "V5" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setModel("V5")}
+                      className={model === "V5" ? "" : "bg-transparent"}
+                      title="Latest Model - Cutting-edge model with enhanced quality"
+                    >
+                      V5 ✨
+                    </Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {model === "V3_5" && "Standard model for basic music generation"}
+                    {model === "V4" && "Advanced model for complex music requests"}
+                    {model === "V4_5" && "Smart Prompts - Excellent prompt understanding with faster generation speeds, up to 8 minutes"}
+                    {model === "V4_5PLUS" && "Richer Tones - Most advanced model with enhanced tonal variation, up to 8 minutes. Best for highest quality"}
+                    {model === "V5" && "Latest Model - Cutting-edge model with enhanced quality and capabilities"}
                   </div>
                 </div>
               </TabsContent>
