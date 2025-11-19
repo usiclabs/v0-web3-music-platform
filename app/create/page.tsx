@@ -10,26 +10,8 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Sparkles,
-  Music,
-  Video,
-  Loader2,
-  Play,
-  Pause,
-  Save,
-  Wand2,
-  AlertCircle,
-  ExternalLink,
-  FileText,
-  Settings,
-  Download,
-  RefreshCw,
-  Check,
-  Lock,
-  TrendingUp,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Sparkles, Music, Video, Loader2, Play, Pause, Save, Wand2, AlertCircle, ExternalLink, FileText, Settings, Download, RefreshCw, Check, Lock, TrendingUp } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useWallet } from "@/lib/web3/wallet-context"
 import { createBrowserClient } from "@/lib/supabase/client"
 import confetti from "canvas-confetti"
@@ -584,7 +566,7 @@ export default function CreatePage() {
           <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
           <p className="text-muted-foreground mb-6">
             AI music creation requires holding at least{" "}
-            <span className="font-bold text-foreground">100,000,000 $USI</span> tokens in your connected wallet
+            <span className="font-bold text-foreground">5,000,000,000 $USI</span> tokens in your connected wallet
           </p>
           <div className="flex flex-col gap-3">
             <Button asChild size="lg" className="w-full">

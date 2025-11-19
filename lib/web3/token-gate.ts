@@ -2,7 +2,7 @@ import { createPublicClient, http, formatUnits } from "viem"
 import { base, baseSepolia } from "viem/chains"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "./contracts"
 
-export const REQUIRED_TOKEN_BALANCE = BigInt("100000000000000000000000000") // 100,000,000 tokens with 18 decimals
+export const REQUIRED_TOKEN_BALANCE = BigInt("5000000000000000000000000000") // 5,000,000,000 tokens with 18 decimals
 
 export async function checkTokenGate(address: string, chainId: number): Promise<boolean> {
   try {
