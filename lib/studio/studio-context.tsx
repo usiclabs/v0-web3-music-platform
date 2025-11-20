@@ -3,7 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from "react"
 import type { StudioProject, StudioTrack, StudioRegion, TransportState, EditorState } from "@/types/studio"
-import { audioEngine } from "./audio-engine"
+import { getAudioEngine } from "./audio-engine"
 
 interface StudioContextValue {
   project: StudioProject | null
@@ -57,11 +57,12 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
 
   const animationFrameRef = useRef<number>()
   const engineInitialized = useRef(false)
+  const audioEngineRef = useRef<ReturnType<typeof getAudioEngine> | null>(null)
 
-  // Initialize audio engine
   useEffect(() => {
-    if (!engineInitialized.current) {
-      audioEngine.initialize().catch(console.error)
+    if (!engineInitialized.current && typeof window !== "undefined") {
+      audioEngineRef.current = getAudioEngine()
+      audioEngineRef.current.initialize().catch(console.error)
       engineInitialized.current = true
     }
 
@@ -72,13 +73,12 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Update current time while playing
   useEffect(() => {
-    if (transport.isPlaying) {
+    if (transport.isPlaying && audioEngineRef.current) {
       const updateTime = () => {
         setTransport((prev) => ({
           ...prev,
-          currentTime: audioEngine.currentTime,
+          currentTime: audioEngineRef.current?.currentTime || 0,
         }))
         animationFrameRef.current = requestAnimationFrame(updateTime)
       }
@@ -114,7 +114,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     }
     console.log("[v0] New project created:", newProject)
     setProject(newProject)
-    audioEngine.setBPM(bpm)
+    audioEngineRef.current?.setBPM(bpm)
     console.log("[v0] Project state set, should now show DAW interface")
   }, [])
 
@@ -140,14 +140,14 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
         created_at: new Date().toISOString(),
       }
 
-      audioEngine.createTrack(newTrack.id, newTrack.volume, newTrack.pan)
+      audioEngineRef.current?.createTrack(newTrack.id, newTrack.volume, newTrack.pan)
       setTracks((prev) => [...prev, newTrack])
     },
     [project, tracks],
   )
 
   const deleteTrack = useCallback(async (trackId: string) => {
-    audioEngine.deleteTrack(trackId)
+    audioEngineRef.current?.deleteTrack(trackId)
     setTracks((prev) => prev.filter((t) => t.id !== trackId))
     setRegions((prev) => prev.filter((r) => r.track_id !== trackId))
   }, [])
@@ -166,57 +166,57 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
     }
 
-    audioEngine.createPlayer(newRegion.id, trackId, audioUrl, startTime, 0, 10)
+    audioEngineRef.current?.createPlayer(newRegion.id, trackId, audioUrl, startTime, 0, 10)
     setRegions((prev) => [...prev, newRegion])
   }, [])
 
   const deleteRegion = useCallback((regionId: string) => {
-    audioEngine.deletePlayer(regionId)
+    audioEngineRef.current?.deletePlayer(regionId)
     setRegions((prev) => prev.filter((r) => r.id !== regionId))
   }, [])
 
   const play = useCallback(() => {
-    audioEngine.play()
+    audioEngineRef.current?.play()
     setTransport((prev) => ({ ...prev, isPlaying: true }))
   }, [])
 
   const pause = useCallback(() => {
-    audioEngine.pause()
+    audioEngineRef.current?.pause()
     setTransport((prev) => ({ ...prev, isPlaying: false }))
   }, [])
 
   const stop = useCallback(() => {
-    audioEngine.stop()
+    audioEngineRef.current?.stop()
     setTransport((prev) => ({ ...prev, isPlaying: false, currentTime: 0 }))
   }, [])
 
   const seek = useCallback((time: number) => {
-    audioEngine.seek(time)
+    audioEngineRef.current?.seek(time)
     setTransport((prev) => ({ ...prev, currentTime: time }))
   }, [])
 
   const setBPM = useCallback((bpm: number) => {
-    audioEngine.setBPM(bpm)
+    audioEngineRef.current?.setBPM(bpm)
     setTransport((prev) => ({ ...prev, bpm }))
   }, [])
 
   const setLoop = useCallback((start: number, end: number) => {
-    audioEngine.setLoop(start, end)
+    audioEngineRef.current?.setLoop(start, end)
     setTransport((prev) => ({ ...prev, loop: { start, end } }))
   }, [])
 
   const clearLoop = useCallback(() => {
-    audioEngine.clearLoop()
+    audioEngineRef.current?.clearLoop()
     setTransport((prev) => ({ ...prev, loop: null }))
   }, [])
 
   const setTrackVolume = useCallback((trackId: string, volume: number) => {
-    audioEngine.setTrackVolume(trackId, volume)
+    audioEngineRef.current?.setTrackVolume(trackId, volume)
     setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, volume } : t)))
   }, [])
 
   const setTrackPan = useCallback((trackId: string, pan: number) => {
-    audioEngine.setTrackPan(trackId, pan)
+    audioEngineRef.current?.setTrackPan(trackId, pan)
     setTracks((prev) => prev.map((t) => (t.id === trackId ? { ...t, pan } : t)))
   }, [])
 
@@ -224,7 +224,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     setTracks((prev) =>
       prev.map((t) => {
         if (t.id === trackId) {
-          audioEngine.muteTrack(trackId, !t.is_muted)
+          audioEngineRef.current?.muteTrack(trackId, !t.is_muted)
           return { ...t, is_muted: !t.is_muted }
         }
         return t
@@ -236,7 +236,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     setTracks((prev) =>
       prev.map((t) => {
         if (t.id === trackId) {
-          audioEngine.soloTrack(trackId, !t.is_soloed)
+          audioEngineRef.current?.soloTrack(trackId, !t.is_soloed)
           return { ...t, is_soloed: !t.is_soloed }
         }
         return t
