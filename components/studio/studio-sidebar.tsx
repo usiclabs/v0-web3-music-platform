@@ -78,14 +78,26 @@ export function StudioSidebar() {
   }
 
   return (
-    <div className="w-64 border-r border-border/40 bg-card/30 flex flex-col">
-      <div className="p-3 border-b border-border/40">
+    <div className="w-full lg:w-64 border-r border-border/40 bg-card/30 flex flex-col h-full">
+      <div className="p-3 border-b border-border/40 lg:block hidden">
         <h2 className="font-semibold mb-3">Sample Browser</h2>
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search samples..."
             className="pl-8 h-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="p-3 border-b border-border/40 lg:hidden">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search samples..."
+            className="pl-8 h-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -99,7 +111,7 @@ export function StudioSidebar() {
             <Button
               key={category.name}
               variant={selectedCategory === category.name ? "secondary" : "ghost"}
-              className="w-full justify-start"
+              className="w-full justify-start h-10 text-sm"
               onClick={() => {
                 setSelectedCategory(category.name)
                 setSearchQuery("")
@@ -123,23 +135,23 @@ export function StudioSidebar() {
                 key={sample.id}
                 draggable
                 onDragStart={(e) => handleDragStart(e, sample)}
-                className="group flex items-center gap-2 p-2 rounded-md hover:bg-accent/50 cursor-move transition-colors"
+                className="group flex items-center gap-2 p-3 rounded-md hover:bg-accent/50 active:bg-accent cursor-pointer transition-colors touch-manipulation"
                 onClick={() => handleSampleClick(sample)}
               >
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0"
+                  className="h-8 w-8 p-0 shrink-0"
                   onClick={(e) => {
                     e.stopPropagation()
                     handlePreview(sample)
                   }}
                 >
-                  <Play className={`h-3 w-3 ${playingSampleId === sample.id ? "text-primary" : ""}`} />
+                  <Play className={`h-4 w-4 ${playingSampleId === sample.id ? "text-primary" : ""}`} />
                 </Button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{sample.name}</div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-sm font-medium truncate">{sample.name}</div>
+                  <div className="text-xs text-muted-foreground">
                     {sample.duration.toFixed(1)}s {sample.bpm && `• ${sample.bpm} BPM`}
                     {sample.key && ` • ${sample.key}`}
                   </div>

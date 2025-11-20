@@ -9,24 +9,23 @@ export function StudioHeader() {
   const { project, saveProject } = useStudio()
 
   return (
-    <div className="border-b border-border/40 bg-card/95 backdrop-blur-xl p-3">
-      <div className="container flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+    <div className="border-b border-border/40 bg-card/95 backdrop-blur-xl p-2 sm:p-3">
+      <div className="container flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+          <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent whitespace-nowrap">
             MyUSIC Studio
           </h1>
           <Input
             value={project?.name || "Untitled Project"}
             onChange={(e) => {
-              // TODO: Implement project name update in context
               console.log("Project name changed:", e.target.value)
             }}
-            className="w-64 h-8 font-medium"
+            className="w-32 sm:w-64 h-7 sm:h-8 font-medium text-sm"
             placeholder="Project name"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           <Button variant="ghost" size="sm">
             <Undo className="h-4 w-4" />
           </Button>
@@ -48,6 +47,18 @@ export function StudioHeader() {
           </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex md:hidden items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={saveProject}>
+            <Save className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 px-2">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 px-2">
+            <Settings className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>

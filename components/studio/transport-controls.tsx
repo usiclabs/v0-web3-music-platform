@@ -21,9 +21,9 @@ export function TransportControls() {
   }
 
   return (
-    <div className="border-t border-border/40 bg-card/95 backdrop-blur-xl p-4">
+    <div className="border-t border-border/40 bg-card/95 backdrop-blur-xl p-2 sm:p-4">
       <div className="container">
-        <div className="flex items-center gap-6">
+        <div className="hidden sm:flex items-center gap-6">
           {/* Transport Buttons */}
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={stop}>
@@ -99,6 +99,73 @@ export function TransportControls() {
               className="w-24"
               onValueChange={([value]) => setMasterVolume(value)}
             />
+          </div>
+        </div>
+
+        <div className="sm:hidden space-y-2">
+          {/* Top row: Play controls and time */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={stop}>
+                <SkipBack className="h-3.5 w-3.5" />
+              </Button>
+              {transport.isPlaying ? (
+                <Button size="icon" className="h-11 w-11 rounded-full" onClick={pause}>
+                  <Pause className="h-5 w-5 fill-current" />
+                </Button>
+              ) : (
+                <Button size="icon" className="h-11 w-11 rounded-full" onClick={play}>
+                  <Play className="h-5 w-5 fill-current ml-0.5" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={stop}>
+                <Square className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant={transport.isRecording ? "destructive" : "ghost"} size="icon" className="h-8 w-8">
+                <Circle className={`h-3.5 w-3.5 ${transport.isRecording ? "fill-current animate-pulse" : ""}`} />
+              </Button>
+            </div>
+            <div className="font-mono text-xs tabular-nums">{formatTime(transport.currentTime)}</div>
+          </div>
+
+          {/* Bottom row: BPM and volume */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">BPM</span>
+              <Input
+                type="number"
+                value={transport.bpm}
+                onChange={(e) => setBPM(Number(e.target.value))}
+                className="w-14 h-7 text-xs"
+                min={40}
+                max={300}
+              />
+            </div>
+            <Button
+              variant={transport.loop ? "default" : "ghost"}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                if (transport.loop) {
+                  clearLoop()
+                } else {
+                  setLoop(loopStart, loopEnd)
+                }
+              }}
+            >
+              <Repeat className="h-3 w-3 mr-1" />
+              Loop
+            </Button>
+            <div className="flex items-center gap-2 ml-auto flex-1">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Vol</span>
+              <Slider
+                value={[masterVolume]}
+                max={1}
+                step={0.01}
+                className="flex-1"
+                onValueChange={([value]) => setMasterVolume(value)}
+              />
+            </div>
           </div>
         </div>
       </div>
