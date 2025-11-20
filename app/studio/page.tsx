@@ -9,6 +9,8 @@ import { StudioHeader } from "@/components/studio/studio-header"
 import { StudioWelcome } from "@/components/studio/studio-welcome"
 import { memo } from "react"
 
+export const dynamic = "force-dynamic"
+
 const StudioContent = memo(function StudioContent() {
   const { project } = useStudio()
 
