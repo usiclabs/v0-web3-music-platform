@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
 
     if (!gateStatus.canTokenize) {
       const reasons = []
-      if (!gateStatus.hasEnoughUSI) reasons.push("Insufficient $USI balance (need 10,000,000)")
-      if (!gateStatus.hasEnoughTracks) reasons.push("Need at least 5 uploaded tracks")
+      if (!gateStatus.hasEnoughUSI) reasons.push("Insufficient $USI balance (need 0)")
+      if (!gateStatus.hasEnoughTracks) reasons.push("Need at least 0 uploaded tracks")
       if (gateStatus.alreadyTokenized) reasons.push("Profile already tokenized")
 
       return NextResponse.json(
