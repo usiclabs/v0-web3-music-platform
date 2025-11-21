@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@coinbase/cdp-hooks':
+        specifier: 0.0.60
+        version: 0.0.60(@coinbase/cdp-core@0.0.60(@types/react@19.0.0)(bufferutil@4.0.9)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.6.0(react@19.0.0))(utf-8-validate@5.0.10)(zod@3.25.76))(react@19.0.0)
       '@coinbase/coinbase-sdk':
         specifier: latest
         version: 0.25.0(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -88,10 +91,10 @@ importers:
         version: 3.0.0(@tanstack/query-core@5.90.10)(@types/react@19.0.0)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.6.0(react@19.0.0))(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@zoralabs/coins-sdk':
         specifier: latest
-        version: 0.3.3(abitype@1.1.2(typescript@5.0.2)(zod@3.25.76))(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76))
+        version: 0.3.3(abitype@1.2.0(typescript@5.0.2)(zod@3.25.76))(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76))
       abitype:
         specifier: latest
-        version: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+        version: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       antd:
         specifier: 5.27.6
         version: 5.27.6(date-fns@4.1.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -787,6 +790,29 @@ packages:
 
   '@base-org/account@2.4.0':
     resolution: {integrity: sha512-A4Umpi8B9/pqR78D1Yoze4xHyQaujioVRqqO3d6xuDFw9VRtjg6tK3bPlwE0aW+nVH/ntllCpPa2PbI8Rnjcug==}
+
+  '@coinbase/cdp-api-client@0.0.60':
+    resolution: {integrity: sha512-Wi2O50y4OUaA7evV5Ex6qLhUYKxkMvCmQOBtfIwF/Oq/EtewrpNWQsc66iUsqEdBNGcbrqROMxnzDxgB53P5LA==}
+
+  '@coinbase/cdp-core@0.0.60':
+    resolution: {integrity: sha512-nqWq5bnINlECD2joElKOvOaFQKk+1kHc9Fpgu6HS89DYNufNrnfPRnfGR9CCy5IRei87oP6cXFwEvKrgOcVvjA==}
+    peerDependencies:
+      '@react-native-async-storage/async-storage': ^2.0.0
+      expo-secure-store: ^15.0.0
+      expo-web-browser: ^15.0.0
+    peerDependenciesMeta:
+      '@react-native-async-storage/async-storage':
+        optional: true
+      expo-secure-store:
+        optional: true
+      expo-web-browser:
+        optional: true
+
+  '@coinbase/cdp-hooks@0.0.60':
+    resolution: {integrity: sha512-Ra5FZB0V4HbUsa5LryDNz0RfWtAYb8aTraGgn5R1eJOalZwYWFBsyTdVgGDhK/Joz06O4N30umxfJSRz6uOqFQ==}
+    peerDependencies:
+      '@coinbase/cdp-core': ^0.0.60
+      react: '>=18.2.0'
 
   '@coinbase/cdp-sdk@1.38.4':
     resolution: {integrity: sha512-xVvfluaGt0NxNmjElP3C1yI6KnsGwihabdXj+qNtjjsSmd/Ha2V3gAiCyNrrYOqIORn4mpC2jgu2fUFEDaMpaw==}
@@ -3862,8 +3888,8 @@ packages:
       zod:
         optional: true
 
-  abitype@1.1.2:
-    resolution: {integrity: sha512-mqpSSIuddHs7t3IgsAweIZgYIQT4RhpIzrdcSN4fvHp9d77O0mglAAQ7fnI3r/hHIvgMwdpJAKr2T9K9leccYw==}
+  abitype@1.2.0:
+    resolution: {integrity: sha512-fD3ROjckUrWsybaSor2AdWxzA0e/DSyV2dA4aYd7bd8orHsoJjl09fOgKfUkTDfk0BsDGBf4NBgu/c7JoS2Npw==}
     peerDependencies:
       typescript: '>=5.0.4'
       zod: ^3.22.0 || ^4.0.0
@@ -6500,6 +6526,14 @@ packages:
 
   ox@0.6.9:
     resolution: {integrity: sha512-wi5ShvzE4eOcTwQVsIPdFr+8ycyX+5le/96iAJutaZAvCes1J0+RvpEPg5QDPDiaR0XQQAvZVl7AwqQcINuUug==}
+    peerDependencies:
+      typescript: '>=5.4.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  ox@0.8.1:
+    resolution: {integrity: sha512-e+z5epnzV+Zuz91YYujecW8cF01mzmrUtWotJ0oEPym/G82uccs7q0WDHTYL3eiONbTUEvcZrptAKLgTBD3u2A==}
     peerDependencies:
       typescript: '>=5.4.0'
     peerDependenciesMeta:
@@ -9255,6 +9289,38 @@ snapshots:
       - zod
     optional: true
 
+  '@coinbase/cdp-api-client@0.0.60':
+    dependencies:
+      axios: 1.13.0
+    transitivePeerDependencies:
+      - debug
+
+  '@coinbase/cdp-core@0.0.60(@types/react@19.0.0)(bufferutil@4.0.9)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.6.0(react@19.0.0))(utf-8-validate@5.0.10)(zod@3.25.76)':
+    dependencies:
+      '@coinbase/cdp-api-client': 0.0.60
+      '@solana/web3.js': 1.98.4(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)
+      bs58: 6.0.0
+      jose: 6.1.0
+      ox: 0.8.1(typescript@5.0.2)(zod@3.25.76)
+      viem: 2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      zustand: 5.0.8(@types/react@19.0.0)(immer@10.2.0)(react@19.0.0)(use-sync-external-store@1.6.0(react@19.0.0))
+    transitivePeerDependencies:
+      - '@types/react'
+      - bufferutil
+      - debug
+      - encoding
+      - immer
+      - react
+      - typescript
+      - use-sync-external-store
+      - utf-8-validate
+      - zod
+
+  '@coinbase/cdp-hooks@0.0.60(@coinbase/cdp-core@0.0.60(@types/react@19.0.0)(bufferutil@4.0.9)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.6.0(react@19.0.0))(utf-8-validate@5.0.10)(zod@3.25.76))(react@19.0.0)':
+    dependencies:
+      '@coinbase/cdp-core': 0.0.60(@types/react@19.0.0)(bufferutil@4.0.9)(immer@10.2.0)(react@19.0.0)(typescript@5.0.2)(use-sync-external-store@1.6.0(react@19.0.0))(utf-8-validate@5.0.10)(zod@3.25.76)
+      react: 19.0.0
+
   '@coinbase/cdp-sdk@1.38.4(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.0.2)(utf-8-validate@5.0.10)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       '@solana-program/system': 0.8.1(@solana/kit@3.0.3(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.0.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)))
@@ -9281,7 +9347,7 @@ snapshots:
   '@coinbase/coinbase-sdk@0.25.0(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@scure/bip32': 1.7.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       axios: 1.13.0
       axios-mock-adapter: 1.22.0(axios@1.13.0)
       axios-retry: 4.5.0(axios@1.13.0)
@@ -14581,11 +14647,11 @@ snapshots:
 
   '@xmldom/xmldom@0.8.11': {}
 
-  '@zoralabs/coins-sdk@0.3.3(abitype@1.1.2(typescript@5.0.2)(zod@3.25.76))(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76))':
+  '@zoralabs/coins-sdk@0.3.3(abitype@1.2.0(typescript@5.0.2)(zod@3.25.76))(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
       '@hey-api/client-fetch': 0.8.4
       '@zoralabs/protocol-deployments': 0.6.4
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       viem: 2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)
 
   '@zoralabs/protocol-deployments@0.6.4': {}
@@ -14610,17 +14676,17 @@ snapshots:
       typescript: 5.0.2
       zod: 3.25.76
 
-  abitype@1.1.2(typescript@5.0.2)(zod@3.22.4):
+  abitype@1.2.0(typescript@5.0.2)(zod@3.22.4):
     optionalDependencies:
       typescript: 5.0.2
       zod: 3.22.4
 
-  abitype@1.1.2(typescript@5.0.2)(zod@3.25.76):
+  abitype@1.2.0(typescript@5.0.2)(zod@3.25.76):
     optionalDependencies:
       typescript: 5.0.2
       zod: 3.25.76
 
-  abitype@1.1.2(typescript@5.0.2)(zod@4.1.12):
+  abitype@1.2.0(typescript@5.0.2)(zod@4.1.12):
     optionalDependencies:
       typescript: 5.0.2
       zod: 4.1.12
@@ -15233,7 +15299,7 @@ snapshots:
   clanker-sdk@4.2.3(@types/node@22.0.0)(typescript@5.0.2)(viem@2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)):
     dependencies:
       '@openzeppelin/merkle-tree': 1.0.8
-      abitype: 1.1.2(typescript@5.0.2)(zod@4.1.12)
+      abitype: 1.2.0(typescript@5.0.2)(zod@4.1.12)
       inquirer: 8.2.7(@types/node@22.0.0)
       viem: 2.39.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       zod: 4.1.12
@@ -17759,7 +17825,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17773,7 +17839,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17787,7 +17853,22 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
+      eventemitter3: 5.0.1
+    optionalDependencies:
+      typescript: 5.0.2
+    transitivePeerDependencies:
+      - zod
+
+  ox@0.8.1(typescript@5.0.2)(zod@3.25.76):
+    dependencies:
+      '@adraffy/ens-normalize': 1.11.1
+      '@noble/ciphers': 1.3.0
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17802,7 +17883,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17817,7 +17898,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@4.1.12)
+      abitype: 1.2.0(typescript@5.0.2)(zod@4.1.12)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17832,7 +17913,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17847,7 +17928,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.22.4)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.22.4)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -17862,7 +17943,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.2(typescript@5.0.2)(zod@3.25.76)
+      abitype: 1.2.0(typescript@5.0.2)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2

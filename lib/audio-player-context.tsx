@@ -6,8 +6,10 @@ import { requestChunk, verifyPayment } from "@/lib/x402/client"
 import { X402_CONFIG } from "@/lib/web3/contracts"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEIP3009 } from "@/lib/web3/use-eip3009"
-import { submitAuthorization, getGasSubsidyInfo } from "@/lib/web3/eip3009-client"
+import { submitAuthorization } from "@/lib/web3/eip3009-client"
 import { executeSmartWalletPayment } from "@/lib/web3/smart-wallet-payment"
+import { useToast } from "@/hooks/use-toast"
+import { getGasSubsidyInfo } from "@/lib/web3/gas-subsidy-info" // Import getGasSubsidyInfo
 
 interface AudioPlayerContextType {
   currentTrack: TrackWithArtist | null
@@ -52,10 +54,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const paymentJustSucceededRef = useRef(false)
   const { address, signTypedData } = useWallet()
   const { signTransferAuthorization, isSigning, isSmartWallet, supportsGaslessPayments } = useEIP3009()
+  const { toast } = useToast()
   const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
 
   const [queue, setQueue] = useState<TrackWithArtist[]>([])
   const [currentTrackIndex, setCurrentTrackIndex] = useState(-1)
+
+  const isMobile = () => {
+    if (typeof window === "undefined") return false
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  }
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -130,26 +138,21 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     checkSubsidy()
   }, [address])
 
-  const isMobile = () => {
-    if (typeof window === "undefined") return false
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  }
-
   const payForChunk = async (chunkIndex: number, onProgress?: (step: string, txHash?: string) => void) => {
-    if (!currentTrack || !address || !signTypedData) {
-      setError("Please connect your wallet to make payments")
-      throw new Error("Wallet not connected")
+    if (!currentTrack || !address) {
+      setError("Please connect your wallet first")
+      return
     }
 
+    const mobile = isMobile()
+
     if (isSmartWallet) {
-      console.log("[v0] Smart wallet detected - using approve + transferFrom flow")
-      return payForChunkSmartWallet(chunkIndex, onProgress)
+      return payForChunkWithSmartWallet(chunkIndex, onProgress)
     }
 
     if (!supportsGaslessPayments) {
-      const errorMsg = 
-        "Your wallet doesn't support gasless payments.\n\n" +
-        "Please try using MetaMask or another standard wallet."
+      const errorMsg =
+        "Your wallet doesn't support gasless payments.\n\n" + "Please try using MetaMask or another standard wallet."
       setError(errorMsg)
       throw new Error(errorMsg)
     }
@@ -162,7 +165,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const walletType = detectWalletType()
       console.log("[v0] Detected wallet type:", walletType)
 
-      const mobile = isMobile()
       console.log("[v0] Mobile device detected:", mobile)
 
       const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex)
@@ -200,7 +202,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         } catch (signError) {
           lastError = signError as Error
           console.error(`[v0] Signature attempt ${attempt} failed:`, signError)
-          
+
           if (attempt === maxRetries) {
             // All retries exhausted
             throw lastError
@@ -218,7 +220,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       console.log("[v0] Submitting payment...")
 
       const submitTimeout = mobile ? 60000 : 30000
-      
+
       const submitPromise = submitAuthorization(signedAuth, {
         trackId: currentTrack.id,
         chunkIndex,
@@ -316,24 +318,27 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("[v0] Payment error:", err)
       paymentJustSucceededRef.current = false
-      
+
       let errorMessage = "Payment failed. Please try again."
       if (err instanceof Error) {
         if (err.message.includes("timeout") || err.message.includes("Timeout")) {
-          errorMessage = mobile 
+          errorMessage = mobile
             ? "Payment timeout. On mobile, please ensure MetaMask is open and check for pending signature requests. You may need to switch to the MetaMask app manually."
             : "Payment timeout. Please check your wallet and try again."
         } else {
           errorMessage = err.message
         }
       }
-      
+
       setError(errorMessage)
       throw err
     }
   }
 
-  const payForChunkSmartWallet = async (chunkIndex: number, onProgress?: (step: string, txHash?: string) => void) => {
+  const payForChunkWithSmartWallet = async (
+    chunkIndex: number,
+    onProgress?: (step: string, txHash?: string) => void,
+  ) => {
     if (!currentTrack || !address) {
       throw new Error("Wallet not connected")
     }
@@ -389,12 +394,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       console.error("[v0] Smart wallet payment error:", err)
       paymentJustSucceededRef.current = false
-      
+
       let errorMessage = "Payment failed. Please try again."
       if (err instanceof Error) {
         errorMessage = err.message
       }
-      
+
       setError(errorMessage)
       throw err
     }

@@ -3,10 +3,9 @@ import { base, baseSepolia } from "viem/chains"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "./contracts"
 import { createBrowserClient } from "@/lib/supabase/client"
 
-// 0 $USI tokens required (was 10,000,000)
-export const PROFILE_TOKEN_REQUIRED_USI = BigInt("0")
-// 0 tracks required (was 5)
-export const PROFILE_TOKEN_REQUIRED_TRACKS = 0
+// 10,000,000 $USI tokens required (18 decimals)
+export const PROFILE_TOKEN_REQUIRED_USI = BigInt("10000000000000000000000000")
+export const PROFILE_TOKEN_REQUIRED_TRACKS = 5
 
 export interface ProfileTokenGateStatus {
   hasEnoughUSI: boolean

@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@coinbase/cdp-hooks": "0.0.60",
     "@coinbase/coinbase-sdk": "latest",
     "@coinbase/onchainkit": "1.1.1",
     "@farcaster/miniapp-sdk": "latest",

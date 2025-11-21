@@ -16,12 +16,13 @@ interface WalletContextType {
   showMobileWalletModal: boolean
   setShowMobileWalletModal: (show: boolean) => void
   isConnecting: boolean
+  isCoinbaseSmartWallet: boolean
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const { address, isConnected, chainId } = useAccount()
+  const { address, isConnected, chainId, connector } = useAccount()
   const { connectAsync, connectors } = useConnect()
   const { disconnectAsync } = useDisconnect()
   const { switchChainAsync } = useSwitchChain()
@@ -29,7 +30,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [showMobileWalletModal, setShowMobileWalletModal] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const connectionInProgressRef = useRef(false)
-  // </CHANGE>
+
+  const [isCoinbaseSmartWallet, setIsCoinbaseSmartWallet] = useState(false)
+
+  // Check if current connector is Coinbase
+  useEffect(() => {
+    if (connector) {
+      const isCoinbase =
+        connector.name?.toLowerCase().includes("coinbase") || connector.id?.toLowerCase().includes("coinbase")
+      setIsCoinbaseSmartWallet(isCoinbase)
+
+      if (isCoinbase) {
+        console.log("[v0] Coinbase Smart Wallet detected - x402 payments enabled")
+      }
+    } else {
+      setIsCoinbaseSmartWallet(false)
+    }
+  }, [connector])
 
   useEffect(() => {
     const autoConnectInjected = async () => {
@@ -64,7 +81,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     connectionInProgressRef.current = true
     setIsConnecting(true)
-    // </CHANGE>
 
     try {
       console.log("[v0] Manual wallet connection requested")
@@ -106,7 +122,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           console.log("[v0] Connection request already pending, waiting for user response")
           return
         }
-        // </CHANGE>
         if (error.message.includes("Connector not found")) {
           if (typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
             setShowMobileWalletModal(true)
@@ -126,7 +141,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } finally {
       connectionInProgressRef.current = false
       setIsConnecting(false)
-      // </CHANGE>
     }
   }
 
@@ -264,6 +278,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         showMobileWalletModal,
         setShowMobileWalletModal,
         isConnecting,
+        isCoinbaseSmartWallet,
       }}
     >
       {children}
