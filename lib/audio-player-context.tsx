@@ -667,7 +667,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         seek,
         setVolume: setVolumeState,
         payForChunk,
-        closePaymentModal: () => setShowPaymentModal(false),
+        closePaymentModal,
         skipTrack,
         playNext,
         playPrevious,
