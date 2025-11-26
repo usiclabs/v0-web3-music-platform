@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       .eq("listener_address", listenerAddress.toLowerCase())
       .order("started_at", { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (existingStream) {
       const { error: updateError } = await supabase
