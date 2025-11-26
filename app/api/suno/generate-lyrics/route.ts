@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = request.headers.get("origin") || "http://localhost:3000"
     const callBackUrl = `${baseUrl}/api/suno/callback`
 
-    const response = await fetch("https://api.sunoapi.org/api/v1/generate/lyrics", {
+    const response = await fetch("https://api.sunoapi.org/api/v1/lyrics", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,

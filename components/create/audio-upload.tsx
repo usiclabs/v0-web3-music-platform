@@ -28,9 +28,8 @@ export function AudioUpload({ onUpload, uploadedUrl, isUploading, setIsUploading
       return
     }
 
-    // Validate file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      setError("File size must be less than 50MB")
+    if (file.size > 10 * 1024 * 1024) {
+      setError("File size must be less than 10MB")
       return
     }
 
@@ -47,14 +46,26 @@ export function AudioUpload({ onUpload, uploadedUrl, isUploading, setIsUploading
         body: formData,
       })
 
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        // Non-JSON response - likely an error from the server/proxy
+        if (response.status === 413) {
+          throw new Error("File too large. Please use a smaller audio file (max 10MB).")
+        }
+        const text = await response.text()
+        console.error("Upload audio error:", text)
+        throw new Error("Upload failed. Please try a smaller file.")
+      }
+
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || "Upload failed")
       }
 
-      const { uploadUrl } = await response.json()
-      onUpload(uploadUrl)
+      onUpload(data.uploadUrl)
     } catch (err) {
+      console.error("Upload audio error:", err)
       setError(err instanceof Error ? err.message : "Failed to upload audio")
       setFileName(null)
     } finally {
@@ -157,7 +168,7 @@ export function AudioUpload({ onUpload, uploadedUrl, isUploading, setIsUploading
               <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
               <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
                 <Music className="h-3 w-3" />
-                <span>MP3, WAV, M4A • Max 50MB • Up to 8 minutes</span>
+                <span>MP3, WAV, M4A • Max 10MB • Up to 8 minutes</span>
               </div>
             </>
           )}

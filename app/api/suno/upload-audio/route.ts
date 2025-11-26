@@ -3,10 +3,21 @@ import { type NextRequest, NextResponse } from "next/server"
 const SUNO_API_KEY = process.env.SUNO_API_KEY
 const SUNO_API_BASE = "https://api.sunoapi.org/api/v1"
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!SUNO_API_KEY) {
-      return NextResponse.json({ error: "Suno API key not configured" }, { status: 500 })
+      return NextResponse.json({ error: "API key not configured" }, { status: 500 })
+    }
+
+    const contentLength = request.headers.get("content-length")
+    if (contentLength && Number.parseInt(contentLength) > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
     }
 
     const formData = await request.formData()
@@ -14,6 +25,10 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 })
     }
 
     // Convert file to base64
@@ -38,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("Suno upload API error:", errorText)
+      console.error("Upload API error:", errorText)
       return NextResponse.json({ error: "Failed to upload audio" }, { status: response.status })
     }
 
