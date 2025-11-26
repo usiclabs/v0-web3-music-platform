@@ -3,15 +3,16 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { Wallet } from 'lucide-react'
+import { Wallet } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { usePathname } from 'next/navigation'
+import { usePathname } from "next/navigation"
 import Image from "next/image"
 import { MobileMenu } from "@/components/mobile-menu"
 import { MobileWalletModal } from "@/components/mobile-wallet-modal"
 import { useConnect } from "wagmi"
 import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
 import { NotificationCenter } from "@/components/notification-center"
+import { ChainSwitcher } from "@/components/web3/chain-switcher"
 
 export function Header() {
   const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
@@ -35,7 +36,7 @@ export function Header() {
   const handleConnectClick = () => {
     const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
     const hasInjectedWallet = typeof window !== "undefined" && window.ethereum
-    
+
     // On desktop with browser wallet, connect directly via injected provider
     if (!isMobile && hasInjectedWallet) {
       console.log("[v0] Desktop with injected wallet detected, connecting directly...")
@@ -172,6 +173,8 @@ export function Header() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <NotificationCenter />
+
+            {isConnected && <ChainSwitcher />}
 
             {isConnected && address ? (
               <DropdownMenu>

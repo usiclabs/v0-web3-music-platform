@@ -26,7 +26,18 @@ interface RoyaltySplit {
   percentage: number
 }
 
-export function UploadForm() {
+interface UploadFormProps {
+  prefillData?: {
+    audioUrl?: string
+    title?: string
+    coverUrl?: string
+    style?: string
+    prompt?: string
+    videoUrl?: string
+  } | null
+}
+
+export function UploadForm({ prefillData }: UploadFormProps) {
   const router = useRouter()
   const { address } = useWallet()
   const publicClient = usePublicClient()
@@ -58,6 +69,10 @@ export function UploadForm() {
   const [txHash, setTxHash] = useState<string | null>(null)
   const [isGeneratingGif, setIsGeneratingGif] = useState(false)
   const [gifPreviewUrl, setGifPreviewUrl] = useState<string | null>(null)
+
+  const [prefilledAudioUrl, setPrefilledAudioUrl] = useState<string | null>(null)
+  const [prefilledCoverUrl, setPrefilledCoverUrl] = useState<string | null>(null)
+  const [prefilledVideoUrl, setPrefilledVideoUrl] = useState<string | null>(null)
 
   const { data: usiBalance } = useReadContract({
     address: chainId ? USI_TOKEN_ADDRESS[chainId as keyof typeof USI_TOKEN_ADDRESS] : undefined,
@@ -150,6 +165,29 @@ export function UploadForm() {
       })()
     }
   }, [isCoinCreated, receipt, createdTrackId, coinCreationStarted, txHash, router])
+
+  useEffect(() => {
+    if (prefillData) {
+      if (prefillData.title) setTitle(prefillData.title)
+      if (prefillData.audioUrl) setPrefilledAudioUrl(prefillData.audioUrl)
+      if (prefillData.coverUrl) setPrefilledCoverUrl(prefillData.coverUrl)
+      if (prefillData.videoUrl) {
+        setPrefilledVideoUrl(prefillData.videoUrl)
+        setContentType("video")
+      }
+      // Auto-generate coin name/symbol from title
+      if (prefillData.title) {
+        setCoinName(prefillData.title)
+        const symbol = prefillData.title
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 5)
+        setCoinSymbol(`$${symbol}`)
+      }
+    }
+  }, [prefillData])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
@@ -375,7 +413,7 @@ export function UploadForm() {
       return
     }
 
-    if (!audioFile && !videoFile) {
+    if (!audioFile && !videoFile && !prefilledAudioUrl && !prefilledVideoUrl) {
       setError(`Please select ${contentType === "audio" ? "an audio" : "a video"} file`)
       return
     }
@@ -416,57 +454,70 @@ export function UploadForm() {
 
       let mediaUrl: string
       let duration: number
-      let thumbnailUrl: string | null = null
+      const thumbnailUrl: string | null = null
 
-      if (contentType === "video" && videoFile) {
-        setUploadProgress("Uploading video file...")
-        console.log("[v0] Starting video upload:", videoFile.name, videoFile.size)
+      // Use prefilled URLs if no file is uploaded
+      let currentAudioUrl = prefilledAudioUrl
+      let currentVideoUrl = prefilledVideoUrl
+      let currentCoverUrl = prefilledCoverUrl || uploadedCoverUrl // Use existing uploaded cover if available
 
-        const timestamp = Date.now()
-        const filename = `${timestamp}-${videoFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-        const filePath = `videos/${filename}`
-
-        const signedUrlResponse = await fetch("/api/storage/signed-upload-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bucket: "audio",
-            filePath,
-            contentType: videoFile.type,
-          }),
-        })
-
-        if (!signedUrlResponse.ok) {
-          const errorText = await signedUrlResponse.text()
-          throw new Error(`Failed to get upload URL: ${errorText}`)
+      if (contentType === "video") {
+        if (!videoFile && !prefilledVideoUrl) {
+          throw new Error("Please upload a video file or provide a prefilled URL.")
         }
 
-        const { signedUrl, path } = await signedUrlResponse.json()
+        if (videoFile) {
+          setUploadProgress("Uploading video...")
+          console.log("[v0] Starting video upload:", videoFile.name, videoFile.size)
 
-        const uploadResponse = await fetch(signedUrl, {
-          method: "PUT",
-          body: videoFile,
-          headers: {
-            "Content-Type": videoFile.type,
-            "x-upsert": "false",
-          },
-        })
+          const timestamp = Date.now()
+          const filePath = `videos/${timestamp}-${videoFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
 
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text()
-          console.error("[v0] Video upload error:", errorText)
-          throw new Error(`Video upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
+          const signedUrlResponse = await fetch("/api/storage/signed-upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bucket: "audio",
+              filePath,
+              contentType: videoFile.type,
+            }),
+          })
+
+          if (!signedUrlResponse.ok) {
+            const errorText = await signedUrlResponse.text()
+            throw new Error(`Failed to get upload URL: ${errorText}`)
+          }
+
+          const { signedUrl, path } = await signedUrlResponse.json()
+
+          const uploadResponse = await fetch(signedUrl, {
+            method: "PUT",
+            body: videoFile,
+            headers: {
+              "Content-Type": videoFile.type,
+              "x-upsert": "false",
+            },
+          })
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text()
+            console.error("[v0] Video upload error:", errorText)
+            throw new Error(`Video upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
+          }
+
+          const { data: uploadSuccessData } = supabase.storage.from("audio").getPublicUrl(path)
+          mediaUrl = uploadSuccessData.publicUrl
+          currentVideoUrl = mediaUrl // Update currentVideoUrl with the uploaded URL
+          console.log("[v0] Video uploaded successfully:", mediaUrl)
+        } else {
+          mediaUrl = prefilledVideoUrl! // Use prefilled URL if no file uploaded
+          currentVideoUrl = mediaUrl
+          console.log("[v0] Using prefilled video URL:", mediaUrl)
         }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("audio").getPublicUrl(path)
-        mediaUrl = publicUrl
-        console.log("[v0] Video uploaded successfully:", mediaUrl)
 
         setUploadProgress("Processing video metadata...")
         const video = document.createElement("video")
-        video.src = URL.createObjectURL(videoFile)
+        video.src = mediaUrl // Use the determined mediaUrl
         await new Promise((resolve) => {
           video.addEventListener("loadedmetadata", resolve)
         })
@@ -488,9 +539,9 @@ export function UploadForm() {
 
             if (thumbResponse.ok) {
               const thumbResult = await thumbResponse.json()
-              thumbnailUrl = thumbResult.url
-              setUploadedCoverUrl(thumbnailUrl)
-              console.log("[v0] Thumbnail uploaded successfully:", thumbnailUrl)
+              currentCoverUrl = thumbResult.url
+              setUploadedCoverUrl(currentCoverUrl)
+              console.log("[v0] Thumbnail uploaded successfully:", currentCoverUrl)
             } else {
               const errorText = await thumbResponse.text()
               console.error("[v0] Thumbnail upload failed:", errorText)
@@ -500,55 +551,82 @@ export function UploadForm() {
           }
         } else if (gifPreviewUrl) {
           // Use the generated GIF as thumbnail
-          thumbnailUrl = gifPreviewUrl
-          setUploadedCoverUrl(thumbnailUrl)
-          console.log("[v0] Using generated GIF as thumbnail:", thumbnailUrl)
+          currentCoverUrl = gifPreviewUrl
+          setUploadedCoverUrl(currentCoverUrl)
+          console.log("[v0] Using generated GIF as thumbnail:", currentCoverUrl)
         }
-      } else if (contentType === "audio" && audioFile) {
-        setUploadProgress("Uploading audio file...")
-        console.log("[v0] Starting audio upload:", audioFile.name, audioFile.size)
+      } else if (contentType === "audio") {
+        // In the audio file input section, show prefilled state
+        if (prefilledAudioUrl && !audioFile) {
+          ;<div className="mt-2 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Music className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-500">AI-Generated Audio Ready</p>
+                <p className="text-xs text-muted-foreground">Audio from AI Studio will be used</p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPrefilledAudioUrl(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <audio src={prefilledAudioUrl} controls className="w-full mt-3 h-10" />
+          </div>
+        } else {
+          if (!audioFile) {
+            throw new Error("Please upload an audio file or provide a prefilled URL.")
+          }
 
-        const timestamp = Date.now()
-        const filename = `${timestamp}-${audioFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
-        const filePath = `audio/${filename}`
+          setUploadProgress("Uploading audio...")
+          console.log("[v0] Starting audio upload:", audioFile.name, audioFile.size)
 
-        const signedUrlResponse = await fetch("/api/storage/signed-upload-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bucket: "audio",
-            filePath,
-            contentType: audioFile.type,
-          }),
-        })
+          const timestamp = Date.now()
+          const filePath = `audio/${timestamp}-${audioFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
 
-        if (!signedUrlResponse.ok) {
-          const errorText = await signedUrlResponse.text()
-          throw new Error(`Failed to get upload URL: ${errorText}`)
+          const signedUrlResponse = await fetch("/api/storage/signed-upload-url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bucket: "audio",
+              filePath,
+              contentType: audioFile.type,
+            }),
+          })
+
+          if (!signedUrlResponse.ok) {
+            const errorText = await signedUrlResponse.text()
+            throw new Error(`Failed to get upload URL: ${errorText}`)
+          }
+
+          const { signedUrl, path } = await signedUrlResponse.json()
+
+          const uploadResponse = await fetch(signedUrl, {
+            method: "PUT",
+            body: audioFile,
+            headers: {
+              "Content-Type": audioFile.type,
+              "x-upsert": "false",
+            },
+          })
+
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text()
+            console.error("[v0] Audio upload error:", errorText)
+            throw new Error(`Audio upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
+          }
+
+          const { data: uploadSuccessData } = supabase.storage.from("audio").getPublicUrl(path)
+          mediaUrl = uploadSuccessData.publicUrl
+          currentAudioUrl = mediaUrl // Update currentAudioUrl with the uploaded URL
+          console.log("[v0] Audio uploaded successfully:", mediaUrl)
         }
-
-        const { signedUrl, path } = await signedUrlResponse.json()
-
-        const uploadResponse = await fetch(signedUrl, {
-          method: "PUT",
-          body: audioFile,
-          headers: {
-            "Content-Type": audioFile.type,
-            "x-upsert": "false",
-          },
-        })
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text()
-          console.error("[v0] Audio upload error:", errorText)
-          throw new Error(`Audio upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`)
-        }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("audio").getPublicUrl(path)
-        mediaUrl = publicUrl
-        console.log("[v0] Audio uploaded successfully:", mediaUrl)
 
         if (coverFile) {
           setUploadProgress("Uploading cover image...")
@@ -563,13 +641,16 @@ export function UploadForm() {
 
           if (coverResponse.ok) {
             const coverResult = await coverResponse.json()
-            thumbnailUrl = coverResult.url
-            setUploadedCoverUrl(thumbnailUrl)
+            currentCoverUrl = coverResult.url
+            setUploadedCoverUrl(currentCoverUrl)
+          } else {
+            const errorText = await coverResponse.text()
+            console.error("[v0] Cover upload failed:", errorText)
           }
         }
 
         setUploadProgress("Processing audio metadata...")
-        const audio = new Audio(URL.createObjectURL(audioFile))
+        const audio = new Audio(mediaUrl) // Use the determined mediaUrl
         await new Promise((resolve) => {
           audio.addEventListener("loadedmetadata", resolve)
         })
@@ -588,10 +669,10 @@ export function UploadForm() {
           title,
           artist_id: address.toLowerCase(),
           content_type: contentType,
-          audio_url: contentType === "audio" ? mediaUrl : null,
-          video_url: contentType === "video" ? mediaUrl : null,
-          cover_url: contentType === "audio" ? thumbnailUrl : null,
-          thumbnail_url: contentType === "video" ? thumbnailUrl : null,
+          audio_url: contentType === "audio" ? currentAudioUrl : null,
+          video_url: contentType === "video" ? currentVideoUrl : null,
+          cover_url: contentType === "audio" ? currentCoverUrl : null,
+          thumbnail_url: contentType === "video" ? currentCoverUrl : null,
           duration,
           price_per_chunk: Number.parseFloat(pricePerChunk),
           unlock_type: unlockType,
@@ -616,9 +697,9 @@ export function UploadForm() {
       if (tokenizeTrack) {
         try {
           if (deploymentMethod === "clanker") {
-            await createClankerToken(track.id, uploadedCoverUrl)
+            await createClankerToken(track.id, currentCoverUrl) // Pass the final cover URL
           } else {
-            await createZoraCoin(track.id, uploadedCoverUrl)
+            await createZoraCoin(track.id, currentCoverUrl) // Pass the final cover URL
           }
           return
         } catch (coinError) {
@@ -714,10 +795,13 @@ export function UploadForm() {
                 type="file"
                 accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,.mp4,.mov,.avi,.mkv,.webm"
                 onChange={(e) => handleVideoFileChange(e.target.files?.[0] || null)}
-                required
+                required={!(prefilledVideoUrl && !videoFile)}
                 className="bg-card/50 backdrop-blur-xl border border-border/50"
               />
               {videoFile && <p className="text-sm text-muted-foreground mt-2">{videoFile.name}</p>}
+              {prefilledVideoUrl && !videoFile && (
+                <p className="text-sm text-muted-foreground mt-2">{prefilledVideoUrl}</p>
+              )}
               {gifPreviewUrl && (
                 <div className="mt-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
                   <p className="text-xs text-accent mb-2">✓ Preview GIF generated automatically</p>
@@ -735,35 +819,88 @@ export function UploadForm() {
           ) : (
             <div>
               <Label htmlFor="audio">Audio File</Label>
-              <Input
-                id="audio"
-                type="file"
-                accept="audio/mpeg,audio/mp3,audio/wav,audio/flac,audio/aac,audio/ogg,audio/x-m4a,.mp3,.wav,.flac,.aac,.ogg,.m4a"
-                onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
-                required
-                className="bg-card/50 backdrop-blur-xl border border-border/50"
-              />
-              {audioFile && <p className="text-sm text-muted-foreground mt-2">{audioFile.name}</p>}
+              {prefilledAudioUrl && !audioFile ? (
+                <div className="mt-2 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <Music className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-emerald-500">AI-Generated Audio Ready</p>
+                      <p className="text-xs text-muted-foreground">Audio from AI Studio will be used</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPrefilledAudioUrl(null)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <audio src={prefilledAudioUrl} controls className="w-full mt-3 h-10" />
+                </div>
+              ) : (
+                <>
+                  <Input
+                    id="audio"
+                    type="file"
+                    accept="audio/*"
+                    onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                    required={!prefilledAudioUrl}
+                    className="bg-card/50 backdrop-blur-xl border border-border/50"
+                  />
+                  {audioFile && <p className="text-sm text-muted-foreground mt-2">{audioFile.name}</p>}
+                </>
+              )}
             </div>
           )}
 
           <div>
-            <Label htmlFor="cover">{contentType === "audio" ? "Cover Image" : "Thumbnail"} (Optional)</Label>
-            <Input
-              id="cover"
-              type="file"
-              accept="image/*,.gif"
-              onChange={(e) => handleCoverFileChange(e.target.files?.[0] || null)}
-              className="bg-card/50 backdrop-blur-xl border border-border/50"
-            />
-            {coverFile && (
-              <div className="mt-2 space-y-1">
-                <p className="text-sm text-muted-foreground">{coverFile.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Size: {(coverFile.size / 1024 / 1024).toFixed(2)}MB
-                  {coverFile.size > 10 * 1024 * 1024 && " (Large file - consider compressing)"}
-                </p>
+            <Label htmlFor="cover">Cover Art (Optional)</Label>
+            {prefilledCoverUrl && !coverFile ? (
+              <div className="mt-2 p-4 bg-accent/10 border border-accent/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={prefilledCoverUrl || "/placeholder.svg"}
+                    alt="AI Generated Cover"
+                    className="h-16 w-16 rounded-lg object-cover"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-accent">AI-Generated Cover Art</p>
+                    <p className="text-xs text-muted-foreground">Cover from AI Studio will be used</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPrefilledCoverUrl(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+            ) : (
+              <>
+                <Input
+                  id="cover"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleCoverFileChange(e.target.files?.[0] || null)}
+                  className="bg-card/50 backdrop-blur-xl border border-border/50"
+                />
+                {coverFile && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm text-muted-foreground">{coverFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Size: {(coverFile.size / 1024 / 1024).toFixed(2)}MB
+                      {coverFile.size > 10 * 1024 * 1024 && " (Large file - consider compressing)"}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
             {contentType === "video" && (
               <p className="text-xs text-muted-foreground mt-2">

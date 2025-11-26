@@ -1,25 +1,20 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAccount } from "wagmi"
 import { useToast } from "@/hooks/use-toast"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { VinylRecord3D } from "./vinyl-record-3d"
-import { Upload, Loader2, Sparkles, Music, ImageIcon } from 'lucide-react'
-import { put } from "@vercel/blob"
+import { Loader2, Sparkles, Music, ImageIcon } from "lucide-react"
+import { uploadToBlob } from "@/app/actions/upload-blob"
 import { CreateCollectionDialog } from "./create-collection-dialog"
 
 export function NFTMintForm() {
@@ -93,12 +88,25 @@ export function NFTMintForm() {
     setFormData({ ...formData, coverImage: file })
   }
 
-  async function uploadToBlob(file: File): Promise<string> {
-    const blob = await put(file.name, file, {
-      access: "public",
-      token: process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN,
+  async function uploadFile(file: File): Promise<string> {
+    // Convert file to base64 data URL
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const dataUrl = reader.result as string
+        const result = await uploadToBlob(file.name, dataUrl, file.type)
+
+        if (result.error) {
+          reject(new Error(result.error))
+        } else if (result.url) {
+          resolve(result.url)
+        } else {
+          reject(new Error("Upload failed"))
+        }
+      }
+      reader.onerror = () => reject(new Error("Failed to read file"))
+      reader.readAsDataURL(file)
     })
-    return blob.url
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -129,7 +137,7 @@ export function NFTMintForm() {
       let coverImageUrl = ""
       if (formData.coverImage) {
         setUploading(true)
-        coverImageUrl = await uploadToBlob(formData.coverImage)
+        coverImageUrl = await uploadFile(formData.coverImage)
         setUploading(false)
       }
 
@@ -157,11 +165,12 @@ export function NFTMintForm() {
       }
 
       // Upload metadata to blob storage
-      const metadataBlob = new Blob([JSON.stringify(metadata, null, 2)], {
-        type: "application/json",
+      const metadataJson = JSON.stringify(metadata, null, 2)
+      const metadataDataUrl = `data:application/json;base64,${Buffer.from(metadataJson).toString("base64")}`
+      const tokenUri = await uploadToBlob("metadata.json", metadataDataUrl, "application/json").then((result) => {
+        if (result.error) throw new Error(result.error)
+        return result.url!
       })
-      const metadataFile = new File([metadataBlob], "metadata.json")
-      const tokenUri = await uploadToBlob(metadataFile)
 
       // Mint NFTs in database (minting will happen via smart contract separately)
       const nftPromises = []
@@ -175,12 +184,12 @@ export function NFTMintForm() {
             creator_address: address,
             edition_number: i,
             total_editions: formData.totalEditions,
-            mint_price: parseFloat(formData.mintPrice),
-            current_price: parseFloat(formData.mintPrice),
+            mint_price: Number.parseFloat(formData.mintPrice),
+            current_price: Number.parseFloat(formData.mintPrice),
             rarity_tier: formData.rarityTier,
             metadata,
             is_listed: true,
-          })
+          }),
         )
       }
 
@@ -250,9 +259,7 @@ export function NFTMintForm() {
               </div>
               <Select
                 value={formData.collectionId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, collectionId: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, collectionId: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a collection" />
@@ -276,12 +283,7 @@ export function NFTMintForm() {
             {/* Track Selection */}
             <div>
               <Label>Link to Track (Optional)</Label>
-              <Select
-                value={formData.trackId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, trackId: value })
-                }
-              >
+              <Select value={formData.trackId} onValueChange={(value) => setFormData({ ...formData, trackId: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a track" />
                 </SelectTrigger>
@@ -300,9 +302,7 @@ export function NFTMintForm() {
               <Label>NFT Name *</Label>
               <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Summer Vibes Limited Edition"
                 required
               />
@@ -313,9 +313,7 @@ export function NFTMintForm() {
               <Label>Description</Label>
               <Textarea
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe your music NFT..."
                 rows={4}
               />
@@ -325,18 +323,10 @@ export function NFTMintForm() {
             <div>
               <Label>Cover Image</Label>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
-                  className="hidden"
-                  id="cover-upload"
-                />
+                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" id="cover-upload" />
                 <label htmlFor="cover-upload" className="cursor-pointer">
                   <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload cover image
-                  </p>
+                  <p className="text-sm text-muted-foreground">Click to upload cover image</p>
                   {coverPreview && (
                     <img
                       src={coverPreview || "/placeholder.svg"}
@@ -366,14 +356,12 @@ export function NFTMintForm() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    totalEditions: parseInt(e.target.value) || 1,
+                    totalEditions: Number.parseInt(e.target.value) || 1,
                   })
                 }
                 required
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Number of identical NFTs to mint
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Number of identical NFTs to mint</p>
             </div>
 
             {/* Mint Price */}
@@ -384,9 +372,7 @@ export function NFTMintForm() {
                 step="0.01"
                 min="0"
                 value={formData.mintPrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, mintPrice: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, mintPrice: e.target.value })}
                 placeholder="10.00"
                 required
               />
@@ -397,9 +383,7 @@ export function NFTMintForm() {
               <Label>Rarity Tier</Label>
               <Select
                 value={formData.rarityTier}
-                onValueChange={(value: any) =>
-                  setFormData({ ...formData, rarityTier: value })
-                }
+                onValueChange={(value: any) => setFormData({ ...formData, rarityTier: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -425,13 +409,11 @@ export function NFTMintForm() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    royaltyPercentage: parseInt(e.target.value) || 0,
+                    royaltyPercentage: Number.parseInt(e.target.value) || 0,
                   })
                 }
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Royalty on secondary sales (0-50%)
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Royalty on secondary sales (0-50%)</p>
             </div>
           </Card>
         </div>
@@ -441,21 +423,15 @@ export function NFTMintForm() {
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Preview</h2>
             <div className="aspect-square bg-gradient-to-br from-black to-zinc-900 rounded-lg overflow-hidden">
-              <VinylRecord3D
-                coverImage={coverPreview}
-                rarity={formData.rarityTier}
-                className="w-full h-full"
-              />
+              <VinylRecord3D coverImage={coverPreview} rarity={formData.rarityTier} className="w-full h-full" />
             </div>
 
             <div className="mt-4 space-y-2">
-              <h3 className="font-semibold text-lg">
-                {formData.name || "Untitled NFT"}
-              </h3>
+              <h3 className="font-semibold text-lg">{formData.name || "Untitled NFT"}</h3>
               <p className="text-sm text-muted-foreground line-clamp-3">
                 {formData.description || "No description provided"}
               </p>
-              
+
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <div>
                   <p className="text-xs text-muted-foreground">Edition Size</p>
@@ -463,21 +439,14 @@ export function NFTMintForm() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Price</p>
-                  <p className="font-semibold">
-                    {formData.mintPrice || "0"} USDC
-                  </p>
+                  <p className="font-semibold">{formData.mintPrice || "0"} USDC</p>
                 </div>
               </div>
             </div>
           </Card>
 
           {/* Submit Button */}
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full"
-            disabled={loading || uploading}
-          >
+          <Button type="submit" size="lg" className="w-full" disabled={loading || uploading}>
             {loading || uploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

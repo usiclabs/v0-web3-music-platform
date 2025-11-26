@@ -1,5 +1,5 @@
 import { http, createConfig } from "wagmi"
-import { base, baseSepolia } from "wagmi/chains"
+import { base, baseSepolia, mainnet, arbitrum } from "wagmi/chains"
 import { walletConnect, injected, coinbaseWallet } from "wagmi/connectors"
 
 // Get WalletConnect project ID from environment
@@ -34,6 +34,22 @@ if (typeof window !== "undefined") {
   }
 }
 
+const ETHEREUM_RPC_ENDPOINTS = [
+  "https://eth.llamarpc.com",
+  "https://ethereum.publicnode.com",
+  "https://rpc.ankr.com/eth",
+]
+
+const ARBITRUM_RPC_ENDPOINTS = [
+  "https://arb1.arbitrum.io/rpc",
+  "https://arbitrum.llamarpc.com",
+  "https://rpc.ankr.com/arbitrum",
+]
+
+const UNICHAIN_RPC_ENDPOINTS = ["https://mainnet.unichain.org"]
+
+const MONAD_RPC_ENDPOINTS = ["https://rpc.monad.xyz", "https://rpc1.monad.xyz", "https://rpc3.monad.xyz"]
+
 const BASE_RPC_ENDPOINTS = [
   "https://mainnet.base.org",
   "https://base.blockpi.network/v1/rpc/public",
@@ -47,9 +63,54 @@ const BASE_SEPOLIA_RPC_ENDPOINTS = [
   "https://base-sepolia-rpc.publicnode.com",
 ]
 
+const unichain = {
+  id: 130,
+  name: "Unichain",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: { http: ["https://mainnet.unichain.org"] },
+    public: { http: ["https://mainnet.unichain.org"] },
+  },
+  blockExplorers: {
+    default: { name: "Uniscan", url: "https://uniscan.xyz" },
+  },
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11" as `0x${string}`,
+    },
+  },
+} as const
+
+const monad = {
+  id: 143,
+  name: "Monad Mainnet",
+  nativeCurrency: {
+    decimals: 18,
+    name: "MON",
+    symbol: "MON",
+  },
+  rpcUrls: {
+    default: { http: ["https://rpc.monad.xyz"] },
+    public: { http: ["https://rpc.monad.xyz"] },
+  },
+  blockExplorers: {
+    default: { name: "MonadVision", url: "https://monadvision.com" },
+    monadscan: { name: "Monadscan", url: "https://monadscan.com" },
+  },
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11" as `0x${string}`,
+    },
+  },
+} as const
+
 // Configure wagmi
 export const config = createConfig({
-  chains: [base, baseSepolia],
+  chains: [base, mainnet, arbitrum, unichain, monad, baseSepolia],
   connectors: [
     injected({
       shimDisconnect: true,
@@ -78,6 +139,24 @@ export const config = createConfig({
     }),
   ],
   transports: {
+    [mainnet.id]: http(ETHEREUM_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
+    [arbitrum.id]: http(ARBITRUM_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
+    [unichain.id]: http(UNICHAIN_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
     [base.id]: http(BASE_RPC_ENDPOINTS[0], {
       batch: true,
       retryCount: 5,
@@ -90,8 +169,16 @@ export const config = createConfig({
       retryDelay: 1000,
       timeout: 30000,
     }),
+    [monad.id]: http(MONAD_RPC_ENDPOINTS[0], {
+      batch: true,
+      retryCount: 5,
+      retryDelay: 1000,
+      timeout: 30000,
+    }),
   },
 })
+
+export { monad, unichain }
 
 declare module "wagmi" {
   interface Register {

@@ -53,7 +53,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const paymentJustSucceededRef = useRef(false)
   const { address, signTypedData } = useWallet()
-  const { signTransferAuthorization, isSigning, isSmartWallet, supportsGaslessPayments } = useEIP3009()
+  const { signTransferAuthorization, isSigning, isSmartWallet, supportsGaslessPayments, isCoinbaseSmartWallet } =
+    useEIP3009()
   const { toast } = useToast()
   const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
 
@@ -140,21 +141,15 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   const payForChunk = async (chunkIndex: number, onProgress?: (step: string, txHash?: string) => void) => {
     if (!currentTrack || !address) {
-      setError("Please connect your wallet first")
-      return
+      throw new Error("Wallet not connected")
     }
 
     const mobile = isMobile()
+    console.log("[v0] Starting payment for chunk", chunkIndex, "Mobile:", mobile)
 
     if (isSmartWallet) {
+      console.log("[v0] Smart Wallet detected, using server-side payment")
       return payForChunkWithSmartWallet(chunkIndex, onProgress)
-    }
-
-    if (!supportsGaslessPayments) {
-      const errorMsg =
-        "Your wallet doesn't support gasless payments.\n\n" + "Please try using MetaMask or another standard wallet."
-      setError(errorMsg)
-      throw new Error(errorMsg)
     }
 
     try {
@@ -670,9 +665,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         pause,
         resume,
         seek,
-        setVolume,
+        setVolume: setVolumeState,
         payForChunk,
-        closePaymentModal,
+        closePaymentModal: () => setShowPaymentModal(false),
         skipTrack,
         playNext,
         playPrevious,
@@ -684,7 +679,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// Helper function to check token balance
 async function checkTokenBalance(track: TrackWithArtist, userAddress: string): Promise<boolean> {
   if (!track.coin_address || !track.required_token_balance) {
     return false

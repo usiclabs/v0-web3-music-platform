@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Web3Provider } from "@/lib/web3/providers"
 import { AudioPlayerProvider } from "@/lib/audio-player-context"
@@ -38,11 +38,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "MyUSIC - Web3 Music Streaming",
     description: "Blockchain-powered music streaming with micropayments and NFTs",
-    url: "https://myusic.app",
+    url: "https://myusic.xyz",
     siteName: "MyUSIC",
     images: [
       {
-        url: "https://myusic.app/og-image.png",
+        url: "https://myusic.xyz/og-image.png",
         width: 1200,
         height: 630,
         alt: "MyUSIC - Web3 Music Platform",
@@ -55,7 +55,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "MyUSIC - Web3 Music Streaming",
     description: "Blockchain-powered music streaming with micropayments and NFTs",
-    images: ["https://myusic.app/og-image.png"],
+    images: ["https://myusic.xyz/og-image.png"],
+  },
+  other: {
+    "fc:frame": "vNext",
+    "fc:frame:image": "https://myusic.xyz/og-image.png",
+    "fc:frame:button:1": "Open MyUSIC",
+    "fc:frame:button:1:action": "link",
+    "fc:frame:button:1:target": "https://myusic.xyz",
   },
 }
 
