@@ -4,9 +4,9 @@ import { X402_CONFIG } from "@/lib/web3/contracts"
 import { isAddress } from "viem"
 
 // X402 streaming endpoint - returns 402 with payment instructions
-export async function GET(request: NextRequest, { params }: { params: { trackId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ trackId: string }> }) {
   try {
-    const { trackId } = params
+    const { trackId } = await params
     const searchParams = request.nextUrl.searchParams
     const chunkIndex = Number.parseInt(searchParams.get("chunk") || "0")
 
