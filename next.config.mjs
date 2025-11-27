@@ -11,7 +11,14 @@ const nextConfig = {
       bodySizeLimit: '50mb',
     },
   },
-  serverExternalPackages: ['pino', 'thread-stream', 'pino-pretty'],
+  serverExternalPackages: [
+    'pino',
+    'thread-stream', 
+    'pino-pretty',
+    '@walletconnect/universal-provider',
+    '@walletconnect/ethereum-provider',
+    '@walletconnect/logger',
+  ],
 }
 
 export default nextConfig
