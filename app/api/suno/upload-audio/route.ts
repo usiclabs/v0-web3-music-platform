@@ -3,12 +3,6 @@ import { type NextRequest, NextResponse } from "next/server"
 const SUNO_API_KEY = process.env.SUNO_API_KEY
 const SUNO_API_BASE = "https://api.sunoapi.org/api/v1"
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
-
 export async function POST(request: NextRequest) {
   try {
     if (!SUNO_API_KEY) {
