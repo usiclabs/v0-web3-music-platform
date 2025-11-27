@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 export default function ChangelogPage() {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["2025-11-15"]))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["2025-11-27", "2025-11-15"]))
 
   const toggleSection = (date: string) => {
     const newExpanded = new Set(expandedSections)
@@ -27,6 +27,224 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries */}
         <div className="space-y-4">
+          {/* November 27, 2025 - x402 Autonomous Investment Agent */}
+          <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection("2025-11-27")}
+              className="w-full p-6 flex items-center justify-between hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500">
+                  <span className="text-xl">🤖</span>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-bold">November 27, 2025</h2>
+                  <p className="text-sm text-muted-foreground">x402 Autonomous Investment Agent</p>
+                </div>
+              </div>
+              {expandedSections.has("2025-11-27") ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+
+            {expandedSections.has("2025-11-27") && (
+              <div className="px-6 pb-6 space-y-8 border-t">
+                <section className="space-y-3 pt-6">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">
+                    <span className="text-base">🧠</span>
+                    Autonomous Investment Agent System
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-emerald-500">•</span>
+                      <span>
+                        Built complete autonomous agent system for x402 token investments with server-side wallet
+                        execution
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-500">•</span>
+                      <span>
+                        Agent can autonomously buy/sell artist tokens based on configurable strategies (momentum, value,
+                        balanced)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-500">•</span>
+                      <span>
+                        Created 5-table database schema: investment_agents, agent_portfolio, agent_trades,
+                        agent_signals, agent_activity_log
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-500">•</span>
+                      <span>
+                        Integrated with Uniswap V3 for automatic token swaps with multi-fee-tier support (0.3%, 0.5%,
+                        1%)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-500">•</span>
+                      <span>Full RLS security policies ensuring users can only manage their own agents</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">
+                    <span className="text-base">📊</span>
+                    Investment Strategy Engine
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-cyan-500">•</span>
+                      <span>
+                        Four-dimensional token scoring: momentum (price action), volume (liquidity), social
+                        (engagement), artist (platform metrics)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-cyan-500">•</span>
+                      <span>Strategy-specific weight configurations for different investment styles</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-cyan-500">•</span>
+                      <span>Automatic stop-loss and take-profit monitoring for risk management</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-cyan-500">•</span>
+                      <span>Signal generation with confidence scores for buy/sell decisions</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-cyan-500">•</span>
+                      <span>
+                        Configurable daily budget limits, max position sizes, and minimum confidence thresholds
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                    <span className="text-base">🔌</span>
+                    Complete API Infrastructure
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>/api/agents/invest - Execute autonomous buy trades with validation</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>/api/agents/sell - Execute sell trades with P&L tracking</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>/api/agents/config - Full CRUD for agent settings and strategies</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>/api/agents/portfolio - View holdings with real-time valuations</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>/api/agents/run-cycle - Manually trigger agent analysis and execution cycle</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    <span className="text-base">🎛️</span>
+                    Agent Dashboard (/dashboard/agent)
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Professional trading interface with portfolio overview, P&L tracking, and win rate metrics
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Real-time activity feed showing agent decisions, trades, and signals</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Portfolio holdings table with token amounts, values, and unrealized P&L</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Comprehensive settings panel for budget, strategy, risk parameters, and filters</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Trade history with status badges, execution prices, and timestamps</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                    <span className="text-base">🔧</span>
+                    Bug Fixes & Improvements
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Fixed AI-generated tracks not displaying on profile by adding isAiGenerated flag to upload flow
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Fixed invisible edit button on mobile dashboard by making it always visible on touch devices
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>
+                        Fixed streams table 406 error by using maybeSingle() instead of single() for optional results
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>Fixed Suno lyrics API endpoint URL from /generate/lyrics to /lyrics</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">•</span>
+                      <span>Added missing /api/gas-subsidy/info endpoint for relayer balance checking</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <div className="grid gap-4 sm:grid-cols-3 pt-4">
+                  <div className="rounded-lg border bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">
+                      6
+                    </div>
+                    <div className="text-sm text-muted-foreground">API Endpoints</div>
+                  </div>
+                  <div className="rounded-lg border bg-gradient-to-br from-blue-500/10 to-purple-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                      5
+                    </div>
+                    <div className="text-sm text-muted-foreground">Database Tables</div>
+                  </div>
+                  <div className="rounded-lg border bg-gradient-to-br from-orange-500/10 to-red-500/10 p-4 text-center">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                      5
+                    </div>
+                    <div className="text-sm text-muted-foreground">Bug Fixes</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* November 15, 2025 - Latest Changes */}
           <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
             <button
@@ -60,38 +278,38 @@ export default function ChangelogPage() {
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
                       <span>
-                        Built complete referral system with unique codes, tracking, and multi-tier rewards (USDC + credits)
+                        Built complete referral system with unique codes, tracking, and multi-tier rewards (USDC +
+                        credits)
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
                       <span>
-                        Added social sharing buttons with pre-filled content for Twitter, Farcaster, Telegram, and native sharing
+                        Added social sharing buttons with pre-filled content for Twitter, Farcaster, Telegram, and
+                        native sharing
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
                       <span>
-                        Implemented referral leaderboard showing top referrers with medals, points earned, and USDC rewards
+                        Implemented referral leaderboard showing top referrers with medals, points earned, and USDC
+                        rewards
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
                       <span>
-                        Created achievement system with 6 milestone tiers (3, 5, 10, 25, 50, 100 referrals) with visual progress bars
+                        Created achievement system with 6 milestone tiers (3, 5, 10, 25, 50, 100 referrals) with visual
+                        progress bars
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
-                      <span>
-                        Integrated social share tracking into track detail pages for viral growth
-                      </span>
+                      <span>Integrated social share tracking into track detail pages for viral growth</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-pink-500">•</span>
-                      <span>
-                        Added reward distribution tables, campaign management, and analytics dashboard
-                      </span>
+                      <span>Added reward distribution tables, campaign management, and analytics dashboard</span>
                     </li>
                   </ul>
                 </section>
@@ -104,9 +322,7 @@ export default function ChangelogPage() {
                   <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
-                      <span>
-                        Implemented ERC-8021 builder code standard for third-party app revenue sharing
-                      </span>
+                      <span>Implemented ERC-8021 builder code standard for third-party app revenue sharing</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
@@ -116,27 +332,19 @@ export default function ChangelogPage() {
                     </li>
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
-                      <span>
-                        Created builder code registry with automatic revenue tracking and leaderboard
-                      </span>
+                      <span>Created builder code registry with automatic revenue tracking and leaderboard</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
-                      <span>
-                        Integrated builder codes into x402 payment metadata for seamless revenue splits
-                      </span>
+                      <span>Integrated builder codes into x402 payment metadata for seamless revenue splits</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
-                      <span>
-                        Added /builder-codes portal for developers to register and manage their codes
-                      </span>
+                      <span>Added /builder-codes portal for developers to register and manage their codes</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-purple-500">•</span>
-                      <span>
-                        Enables ecosystem of third-party music players, AI agents, and trading terminals
-                      </span>
+                      <span>Enables ecosystem of third-party music players, AI agents, and trading terminals</span>
                     </li>
                   </ul>
                 </section>
@@ -149,9 +357,7 @@ export default function ChangelogPage() {
                   <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
                     <li className="flex gap-2">
                       <span className="text-blue-500">•</span>
-                      <span>
-                        Integrated Privy embedded wallets alongside existing Wagmi wallet connection
-                      </span>
+                      <span>Integrated Privy embedded wallets alongside existing Wagmi wallet connection</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-blue-500">•</span>
@@ -173,9 +379,7 @@ export default function ChangelogPage() {
                     </li>
                     <li className="flex gap-2">
                       <span className="text-blue-500">•</span>
-                      <span>
-                        Created unified wallet context that manages both auth methods seamlessly
-                      </span>
+                      <span>Created unified wallet context that manages both auth methods seamlessly</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-blue-500">•</span>
@@ -195,32 +399,28 @@ export default function ChangelogPage() {
                     <li className="flex gap-2">
                       <span className="text-green-500">•</span>
                       <span>
-                        Admins and creators can now edit/upload thumbnails for tokenized songs via new ThumbnailUploadDialog
+                        Admins and creators can now edit/upload thumbnails for tokenized songs via new
+                        ThumbnailUploadDialog
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-green-500">•</span>
-                      <span>
-                        Platform logo now used as default thumbnail for videos without featured images
-                      </span>
+                      <span>Platform logo now used as default thumbnail for videos without featured images</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-green-500">•</span>
                       <span>
-                        Improved scroll performance on track detail pages by removing janky parallax and optimizing renders
+                        Improved scroll performance on track detail pages by removing janky parallax and optimizing
+                        renders
                       </span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-green-500">•</span>
-                      <span>
-                        Fixed duplicate close button in onboarding modal by correcting Dialog component props
-                      </span>
+                      <span>Fixed duplicate close button in onboarding modal by correcting Dialog component props</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-green-500">•</span>
-                      <span>
-                        Added thumbnail editing capability to admin panel for managing tracks in bulk
-                      </span>
+                      <span>Added thumbnail editing capability to admin panel for managing tracks in bulk</span>
                     </li>
                   </ul>
                 </section>
@@ -239,27 +439,19 @@ export default function ChangelogPage() {
                     </li>
                     <li className="flex gap-2">
                       <span className="text-orange-500">•</span>
-                      <span>
-                        Profile tokens now included in aggregate metrics (24h volume and market cap)
-                      </span>
+                      <span>Profile tokens now included in aggregate metrics (24h volume and market cap)</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-orange-500">•</span>
-                      <span>
-                        Added comprehensive logging and error handling for DexScreener API calls
-                      </span>
+                      <span>Added comprehensive logging and error handling for DexScreener API calls</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-orange-500">•</span>
-                      <span>
-                        Implemented fallback values and skeleton loaders for better loading states
-                      </span>
+                      <span>Implemented fallback values and skeleton loaders for better loading states</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-orange-500">•</span>
-                      <span>
-                        Enhanced cache headers and SWR configuration for reliable mobile performance
-                      </span>
+                      <span>Enhanced cache headers and SWR configuration for reliable mobile performance</span>
                     </li>
                   </ul>
                 </section>

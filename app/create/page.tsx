@@ -1111,6 +1111,7 @@ export default function CreatePage() {
       style: selectedTrack.style,
       prompt: selectedTrack.prompt,
       videoUrl: selectedTrack.videoUrl,
+      isAiGenerated: true,
     }
     localStorage.setItem("generatedTrackForUpload", JSON.stringify(trackData))
 

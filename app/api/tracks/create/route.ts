@@ -21,6 +21,9 @@ export async function POST(request: Request) {
       nft_contract_address,
       token_gated_streaming,
       required_token_balance,
+      ai_generated,
+      ai_style,
+      ai_prompt,
     } = body
 
     console.log("[v0] Creating track with metadata:", {
@@ -34,6 +37,9 @@ export async function POST(request: Request) {
       token_id,
       token_gated_streaming,
       required_token_balance,
+      ai_generated,
+      has_ai_style: !!ai_style,
+      has_ai_prompt: !!ai_prompt,
     })
 
     const supabase = createAdminClient()
@@ -56,6 +62,9 @@ export async function POST(request: Request) {
         nft_contract_address: nft_contract_address || null,
         token_gated_streaming: token_gated_streaming || false,
         required_token_balance: required_token_balance || 0,
+        ai_generated: ai_generated || false,
+        ai_style: ai_style || null,
+        ai_prompt: ai_prompt || null,
       })
       .select()
       .single()

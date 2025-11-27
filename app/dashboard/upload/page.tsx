@@ -12,6 +12,7 @@ interface GeneratedTrackData {
   style?: string
   prompt?: string
   videoUrl?: string
+  isAiGenerated?: boolean
 }
 
 export default function UploadPage() {

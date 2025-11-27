@@ -34,6 +34,7 @@ interface UploadFormProps {
     style?: string
     prompt?: string
     videoUrl?: string
+    isAiGenerated?: boolean
   } | null
 }
 
@@ -678,6 +679,9 @@ export function UploadForm({ prefillData }: UploadFormProps) {
           unlock_type: unlockType,
           token_gated_streaming: tokenizeTrack && tokenGatedStreaming,
           required_token_balance: tokenizeTrack && tokenGatedStreaming ? Number.parseFloat(requiredTokenBalance) : 0,
+          ai_generated: prefillData?.isAiGenerated || false,
+          ai_style: prefillData?.style || null,
+          ai_prompt: prefillData?.prompt || null,
           royalty_splits: royaltySplits.map((split) => ({
             address: split.address,
             percentage: split.percentage,
