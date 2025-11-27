@@ -25,18 +25,19 @@ import {
   BarChart3,
   ChevronRight,
   CheckCircle2,
+  Music,
+  Disc3,
+  Headphones,
   Radio,
-  Lock,
   AlertTriangle,
+  Filter,
+  Save,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import Link from "next/link"
-import {
-  checkAgentTokenGate,
-  formatTokenAmount,
-  AGENT_REQUIRED_BALANCE,
-  type AgentTokenGateStatus,
-} from "@/lib/web3/agent-token-gate"
+import { checkAgentTokenGate, type AgentTokenGateStatus } from "@/lib/web3/agent-token-gate"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 interface AgentConfig {
   id: string
@@ -259,32 +260,80 @@ export default function AgentDashboardPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden">
-        {/* Animated background grid */}
-        <div className="fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,black_40%,transparent_100%)]" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden relative">
+        {/* Animated background with music waveform pattern */}
+        <div className="fixed inset-0 opacity-30">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(229,62,62,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(229,62,62,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        </div>
 
-        {/* Floating orbs */}
-        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        {/* Animated equalizer bars background */}
+        <div className="fixed bottom-0 left-0 right-0 h-64 flex items-end justify-center gap-1 opacity-10 pointer-events-none">
+          {Array.from({ length: 48 }).map((_, i) => (
+            <div
+              key={i}
+              className="w-2 bg-gradient-to-t from-red-500 to-red-500/50 rounded-t"
+              style={{
+                height: `${Math.random() * 100 + 20}%`,
+                animation: `pulse ${0.5 + Math.random() * 1}s ease-in-out infinite`,
+                animationDelay: `${i * 0.05}s`,
+              }}
+            />
+          ))}
+        </div>
 
-        <div className="relative max-w-2xl w-full">
+        {/* Floating vinyl records */}
+        <div className="fixed top-20 left-10 w-32 h-32 opacity-10 animate-spin" style={{ animationDuration: "20s" }}>
+          <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-red-500/30" />
+          </div>
+        </div>
+        <div
+          className="fixed bottom-32 right-16 w-24 h-24 opacity-10 animate-spin"
+          style={{ animationDuration: "15s", animationDirection: "reverse" }}
+        >
+          <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-red-500/30" />
+          </div>
+        </div>
+
+        {/* Red glow orbs */}
+        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
+        <div
+          className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+
+        <div className="relative max-w-2xl w-full z-10">
           {/* Ambient glow effect */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-emerald-500/20 to-primary/30 rounded-3xl blur-2xl opacity-50" />
+          <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-red-600/30 to-red-500/20 rounded-3xl blur-2xl opacity-50" />
 
           <Card className="relative border-0 bg-card/90 backdrop-blur-2xl shadow-2xl overflow-hidden">
             {/* Top gradient border */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
 
             <CardContent className="pt-16 pb-12 px-8 md:px-12 text-center">
-              {/* Animated robot icon */}
-              <div className="relative w-24 h-24 mx-auto mb-8">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/30 to-emerald-500/30 blur-xl animate-pulse" />
-                <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-1 ring-primary/30 shadow-lg">
-                  <Bot className="w-12 h-12 text-primary" />
-                  {/* Pulsing dot */}
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500" />
+              {/* Animated icon with vinyl/music theme */}
+              <div className="relative w-28 h-28 mx-auto mb-8">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/30 to-red-600/30 blur-xl animate-pulse" />
+                {/* Spinning vinyl disc */}
+                <div
+                  className="relative w-28 h-28 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-red-500/30 shadow-lg animate-spin"
+                  style={{ animationDuration: "8s" }}
+                >
+                  {/* Vinyl grooves */}
+                  <div className="absolute inset-2 rounded-full border border-zinc-700/50" />
+                  <div className="absolute inset-4 rounded-full border border-zinc-700/30" />
+                  <div className="absolute inset-6 rounded-full border border-zinc-700/20" />
+                  {/* Center label */}
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
                 </div>
+                {/* Pulsing status dot */}
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 animate-ping" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                  <Zap className="w-3 h-3 text-white" />
+                </span>
               </div>
 
               {/* Headline */}
@@ -292,63 +341,72 @@ export default function AgentDashboardPage() {
                 x402 Investment Agent
               </h1>
               <p className="text-muted-foreground mb-10 max-w-md mx-auto text-lg">
-                Your autonomous AI-powered trading companion for the music token economy
+                Your autonomous AI DJ for the music token economy — spinning profits 24/7
               </p>
 
-              {/* Feature grid */}
+              {/* Feature grid with music theme */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Zap className="w-6 h-6 text-emerald-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Headphones className="w-6 h-6 text-red-500" />
                   </div>
-                  <h3 className="font-semibold mb-1">Autonomous</h3>
-                  <p className="text-sm text-muted-foreground">24/7 market scanning and execution</p>
+                  <h3 className="font-semibold mb-1 text-foreground">Always Listening</h3>
+                  <p className="text-sm text-muted-foreground">24/7 market monitoring for artist tokens</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/10 hover:border-blue-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Shield className="w-6 h-6 text-blue-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-600/10 to-red-600/5 border border-red-600/10 hover:border-red-600/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Shield className="w-6 h-6 text-red-400" />
                   </div>
-                  <h3 className="font-semibold mb-1">Protected</h3>
-                  <p className="text-sm text-muted-foreground">Built-in risk management</p>
+                  <h3 className="font-semibold mb-1 text-foreground">Protected Drops</h3>
+                  <p className="text-sm text-muted-foreground">Built-in stop-loss & risk management</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10 hover:border-primary/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-6 h-6 text-primary" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <TrendingUp className="w-6 h-6 text-red-500" />
                   </div>
-                  <h3 className="font-semibold mb-1">Strategic</h3>
-                  <p className="text-sm text-muted-foreground">Multi-signal analysis engine</p>
+                  <h3 className="font-semibold mb-1 text-foreground">Hit Detector</h3>
+                  <p className="text-sm text-muted-foreground">Multi-signal analysis for rising artists</p>
                 </div>
               </div>
 
-              {/* Stats preview */}
-              <div className="flex items-center justify-center gap-8 mb-10 py-4 border-y border-border/50">
+              {/* Stats preview with music terminology */}
+              <div className="flex items-center justify-center gap-6 md:gap-8 mb-10 py-4 border-y border-border/50">
                 <div className="text-center">
-                  <p className="text-2xl font-bold font-mono">4</p>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Music className="w-4 h-4 text-red-500" />
+                    <p className="text-2xl font-bold font-mono text-foreground">4</p>
+                  </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Strategies</p>
                 </div>
                 <div className="w-px h-8 bg-border/50" />
                 <div className="text-center">
-                  <p className="text-2xl font-bold font-mono">24/7</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Monitoring</p>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Radio className="w-4 h-4 text-red-500" />
+                    <p className="text-2xl font-bold font-mono text-foreground">24/7</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">On Air</p>
                 </div>
                 <div className="w-px h-8 bg-border/50" />
                 <div className="text-center">
-                  <p className="text-2xl font-bold font-mono">x402</p>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Disc3 className="w-4 h-4 text-red-500" />
+                    <p className="text-2xl font-bold font-mono text-foreground">x402</p>
+                  </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Protocol</p>
                 </div>
               </div>
 
               {/* CTA text */}
-              <p className="text-sm text-muted-foreground">Connect your wallet to activate your agent</p>
+              <p className="text-sm text-muted-foreground">Connect your wallet to drop the beat</p>
             </CardContent>
           </Card>
 
           {/* Bottom badge */}
           <div className="flex justify-center mt-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur border border-border/50 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur border border-red-500/20 text-sm text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               Powered by ERC-8004 Agent Protocol
             </div>
           </div>
@@ -565,51 +623,53 @@ export default function AgentDashboardPage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="portfolio" className="space-y-6">
+        <Tabs defaultValue="portfolio" className="space-y-4 md:space-y-6">
           <div className="flex items-center justify-between">
-            <TabsList className="bg-card/50 border p-1 h-auto">
+            <TabsList className="bg-card/50 border p-1 h-auto w-full md:w-auto overflow-x-auto scrollbar-hide">
               <TabsTrigger
                 value="portfolio"
-                className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-4 py-2"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Wallet className="w-4 h-4" />
-                <span>Portfolio</span>
+                <span className="hidden sm:inline">Portfolio</span>
               </TabsTrigger>
               <TabsTrigger
                 value="trades"
-                className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-4 py-2"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Activity className="w-4 h-4" />
-                <span>Trades</span>
+                <span className="hidden sm:inline">Trades</span>
               </TabsTrigger>
               <TabsTrigger
                 value="activity"
-                className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-4 py-2"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Clock className="w-4 h-4" />
-                <span>Activity</span>
+                <span className="hidden sm:inline">Activity</span>
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-4 py-2"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Settings className="w-4 h-4" />
-                <span>Settings</span>
+                <span className="hidden sm:inline">Settings</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
           {/* Portfolio Tab */}
-          <TabsContent value="portfolio" className="mt-6">
+          <TabsContent value="portfolio" className="mt-4 md:mt-6">
             <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
-              <CardHeader className="border-b border-border/50">
-                <div className="flex items-center justify-between">
+              <CardHeader className="border-b border-border/50 p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <CardTitle className="text-lg">Holdings</CardTitle>
-                    <CardDescription>Your agent's current token positions</CardDescription>
+                    <CardTitle className="text-base md:text-lg">Holdings</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">
+                      Your agent's current token positions
+                    </CardDescription>
                   </div>
                   {portfolio.length > 0 && (
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="sm" asChild className="w-full sm:w-auto bg-transparent">
                       <Link href="/tokens">
                         View All Tokens
                         <ChevronRight className="w-4 h-4 ml-1" />
@@ -620,12 +680,12 @@ export default function AgentDashboardPage() {
               </CardHeader>
               <CardContent className="p-0">
                 {portfolio.length === 0 ? (
-                  <div className="text-center py-16 px-4">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+                  <div className="text-center py-12 md:py-16 px-4">
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                      <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-muted-foreground/50" />
                     </div>
-                    <h3 className="font-semibold mb-2">No positions yet</h3>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    <h3 className="font-semibold mb-2 text-sm md:text-base">No positions yet</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
                       Your agent will start acquiring tokens when activated. Enable the agent and run a scan to begin.
                     </p>
                   </div>
@@ -634,33 +694,44 @@ export default function AgentDashboardPage() {
                     {portfolio.map((item: PortfolioItem, index: number) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-muted/30 transition-colors gap-3"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 md:gap-4">
                           <div className="relative">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-1 ring-border">
-                              <span className="text-sm font-bold">{item.token_symbol?.slice(0, 2) || "??"}</span>
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-1 ring-border">
+                              <span className="text-xs md:text-sm font-bold">
+                                {item.token_symbol?.slice(0, 2) || "??"}
+                              </span>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background border flex items-center justify-center text-[10px] font-bold">
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-background border flex items-center justify-center text-[9px] md:text-[10px] font-bold">
                               {index + 1}
                             </div>
                           </div>
                           <div>
-                            <p className="font-semibold">{item.token_symbol}</p>
-                            <p className="text-sm text-muted-foreground">{item.token_name}</p>
+                            <p className="font-semibold text-sm md:text-base">{item.token_symbol}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">{item.token_name}</p>
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="font-mono font-medium">{item.amount.toFixed(4)}</p>
-                          <p className="text-sm text-muted-foreground">${item.total_invested.toFixed(2)} cost</p>
-                        </div>
+                        <div className="flex justify-between sm:gap-6 pl-13 sm:pl-0">
+                          <div className="text-left sm:text-right">
+                            <p className="font-mono font-medium text-sm md:text-base">{item.amount.toFixed(4)}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">
+                              ${item.total_invested.toFixed(2)} cost
+                            </p>
+                          </div>
 
-                        <div className="text-right min-w-[100px]">
-                          <p className="font-mono font-medium">${item.current_value.toFixed(2)} value</p>
-                          <p className="text-sm text-muted-foreground">
-                            {item.unrealized_pnl.toFixed(2)} unrealized P&L
-                          </p>
+                          <div className="text-right min-w-[80px] md:min-w-[100px]">
+                            <p className="font-mono font-medium text-sm md:text-base">
+                              ${item.current_value.toFixed(2)}
+                            </p>
+                            <p
+                              className={`text-xs md:text-sm ${item.unrealized_pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                            >
+                              {item.unrealized_pnl >= 0 ? "+" : ""}
+                              {item.unrealized_pnl.toFixed(2)} P&L
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -671,24 +742,26 @@ export default function AgentDashboardPage() {
           </TabsContent>
 
           {/* Trades Tab */}
-          <TabsContent value="trades" className="mt-6">
+          <TabsContent value="trades" className="mt-4 md:mt-6">
             <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
-              <CardHeader className="border-b border-border/50">
+              <CardHeader className="border-b border-border/50 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Recent Trades</CardTitle>
-                    <CardDescription>Your agent's latest trading activities</CardDescription>
+                    <CardTitle className="text-base md:text-lg">Recent Trades</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">
+                      Your agent's latest trading activities
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 {trades.length === 0 ? (
-                  <div className="text-center py-16 px-4">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+                  <div className="text-center py-12 md:py-16 px-4">
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                      <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-muted-foreground/50" />
                     </div>
-                    <h3 className="font-semibold mb-2">No trades yet</h3>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    <h3 className="font-semibold mb-2 text-sm md:text-base">No trades yet</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
                       Your agent will start executing trades when activated. Enable the agent and run a scan to begin.
                     </p>
                   </div>
@@ -697,32 +770,53 @@ export default function AgentDashboardPage() {
                     {trades.map((trade: Trade) => (
                       <div
                         key={trade.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-muted/30 transition-colors gap-3"
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 md:gap-4">
                           <div className="relative">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-1 ring-border">
-                              <span className="text-sm font-bold">{trade.token_symbol?.slice(0, 2) || "??"}</span>
+                            <div
+                              className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ring-1 ring-border ${trade.trade_type === "buy" ? "bg-emerald-500/20" : "bg-red-500/20"}`}
+                            >
+                              {trade.trade_type === "buy" ? (
+                                <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" />
+                              ) : (
+                                <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-red-500" />
+                              )}
                             </div>
                           </div>
                           <div>
-                            <p className="font-semibold">{trade.token_symbol}</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="font-semibold text-sm md:text-base">{trade.token_symbol}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">
                               {trade.trade_type === "buy" ? "Bought" : "Sold"} {trade.amount_in.toFixed(4)} tokens
                             </p>
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="font-mono font-medium">${trade.amount_out.toFixed(2)} amount</p>
-                          <p className="text-sm text-muted-foreground">
-                            ${trade.price_per_token.toFixed(2)} price per token
-                          </p>
-                        </div>
+                        <div className="flex justify-between sm:gap-6 pl-13 sm:pl-0">
+                          <div className="text-left sm:text-right">
+                            <p className="font-mono font-medium text-sm md:text-base">${trade.amount_out.toFixed(2)}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">
+                              @ ${trade.price_per_token.toFixed(4)}/token
+                            </p>
+                          </div>
 
-                        <div className="text-right min-w-[100px]">
-                          <p className="font-mono font-medium">{trade.status}</p>
-                          <p className="text-sm text-muted-foreground">{trade.trigger_reason}</p>
+                          <div className="text-right min-w-[70px] md:min-w-[100px]">
+                            <Badge
+                              variant={
+                                trade.status === "completed"
+                                  ? "default"
+                                  : trade.status === "pending"
+                                    ? "secondary"
+                                    : "destructive"
+                              }
+                              className="text-[10px] md:text-xs"
+                            >
+                              {trade.status}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1 truncate max-w-[70px] md:max-w-[100px]">
+                              {trade.trigger_reason}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -733,24 +827,24 @@ export default function AgentDashboardPage() {
           </TabsContent>
 
           {/* Activity Tab */}
-          <TabsContent value="activity" className="mt-6">
+          <TabsContent value="activity" className="mt-4 md:mt-6">
             <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
-              <CardHeader className="border-b border-border/50">
+              <CardHeader className="border-b border-border/50 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Activity Log</CardTitle>
-                    <CardDescription>Your agent's recent activities</CardDescription>
+                    <CardTitle className="text-base md:text-lg">Activity Log</CardTitle>
+                    <CardDescription className="text-xs md:text-sm">Your agent's recent activities</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 {activity.length === 0 ? (
-                  <div className="text-center py-16 px-4">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-muted-foreground/50" />
+                  <div className="text-center py-12 md:py-16 px-4">
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                      <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-muted-foreground/50" />
                     </div>
-                    <h3 className="font-semibold mb-2">No activities yet</h3>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    <h3 className="font-semibold mb-2 text-sm md:text-base">No activities yet</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
                       Your agent will start logging activities when activated. Enable the agent and run a scan to begin.
                     </p>
                   </div>
@@ -759,22 +853,21 @@ export default function AgentDashboardPage() {
                     {activity.map((log: ActivityLog) => (
                       <div
                         key={log.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                        className="flex items-start gap-3 md:gap-4 p-3 md:p-4 hover:bg-muted/30 transition-colors"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-1 ring-border">
-                              <span className="text-sm font-bold">{log.activity_type}</span>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="font-semibold">{log.activity_type}</p>
-                            <p className="text-sm text-muted-foreground">{log.description}</p>
-                          </div>
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Activity className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                         </div>
-
-                        <div className="text-right">
-                          <p className="font-mono font-medium">{log.created_at}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-[10px] md:text-xs">
+                              {log.activity_type}
+                            </Badge>
+                            <span className="text-[10px] md:text-xs text-muted-foreground">
+                              {new Date(log.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">{log.description}</p>
                         </div>
                       </div>
                     ))}
@@ -784,42 +877,271 @@ export default function AgentDashboardPage() {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="mt-6">
-            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
-              <CardHeader className="border-b border-border/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Settings</CardTitle>
-                    <CardDescription>Configure your agent's settings</CardDescription>
+          <TabsContent value="settings" className="mt-4 md:mt-6">
+            <div className="space-y-4 md:space-y-6">
+              {/* Token Gate Status Card */}
+              {tokenGateStatus && (
+                <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
+                  <CardHeader className="p-4 md:p-6 pb-3 md:pb-4">
+                    <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                      <Shield className="w-4 h-4 md:w-5 md:h-5" />
+                      Access Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 md:p-6 pt-0">
+                    <div className="flex items-center gap-3">
+                      {tokenGateStatus.status === "approved" ? (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-emerald-500">Access Granted</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">
+                              You hold {tokenGateStatus.formattedBalance} $USI ({tokenGateStatus.percentageOwned}%)
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                            <AlertTriangle className="w-5 h-5 text-amber-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-amber-500">Insufficient Balance</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">
+                              Need {tokenGateStatus.formattedRequired} $USI (2% of supply)
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Budget & Limits */}
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
+                <CardHeader className="p-4 md:p-6 pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 md:w-5 md:h-5" />
+                    Budget & Limits
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
+                    Configure spending limits for your agent
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 pt-0 space-y-4 md:space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Total Budget (USDC)</Label>
+                      <Input
+                        type="number"
+                        value={config.total_budget || 0}
+                        onChange={(e) => setConfig({ ...config, total_budget: Number.parseFloat(e.target.value) || 0 })}
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Maximum amount agent can invest</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Daily Limit (USDC)</Label>
+                      <Input
+                        type="number"
+                        value={config.daily_limit || 0}
+                        onChange={(e) => setConfig({ ...config, daily_limit: Number.parseFloat(e.target.value) || 0 })}
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Max spend per day</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Per Trade Limit (USDC)</Label>
+                      <Input
+                        type="number"
+                        value={config.per_trade_limit || 0}
+                        onChange={(e) =>
+                          setConfig({ ...config, per_trade_limit: Number.parseFloat(e.target.value) || 0 })
+                        }
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Max per single trade</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Max Portfolio % Per Token</Label>
+                      <Input
+                        type="number"
+                        value={config.max_portfolio_percent || 0}
+                        onChange={(e) =>
+                          setConfig({ ...config, max_portfolio_percent: Number.parseFloat(e.target.value) || 0 })
+                        }
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Diversification limit</p>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4">
-                {/* Token Gate Status */}
-                {tokenGateStatus && (
-                  <div className="mb-4">
-                    <h2 className="text-lg font-bold mb-2">Token Gate Status</h2>
-                    {tokenGateStatus.status === "approved" ? (
-                      <div className="flex items-center gap-2">
-                        <Lock className="w-6 h-6 text-emerald-500" />
-                        <span className="text-sm font-medium text-emerald-500">Approved</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-6 h-6 text-red-500" />
-                        <span className="text-sm font-medium text-red-500">Not Approved</span>
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Your wallet must hold at least {formatTokenAmount(AGENT_REQUIRED_BALANCE)} tokens to activate the
-                      agent.
-                    </p>
+                </CardContent>
+              </Card>
+
+              {/* Strategy Settings */}
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
+                <CardHeader className="p-4 md:p-6 pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <Target className="w-4 h-4 md:w-5 md:h-5" />
+                    Strategy
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Choose your investment approach</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 pt-0 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {["momentum", "value", "balanced"].map((strategy) => (
+                      <button
+                        key={strategy}
+                        onClick={() => setConfig({ ...config, strategy_type: strategy })}
+                        className={`p-3 md:p-4 rounded-xl border-2 transition-all text-left ${
+                          config.strategy_type === strategy
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <p className="font-semibold capitalize text-sm md:text-base">{strategy}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                          {strategy === "momentum" && "Follow price trends"}
+                          {strategy === "value" && "Find undervalued tokens"}
+                          {strategy === "balanced" && "Mixed approach"}
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                )}
-                {/* Settings form here */}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Risk Management */}
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
+                <CardHeader className="p-4 md:p-6 pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <Shield className="w-4 h-4 md:w-5 md:h-5" />
+                    Risk Management
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Protect your investments</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 pt-0 space-y-4 md:space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Stop Loss %</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          value={config.stop_loss_percent || 0}
+                          onChange={(e) =>
+                            setConfig({ ...config, stop_loss_percent: Number.parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-9 md:h-10 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground w-8">%</span>
+                      </div>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Auto-sell if price drops</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Take Profit %</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          value={config.take_profit_percent || 0}
+                          onChange={(e) =>
+                            setConfig({ ...config, take_profit_percent: Number.parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-9 md:h-10 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground w-8">%</span>
+                      </div>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Auto-sell if price rises</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Max Slippage %</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          value={config.max_slippage || 0}
+                          onChange={(e) =>
+                            setConfig({ ...config, max_slippage: Number.parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-9 md:h-10 text-sm"
+                        />
+                        <span className="text-sm text-muted-foreground w-8">%</span>
+                      </div>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Trade tolerance</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Min Liquidity (USDC)</Label>
+                      <Input
+                        type="number"
+                        value={config.min_liquidity || 0}
+                        onChange={(e) =>
+                          setConfig({ ...config, min_liquidity: Number.parseFloat(e.target.value) || 0 })
+                        }
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Minimum pool liquidity</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Token Filters */}
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
+                <CardHeader className="p-4 md:p-6 pb-3 md:pb-4">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <Filter className="w-4 h-4 md:w-5 md:h-5" />
+                    Token Filters
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">Set criteria for token selection</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 pt-0 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Min Holder Count</Label>
+                      <Input
+                        type="number"
+                        value={config.min_holder_count || 0}
+                        onChange={(e) =>
+                          setConfig({ ...config, min_holder_count: Number.parseInt(e.target.value) || 0 })
+                        }
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Minimum token holders</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs md:text-sm">Min Artist Followers</Label>
+                      <Input
+                        type="number"
+                        value={config.min_artist_followers || 0}
+                        onChange={(e) =>
+                          setConfig({ ...config, min_artist_followers: Number.parseInt(e.target.value) || 0 })
+                        }
+                        className="h-9 md:h-10 text-sm"
+                      />
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Artist social following</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Save Button */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <Button onClick={handleSaveConfig} disabled={isSaving} className="flex-1 h-10 md:h-11">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Settings
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
