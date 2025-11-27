@@ -26,11 +26,17 @@ import {
   ChevronRight,
   CheckCircle2,
   Radio,
+  Lock,
+  AlertTriangle,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import Link from "next/link"
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+import {
+  checkAgentTokenGate,
+  formatTokenAmount,
+  AGENT_REQUIRED_BALANCE,
+  type AgentTokenGateStatus,
+} from "@/lib/web3/agent-token-gate"
 
 interface AgentConfig {
   id: string
@@ -158,6 +164,8 @@ export default function AgentDashboardPage() {
     whitelisted_tokens: [],
   })
 
+  const [tokenGateStatus, setTokenGateStatus] = useState<AgentTokenGateStatus | null>(null)
+
   // Fetch agent config
   const { data: agentData, error: agentError } = useSWR(
     address ? `/api/agents/config?address=${address}` : null,
@@ -188,6 +196,12 @@ export default function AgentDashboardPage() {
       setConfig(agentConfig)
     }
   }, [agentData])
+
+  useEffect(() => {
+    if (address) {
+      checkAgentTokenGate(address).then(setTokenGateStatus)
+    }
+  }, [address])
 
   const handleSaveConfig = async () => {
     if (!address) return
@@ -781,7 +795,30 @@ export default function AgentDashboardPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-4">{/* Settings form here */}</CardContent>
+              <CardContent className="p-4">
+                {/* Token Gate Status */}
+                {tokenGateStatus && (
+                  <div className="mb-4">
+                    <h2 className="text-lg font-bold mb-2">Token Gate Status</h2>
+                    {tokenGateStatus.status === "approved" ? (
+                      <div className="flex items-center gap-2">
+                        <Lock className="w-6 h-6 text-emerald-500" />
+                        <span className="text-sm font-medium text-emerald-500">Approved</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-6 h-6 text-red-500" />
+                        <span className="text-sm font-medium text-red-500">Not Approved</span>
+                      </div>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Your wallet must hold at least {formatTokenAmount(AGENT_REQUIRED_BALANCE)} tokens to activate the
+                      agent.
+                    </p>
+                  </div>
+                )}
+                {/* Settings form here */}
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
@@ -789,3 +826,5 @@ export default function AgentDashboardPage() {
     </div>
   )
 }
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json())
