@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { ArtistPageClient } from "@/components/artist-page-client"
 
-export default async function ArtistPage({ params }: { params: { address: string } }) {
-  const { address } = params
+export default async function ArtistPage({ params }: { params: Promise<{ address: string }> }) {
+  const { address } = await params
   const normalizedAddress = address.toLowerCase()
   const supabase = await createClient()
 
