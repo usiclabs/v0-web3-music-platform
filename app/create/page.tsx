@@ -47,6 +47,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { ToolSelector, type MusicTool } from "@/components/create/tool-selector"
 import { AudioUpload } from "@/components/create/audio-upload"
+import { X402GenerationModal } from "@/components/x402-generation-modal"
 
 function PremiumInput({
   id,
@@ -532,6 +533,8 @@ export default function CreatePage() {
   const [progressPercent, setProgressPercent] = useState(0)
   const [apiKeyConfigured, setApiKeyConfigured] = useState<boolean | null>(null)
   const [credits, setCredits] = useState<number | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
 
   const [selectedTool, setSelectedTool] = useState<MusicTool>("generate")
   const [uploadedAudioUrl, setUploadedAudioUrl] = useState<string | null>(null)
@@ -701,7 +704,14 @@ export default function CreatePage() {
     }
   }
 
-  const handleGenerate = async () => {
+  const handlePaymentComplete = () => {
+    setPaymentCompleted(true)
+    setShowPaymentModal(false)
+    // Automatically start generation after payment
+    executeGeneration()
+  }
+
+  const executeGeneration = async () => {
     if (!address) {
       setError("Please connect your wallet first")
       return
@@ -875,7 +885,7 @@ export default function CreatePage() {
       setProgress("AI is working on your track... This may take 1-2 minutes")
       setProgressPercent(20)
 
-      // Poll for status
+      // Poll for status - continue with existing polling logic
       let attempts = 0
       const maxAttempts = 60
       const pollInterval = setInterval(async () => {
@@ -888,6 +898,7 @@ export default function CreatePage() {
           setProgress("")
           setProgressPercent(0)
           setError("Processing timed out after 5 minutes. Please try again.")
+          setPaymentCompleted(false) // Reset payment state
           return
         }
 
@@ -899,49 +910,89 @@ export default function CreatePage() {
           }
 
           const statusData = await statusResponse.json()
-          console.log("[v0] Status check:", statusData)
+          console.log("[v0] Status update:", statusData.status)
 
-          if (statusData.status === "complete" && statusData.tracks) {
+          if (statusData.status === "complete" && statusData.data) {
             clearInterval(pollInterval)
-            setGeneratedTracks(statusData.tracks)
-            setSelectedTrackIndex(0)
-            setProgress("Complete!")
             setProgressPercent(100)
-            setIsGenerating(false)
+            setProgress("Track generated successfully!")
+
+            const tracks = Array.isArray(statusData.data) ? statusData.data : [statusData.data]
+            const formattedTracks: GeneratedTrack[] = tracks.map((track: any) => ({
+              taskId: taskId,
+              audioId: track.id || track.audio_id,
+              title: track.title || title || "Untitled",
+              audioUrl: track.audio_url,
+              imageUrl: track.image_url || "/abstract-soundscape.png",
+              videoUrl: track.video_url,
+              duration: track.duration || 0,
+              prompt: track.prompt || prompt,
+              style: track.style || buildStyleString(),
+              lyrics: track.lyrics,
+            }))
+
+            setGeneratedTracks(formattedTracks)
+            setSelectedTrackIndex(0)
 
             confetti({
               particleCount: 100,
               spread: 70,
               origin: { y: 0.6 },
-              colors: ["#E53E3E", "#DC2626", "#F87171", "#FCA5A5"],
             })
 
-            setTimeout(() => {
-              setProgress("")
-              setProgressPercent(0)
-            }, 2000)
+            setIsGenerating(false)
+            setProgress("")
+            setPaymentCompleted(false) // Reset for next generation
           } else if (statusData.status === "failed") {
             clearInterval(pollInterval)
             setIsGenerating(false)
             setProgress("")
             setProgressPercent(0)
-            setError(statusData.error || "Processing failed. Please try again.")
+            setError(statusData.error || "Generation failed. Please try again.")
+            setPaymentCompleted(false) // Reset payment state
+          } else if (statusData.status === "running" || statusData.status === "pending") {
+            setProgress(statusData.status === "running" ? "AI is composing your track..." : "Waiting in queue...")
           }
         } catch (err) {
-          clearInterval(pollInterval)
-          setIsGenerating(false)
-          setProgress("")
-          setProgressPercent(0)
-          setError(err instanceof Error ? err.message : "An unexpected error occurred")
+          console.error("[v0] Error checking status:", err)
         }
       }, 5000)
     } catch (err) {
-      console.error("Processing error:", err)
-      setError(err instanceof Error ? err.message : "Failed to process request")
+      console.error("[v0] Generation error:", err)
+      setError(err instanceof Error ? err.message : "Failed to generate music")
       setIsGenerating(false)
       setProgress("")
       setProgressPercent(0)
+      setPaymentCompleted(false) // Reset payment state
     }
+  }
+
+  const handleGenerate = async () => {
+    if (!address) {
+      setError("Please connect your wallet first")
+      return
+    }
+
+    // Validation based on selected tool
+    if (selectedTool === "generate") {
+      if (!prompt.trim() && !lyrics.trim()) {
+        setError("Please enter a description or lyrics for your music")
+        return
+      }
+    } else if (["upload-cover", "upload-extend", "add-vocals", "add-instrumental"].includes(selectedTool)) {
+      if (!uploadedAudioUrl) {
+        setError("Please upload an audio file first")
+        return
+      }
+    } else if (["extend", "cover"].includes(selectedTool)) {
+      if (!existingAudioId.trim()) {
+        setError("Please enter the Audio ID of an existing track")
+        return
+      }
+    }
+
+    // Show payment modal instead of generating directly
+    setShowPaymentModal(true)
   }
 
   const getToolName = (tool: MusicTool) => {
@@ -1145,6 +1196,7 @@ export default function CreatePage() {
     setIsPlaying(false)
     setProgress("")
     setError(null)
+    setPaymentCompleted(false) // Reset payment state on reset
   }
 
   // --- Render Logic ---
@@ -1325,7 +1377,7 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-background">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/8 via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem]" />
@@ -1949,6 +2001,13 @@ export default function CreatePage() {
           </div>
         )}
       </div>
+
+      {/* x402 Payment Modal */}
+      <X402GenerationModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </div>
   )
 }
