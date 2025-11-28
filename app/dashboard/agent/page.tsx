@@ -200,12 +200,14 @@ export default function AgentDashboardPage() {
     }
   }, [address])
 
-  const handleSaveConfig = async () => {
+  const handleSaveConfig = async (configOverride?: Partial<AgentConfig>) => {
     if (!address) return
     setIsSaving(true)
 
     try {
-      const { portfolio, recent_trades, ...configToSave } = config as any
+      // Use override if provided, otherwise use current config state
+      const configToUse = configOverride ?? config
+      const { portfolio, recent_trades, ...configToSave } = configToUse as any
 
       const response = await fetch("/api/agents/config", {
         method: "POST",
@@ -250,8 +252,10 @@ export default function AgentDashboardPage() {
   }
 
   const toggleAgent = async () => {
-    setConfig((prev) => ({ ...prev, is_active: !prev.is_active }))
-    await handleSaveConfig()
+    const newActiveState = !config.is_active
+    const newConfig = { ...config, is_active: newActiveState }
+    setConfig(newConfig)
+    await handleSaveConfig(newConfig)
   }
 
   if (!isConnected) {

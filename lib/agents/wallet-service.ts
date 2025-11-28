@@ -8,6 +8,8 @@ import {
   UNISWAP_V3_ROUTER_ABI,
   UNISWAP_V3_QUOTER,
   UNISWAP_V3_QUOTER_ABI,
+  UNISWAP_V3_FACTORY,
+  UNISWAP_V3_FACTORY_ABI,
 } from "@/lib/web3/contracts"
 import { createClient } from "@/lib/supabase/server"
 
@@ -84,6 +86,7 @@ export interface SwapQuote {
   amountOutFormatted: string
   priceImpact: number
   route: string
+  fee: number
 }
 
 export interface SwapResult {
@@ -161,19 +164,69 @@ export class AgentWalletService {
   }
 
   /**
+   * Check if a liquidity pool exists for a token pair
+   */
+  async checkPoolExists(tokenAddress: Address): Promise<{ exists: boolean; fee?: number; poolAddress?: Address }> {
+    try {
+      const factoryAddress = UNISWAP_V3_FACTORY[this.chainId as keyof typeof UNISWAP_V3_FACTORY] as Address
+      const usdcAddress = USDC_ADDRESS[this.chainId as keyof typeof USDC_ADDRESS] as Address
+
+      // Sort tokens to get correct order
+      const [token0, token1] =
+        tokenAddress.toLowerCase() < usdcAddress.toLowerCase()
+          ? [tokenAddress, usdcAddress]
+          : [usdcAddress, tokenAddress]
+
+      // Check each fee tier for a pool
+      const feeTiers = [3000, 10000, 500, 100]
+
+      for (const fee of feeTiers) {
+        try {
+          const poolAddress = (await this.publicClient.readContract({
+            address: factoryAddress,
+            abi: UNISWAP_V3_FACTORY_ABI,
+            functionName: "getPool",
+            args: [token0, token1, fee],
+          })) as Address
+
+          // Check if pool exists (not zero address)
+          if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
+            console.log(`[AgentWallet] Found pool for ${tokenAddress} at ${poolAddress} with fee ${fee}`)
+            return { exists: true, fee, poolAddress }
+          }
+        } catch {
+          continue
+        }
+      }
+
+      console.log(`[AgentWallet] No pool found for ${tokenAddress}`)
+      return { exists: false }
+    } catch (error) {
+      console.error("[AgentWallet] Error checking pool existence:", error)
+      return { exists: false }
+    }
+  }
+
+  /**
    * Get a swap quote for buying a token with USDC
    */
   async getSwapQuote(tokenAddress: Address, amountInUsdc: bigint, isBuy = true): Promise<SwapQuote | null> {
     try {
+      const poolCheck = await this.checkPoolExists(tokenAddress)
+      if (!poolCheck.exists) {
+        console.log(`[AgentWallet] No liquidity pool exists for ${tokenAddress}, skipping quote`)
+        return null
+      }
+
       const quoterAddress = UNISWAP_V3_QUOTER[this.chainId as keyof typeof UNISWAP_V3_QUOTER] as Address
       const usdcAddress = USDC_ADDRESS[this.chainId as keyof typeof USDC_ADDRESS] as Address
 
       const tokenIn = isBuy ? usdcAddress : tokenAddress
       const tokenOut = isBuy ? tokenAddress : usdcAddress
-      const decimalsIn = isBuy ? 6 : 18 // Assume 18 decimals for tokens
 
-      // Try different fee tiers
-      const feeTiers = [3000, 10000, 500, 100]
+      const feeTiers = poolCheck.fee
+        ? [poolCheck.fee, ...[3000, 10000, 500, 100].filter((f) => f !== poolCheck.fee)]
+        : [3000, 10000, 500, 100]
 
       for (const fee of feeTiers) {
         try {
@@ -198,16 +251,18 @@ export class AgentWalletService {
             return {
               amountOut,
               amountOutFormatted: formatUnits(amountOut, isBuy ? 18 : 6),
-              priceImpact: 0, // Would need more complex calculation
+              priceImpact: 0,
               route: `USDC -> Token (${fee / 10000}% fee)`,
+              fee,
             }
           }
-        } catch {
-          // Try next fee tier
+        } catch (quoteError) {
+          console.log(`[AgentWallet] Quote failed for fee tier ${fee}:`, quoteError)
           continue
         }
       }
 
+      console.log(`[AgentWallet] All quote attempts failed for ${tokenAddress}`)
       return null
     } catch (error) {
       console.error("[AgentWallet] Failed to get swap quote:", error)

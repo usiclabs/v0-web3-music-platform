@@ -69,11 +69,27 @@ export async function POST(request: NextRequest) {
     // Initialize wallet service
     const walletService = getAgentWalletService()
 
+    const poolCheck = await walletService.checkPoolExists(tokenAddress as Address)
+    if (!poolCheck.exists) {
+      await walletService.logActivity(agentId, "error", `No liquidity pool for ${tokenSymbol}`, {
+        tokenAddress,
+        amountUsdc,
+      })
+      return NextResponse.json(
+        {
+          error: "No liquidity pool exists for this token. Cannot execute swap.",
+          details: "This token does not have a USDC trading pair on Uniswap V3.",
+        },
+        { status: 400 },
+      )
+    }
+
     // Log the investment attempt
     await walletService.logActivity(agentId, "trade", `Attempting to buy ${tokenSymbol} for ${amountUsdc} USDC`, {
       tokenAddress,
       amountUsdc,
       triggerReason,
+      poolFee: poolCheck.fee,
     })
 
     // Get swap quote
@@ -85,7 +101,13 @@ export async function POST(request: NextRequest) {
         tokenAddress,
         amountUsdc,
       })
-      return NextResponse.json({ error: "Could not get swap quote" }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Could not get swap quote",
+          details: "The pool exists but the quote request failed. This may be due to insufficient liquidity.",
+        },
+        { status: 400 },
+      )
     }
 
     // Apply slippage tolerance

@@ -481,7 +481,9 @@ export async function runAgentCycle(agentId: string): Promise<{
       return results
     }
 
-    // Analyze each token (simplified - would need real price data)
+    const tokensWithPools: string[] = []
+
+    // Analyze each token
     for (const token of tokens) {
       if (!token.coin_address) continue
 
@@ -491,6 +493,16 @@ export async function runAgentCycle(agentId: string): Promise<{
       if (agent.blacklisted_tokens?.includes(token.coin_address.toLowerCase())) {
         continue
       }
+
+      const poolCheck = await walletService.checkPoolExists(token.coin_address as Address)
+
+      if (!poolCheck.exists) {
+        // Log that this token doesn't have a trading pool
+        console.log(`[StrategyEngine] Token ${token.coin_address} has no liquidity pool, skipping trade execution`)
+        continue
+      }
+
+      tokensWithPools.push(token.coin_address)
 
       // Build token data (would need real data from DEX/API)
       const tokenData: TokenData = {
@@ -528,6 +540,18 @@ export async function runAgentCycle(agentId: string): Promise<{
               const investAmount = Math.min(agent.per_trade_limit, agent.total_budget - agent.spent_amount)
 
               if (investAmount > 0) {
+                const quote = await walletService.getSwapQuote(
+                  token.coin_address as Address,
+                  BigInt(Math.floor(investAmount * 1e6)),
+                  true,
+                )
+
+                if (!quote) {
+                  console.log(`[StrategyEngine] Could not get quote for ${tokenData.symbol}, skipping trade`)
+                  results.errors.push(`No quote available for ${tokenData.symbol}`)
+                  continue
+                }
+
                 const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/agents/invest`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -544,6 +568,9 @@ export async function runAgentCycle(agentId: string): Promise<{
 
                 if (response.ok) {
                   results.trades++
+                } else {
+                  const errorBody = await response.json().catch(() => ({}))
+                  results.errors.push(`Trade failed for ${tokenData.symbol}: ${errorBody.error || response.statusText}`)
                 }
               }
             }
@@ -554,12 +581,12 @@ export async function runAgentCycle(agentId: string): Promise<{
       }
     }
 
-    // Log cycle completion
+    // Log cycle completion with pool info
     await walletService.logActivity(
       agentId,
       "scan",
-      `Scan cycle complete: ${results.scanned} tokens scanned, ${results.signals} signals, ${results.trades} trades`,
-      results,
+      `Scan cycle complete: ${results.scanned} tokens scanned, ${tokensWithPools.length} with pools, ${results.signals} signals, ${results.trades} trades`,
+      { ...results, tokensWithPools: tokensWithPools.length },
     )
 
     return results

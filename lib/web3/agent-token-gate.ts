@@ -10,7 +10,8 @@ export interface AgentTokenGateStatus {
   hasAccess: boolean
   balance: bigint
   required: bigint
-  percentOwned: number
+  percentageOwned: number // Changed from percentOwned to match page usage
+  formattedBalance: string // Added for formatted display
   status: "approved" | "insufficient"
 }
 
@@ -25,7 +26,8 @@ export async function checkAgentTokenGate(address: string, chainId = 8453): Prom
         hasAccess: false,
         balance: BigInt(0),
         required: AGENT_REQUIRED_BALANCE,
-        percentOwned: 0,
+        percentageOwned: 0,
+        formattedBalance: "0",
         status: "insufficient",
       }
     }
@@ -43,11 +45,11 @@ export async function checkAgentTokenGate(address: string, chainId = 8453): Prom
     })) as bigint
 
     // Calculate percentage with 4 decimal precision
-    const percentOwned = Number((balance * BigInt(1000000)) / USI_TOTAL_SUPPLY) / 10000
+    const percentageOwned = Number((balance * BigInt(1000000)) / USI_TOTAL_SUPPLY) / 10000
 
     console.log("[Agent Token Gate] Balance:", formatUnits(balance, 18), "$USI")
     console.log("[Agent Token Gate] Required:", formatUnits(AGENT_REQUIRED_BALANCE, 18), "$USI (2%)")
-    console.log("[Agent Token Gate] Percent owned:", percentOwned, "%")
+    console.log("[Agent Token Gate] Percent owned:", percentageOwned, "%")
 
     const hasAccess = balance >= AGENT_REQUIRED_BALANCE
 
@@ -55,7 +57,8 @@ export async function checkAgentTokenGate(address: string, chainId = 8453): Prom
       hasAccess,
       balance,
       required: AGENT_REQUIRED_BALANCE,
-      percentOwned,
+      percentageOwned, // Renamed from percentOwned
+      formattedBalance: formatTokenAmount(balance), // Added formatted balance
       status: hasAccess ? "approved" : "insufficient",
     }
   } catch (error) {
@@ -64,7 +67,8 @@ export async function checkAgentTokenGate(address: string, chainId = 8453): Prom
       hasAccess: false,
       balance: BigInt(0),
       required: AGENT_REQUIRED_BALANCE,
-      percentOwned: 0,
+      percentageOwned: 0,
+      formattedBalance: "0",
       status: "insufficient",
     }
   }

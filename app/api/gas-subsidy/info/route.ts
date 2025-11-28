@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { createPublicClient, http, formatUnits } from "viem"
+import { createPublicClient, http, formatUnits, isAddress } from "viem"
 import { base } from "viem/chains"
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 // Relayer wallet address - should have ETH for gas
-const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS as `0x${string}` | undefined
+const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS
 
 export async function GET() {
   try {
-    // Check if relayer address is configured
-    if (!RELAYER_ADDRESS) {
-      console.warn("[v0] Relayer address not configured")
+    if (!RELAYER_ADDRESS || !isAddress(RELAYER_ADDRESS)) {
+      console.warn("[v0] Relayer address not configured or invalid:", RELAYER_ADDRESS)
       return NextResponse.json({
         available: true, // Assume available if not configured
-        message: "Relayer not configured, assuming subsidy available",
+        message: "Relayer not configured or invalid, assuming subsidy available",
       })
     }
+
+    // Now we know it's a valid address
+    const validAddress = RELAYER_ADDRESS as `0x${string}`
 
     // Create public client to check relayer balance
     const publicClient = createPublicClient({
@@ -29,9 +31,8 @@ export async function GET() {
       ),
     })
 
-    // Get relayer ETH balance
     const balance = await publicClient.getBalance({
-      address: RELAYER_ADDRESS,
+      address: validAddress,
     })
 
     const balanceInEth = formatUnits(balance, 18)
@@ -54,7 +55,7 @@ export async function GET() {
       dailyTransactions: todayCount || 0,
       dailyLimit: "1000", // Soft limit
       userLimit: "50", // Per user daily limit
-      relayerAddress: RELAYER_ADDRESS,
+      relayerAddress: validAddress,
     })
   } catch (error) {
     console.error("[v0] Error checking gas subsidy:", error)
