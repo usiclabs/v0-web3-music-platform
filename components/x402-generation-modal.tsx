@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle, DollarSign, Sparkles, Music } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
-import { createPublicClient, createWalletClient, custom, http } from "viem"
+import { createPublicClient, createWalletClient, custom, http, isAddress } from "viem"
 import { base } from "viem/chains"
 import { USDC_ADDRESS } from "@/lib/web3/contracts"
 
@@ -54,7 +54,7 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
   const [error, setError] = useState<string | null>(null)
   const [balance, setBalance] = useState<string>("0")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [relayerAddress, setRelayerAddress] = useState<string | null>(null)
+  const [relayerAddress, setRelayerAddress] = useState<`0x${string}` | null>(null)
   const [nonce, setNonce] = useState<string>("")
 
   const GENERATION_PRICE = 1_000_000n // $1 USDC
@@ -70,19 +70,50 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
 
     setStep("checking")
     setError(null)
+    setRelayerAddress(null) // Reset relayer address on each check
 
     try {
       // Get payment requirements
       const response = await fetch("/api/x402/generate")
-      const data = await response.json()
 
-      if (data.payment?.metadata?.nonce) {
-        setNonce(data.payment.metadata.nonce)
+      if (!response.ok && response.status !== 402) {
+        let errorMessage = "Payment system unavailable"
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // ignore parse error
+        }
+        setError(errorMessage)
+        setStep("error")
+        return
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (parseErr) {
+        console.error("[v0] Failed to parse generate response:", parseErr)
+        setError("Failed to get payment information. Please try again.")
+        setStep("error")
+        return
       }
 
       const recipient = data.payment?.recipient
-      if (recipient) {
-        setRelayerAddress(recipient)
+      if (!recipient || !isAddress(recipient)) {
+        console.error("[v0] Invalid or missing payment recipient from API:", recipient)
+        setError("Payment system not configured correctly. Please contact support.")
+        setStep("error")
+        return
+      }
+
+      setRelayerAddress(recipient as `0x${string}`)
+      console.log("[v0] Payment recipient set to:", recipient)
+
+      if (data.payment?.metadata?.nonce) {
+        setNonce(data.payment.metadata.nonce)
+      } else {
+        setNonce(`gen-${Date.now()}`)
       }
 
       // Check user's balance and allowance
@@ -92,11 +123,42 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
         body: JSON.stringify({ walletAddress: address }),
       })
 
-      const verifyData = await verifyResponse.json()
+      if (!verifyResponse.ok) {
+        let errorMessage = "Failed to verify payment status"
+        try {
+          const errorData = await verifyResponse.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // ignore parse error
+        }
+        setError(errorMessage)
+        setStep("error")
+        return
+      }
+
+      let verifyData
+      try {
+        verifyData = await verifyResponse.json()
+      } catch (parseErr) {
+        console.error("[v0] Failed to parse verify response:", parseErr)
+        setError("Failed to verify payment status. Please try again.")
+        setStep("error")
+        return
+      }
+
       setBalance(verifyData.balance || "0")
 
+      if (verifyData.recipient && isAddress(verifyData.recipient)) {
+        if (verifyData.recipient.toLowerCase() !== recipient.toLowerCase()) {
+          console.error("[v0] Address mismatch! Generate:", recipient, "Verify:", verifyData.recipient)
+          setError("Payment configuration error. Please try again or contact support.")
+          setStep("error")
+          return
+        }
+      }
+
       if (!verifyData.hasBalance) {
-        setError(`Insufficient USDC balance. You have ${verifyData.balance} USDC but need 1.00 USDC`)
+        setError(`Insufficient USDC balance. You have ${verifyData.balance || "0"} USDC but need 1.00 USDC`)
         setStep("error")
         return
       }
@@ -108,13 +170,22 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
       }
     } catch (err) {
       console.error("[v0] Error checking payment status:", err)
-      setError("Failed to check payment status")
+      setError("Failed to check payment status. Please try again.")
       setStep("error")
     }
   }
 
   const handleApprove = async () => {
-    if (!address || !relayerAddress || !window.ethereum) return
+    if (!address || !window.ethereum) {
+      setError("Wallet not connected")
+      return
+    }
+
+    if (!relayerAddress || !isAddress(relayerAddress)) {
+      setError("Payment recipient not configured. Please refresh and try again.")
+      setStep("error")
+      return
+    }
 
     setIsProcessing(true)
     setError(null)
@@ -132,12 +203,14 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
 
       const usdcAddress = USDC_ADDRESS[8453]
 
+      console.log("[v0] Approving USDC spend to:", relayerAddress)
+
       // Approve the relayer to spend USDC
       const approveTxHash = await walletClient.writeContract({
         address: usdcAddress,
         abi: ERC20_ABI,
         functionName: "approve",
-        args: [relayerAddress as `0x${string}`, GENERATION_PRICE],
+        args: [relayerAddress, GENERATION_PRICE],
         account: address as `0x${string}`,
       })
 
@@ -149,7 +222,7 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
         confirmations: 1,
       })
 
-      console.log("[v0] Approval confirmed")
+      console.log("[v0] Approval confirmed for:", relayerAddress)
       setStep("pay")
     } catch (err) {
       console.error("[v0] Approval error:", err)

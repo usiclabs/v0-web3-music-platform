@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createPublicClient, createWalletClient, http } from "viem"
+import { createPublicClient, createWalletClient, http, isAddress } from "viem"
 import { base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { USDC_ADDRESS } from "@/lib/web3/contracts"
 import { createClient } from "@supabase/supabase-js"
+import { getFormattedPrivateKey, getPlatformWalletAddress } from "@/lib/x402/platform-wallet"
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -42,13 +43,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const privateKey = process.env.SERVER_WALLET_PRIVATE_KEY
+    if (!isAddress(from)) {
+      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 })
+    }
+
+    const privateKey = getFormattedPrivateKey()
     if (!privateKey) {
+      console.error("[v0] SERVER_WALLET_PRIVATE_KEY not configured or invalid")
       return NextResponse.json({ error: "Server wallet not configured" }, { status: 500 })
     }
 
-    const account = privateKeyToAccount(privateKey as `0x${string}`)
+    let account
+    try {
+      account = privateKeyToAccount(privateKey)
+    } catch (pkError) {
+      console.error("[v0] Failed to create account from private key:", pkError)
+      return NextResponse.json({ error: "Server wallet configuration error" }, { status: 500 })
+    }
+
     const relayerAddress = account.address
+
+    // Verify this matches what we told the user to approve
+    const expectedAddress = getPlatformWalletAddress()
+    if (expectedAddress !== relayerAddress) {
+      console.error("[v0] CRITICAL: Address mismatch!", { relayerAddress, expectedAddress })
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+    }
+
+    console.log("[v0] Using relayer address:", relayerAddress)
 
     const publicClient = createPublicClient({
       chain: base,
@@ -79,8 +101,20 @@ export async function POST(request: NextRequest) {
       args: [from as `0x${string}`, relayerAddress],
     })
 
+    console.log("[v0] Allowance from", from, "to", relayerAddress, ":", allowance.toString())
+
     if (allowance < BigInt(GENERATION_PRICE_USDC)) {
-      return NextResponse.json({ error: "Insufficient allowance. Please approve USDC first." }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Insufficient allowance. Please approve USDC first.",
+          details: {
+            allowance: allowance.toString(),
+            required: GENERATION_PRICE_USDC.toString(),
+            spender: relayerAddress,
+          },
+        },
+        { status: 400 },
+      )
     }
 
     // Execute the transfer

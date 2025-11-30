@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { TrackDetailContent } from "@/components/track-detail-content"
 
-export default async function TrackPage({ params }: { params: { id: string } }) {
-  const { id } = params
+export default async function TrackPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   // Fetch track with artist and royalty splits
