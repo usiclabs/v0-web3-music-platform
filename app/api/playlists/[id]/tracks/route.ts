@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const { id: playlistId } = params
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: playlistId } = await params
 
   try {
     const body = await request.json()
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const { id: playlistId } = params
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: playlistId } = await params
   const searchParams = request.nextUrl.searchParams
   const trackId = searchParams.get("trackId")
 
