@@ -4,6 +4,7 @@ export interface X402PaymentInstructions {
   token: string
   amount: string
   recipient: string
+  chainId: number
   metadata: {
     trackId: string
     trackTitle: string
@@ -18,6 +19,7 @@ export interface X402PaymentInstructions {
 export interface X402PaymentPayload {
   scheme: string
   network: string
+  chainId: number
   authorization: {
     from: string
     to: string
@@ -50,18 +52,26 @@ function deduplicateRequest<T>(key: string, requestFn: () => Promise<T>): Promis
 }
 
 // Request a chunk and get payment instructions
-export async function requestChunk(trackId: string, chunkIndex: number, builderCode?: string): Promise<X402PaymentInstructions> {
-  const requestKey = `chunk-${trackId}-${chunkIndex}`
-  
+export async function requestChunk(
+  trackId: string,
+  chunkIndex: number,
+  chainId?: number,
+  builderCode?: string,
+): Promise<X402PaymentInstructions> {
+  const requestKey = `chunk-${trackId}-${chunkIndex}-${chainId || "default"}`
+
   return deduplicateRequest(requestKey, async () => {
     const url = new URL(`/api/x402/stream/${trackId}`, window.location.origin)
-    url.searchParams.set('chunk', chunkIndex.toString())
-    if (builderCode) {
-      url.searchParams.set('builderCode', builderCode)
+    url.searchParams.set("chunk", chunkIndex.toString())
+    if (chainId) {
+      url.searchParams.set("chainId", chainId.toString())
     }
-    
+    if (builderCode) {
+      url.searchParams.set("builderCode", builderCode)
+    }
+
     const response = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+      signal: AbortSignal.timeout(10000), // 10 second timeout
     })
 
     if (response.status !== 402) {
@@ -76,13 +86,13 @@ export async function requestChunk(trackId: string, chunkIndex: number, builderC
 // Verify payment with X402 facilitator
 export async function verifyPayment(paymentPayload: X402PaymentPayload): Promise<boolean> {
   const verifyKey = `verify-${paymentPayload.authorization.nonce}`
-  
+
   return deduplicateRequest(verifyKey, async () => {
     const response = await fetch("/api/x402/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(paymentPayload),
-      signal: AbortSignal.timeout(60000) // 60 second timeout for mobile
+      signal: AbortSignal.timeout(60000), // 60 second timeout for mobile
     })
 
     if (!response.ok) {
@@ -103,7 +113,7 @@ export async function settlePayment(
   chunkIndex: number,
 ): Promise<{ success: boolean; chunkUnlocked: number; txHash?: string }> {
   const settleKey = `settle-${paymentPayload.authorization.nonce}`
-  
+
   return deduplicateRequest(settleKey, async () => {
     const response = await fetch("/api/x402/settle", {
       method: "POST",
@@ -115,7 +125,7 @@ export async function settlePayment(
         chunkIndex,
         builderCode: paymentPayload.builderCode,
       }),
-      signal: AbortSignal.timeout(90000) // 90 second timeout for on-chain settlement
+      signal: AbortSignal.timeout(90000), // 90 second timeout for on-chain settlement
     })
 
     if (!response.ok) {
@@ -127,7 +137,9 @@ export async function settlePayment(
   })
 }
 
-export async function checkPaymentStatus(nonce: string): Promise<{ pending: boolean; settled: boolean; error?: string }> {
+export async function checkPaymentStatus(
+  nonce: string,
+): Promise<{ pending: boolean; settled: boolean; error?: string }> {
   try {
     const response = await fetch(`/api/x402/status?nonce=${nonce}`)
     if (!response.ok) {

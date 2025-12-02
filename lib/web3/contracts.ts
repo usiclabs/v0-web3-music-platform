@@ -2,6 +2,8 @@
 export const USDC_ADDRESS = {
   [8453]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base mainnet
   [84532]: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia testnet
+  [143]: "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", // Monad mainnet
+  [41454]: "0x534b2f3A21130d7a60830c2Df862319e593943A3", // Monad testnet
 } as const
 
 export const USI_TOKEN_ADDRESS = {
@@ -263,9 +265,27 @@ export const X402_FACILITATOR = {
 // X402 configuration
 export const X402_CONFIG = {
   CHUNK_DURATION: 30, // 30 seconds per chunk as per X402 spec
-  NETWORK: "base",
+  NETWORKS: {
+    base: {
+      name: "base",
+      chainId: 8453,
+      testnetChainId: 84532,
+    },
+    monad: {
+      name: "monad",
+      chainId: 143,
+      testnetChainId: 41454,
+    },
+  },
   SCHEME: "exact", // exact payment scheme
 } as const
+
+// Helper to get network name from chain ID
+export function getX402Network(chainId: number): string {
+  if (chainId === 8453 || chainId === 84532) return "base"
+  if (chainId === 143 || chainId === 41454) return "monad"
+  return "base" // Default to base for backwards compatibility
+}
 
 // Uniswap V3 Position Manager contract addresses
 export const UNISWAP_V3_POSITION_MANAGER = {

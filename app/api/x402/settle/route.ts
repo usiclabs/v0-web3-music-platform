@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createWalletClient, http, publicActions, hashTypedData, recoverAddress, isAddress } from "viem"
-import { base } from "viem/chains"
+import { base, baseSepolia } from "viem/chains"
+import { monad } from "@/lib/web3/config"
 import { privateKeyToAccount } from "viem/accounts"
 import { USDC_ADDRESS, USDC_TRANSFER_WITH_AUTHORIZATION_ABI } from "@/lib/web3/contracts"
 
@@ -21,11 +22,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { scheme, network, authorization } = paymentPayload
+    const { scheme, network, chainId: paymentChainId, authorization } = paymentPayload
+    const chainId = paymentChainId || 8453 // Default to Base for backwards compatibility
 
     if (!scheme || !network || !authorization) {
       console.log("[v0] Settlement failed: Invalid payment payload")
       return NextResponse.json({ error: "Invalid payment payload structure" }, { status: 400 })
+    }
+
+    if (!(chainId in USDC_ADDRESS)) {
+      return NextResponse.json(
+        { error: "Unsupported chain", supportedChains: Object.keys(USDC_ADDRESS).map(Number) },
+        { status: 400 },
+      )
     }
 
     const { from, to, value, validAfter, validBefore, nonce, v, r, s } = authorization
@@ -86,11 +95,13 @@ export async function POST(request: NextRequest) {
 
     try {
       // Reconstruct the EIP-712 message hash to verify signature
+      const usdcAddress = USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS]
+
       const domain = {
         name: "USD Coin",
         version: "2",
-        chainId: 8453,
-        verifyingContract: USDC_ADDRESS[8453],
+        chainId,
+        verifyingContract: usdcAddress,
       } as const
 
       const types = {
@@ -246,13 +257,15 @@ export async function POST(request: NextRequest) {
 
         const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`)
 
+        const chain = chainId === 8453 ? base : chainId === 84532 ? baseSepolia : chainId === 143 ? monad : base
+
         const walletClient = createWalletClient({
           account,
-          chain: base,
+          chain,
           transport: http(),
         }).extend(publicActions)
 
-        const usdcAddress = USDC_ADDRESS[8453]
+        const usdcAddress = USDC_ADDRESS[chainId as keyof typeof USDC_ADDRESS]
 
         const rHex = r.startsWith("0x") ? r.slice(2) : r
         const sHex = s.startsWith("0x") ? s.slice(2) : s

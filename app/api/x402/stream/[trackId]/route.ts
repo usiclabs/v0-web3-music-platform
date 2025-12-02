@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { X402_CONFIG } from "@/lib/web3/contracts"
+import { getX402Network, USDC_ADDRESS } from "@/lib/web3/contracts"
 import { isAddress } from "viem"
 
 // X402 streaming endpoint - returns 402 with payment instructions
@@ -9,6 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { trackId } = await params
     const searchParams = request.nextUrl.searchParams
     const chunkIndex = Number.parseInt(searchParams.get("chunk") || "0")
+    const chainId = Number.parseInt(searchParams.get("chainId") || "8453") // Default to Base mainnet
 
     // Get track details
     const supabase = await createClient()
@@ -22,8 +23,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Track not found" }, { status: 404 })
     }
 
+    if (!(chainId in USDC_ADDRESS)) {
+      return NextResponse.json(
+        { error: "Unsupported chain", supportedChains: Object.keys(USDC_ADDRESS).map(Number) },
+        { status: 400 },
+      )
+    }
+
     // Calculate chunk details
-    const totalChunks = Math.ceil(track.duration / X402_CONFIG.CHUNK_DURATION)
+    const chunkDuration = 30 // X402 spec
+    const totalChunks = Math.ceil(track.duration / chunkDuration)
     if (chunkIndex >= totalChunks) {
       return NextResponse.json({ error: "Invalid chunk index" }, { status: 400 })
     }
@@ -52,12 +61,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
       console.log("[v0] Payment will go directly to artist:", recipient)
     }
-    // </CHANGE>
+
+    const network = getX402Network(chainId)
 
     // Return 402 Payment Required with X402 payment instructions
     const paymentInstructions = {
-      scheme: X402_CONFIG.SCHEME,
-      network: X402_CONFIG.NETWORK,
+      scheme: "exact",
+      network,
+      chainId, // Include chainId in payment instructions
       token: "USDC",
       amount: track.price_per_chunk.toString(),
       recipient,
@@ -67,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         artistName: track.profiles?.artist_name || "Unknown Artist",
         chunkIndex,
         totalChunks,
-        chunkDuration: X402_CONFIG.CHUNK_DURATION,
+        chunkDuration,
       },
     }
 
@@ -81,8 +92,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         headers: {
           "Content-Type": "application/json",
           "X-Payment-Required": "true",
-          "X-Payment-Scheme": X402_CONFIG.SCHEME,
-          "X-Payment-Network": X402_CONFIG.NETWORK,
+          "X-Payment-Scheme": "exact",
+          "X-Payment-Network": network,
+          "X-Payment-Chain-Id": chainId.toString(),
         },
       },
     )
