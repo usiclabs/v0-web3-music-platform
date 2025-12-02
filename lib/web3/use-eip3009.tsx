@@ -84,6 +84,7 @@ export function useEIP3009() {
       validAfter?: bigint,
       validBefore?: bigint,
       nonce?: Hex,
+      explicitChainId?: number,
     ): Promise<SignedAuthorization> => {
       if (!address) {
         throw new Error("Wallet not connected")
@@ -93,9 +94,18 @@ export function useEIP3009() {
       setError(null)
 
       try {
-        const currentChainId = chainId || base.id
+        const currentChainId = explicitChainId || chainId || base.id
 
-        // Create the authorization object
+        console.log(
+          "[v0] Signing on chain:",
+          currentChainId,
+          "(wallet chain:",
+          chainId,
+          "explicit:",
+          explicitChainId,
+          ")",
+        )
+
         const authorization = createTransferAuthorization(
           address as Address,
           to,
@@ -115,12 +125,10 @@ export function useEIP3009() {
           nonce: authorization.nonce,
         })
 
-        // Get the EIP-712 domain
         const domain = getEIP3009Domain(currentChainId)
 
         console.log("[v0] Signing with domain:", domain)
 
-        // Sign the typed data
         const signature = await signTypedData(
           domain,
           TRANSFER_WITH_AUTHORIZATION_TYPES,
@@ -137,7 +145,6 @@ export function useEIP3009() {
 
         console.log("[v0] Signature received:", signature.slice(0, 20) + "...")
 
-        // Parse the signature into v, r, s components
         const { v, r, s } = parseSignature(signature as Hex, isSmartWallet)
 
         console.log("[v0] Parsed signature components: v =", v)

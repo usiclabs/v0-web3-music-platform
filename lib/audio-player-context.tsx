@@ -52,7 +52,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const paymentJustSucceededRef = useRef(false)
-  const { address, signTypedData } = useWallet()
+  const { address, signTypedData, chainId } = useWallet()
   const { signTransferAuthorization, isSigning, isSmartWallet, supportsGaslessPayments, isCoinbaseSmartWallet } =
     useEIP3009()
   const { toast } = useToast()
@@ -162,8 +162,10 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       console.log("[v0] Mobile device detected:", mobile)
 
-      const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex)
+      const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex, chainId || 8453)
       console.log("[v0] Payment instructions:", paymentInstructions)
+
+      const paymentChainId = paymentInstructions.chainId || 8453 // Default to Base if not specified
 
       onProgress?.("signing")
       console.log("[v0] Creating payment authorization...")
@@ -190,6 +192,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
             BigInt(valueInUSDC),
             0n, // validAfter: now
             BigInt(Math.floor(Date.now() / 1000) + validityPeriod),
+            undefined, // nonce - let the function generate one
+            paymentChainId, // explicitChainId - sign for the chain specified in payment instructions
           )
 
           console.log(`[v0] Authorization signed successfully on attempt ${attempt}`)
@@ -247,6 +251,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const paymentPayload = {
         scheme: paymentInstructions.scheme,
         network: paymentInstructions.network,
+        chainId: paymentInstructions.chainId, // Added chainId from payment instructions to ensure signature verification on correct chain
         authorization: {
           from: signedAuth.authorization.from,
           to: signedAuth.authorization.to,
@@ -343,7 +348,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       paymentJustSucceededRef.current = false
       console.log("[v0] Requesting smart wallet payment for chunk", chunkIndex)
 
-      const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex)
+      const paymentInstructions = await requestChunk(currentTrack.id, chunkIndex, chainId || 8453)
       console.log("[v0] Payment instructions:", paymentInstructions)
 
       onProgress?.("approving")

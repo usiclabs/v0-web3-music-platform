@@ -23,7 +23,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { scheme, network, chainId: paymentChainId, authorization } = paymentPayload
-    const chainId = paymentChainId || 8453 // Default to Base for backwards compatibility
+    const chainId = paymentChainId
+
+    if (!chainId) {
+      console.log("[v0] Settlement failed: Missing chainId in payment payload")
+      return NextResponse.json(
+        { error: "Missing chainId in payment payload. Please ensure your payment includes the chain ID." },
+        { status: 400 },
+      )
+    }
 
     if (!scheme || !network || !authorization) {
       console.log("[v0] Settlement failed: Invalid payment payload")
