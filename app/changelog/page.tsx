@@ -4,7 +4,9 @@ import { useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 export default function ChangelogPage() {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["2025-11-27", "2025-11-15"]))
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(["2025-12-03", "2025-11-27", "2025-11-15"]),
+  )
 
   const toggleSection = (date: string) => {
     const newExpanded = new Set(expandedSections)
@@ -27,6 +29,181 @@ export default function ChangelogPage() {
 
         {/* Changelog Entries */}
         <div className="space-y-4">
+          {/* December 3, 2025 - Multi-Chain x402 & Critical Bug Fixes */}
+          <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection("2025-12-03")}
+              className="w-full p-6 flex items-center justify-between hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-500">
+                  <span className="text-xl">⚡</span>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-bold">December 3, 2025</h2>
+                  <p className="text-sm text-muted-foreground">Multi-Chain x402 & Critical Bug Fixes</p>
+                </div>
+              </div>
+              {expandedSections.has("2025-12-03") ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+
+            {expandedSections.has("2025-12-03") && (
+              <div className="px-6 pb-6 space-y-8 border-t">
+                <section className="space-y-3 pt-6">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                    <span className="text-base">🌐</span>
+                    Multi-Chain x402 Payment Support
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Added Monad chain support for x402 payments - users can now pay for streams on both Base and
+                        Monad
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>
+                        Integrated Monad USDC contracts (Mainnet: 0x754704Bc059F8C67012fEd69BC8A327a5aafb603, Testnet:
+                        0x534b2f3A21130d7a60830c2Df862319e593943A3)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>Updated X402_CONFIG to support dynamic chain selection with network name resolution</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-blue-500">•</span>
+                      <span>x402 API routes now accept chainId parameter and validate USDC support per network</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    <span className="text-base">💳</span>
+                    AI Song Generation Payment Gate
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Implemented $1 USDC x402 payment requirement for AI song generation on /create page</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Created new API endpoints: /api/x402/generate (payment instructions), /api/x402/generate/verify
+                        (balance check), /api/x402/generate/transfer (payment execution)
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>
+                        Built X402GenerationModal component with 4-step payment flow: approve USDC, confirm payment,
+                        processing, complete
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-purple-500">•</span>
+                      <span>Added generation_payments table to track successful payments before song generation</span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                    <span className="text-base">🐛</span>
+                    Critical Bug Fixes
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Fixed Next.js 16 async params issue causing 404 errors on artist and track detail pages - all
+                        params now properly awaited
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Fixed mobile audio upload bug where users could only select videos - updated accept attribute
+                        from "audio/*" to explicit MIME types and extensions for iOS/Android compatibility
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Resolved x402 chain ID mismatch causing "invalid signature" errors - signature creation now
+                        matches wallet's connected chain
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Fixed x402 address validation errors by creating shared platform-wallet utility ensuring
+                        consistent address derivation across all routes
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Fixed upload form incorrectly defaulting to video mode when stale videoUrl exists in
+                        localStorage - audio uploads now take priority
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-red-500">•</span>
+                      <span>
+                        Fixed "Provided chainId must match active chainId" error by passing wallet's current chain to
+                        payment instructions
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-gradient bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                    <span className="text-base">⚙️</span>
+                    Platform Improvements
+                  </h3>
+                  <ul className="ml-6 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Upgraded Next.js from 16.0.3 to 16.0.7 with latest bug fixes and performance improvements
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Added loading.tsx and error.tsx to app root for better loading states and error handling
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Improved market cap display logic - now correctly shows $0 for tokens without liquidity pools
+                        instead of failing silently
+                      </span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-green-500">•</span>
+                      <span>
+                        Enhanced x402 payment flow with better error messages and fallback handling for invalid
+                        configurations
+                      </span>
+                    </li>
+                  </ul>
+                </section>
+              </div>
+            )}
+          </div>
+
           {/* November 27, 2025 - x402 Autonomous Investment Agent */}
           <div className="rounded-xl border bg-card shadow-lg overflow-hidden">
             <button
