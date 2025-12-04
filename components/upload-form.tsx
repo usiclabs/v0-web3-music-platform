@@ -853,12 +853,13 @@ export function UploadForm({ prefillData }: UploadFormProps) {
                   <Input
                     id="audio"
                     type="file"
-                    accept="audio/*"
+                    accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/aac,audio/flac,audio/m4a,audio/x-m4a,.mp3,.wav,.ogg,.aac,.flac,.m4a"
                     onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
                     required={!prefilledAudioUrl}
                     className="bg-card/50 backdrop-blur-xl border border-border/50"
                   />
                   {audioFile && <p className="text-sm text-muted-foreground mt-2">{audioFile.name}</p>}
+                  <p className="text-xs text-muted-foreground mt-2">Supported formats: MP3, WAV, OGG, AAC, FLAC, M4A</p>
                 </>
               )}
             </div>
