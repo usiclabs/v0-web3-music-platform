@@ -172,9 +172,12 @@ export function UploadForm({ prefillData }: UploadFormProps) {
       if (prefillData.title) setTitle(prefillData.title)
       if (prefillData.audioUrl) setPrefilledAudioUrl(prefillData.audioUrl)
       if (prefillData.coverUrl) setPrefilledCoverUrl(prefillData.coverUrl)
-      if (prefillData.videoUrl) {
+      if (prefillData.videoUrl && !prefillData.audioUrl) {
         setPrefilledVideoUrl(prefillData.videoUrl)
         setContentType("video")
+      } else if (prefillData.audioUrl) {
+        // Ensure audio mode when audioUrl is present
+        setContentType("audio")
       }
       // Auto-generate coin name/symbol from title
       if (prefillData.title) {
