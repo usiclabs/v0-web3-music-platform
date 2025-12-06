@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   TrendingUp,
   TrendingDown,
@@ -26,6 +27,9 @@ import {
   XCircle,
   ArrowRightLeft,
   Users,
+  Plus,
+  Copy,
+  ExternalLink,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { createClient } from "@/lib/supabase/client"
@@ -95,27 +99,21 @@ function ActivityIcon({ type }: { type: string }) {
 
 export default function MMAgentDashboard() {
   const { address, isConnected } = useWallet()
-  const [config, setConfig] = useState<MMAgentConfig | null>({
-    id: "",
-    wallet_address: "",
-    is_active: false,
-    buy_amount_eth: "0.0001",
-    buy_interval_minutes: 5,
-    sell_interval_minutes: 10,
-    last_buy_at: null,
-    last_sell_at: null,
-    total_volume_generated: "0",
-    multi_wallet_mode: false,
-    active_wallets: 1,
-  })
+  const [config, setConfig] = useState<MMAgentConfig | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const buyIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const sellIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [isRunning, setIsRunning] = useState(false)
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const [wallets, setWallets] = useState<any[]>([])
 
-  const { data: configData, isLoading: isLoadingConfig } = useSWR<{ config: MMAgentConfig }>(
-    address ? `/api/agents/mm/config?walletAddress=${address}` : null,
-    (url) => fetch(url).then((res) => res.json()),
+  const {
+    data: configData,
+    error: configError,
+    isLoading: isLoadingConfig,
+  } = useSWR<{ config: MMAgentConfig }>(address ? `/api/agents/mm/config?ownerAddress=${address}` : null, (url) =>
+    fetch(url).then((res) => res.json()),
   )
 
   useEffect(() => {
@@ -168,6 +166,22 @@ export default function MMAgentDashboard() {
     }
   }, [config?.id])
 
+  useEffect(() => {
+    console.log("[v0] Fund wallets modal opened, loading wallets for agent:", config?.id)
+    if (showWalletModal && config?.id) {
+      fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("[v0] Wallets API response:", data)
+          if (data.wallets) {
+            console.log("[v0] Setting wallets:", data.wallets)
+            setWallets(data.wallets)
+          }
+        })
+        .catch((error) => console.error("[v0] Failed to load wallets:", error))
+    }
+  }, [showWalletModal, config?.id])
+
   const toggleAgent = async () => {
     if (!config) return
 
@@ -180,7 +194,7 @@ export default function MMAgentDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ agentId: config.id, is_active: newIsActive }),
       })
-      mutate(`/api/agents/mm/config?walletAddress=${address}`)
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
     } catch (error) {
       console.error("Failed to toggle agent:", error)
       setConfig({ ...config, is_active: !newIsActive })
@@ -209,7 +223,7 @@ export default function MMAgentDashboard() {
         throw new Error("Failed to save configuration")
       }
 
-      mutate(`/api/agents/mm/config?walletAddress=${address}`)
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
       alert("Configuration saved!")
     } catch (error) {
       console.error("Failed to save config:", error)
@@ -337,22 +351,66 @@ export default function MMAgentDashboard() {
     const numWallets = newMultiWallet ? 5 : 1
 
     try {
-      // Setup multi-wallet mode
-      await fetch("/api/agents/mm/setup-multi-wallet", {
-        method: "POST",
+      // Just update the configuration
+      await fetch("/api/agents/mm/config", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: config.id,
-          numWallets,
+          multi_wallet_mode: newMultiWallet,
+          active_wallets: numWallets,
         }),
       })
 
       setConfig({ ...config, multi_wallet_mode: newMultiWallet, active_wallets: numWallets })
-      mutate(`/api/agents/mm/config?walletAddress=${address}`)
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
       mutate(`/api/agents/mm/stats?agentId=${config.id}`)
     } catch (error) {
       console.error("Failed to toggle multi-wallet:", error)
     }
+  }
+
+  const handleCreateAgent = async () => {
+    if (!address) return
+
+    setIsCreating(true)
+    try {
+      const response = await fetch("/api/agents/mm/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerAddress: address,
+          tokenAddress: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+          tokenSymbol: "USI",
+          buyAmountEth: "0.0001",
+          buyInterval: 5,
+          sellInterval: 10,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create agent")
+      }
+
+      // Refresh config
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+
+      alert(
+        `Agent created successfully!\n\n${data.wallets.length} wallets generated.\nPlease fund your wallets to start market making.`,
+      )
+    } catch (error: any) {
+      console.error("Failed to create agent:", error)
+      alert(`Failed to create agent: ${error.message}`)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    alert("Copied to clipboard!")
   }
 
   if (!isConnected) {
@@ -369,10 +427,83 @@ export default function MMAgentDashboard() {
     )
   }
 
-  if (isLoadingConfig || !config) {
+  if (isLoadingConfig) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!config && !configError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-2xl w-full">
+          <CardHeader>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <BarChart3 className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Create Your MM Agent</CardTitle>
+                <CardDescription>Set up your own market maker bot with dedicated wallets</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                How It Works
+              </h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <span>5 fresh wallets will be generated exclusively for your MM agent</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <span>Fund these wallets with ETH to enable automatic market making</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <span>Bot rotates through wallets to create organic trading volume</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                  <span>You maintain full control - only you can access your agent's funds</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+              <div className="flex gap-3">
+                <Activity className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-sm text-yellow-600 dark:text-yellow-400">Important</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your wallet private keys will be encrypted and stored securely in the database. Only you can access
+                    your agent's wallets. Make sure you're comfortable with this before proceeding.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={handleCreateAgent} disabled={isCreating} className="w-full" size="lg">
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating Agent...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create My MM Agent
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -396,7 +527,7 @@ export default function MMAgentDashboard() {
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
                   <BarChart3 className="w-7 h-7 text-white" />
                 </div>
-                {config.is_active && (
+                {config?.is_active && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
                     <LivePulse active />
                   </div>
@@ -405,13 +536,13 @@ export default function MMAgentDashboard() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">$USI Market Maker</h1>
-                  {config.is_active && (
+                  {config?.is_active && (
                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                       <Radio className="w-3 h-3 mr-1" />
                       Active
                     </Badge>
                   )}
-                  {config.multi_wallet_mode && (
+                  {config?.multi_wallet_mode && (
                     <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
                       <Users className="w-3 h-3 mr-1" />
                       {config.active_wallets} Wallets
@@ -419,7 +550,7 @@ export default function MMAgentDashboard() {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {config.multi_wallet_mode ? "Multi-Wallet Volume Generator" : "Autonomous Volume Generator"}
+                  {config?.multi_wallet_mode ? "Multi-Wallet Volume Generator" : "Autonomous Volume Generator"}
                 </p>
               </div>
             </div>
@@ -428,8 +559,18 @@ export default function MMAgentDashboard() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowWalletModal(true)}
+                className="gap-2 bg-transparent"
+              >
+                <Wallet className="w-4 h-4" />
+                Fund Wallets
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleRunCycle}
-                disabled={isRunning || !config.is_active}
+                disabled={isRunning || !config?.is_active}
                 className="gap-2 bg-transparent"
               >
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -438,25 +579,25 @@ export default function MMAgentDashboard() {
 
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
                 <span className="text-sm font-medium text-muted-foreground">Multi-Wallet</span>
-                <Switch checked={config.multi_wallet_mode} onCheckedChange={toggleMultiWallet} />
+                <Switch checked={config?.multi_wallet_mode} onCheckedChange={toggleMultiWallet} />
                 <div
                   className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config.multi_wallet_mode ? "bg-blue-500/10 text-blue-400" : "bg-muted text-muted-foreground"
+                    config?.multi_wallet_mode ? "bg-blue-500/10 text-blue-400" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {config.multi_wallet_mode ? `${config.active_wallets}x` : "1x"}
+                  {config?.multi_wallet_mode ? `${config.active_wallets}x` : "1x"}
                 </div>
               </div>
 
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
                 <span className="text-sm font-medium text-muted-foreground">Agent</span>
-                <Switch checked={config.is_active} onCheckedChange={toggleAgent} />
+                <Switch checked={config?.is_active} onCheckedChange={toggleAgent} />
                 <div
                   className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                    config?.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {config.is_active ? "ON" : "OFF"}
+                  {config?.is_active ? "ON" : "OFF"}
                 </div>
               </div>
             </div>
@@ -503,7 +644,9 @@ export default function MMAgentDashboard() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Volume Generated</p>
-                      <p className="text-3xl font-bold">${stats.volumeGenerated.toFixed(4)}</p>
+                      <p className="text-3xl font-bold">
+                        ${Number.parseFloat(stats.volumeGenerated || "0").toFixed(4)}
+                      </p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
                       <Activity className="w-6 h-6 text-blue-500" />
@@ -528,7 +671,7 @@ export default function MMAgentDashboard() {
             </div>
 
             {/* Wallet Stats Section */}
-            {config.multi_wallet_mode && stats.walletStats && stats.walletStats.length > 0 && (
+            {config?.multi_wallet_mode && stats.walletStats && stats.walletStats.length > 0 && (
               <Card className="bg-card/50 border-emerald-500/10">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -734,6 +877,108 @@ export default function MMAgentDashboard() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-emerald-500" />
+              Fund Your MM Agent Wallets
+            </DialogTitle>
+            <DialogDescription>Send ETH to these addresses to enable market making operations</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+              <div className="flex gap-3">
+                <Activity className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-sm text-amber-600 dark:text-amber-400">How to Fund</p>
+                  <p className="text-sm text-muted-foreground">
+                    Each wallet needs ETH on Base network to execute trades. Send at least 0.001 ETH per wallet to cover
+                    gas costs and initial buys.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {wallets.length === 0 ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading wallets...</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {wallets.map((wallet, idx) => (
+                  <div
+                    key={wallet.wallet_address}
+                    className="p-4 rounded-lg bg-background border hover:border-emerald-500/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Wallet {idx + 1}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {wallet.total_buys} buys · {wallet.total_sells} sells
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={wallet.is_active ? "default" : "secondary"}>
+                        {wallet.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+
+                    <div className="bg-muted/50 rounded-md p-3 mb-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <code className="text-xs font-mono flex-1 break-all">{wallet.wallet_address}</code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(wallet.wallet_address)}
+                          className="h-8 w-8 p-0 flex-shrink-0"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        Balance: {wallet.eth_balance || "0"} ETH · {wallet.token_balance || "0"} $USI
+                      </span>
+                      <a
+                        href={`https://basescan.org/address/${wallet.wallet_address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline flex items-center gap-1"
+                      >
+                        View on Basescan
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <div className="flex gap-3">
+                <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">Pro Tip</p>
+                  <p className="text-sm text-muted-foreground">
+                    In multi-wallet mode, the bot rotates through all active wallets to distribute trades and create
+                    more organic-looking volume.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

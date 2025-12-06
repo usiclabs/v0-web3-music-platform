@@ -8,13 +8,13 @@ export const dynamic = "force-dynamic"
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const walletAddress = searchParams.get("walletAddress")
+    const ownerAddress = searchParams.get("ownerAddress") || searchParams.get("walletAddress")
 
-    if (!walletAddress) {
-      return NextResponse.json({ error: "Wallet address required" }, { status: 400 })
+    if (!ownerAddress) {
+      return NextResponse.json({ error: "Owner address required" }, { status: 400 })
     }
 
-    const config = await MarketMakerAgentService.getOrCreateByWallet(walletAddress)
+    const config = await MarketMakerAgentService.getOrCreateByOwner(ownerAddress)
 
     return NextResponse.json({ config })
   } catch (error: any) {
