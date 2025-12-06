@@ -14,7 +14,6 @@ export const USI_TOKEN_ADDRESS = {
 // Keep old export for backwards compatibility during transition
 export const ANTI_TOKEN_ADDRESS = USI_TOKEN_ADDRESS
 
-// Minimal ERC-20 ABI for USDC transfers
 export const ERC20_ABI = [
   {
     inputs: [
@@ -40,6 +39,37 @@ export const ERC20_ABI = [
     inputs: [{ name: "account", type: "address" }],
     name: "balanceOf",
     outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "symbol",
+    outputs: [{ name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [{ name: "", type: "string" }],
     stateMutability: "view",
     type: "function",
   },
@@ -112,7 +142,11 @@ export const EIP3009_ABI = [
   },
   {
     inputs: [
-      { name: "authorizer", type: "address" },
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
       { name: "nonce", type: "bytes32" },
       { name: "v", type: "uint8" },
       { name: "r", type: "bytes32" },
@@ -181,11 +215,34 @@ export const ERC1155_ABI = [
   },
   {
     inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "ids", type: "uint256[]" },
+      { name: "amounts", type: "uint256[]" },
+      { name: "data", type: "bytes" },
+    ],
+    name: "safeBatchTransferFrom",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
       { name: "account", type: "address" },
       { name: "id", type: "uint256" },
     ],
     name: "balanceOf",
     outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "account", type: "address" },
+      { name: "ids", type: "uint256[]" },
+    ],
+    name: "balanceOfBatch",
+    outputs: [{ name: "", type: "uint256[]" }],
     stateMutability: "view",
     type: "function",
   },

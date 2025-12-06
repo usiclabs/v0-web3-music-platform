@@ -293,26 +293,7 @@ export class AgentWalletService {
       const tokenIn = isBuy ? usdcAddress : tokenAddress
       const tokenOut = isBuy ? tokenAddress : usdcAddress
 
-      // Check and set approval if needed
-      const currentAllowance = (await this.publicClient.readContract({
-        address: tokenIn,
-        abi: ERC20_ABI,
-        functionName: "allowance",
-        args: [this.account.address, routerAddress],
-      })) as bigint
-
-      if (currentAllowance < amountInUsdc) {
-        console.log("[AgentWallet] Setting approval for router...")
-        const approveHash = await this.walletClient.writeContract({
-          address: tokenIn,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [routerAddress, amountInUsdc * 2n], // Approve 2x for future trades
-        })
-
-        await this.publicClient.waitForTransactionReceipt({ hash: approveHash })
-        console.log("[AgentWallet] Approval confirmed")
-      }
+      await this.ensureApproval(tokenIn, routerAddress, amountInUsdc)
 
       // Try different fee tiers
       const feeTiers = [3000, 10000, 500]
@@ -548,6 +529,46 @@ export class AgentWalletService {
       }
     } catch (error) {
       console.error("[AgentWallet] Failed to update portfolio:", error)
+    }
+  }
+
+  /**
+   * Ensure the router has approval to spend tokens
+   */
+  async ensureApproval(tokenAddress: Address, spenderAddress: Address, amount: bigint): Promise<void> {
+    try {
+      console.log("[AgentWallet] Checking allowance for:", {
+        token: tokenAddress,
+        owner: this.account.address,
+        spender: spenderAddress,
+      })
+
+      const currentAllowance = (await this.publicClient.readContract({
+        address: tokenAddress,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [this.account.address, spenderAddress],
+      })) as bigint
+
+      console.log("[AgentWallet] Current allowance:", currentAllowance.toString())
+
+      if (currentAllowance < amount) {
+        console.log("[AgentWallet] Setting approval for spender...")
+        const approveHash = await this.walletClient.writeContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [spenderAddress, amount * 2n], // Approve 2x for future trades
+        })
+
+        await this.publicClient.waitForTransactionReceipt({ hash: approveHash })
+        console.log("[AgentWallet] Approval confirmed:", approveHash)
+      } else {
+        console.log("[AgentWallet] Sufficient allowance already exists")
+      }
+    } catch (error: any) {
+      console.error("[AgentWallet] Approval failed:", error.message)
+      throw error
     }
   }
 }
