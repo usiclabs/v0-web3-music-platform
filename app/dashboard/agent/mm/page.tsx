@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   TrendingUp,
   TrendingDown,
@@ -20,8 +21,14 @@ import {
   Zap,
   Timer,
   Wallet,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ArrowRightLeft,
+  Users,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
+import { createClient } from "@/lib/supabase/client"
 
 interface MMAgentConfig {
   id: string
@@ -33,14 +40,31 @@ interface MMAgentConfig {
   last_buy_at: string | null
   last_sell_at: string | null
   total_volume_generated: string
+  multi_wallet_mode: boolean
+  active_wallets: number
 }
 
 interface MMStats {
   totalBuys: number
   totalSells: number
-  volumeGenerated: number
-  currentUsiBalance: string
-  currentEthBalance: string
+  volumeGenerated: string
+  usiBalance: string
+  walletStats?: WalletStats[]
+}
+
+interface WalletStats {
+  address: string
+  buys: number
+  sells: number
+  usiBalance: string
+}
+
+interface MMActivity {
+  id: string
+  activity_type: string
+  description: string
+  metadata?: any
+  created_at: string
 }
 
 function LivePulse({ active }: { active: boolean }) {
@@ -53,10 +77,40 @@ function LivePulse({ active }: { active: boolean }) {
   )
 }
 
-export default function MMAgentPage() {
+function ActivityIcon({ type }: { type: string }) {
+  if (type.includes("buy")) {
+    return <TrendingUp className="w-4 h-4 text-emerald-500" />
+  }
+  if (type.includes("sell")) {
+    return <TrendingDown className="w-4 h-4 text-red-500" />
+  }
+  if (type.includes("error") || type.includes("failed")) {
+    return <XCircle className="w-4 h-4 text-red-500" />
+  }
+  if (type.includes("completed")) {
+    return <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+  }
+  return <Activity className="w-4 h-4 text-blue-500" />
+}
+
+export default function MMAgentDashboard() {
   const { address, isConnected } = useWallet()
-  const [config, setConfig] = useState<MMAgentConfig | null>(null)
+  const [config, setConfig] = useState<MMAgentConfig | null>({
+    id: "",
+    wallet_address: "",
+    is_active: false,
+    buy_amount_eth: "0.0001",
+    buy_interval_minutes: 5,
+    sell_interval_minutes: 10,
+    last_buy_at: null,
+    last_sell_at: null,
+    total_volume_generated: "0",
+    multi_wallet_mode: false,
+    active_wallets: 1,
+  })
   const [isSaving, setIsSaving] = useState(false)
+  const buyIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const sellIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [isRunning, setIsRunning] = useState(false)
 
   const { data: configData, isLoading: isLoadingConfig } = useSWR<{ config: MMAgentConfig }>(
@@ -73,8 +127,46 @@ export default function MMAgentPage() {
   const { data: statsData } = useSWR<{ stats: MMStats }>(
     config?.id ? `/api/agents/mm/stats?agentId=${config.id}` : null,
     (url) => fetch(url).then((res) => res.json()),
-    { refreshInterval: 10000 },
+    { refreshInterval: 10000 }, // Refresh every 10 seconds
   )
+
+  const [activities, setActivities] = useState<MMActivity[]>([])
+
+  useEffect(() => {
+    if (!config?.id) return
+
+    const loadActivities = async () => {
+      const response = await fetch(`/api/agents/mm/activities?agentId=${config.id}`)
+      const data = await response.json()
+      if (data.activities) {
+        setActivities(data.activities)
+      }
+    }
+
+    loadActivities()
+
+    // Subscribe to realtime updates
+    const supabase = createClient()
+    const channel = supabase
+      .channel("mm_agent_activity")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "mm_agent_activity",
+          filter: `agent_id=eq.${config.id}`,
+        },
+        (payload) => {
+          setActivities((prev) => [payload.new as MMActivity, ...prev].slice(0, 50))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [config?.id])
 
   const toggleAgent = async () => {
     if (!config) return
@@ -108,6 +200,8 @@ export default function MMAgentPage() {
           buy_amount_eth: config.buy_amount_eth,
           buy_interval_minutes: config.buy_interval_minutes,
           sell_interval_minutes: config.sell_interval_minutes,
+          multi_wallet_mode: config.multi_wallet_mode,
+          active_wallets: config.active_wallets,
         }),
       })
 
@@ -152,6 +246,115 @@ export default function MMAgentPage() {
     }
   }
 
+  const startContinuousCycles = useCallback(() => {
+    if (!config) return
+
+    console.log("[v0] Starting continuous MM cycles...")
+
+    // Clear any existing intervals
+    if (buyIntervalRef.current) clearInterval(buyIntervalRef.current)
+    if (sellIntervalRef.current) clearInterval(sellIntervalRef.current)
+
+    // Function to execute buy
+    const executeBuy = async () => {
+      try {
+        console.log("[v0] Executing buy cycle...")
+        const response = await fetch("/api/agents/mm/cycle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: config.id, action: "buy" }),
+        })
+        const data = await response.json()
+        if (data.success) {
+          mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+        }
+      } catch (error) {
+        console.error("[v0] Buy cycle error:", error)
+      }
+    }
+
+    // Function to execute sell
+    const executeSell = async () => {
+      try {
+        console.log("[v0] Executing sell cycle...")
+        const response = await fetch("/api/agents/mm/cycle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId: config.id, action: "sell" }),
+        })
+        const data = await response.json()
+        if (data.success) {
+          mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+        }
+      } catch (error) {
+        console.error("[v0] Sell cycle error:", error)
+      }
+    }
+
+    // Start buy interval (buy every 5 minutes)
+    const buyIntervalMs = config.buy_interval_minutes * 60 * 1000
+    buyIntervalRef.current = setInterval(executeBuy, buyIntervalMs)
+    console.log(`[v0] Buy interval set to ${config.buy_interval_minutes} minutes`)
+
+    // Start sell interval (sell every 10 minutes)
+    const sellIntervalMs = config.sell_interval_minutes * 60 * 1000
+    sellIntervalRef.current = setInterval(executeSell, sellIntervalMs)
+    console.log(`[v0] Sell interval set to ${config.sell_interval_minutes} minutes`)
+
+    // Execute first buy immediately
+    executeBuy()
+  }, [config, mutate])
+
+  const stopContinuousCycles = useCallback(() => {
+    console.log("[v0] Stopping continuous MM cycles...")
+    if (buyIntervalRef.current) {
+      clearInterval(buyIntervalRef.current)
+      buyIntervalRef.current = null
+    }
+    if (sellIntervalRef.current) {
+      clearInterval(sellIntervalRef.current)
+      sellIntervalRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (config?.is_active) {
+      startContinuousCycles()
+    } else {
+      stopContinuousCycles()
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopContinuousCycles()
+    }
+  }, [config?.is_active, startContinuousCycles, stopContinuousCycles])
+
+  const toggleMultiWallet = async () => {
+    if (!config) return
+
+    const newMultiWallet = !config.multi_wallet_mode
+    const numWallets = newMultiWallet ? 5 : 1
+
+    try {
+      // Setup multi-wallet mode
+      await fetch("/api/agents/mm/setup-multi-wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          numWallets,
+        }),
+      })
+
+      setConfig({ ...config, multi_wallet_mode: newMultiWallet, active_wallets: numWallets })
+      mutate(`/api/agents/mm/config?walletAddress=${address}`)
+      mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+    } catch (error) {
+      console.error("Failed to toggle multi-wallet:", error)
+    }
+  }
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -177,9 +380,9 @@ export default function MMAgentPage() {
   const stats = statsData?.stats || {
     totalBuys: 0,
     totalSells: 0,
-    volumeGenerated: 0,
-    currentUsiBalance: "0",
-    currentEthBalance: "0",
+    volumeGenerated: "0",
+    usiBalance: "0",
+    walletStats: [],
   }
 
   return (
@@ -208,8 +411,16 @@ export default function MMAgentPage() {
                       Active
                     </Badge>
                   )}
+                  {config.multi_wallet_mode && (
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                      <Users className="w-3 h-3 mr-1" />
+                      {config.active_wallets} Wallets
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">Autonomous Volume Generator</p>
+                <p className="text-sm text-muted-foreground">
+                  {config.multi_wallet_mode ? "Multi-Wallet Volume Generator" : "Autonomous Volume Generator"}
+                </p>
               </div>
             </div>
 
@@ -224,6 +435,18 @@ export default function MMAgentPage() {
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                 Run Cycle
               </Button>
+
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
+                <span className="text-sm font-medium text-muted-foreground">Multi-Wallet</span>
+                <Switch checked={config.multi_wallet_mode} onCheckedChange={toggleMultiWallet} />
+                <div
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
+                    config.multi_wallet_mode ? "bg-blue-500/10 text-blue-400" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {config.multi_wallet_mode ? `${config.active_wallets}x` : "1x"}
+                </div>
+              </div>
 
               <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
                 <span className="text-sm font-medium text-muted-foreground">Agent</span>
@@ -241,157 +464,275 @@ export default function MMAgentPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Total Buys</p>
-                  <p className="text-3xl font-bold">{stats.totalBuys}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-emerald-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Stats & Config */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Total Buys</p>
+                      <p className="text-3xl font-bold">{stats.totalBuys}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-emerald-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Total Sells</p>
-                  <p className="text-3xl font-bold">{stats.totalSells}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                  <TrendingDown className="w-6 h-6 text-red-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Total Sells</p>
+                      <p className="text-3xl font-bold">{stats.totalSells}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                      <TrendingDown className="w-6 h-6 text-red-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Volume Generated</p>
-                  <p className="text-3xl font-bold">${stats.volumeGenerated.toFixed(4)}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-blue-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Volume Generated</p>
+                      <p className="text-3xl font-bold">${stats.volumeGenerated.toFixed(4)}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+                      <Activity className="w-6 h-6 text-blue-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">$USI Balance</p>
-                  <p className="text-3xl font-bold">{Number.parseFloat(stats.currentUsiBalance).toFixed(4)}</p>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">$USI Balance</p>
+                      <p className="text-3xl font-bold">{Number.parseFloat(stats.usiBalance).toFixed(4)}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-purple-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Wallet Stats Section */}
+            {config.multi_wallet_mode && stats.walletStats && stats.walletStats.length > 0 && (
+              <Card className="bg-card/50 border-emerald-500/10">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="w-5 h-5 text-emerald-400" />
+                    Wallet Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {stats.walletStats.map((wallet, idx) => (
+                      <div
+                        key={wallet.address}
+                        className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-emerald-500/10"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <div className="text-xs font-mono text-muted-foreground">
+                              {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                            </div>
+                            <div className="text-sm font-medium">{wallet.usiBalance} $USI</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <div className="text-emerald-400 font-bold">{wallet.buys}</div>
+                            <div className="text-xs text-muted-foreground">Buys</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-red-400 font-bold">{wallet.sells}</div>
+                            <div className="text-xs text-muted-foreground">Sells</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Agent Configuration</CardTitle>
+                <CardDescription>Configure your market making parameters</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="buy_amount">Buy Amount (ETH)</Label>
+                    <Input
+                      id="buy_amount"
+                      type="number"
+                      step="0.0001"
+                      value={config.buy_amount_eth}
+                      onChange={(e) => setConfig({ ...config, buy_amount_eth: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">ETH to spend per buy</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="buy_interval">Buy Interval (minutes)</Label>
+                    <div className="flex items-center gap-2">
+                      <Timer className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="buy_interval"
+                        type="number"
+                        value={config.buy_interval_minutes}
+                        onChange={(e) =>
+                          setConfig({ ...config, buy_interval_minutes: Number.parseInt(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">How often to buy</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sell_interval">Sell Interval (minutes)</Label>
+                    <div className="flex items-center gap-2">
+                      <Timer className="w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="sell_interval"
+                        type="number"
+                        value={config.sell_interval_minutes}
+                        onChange={(e) =>
+                          setConfig({ ...config, sell_interval_minutes: Number.parseInt(e.target.value) })
+                        }
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">How often to sell</p>
+                  </div>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-purple-500" />
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
+                  <div>
+                    <p className="font-medium">Token Address</p>
+                    <p className="text-sm text-muted-foreground font-mono">
+                      0x987603A52d8B966E10FBD29DcB1A574049E25B07
+                    </p>
+                  </div>
+                  <Badge>$USI</Badge>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <Button onClick={handleSaveConfig} disabled={isSaving} className="w-full">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Configuration
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Info Card */}
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="pt-6">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <Activity className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1">Automated Operation</h3>
+                    <p className="text-sm text-muted-foreground">
+                      When active, this agent automatically executes buy/sell cycles based on your configured intervals.
+                      It buys $USI with ETH every {config.buy_interval_minutes} minutes and sells accumulated tokens
+                      every {config.sell_interval_minutes} minutes to generate consistent trading volume.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Activity Feed */}
+          <div className="lg:col-span-1">
+            <Card className="h-[calc(100vh-12rem)] flex flex-col">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Activity Feed</CardTitle>
+                    <CardDescription>Real-time MM operations</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                    <ArrowRightLeft className="w-3 h-3 mr-1" />
+                    Live
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden p-0">
+                <ScrollArea className="h-full px-6">
+                  {activities.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                      <Activity className="w-12 h-12 text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground">No activity yet</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        Activate the agent to start generating volume
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pb-4">
+                      {activities.map((activity) => (
+                        <div
+                          key={activity.id}
+                          className="flex gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
+                        >
+                          <div className="mt-0.5">
+                            <ActivityIcon type={activity.activity_type} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium leading-tight">{activity.description}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Clock className="w-3 h-3 text-muted-foreground" />
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(activity.created_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            {activity.metadata?.txHash && (
+                              <a
+                                href={`https://basescan.org/tx/${activity.metadata.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+                              >
+                                View TX
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-
-        {/* Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Agent Configuration</CardTitle>
-            <CardDescription>Configure your market making parameters</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="buy_amount">Buy Amount (ETH)</Label>
-                <Input
-                  id="buy_amount"
-                  type="number"
-                  step="0.0001"
-                  value={config.buy_amount_eth}
-                  onChange={(e) => setConfig({ ...config, buy_amount_eth: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground">ETH to spend per buy</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="buy_interval">Buy Interval (minutes)</Label>
-                <div className="flex items-center gap-2">
-                  <Timer className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="buy_interval"
-                    type="number"
-                    value={config.buy_interval_minutes}
-                    onChange={(e) => setConfig({ ...config, buy_interval_minutes: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">How often to buy</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sell_interval">Sell Interval (minutes)</Label>
-                <div className="flex items-center gap-2">
-                  <Timer className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="sell_interval"
-                    type="number"
-                    value={config.sell_interval_minutes}
-                    onChange={(e) => setConfig({ ...config, sell_interval_minutes: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">How often to sell</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-              <div>
-                <p className="font-medium">Token Address</p>
-                <p className="text-sm text-muted-foreground font-mono">0x987603A52d8B966E10FBD29DcB1A574049E25B07</p>
-              </div>
-              <Badge>$USI</Badge>
-            </div>
-
-            <Button onClick={handleSaveConfig} disabled={isSaving} className="w-full">
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Configuration
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Info Card */}
-        <Card className="mt-6 border-amber-500/20 bg-amber-500/5">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                <Activity className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-1">How it works</h3>
-                <p className="text-sm text-muted-foreground">
-                  This agent automatically buys 0.0001 ETH worth of $USI every 5 minutes and sells accumulated tokens
-                  every 10 minutes. This creates consistent trading volume and helps maintain healthy market activity
-                  for the $USI ecosystem.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

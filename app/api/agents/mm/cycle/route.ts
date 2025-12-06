@@ -7,16 +7,27 @@ export const maxDuration = 300
 
 export async function POST(request: Request) {
   try {
-    const { agentId } = await request.json()
+    const { agentId, action } = await request.json()
 
     if (!agentId) {
       return NextResponse.json({ error: "Agent ID required" }, { status: 400 })
     }
 
-    console.log(`[API] Running MM agent cycle for ${agentId}`)
+    console.log(`[API] Running MM agent ${action || "cycle"} for ${agentId}`)
 
     const mmAgent = new MarketMakerAgentService(agentId)
-    const result = await mmAgent.runCycle()
+
+    let result
+    if (action === "buy") {
+      // Execute only buy
+      result = await mmAgent.runCycle(true, false)
+    } else if (action === "sell") {
+      // Execute only sell
+      result = await mmAgent.runCycle(false, true)
+    } else {
+      // Execute full cycle (both buy and sell)
+      result = await mmAgent.runCycle()
+    }
 
     return NextResponse.json({
       success: true,
