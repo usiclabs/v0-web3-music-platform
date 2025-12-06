@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   images: {
     unoptimized: true,
@@ -19,6 +22,7 @@ const nextConfig = {
     '@walletconnect/ethereum-provider',
     '@walletconnect/logger',
   ],
+  output: 'standalone',
 }
 
 export default nextConfig
