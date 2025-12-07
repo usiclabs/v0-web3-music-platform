@@ -64,6 +64,7 @@ interface MMStats {
 
 interface WalletStats {
   address: string
+  wallet_address: string // Added for modal
   buys: number
   sells: number
   usiBalance: string
@@ -1009,7 +1010,7 @@ export default function MMAgentDashboard() {
             ) : (
               wallets.map((wallet, idx) => (
                 <div
-                  key={wallet.address}
+                  key={wallet.wallet_address}
                   className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all"
                 >
                   <div className="flex items-start gap-3 mb-3">
@@ -1036,11 +1037,11 @@ export default function MMAgentDashboard() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg">
-                        <span className="truncate flex-1">{wallet.address}</span>
+                        <span className="truncate flex-1">{wallet.wallet_address}</span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard(wallet.address)}
+                          onClick={() => copyToClipboard(wallet.wallet_address)}
                           className="h-6 w-6 p-0 hover:bg-white/10"
                         >
                           <Copy className="w-3 h-3" />
@@ -1052,11 +1053,11 @@ export default function MMAgentDashboard() {
                   <div className="grid grid-cols-2 gap-3 text-sm mt-3">
                     <div className="bg-white/5 p-3 rounded-lg">
                       <p className="text-muted-foreground text-xs mb-1">ETH Balance</p>
-                      <p className="font-medium text-white">{wallet.eth_balance || "0"} ETH</p>
+                      <p className="font-medium text-white">{wallet.eth_balance?.toFixed(6) || "0"} ETH</p>
                     </div>
                     <div className="bg-white/5 p-3 rounded-lg">
                       <p className="text-muted-foreground text-xs mb-1">$USI Balance</p>
-                      <p className="font-medium text-white">{wallet.token_balance || "0"} $USI</p>
+                      <p className="font-medium text-white">{wallet.token_balance?.toFixed(2) || "0"} $USI</p>
                     </div>
                     <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
                       <p className="text-muted-foreground text-xs mb-1">Buys</p>
@@ -1069,7 +1070,7 @@ export default function MMAgentDashboard() {
                   </div>
 
                   <a
-                    href={`https://basescan.org/address/${wallet.address}`}
+                    href={`https://basescan.org/address/${wallet.wallet_address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"

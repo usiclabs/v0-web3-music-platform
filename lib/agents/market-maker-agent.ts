@@ -272,7 +272,7 @@ export class MarketMakerAgentService {
         address: wallet.address,
       })
 
-      console.log(`[MM Agent] Current ETH balance: ${formatUnits(ethBalance, 18)}`)
+      console.log(`[MM Agent] Current ETH balance: ${formatUnits(ethBalance, 18)} ETH`)
       console.log(`[MM Agent] Configured buy amount: ${agent.buy_amount_eth} ETH`)
 
       // Check WETH balance
@@ -283,21 +283,22 @@ export class MarketMakerAgentService {
         args: [wallet.address],
       })) as bigint
 
-      console.log(`[MM Agent] Current WETH balance: ${formatUnits(wethBalance, 18)}`)
+      console.log(`[MM Agent] Current WETH balance: ${formatUnits(wethBalance, 18)} WETH`)
 
+      const gasBuffer = parseEther("0.001") // Reserve 0.001 ETH for gas
       let buyAmount: bigint
       let useWETH = false
 
       if (wethBalance >= configuredBuyAmount) {
         buyAmount = wethBalance
         useWETH = true
-        console.log(`[MM Agent] Using WETH for buy: ${formatUnits(buyAmount, 18)}`)
-      } else if (ethBalance >= configuredBuyAmount * 2n) {
-        // Need at least 2x buy amount (buy amount + gas)
+        console.log(`[MM Agent] Using WETH for buy: ${formatUnits(buyAmount, 18)} WETH`)
+      } else if (ethBalance >= configuredBuyAmount + gasBuffer) {
+        // Only need buy amount + small gas buffer
         buyAmount = configuredBuyAmount
-        console.log(`[MM Agent] Using ETH for buy: ${formatUnits(buyAmount, 18)}`)
+        console.log(`[MM Agent] Using ETH for buy: ${formatUnits(buyAmount, 18)} ETH`)
       } else {
-        const error = "Insufficient ETH/WETH balance for buy"
+        const error = `Insufficient balance. Have: ${formatUnits(ethBalance, 18)} ETH + ${formatUnits(wethBalance, 18)} WETH. Need: ${formatUnits(configuredBuyAmount + gasBuffer, 18)} ETH (or ${formatUnits(configuredBuyAmount, 18)} WETH)`
         console.error(`[MM Agent] ${error}`)
         await this.logActivity("buy_failed", error)
         return { success: false, error }

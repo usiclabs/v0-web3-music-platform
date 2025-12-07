@@ -94,27 +94,30 @@ export async function GET(req: NextRequest) {
             args: [wallet.wallet_address],
           })
 
-          // Query trade counts from mm_agent_activity
-          const { data: buyActivities } = await supabase
+          // Query buy count from mm_agent_activity
+          const { count: buyCount } = await supabase
             .from("mm_agent_activity")
-            .select("id", { count: "exact", head: true })
+            .select("*", { count: "exact", head: true })
             .eq("agent_id", agentId)
             .eq("wallet_address", wallet.wallet_address)
             .eq("activity_type", "buy")
 
-          const { data: sellActivities } = await supabase
+          // Query sell count from mm_agent_activity
+          const { count: sellCount } = await supabase
             .from("mm_agent_activity")
-            .select("id", { count: "exact", head: true })
+            .select("*", { count: "exact", head: true })
             .eq("agent_id", agentId)
             .eq("wallet_address", wallet.wallet_address)
             .eq("activity_type", "sell")
+
+          console.log(`[v0] Wallet ${wallet.wallet_address}: ${buyCount} buys, ${sellCount} sells`)
 
           return {
             ...wallet,
             eth_balance: Number.parseFloat(formatEther(ethBalance)),
             token_balance: Number.parseFloat(formatEther(tokenBalance as bigint)),
-            total_buys: buyActivities || 0,
-            total_sells: sellActivities || 0,
+            total_buys: buyCount || 0,
+            total_sells: sellCount || 0,
           }
         } catch (balanceError) {
           console.error(`[API] Error fetching balance for wallet ${wallet.wallet_address}:`, balanceError)
