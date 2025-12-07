@@ -21,7 +21,7 @@ Livepeer uses **two types** of API keys for security:
 #### 1. Public API Key (Client-Side)
 - **Purpose**: Used for playback and viewing streams
 - **Permissions**: Read-only, safe to expose to browsers
-- **Environment Variable**: `NEXT_PUBLIC_LIVEPEER_API_KEY`
+- **Environment Variable**: `NEXT_PUBLIC_LIVEPEER_[REDACTED]`
 
 **To generate:**
 1. In Livepeer Studio dashboard, go to "Developers" → "API Keys"
@@ -50,12 +50,12 @@ Add both keys to your Vercel project:
 2. Add the following environment variables:
 
 \`\`\`
-NEXT_PUBLIC_LIVEPEER_API_KEY=your_public_key_here
+NEXT_PUBLIC_LIVEPEER_[KEY]=your_public_key_here
 LIVEPEER_API_KEY=your_private_key_here
 \`\`\`
 
 **Important Security Notes:**
-- ✅ `NEXT_PUBLIC_LIVEPEER_API_KEY` is SAFE to expose (read-only permissions)
+- ✅ `NEXT_PUBLIC_LIVEPEER_[KEY]` is SAFE to expose (read-only permissions)
 - ❌ `LIVEPEER_API_KEY` must NEVER be exposed to the client (full admin access)
 - The public key can only view streams, not create or modify them
 - The private key is only used in server-side API routes
