@@ -48,9 +48,34 @@ const WETH_ABI = [
   },
 ] as const
 
+const BASE_RPC_ENDPOINTS = [
+  "https://base-rpc.publicnode.com", // More reliable than mainnet.base.org
+  "https://base.blockpi.network/v1/rpc/public",
+  "https://1rpc.io/base",
+  "https://mainnet.base.org",
+]
+
+let currentRpcIndex = 0
+let rpcFailureCount = 0
+const MAX_FAILURES_BEFORE_ROTATION = 3
+
 function getRpcUrl(): string {
-  // Use public Base RPC for MM agent to avoid Alchemy's unsupported methods
-  return "https://mainnet.base.org"
+  // Rotate to next RPC if current one is failing
+  if (rpcFailureCount >= MAX_FAILURES_BEFORE_ROTATION) {
+    currentRpcIndex = (currentRpcIndex + 1) % BASE_RPC_ENDPOINTS.length
+    rpcFailureCount = 0
+    console.log(`[MM Agent] Rotating to RPC endpoint ${currentRpcIndex + 1}/${BASE_RPC_ENDPOINTS.length}`)
+  }
+
+  return BASE_RPC_ENDPOINTS[currentRpcIndex]
+}
+
+function handleRpcError(error: any) {
+  // Check if error is rate limiting
+  if (error?.message?.includes("rate limit") || error?.message?.includes("429")) {
+    rpcFailureCount++
+    console.log(`[MM Agent] RPC rate limit hit (${rpcFailureCount}/${MAX_FAILURES_BEFORE_ROTATION})`)
+  }
 }
 
 export interface MMAgentConfig {
@@ -223,29 +248,18 @@ export class MarketMakerAgentService {
    * Execute a buy operation - swap ETH/WETH for USI
    * Enhanced to support buying with both ETH and WETH
    */
-  async executeBuy(walletAccount: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  async executeBuy(walletIndex: number): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
       console.log("[MM Agent] Attempting to buy $USI...")
 
-      const rpcUrl = getRpcUrl()
-      console.log(`[MM Agent] Using RPC: ${rpcUrl}`)
-
-      const publicClient = createPublicClient({
-        chain: base,
-        transport: http(rpcUrl),
-      })
-
-      const walletClient = createWalletClient({
-        chain: base,
-        transport: http(rpcUrl),
-        account: walletAccount,
-      })
+      const wallet = await this.getWallet(walletIndex)
+      const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
 
       // Check ETH balance
       const ethBalance = await publicClient.getBalance({
-        address: walletAccount.address,
+        address: wallet.address,
       })
 
       console.log(`[MM Agent] Current ETH balance: ${formatUnits(ethBalance, 18)}`)
@@ -255,7 +269,7 @@ export class MarketMakerAgentService {
         address: WETH_ADDRESS,
         abi: WETH_ABI,
         functionName: "balanceOf",
-        args: [walletAccount.address],
+        args: [wallet.address],
       })) as bigint
 
       console.log(`[MM Agent] Current WETH balance: ${formatUnits(wethBalance, 18)}`)
@@ -310,13 +324,13 @@ export class MarketMakerAgentService {
                   tokenIn: WETH_ADDRESS,
                   tokenOut: USI_TOKEN_ADDRESS,
                   fee,
-                  recipient: walletAccount.address,
+                  recipient: wallet.address,
                   amountIn: buyAmount,
                   amountOutMinimum: minTokensOut,
                   sqrtPriceLimitX96: 0n,
                 },
               ],
-              account: walletAccount,
+              account: wallet,
             })
 
             const gasLimit = (gasEstimate * 120n) / 100n
@@ -331,7 +345,7 @@ export class MarketMakerAgentService {
                   tokenIn: WETH_ADDRESS,
                   tokenOut: USI_TOKEN_ADDRESS,
                   fee,
-                  recipient: walletAccount.address,
+                  recipient: wallet.address,
                   amountIn: buyAmount,
                   amountOutMinimum: minTokensOut,
                   sqrtPriceLimitX96: 0n,
@@ -359,13 +373,13 @@ export class MarketMakerAgentService {
                   tokenIn: WETH_ADDRESS,
                   tokenOut: USI_TOKEN_ADDRESS,
                   fee,
-                  recipient: walletAccount.address,
+                  recipient: wallet.address,
                   amountIn: buyAmount,
                   amountOutMinimum: minTokensOut,
                   sqrtPriceLimitX96: 0n,
                 },
               ],
-              account: walletAccount,
+              account: wallet,
               value: buyAmount,
             })
 
@@ -381,7 +395,7 @@ export class MarketMakerAgentService {
                   tokenIn: WETH_ADDRESS,
                   tokenOut: USI_TOKEN_ADDRESS,
                   fee,
-                  recipient: walletAccount.address,
+                  recipient: wallet.address,
                   amountIn: buyAmount,
                   amountOutMinimum: minTokensOut,
                   sqrtPriceLimitX96: 0n,
@@ -445,25 +459,14 @@ export class MarketMakerAgentService {
    * Execute a sell operation - swap accumulated USI for ETH
    * Enhanced to unwrap WETH to ETH after selling
    */
-  async executeSell(walletAccount: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  async executeSell(walletIndex: number): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    let wallet: any
+
     try {
       console.log("[MM Agent] Attempting to sell accumulated $USI...")
 
-      const rpcUrl = getRpcUrl()
-      console.log(`[MM Agent] Using RPC: ${rpcUrl}`)
-
-      const chain = process.env.NEXT_PUBLIC_CHAIN_ID === "8453" ? base : base
-
-      const publicClient = createPublicClient({
-        chain: base,
-        transport: http(rpcUrl),
-      })
-
-      const walletClient = createWalletClient({
-        chain: base,
-        transport: http(rpcUrl),
-        account: walletAccount,
-      })
+      wallet = await this.getWallet(walletIndex)
+      const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
 
@@ -472,7 +475,7 @@ export class MarketMakerAgentService {
         address: USI_TOKEN_ADDRESS,
         abi: ERC20_ABI,
         functionName: "balanceOf",
-        args: [walletAccount.address],
+        args: [wallet.address],
       })
 
       if (usiBalance === 0n) {
@@ -509,13 +512,13 @@ export class MarketMakerAgentService {
                 tokenIn: USI_TOKEN_ADDRESS,
                 tokenOut: WETH_ADDRESS,
                 fee,
-                recipient: walletAccount.address,
+                recipient: wallet.address,
                 amountIn: usiBalance,
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
               },
             ],
-            account: walletAccount,
+            account: wallet,
           })
 
           const gasLimit = (gasEstimate * 120n) / 100n
@@ -533,7 +536,7 @@ export class MarketMakerAgentService {
                 tokenIn: USI_TOKEN_ADDRESS,
                 tokenOut: WETH_ADDRESS,
                 fee,
-                recipient: walletAccount.address,
+                recipient: wallet.address,
                 amountIn: usiBalance,
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
@@ -582,7 +585,7 @@ export class MarketMakerAgentService {
           address: WETH_ADDRESS,
           abi: WETH_ABI,
           functionName: "balanceOf",
-          args: [walletAccount.address],
+          args: [wallet.address],
         })) as bigint
 
         if (wethBalance > 0n) {
@@ -591,7 +594,7 @@ export class MarketMakerAgentService {
             abi: WETH_ABI,
             functionName: "withdraw",
             args: [wethBalance],
-            account: walletAccount,
+            account: wallet,
           })
 
           const unwrapGasLimit = (unwrapGasEstimate * 120n) / 100n
@@ -640,7 +643,7 @@ export class MarketMakerAgentService {
     } catch (error: any) {
       console.error("[MM Agent] Sell execution error:", error.message)
       await this.logActivity("error", `Sell failed: ${error.message}`, {
-        wallet: walletAccount.address,
+        wallet: wallet?.address || "unknown",
       })
       return { success: false, error: error.message || "Unknown error" }
     }
@@ -676,7 +679,7 @@ export class MarketMakerAgentService {
     // Buy logic
     if (forceBuy || this.shouldBuy(agent, now)) {
       try {
-        const buyResult = await this.executeBuy(walletAccount)
+        const buyResult = await this.executeBuy(1)
 
         if (buyResult.success) {
           await supabase.from("mm_agents").update({ last_buy_at: now.toISOString() }).eq("id", this.agentId)
@@ -715,7 +718,7 @@ export class MarketMakerAgentService {
     // Sell logic
     if (forceSell || this.shouldSell(agent, now)) {
       try {
-        const sellResult = await this.executeSell(walletAccount)
+        const sellResult = await this.executeSell(1)
 
         if (sellResult.success) {
           await supabase.from("mm_agents").update({ last_sell_at: now.toISOString() }).eq("id", this.agentId)
@@ -1038,6 +1041,36 @@ export class MarketMakerAgentService {
 
     // Agent doesn't exist - user needs to create one via /api/agents/mm/create
     throw new Error("MM agent not found. Please create one first.")
+  }
+
+  private async createClients(wallet: any) {
+    const rpcUrl = getRpcUrl()
+
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(rpcUrl, {
+        batch: {
+          wait: 50, // Batch requests within 50ms
+        },
+        retryCount: 3,
+        retryDelay: 1000,
+      }),
+      cacheTime: 4000, // Cache for 4 seconds
+    })
+
+    const walletClient = createWalletClient({
+      chain: base,
+      transport: http(rpcUrl, {
+        batch: {
+          wait: 50,
+        },
+        retryCount: 3,
+        retryDelay: 1000,
+      }),
+      account: wallet,
+    })
+
+    return { publicClient, walletClient, rpcUrl }
   }
 }
 

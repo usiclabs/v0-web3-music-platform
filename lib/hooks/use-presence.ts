@@ -19,22 +19,10 @@ export function usePresence(options: PresenceOptions = {}) {
   const lastStreamId = useRef<string>()
 
   useEffect(() => {
-    if (!address) {
-      console.log("[v0] No address, skipping presence tracking")
-      return
-    }
-
-    console.log("[v0] Starting presence tracking for:", address, "status:", options.status || "online")
+    if (!address) return
 
     const updatePresence = async (presenceData: PresenceOptions) => {
       try {
-        console.log("[v0] Updating presence...", {
-          user_address: address,
-          status: presenceData.status || "online",
-          current_track_id: presenceData.currentTrackId || null,
-          current_stream_id: presenceData.currentStreamId || null,
-        })
-
         const { error } = await supabase.from("user_presence").upsert(
           {
             user_address: address,
@@ -51,8 +39,6 @@ export function usePresence(options: PresenceOptions = {}) {
 
         if (error) {
           console.error("[v0] Error updating presence:", error.message)
-        } else {
-          console.log("[v0] Presence updated successfully")
         }
       } catch (error) {
         console.error("[v0] Error in updatePresence:", error)
@@ -65,19 +51,14 @@ export function usePresence(options: PresenceOptions = {}) {
     lastTrackId.current = options.currentTrackId
     lastStreamId.current = options.currentStreamId
 
-    // Update presence every 30 seconds (heartbeat)
     heartbeatInterval.current = setInterval(() => {
       updatePresence(options)
-    }, 30000)
+    }, 300000) // 5 minutes instead of 30 seconds
 
-    // Set offline when user leaves
     const handleBeforeUnload = () => {
-      // Use sendBeacon for reliable offline status on page unload
       const data = new FormData()
       data.append("user_address", address)
       data.append("status", "offline")
-
-      // This is a fallback - we'll also handle this in the cleanup
       navigator.sendBeacon("/api/presence/offline", data)
     }
 
@@ -106,8 +87,7 @@ export function usePresence(options: PresenceOptions = {}) {
         clearInterval(heartbeatInterval.current)
       }
 
-      // Set user offline on cleanup
       updatePresence({ status: "offline" })
     }
-  }, [address, supabase, options]) // Updated to include the entire options object
+  }, [address, supabase, options])
 }

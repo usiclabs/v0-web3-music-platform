@@ -51,10 +51,10 @@ const UNICHAIN_RPC_ENDPOINTS = ["https://mainnet.unichain.org"]
 const MONAD_RPC_ENDPOINTS = ["https://rpc.monad.xyz", "https://rpc1.monad.xyz", "https://rpc3.monad.xyz"]
 
 const BASE_RPC_ENDPOINTS = [
-  "https://mainnet.base.org",
+  "https://base-rpc.publicnode.com", // More reliable public node
   "https://base.blockpi.network/v1/rpc/public",
-  "https://base-rpc.publicnode.com",
   "https://1rpc.io/base",
+  "https://mainnet.base.org",
 ]
 
 const BASE_SEPOLIA_RPC_ENDPOINTS = [
@@ -158,7 +158,10 @@ export const config = createConfig({
       timeout: 30000,
     }),
     [base.id]: http(BASE_RPC_ENDPOINTS[0], {
-      batch: true,
+      batch: {
+        wait: 50, // Added request batching to reduce RPC calls
+        batchSize: 25,
+      },
       retryCount: 5,
       retryDelay: 1000,
       timeout: 30000,
