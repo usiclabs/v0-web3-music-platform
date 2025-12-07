@@ -988,20 +988,20 @@ export default function MMAgentDashboard() {
       </div>
 
       <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-black/95 backdrop-blur-2xl border-white/10 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl sm:text-2xl text-white">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-emerald-400" />
+        <DialogContent className="w-[calc(100%-1rem)] max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col bg-black/95 backdrop-blur-2xl border-white/10 shadow-2xl p-4 sm:p-6">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl md:text-2xl text-white">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
               </div>
-              Fund Your MM Agent Wallets
+              <span className="truncate">Fund Your MM Agent Wallets</span>
             </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
+            <DialogDescription className="text-muted-foreground text-sm">
               Send ETH to these addresses to enable market making operations
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 mt-4">
+          <div className="flex-1 overflow-y-auto -mx-4 px-4 sm:-mx-6 sm:px-6 space-y-3 sm:space-y-4 mt-4">
             {wallets.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mb-4" />
@@ -1011,15 +1011,15 @@ export default function MMAgentDashboard() {
               wallets.map((wallet, idx) => (
                 <div
                   key={wallet.wallet_address}
-                  className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all"
+                  className="p-3 sm:p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all"
                 >
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                  <div className="flex items-start gap-2 sm:gap-3 mb-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
                       {idx + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-sm font-medium text-white">Wallet {idx + 1}</p>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <p className="text-xs sm:text-sm font-medium text-white">Wallet {idx + 1}</p>
                         {wallet.total_buys > 0 || wallet.total_sells > 0 ? (
                           <Badge
                             variant="outline"
@@ -1036,13 +1036,13 @@ export default function MMAgentDashboard() {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg">
-                        <span className="truncate flex-1">{wallet.wallet_address}</span>
+                      <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg overflow-hidden">
+                        <span className="truncate flex-1 text-[10px] sm:text-xs">{wallet.wallet_address}</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => copyToClipboard(wallet.wallet_address)}
-                          className="h-6 w-6 p-0 hover:bg-white/10"
+                          className="h-6 w-6 p-0 hover:bg-white/10 flex-shrink-0"
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -1050,22 +1050,26 @@ export default function MMAgentDashboard() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-sm mt-3">
-                    <div className="bg-white/5 p-3 rounded-lg">
-                      <p className="text-muted-foreground text-xs mb-1">ETH Balance</p>
-                      <p className="font-medium text-white">{wallet.eth_balance?.toFixed(6) || "0"} ETH</p>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm mt-3">
+                    <div className="bg-white/5 p-2 sm:p-3 rounded-lg">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">ETH Balance</p>
+                      <p className="font-medium text-white text-xs sm:text-sm truncate">
+                        {wallet.eth_balance?.toFixed(6) || "0"} ETH
+                      </p>
                     </div>
-                    <div className="bg-white/5 p-3 rounded-lg">
-                      <p className="text-muted-foreground text-xs mb-1">$USI Balance</p>
-                      <p className="font-medium text-white">{wallet.token_balance?.toFixed(2) || "0"} $USI</p>
+                    <div className="bg-white/5 p-2 sm:p-3 rounded-lg">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">$USI Balance</p>
+                      <p className="font-medium text-white text-xs sm:text-sm truncate">
+                        {wallet.token_balance?.toFixed(2) || "0"} $USI
+                      </p>
                     </div>
-                    <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
-                      <p className="text-muted-foreground text-xs mb-1">Buys</p>
-                      <p className="font-bold text-emerald-400">{wallet.total_buys || 0}</p>
+                    <div className="bg-emerald-500/10 p-2 sm:p-3 rounded-lg border border-emerald-500/20">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Buys</p>
+                      <p className="font-bold text-emerald-400 text-xs sm:text-sm">{wallet.total_buys || 0}</p>
                     </div>
-                    <div className="bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
-                      <p className="text-muted-foreground text-xs mb-1">Sells</p>
-                      <p className="font-bold text-rose-400">{wallet.total_sells || 0}</p>
+                    <div className="bg-rose-500/10 p-2 sm:p-3 rounded-lg border border-rose-500/20">
+                      <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Sells</p>
+                      <p className="font-bold text-rose-400 text-xs sm:text-sm">{wallet.total_sells || 0}</p>
                     </div>
                   </div>
 
@@ -1073,7 +1077,7 @@ export default function MMAgentDashboard() {
                     href={`https://basescan.org/address/${wallet.wallet_address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="mt-3 inline-flex items-center gap-1.5 text-[10px] sm:text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                   >
                     View on Basescan
                     <ExternalLink className="w-3 h-3" />
@@ -1082,12 +1086,12 @@ export default function MMAgentDashboard() {
               ))
             )}
 
-            <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 mt-4">
-              <div className="flex gap-3">
-                <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-2 flex-1">
-                  <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+            <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4">
+              <div className="flex gap-2 sm:gap-3">
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
+                  <p className="font-semibold text-xs sm:text-sm text-amber-400">Funding Instructions</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed">
                     Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
                     gas fees and trading operations. The agent will automatically use funded wallets for market making.
                   </p>

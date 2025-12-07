@@ -13,7 +13,6 @@ import {
   UNISWAP_V3_FACTORY_ABI,
   ERC20_ABI,
 } from "@/lib/web3/contracts"
-import { getAgentWalletKeys, generateWalletsForAgent } from "./wallet-generator"
 
 const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07" as Address
 const USI_TOKEN_SYMBOL = "USI"
@@ -82,11 +81,12 @@ export interface MMAgentConfig {
   wallet_address: string
   is_active: boolean
   buy_amount_eth: string
-  buy_interval_minutes: number
-  sell_interval_minutes: number
+  buy_interval_seconds: number
+  sell_interval_seconds: number
   last_buy_at: string | null
   last_sell_at: string | null
   total_volume_generated: string
+  sell_percentage: number
   multi_wallet_mode?: boolean
   active_wallets?: number
   owner_address?: string
@@ -114,146 +114,190 @@ export interface MMAgentStats {
 export class MarketMakerAgentService {
   private walletService: AgentWalletService
   private agentId: string
-  private ownerAddress: string | null = null
-  private _walletKeys: Map<number, string> = new Map()
-  private _walletAccounts: Map<number, any> = new Map()
+  private tokenAddress: string
+  private _walletKeys: Map<number, `0x${string}`> = new Map()
   private _currentWalletIndex = 0
+  private _lastWalletRotation: Date | null = null
 
-  constructor(agentId: string, ownerAddress?: string) {
+  constructor(agentId: string, tokenAddress: string) {
     this.walletService = getAgentWalletService()
     this.agentId = agentId
-    this.ownerAddress = ownerAddress || null
+    this.tokenAddress = tokenAddress
+  }
+
+  static async getOrCreateByOwner(ownerAddress: string): Promise<any> {
+    const supabase = await createClient()
+
+    // Try to find existing agent
+    const { data: existingAgent, error: fetchError } = await supabase
+      .from("mm_agents")
+      .select("*")
+      .eq("owner_address", ownerAddress.toLowerCase())
+      .single()
+
+    if (existingAgent) {
+      return existingAgent
+    }
+
+    // Create new agent if doesn't exist
+    const { data: newAgent, error: createError } = await supabase
+      .from("mm_agents")
+      .insert({
+        owner_address: ownerAddress.toLowerCase(),
+        is_active: false,
+        buy_amount_eth: "0.0001",
+        sell_percentage: 50,
+        buy_interval_seconds: 300,
+        sell_interval_seconds: 600,
+        multi_wallet_mode: false,
+        active_wallets: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      throw new Error(`Failed to create MM agent: ${createError.message}`)
+    }
+
+    return newAgent
   }
 
   private async loadWalletKeys(): Promise<void> {
     if (this._walletKeys.size > 0) return // Already loaded
 
-    if (!this.ownerAddress) {
-      // Fetch owner address from agent
-      const supabase = await createClient()
-      const { data: agent } = await supabase.from("mm_agents").select("owner_address").eq("id", this.agentId).single()
+    // Fetch encrypted keys from database
+    const supabase = await createClient()
+    const { data: wallets } = await supabase
+      .from("mm_agent_wallets")
+      .select("wallet_index, encrypted_private_key")
+      .eq("agent_id", this.agentId)
+      .eq("is_active", true)
 
-      if (!agent?.owner_address) {
-        throw new Error("Agent owner address not found")
+    if (!wallets || wallets.length === 0) {
+      console.log(`[MM Agent] No active wallets found for agent ${this.agentId}, generating now...`)
+      await this.initializeAgent()
+      const { data: newWallets } = await supabase
+        .from("mm_agent_wallets")
+        .select("wallet_index, encrypted_private_key")
+        .eq("agent_id", this.agentId)
+        .eq("is_active", true)
+
+      if (!newWallets || newWallets.length === 0) {
+        throw new Error("Failed to generate wallets")
       }
-      this.ownerAddress = agent.owner_address
-    }
 
-    // Load encrypted keys from database
-    this._walletKeys = await getAgentWalletKeys(this.agentId, this.ownerAddress)
-
-    if (this._walletKeys.size === 0) {
-      console.log(`[MM Agent] No wallets found for agent ${this.agentId}, generating now...`)
-      await generateWalletsForAgent(this.agentId, this.ownerAddress)
-      this._walletKeys = await getAgentWalletKeys(this.agentId, this.ownerAddress)
+      for (const wallet of newWallets) {
+        this._walletKeys.set(wallet.wallet_index, wallet.encrypted_private_key as `0x${string}`)
+      }
+    } else {
+      for (const wallet of wallets) {
+        this._walletKeys.set(wallet.wallet_index, wallet.encrypted_private_key as `0x${string}`)
+      }
     }
 
     console.log(`[MM Agent] Loaded ${this._walletKeys.size} wallet keys for agent ${this.agentId}`)
   }
 
   private async getWallet(walletIndex: number): Promise<any> {
-    if (this._walletAccounts.has(walletIndex)) {
-      return this._walletAccounts.get(walletIndex)
-    }
-
-    await this.loadWalletKeys()
-
     const privateKey = this._walletKeys.get(walletIndex)
     if (!privateKey) {
       throw new Error(`Wallet ${walletIndex} not found`)
     }
 
-    const formattedKey = privateKey.startsWith("0x")
-      ? (privateKey as `0x${string}`)
-      : (`0x${privateKey}` as `0x${string}`)
-
-    const account = privateKeyToAccount(formattedKey)
-    this._walletAccounts.set(walletIndex, account)
+    const account = privateKeyToAccount(privateKey)
     return account
   }
 
-  private async getNextWallet(agent: any): Promise<any> {
-    if (!agent.multi_wallet_mode) {
-      // Single wallet mode - use wallet 1
-      return await this.getWallet(1)
-    }
+  private async selectRandomWallet(): Promise<any> {
+    await this.loadWalletKeys()
 
-    // Round-robin through active wallets
-    this._currentWalletIndex = (this._currentWalletIndex % agent.active_wallets) + 1
-    return await this.getWallet(this._currentWalletIndex)
-  }
-
-  /**
-   * Get or create MM agent for a wallet address
-   */
-  static async getOrCreateByWallet(walletAddress: string): Promise<MMAgentConfig> {
     const supabase = await createClient()
-
-    const { data: existing, error: fetchError } = await supabase
+    const { data: agent } = await supabase
       .from("mm_agents")
-      .select("*")
-      .eq("wallet_address", walletAddress)
-      .maybeSingle()
-
-    if (fetchError) {
-      console.error("[MM Agent] Error fetching agent:", fetchError)
-      throw new Error(`Failed to fetch MM agent: ${fetchError.message}`)
-    }
-
-    if (existing) {
-      return existing as MMAgentConfig
-    }
-
-    // Create new agent
-    const { data: newAgent, error } = await supabase
-      .from("mm_agents")
-      .insert({
-        wallet_address: walletAddress,
-        is_active: false,
-        buy_amount_eth: "0.0001",
-        buy_interval_minutes: 5,
-        sell_interval_minutes: 10,
-      })
-      .select()
+      .select("multi_wallet_mode, active_wallets")
+      .eq("id", this.agentId)
       .single()
 
-    if (error) {
-      console.error("[MM Agent] Error creating agent:", error)
-      throw new Error(`Failed to create MM agent: ${error.message}`)
+    if (!agent?.multi_wallet_mode) {
+      // Single wallet mode - always use wallet 1
+      console.log("[MM Agent] Single wallet mode - using wallet 1")
+      return this.getWallet(1)
     }
 
-    return newAgent as MMAgentConfig
+    // Multi-wallet mode - use round-robin rotation
+    const walletKeys = Array.from(this._walletKeys.keys()).sort((a, b) => a - b) // Sort by wallet index
+    const activeWalletCount = agent.active_wallets || walletKeys.length
+    const availableWallets = walletKeys.slice(0, Math.min(activeWalletCount, walletKeys.length))
+
+    if (availableWallets.length === 0) {
+      throw new Error("No wallets available for multi-wallet mode")
+    }
+
+    // Rotate to next wallet
+    this._currentWalletIndex = (this._currentWalletIndex + 1) % availableWallets.length
+    const selectedWalletIndex = availableWallets[this._currentWalletIndex]
+
+    console.log(
+      `[MM Agent] Multi-wallet mode - rotating to wallet ${selectedWalletIndex} (${this._currentWalletIndex + 1}/${availableWallets.length})`,
+    )
+    this._lastWalletRotation = new Date()
+
+    return this.getWallet(selectedWalletIndex)
   }
 
-  /**
-   * Check if it's time to buy based on interval
-   */
-  private shouldBuy(agent: MMAgentConfig, now: Date): boolean {
-    if (!agent.last_buy_at) return true
-    const lastBuy = new Date(agent.last_buy_at).getTime()
-    const intervalMs = agent.buy_interval_minutes * 60 * 1000
-    return now.getTime() - lastBuy >= intervalMs
-  }
+  private async initializeAgent(): Promise<void> {
+    const supabase = await createClient()
 
-  /**
-   * Check if it's time to sell based on interval
-   */
-  private shouldSell(agent: MMAgentConfig, now: Date): boolean {
-    if (!agent.last_sell_at) return true
-    const lastSell = new Date(agent.last_sell_at).getTime()
-    const intervalMs = agent.sell_interval_minutes * 60 * 1000
-    return now.getTime() - lastSell >= intervalMs
+    const { data: existingWallet } = await supabase
+      .from("server_wallets")
+      .select("*")
+      .eq("owner_address", this.agentId)
+      .single()
+
+    let walletAddress: string
+
+    if (existingWallet) {
+      walletAddress = existingWallet.wallet_address
+    } else {
+      const newWallet = this.walletService.generateWallet()
+      walletAddress = newWallet.address
+
+      await supabase.from("server_wallets").insert({
+        owner_address: this.agentId,
+        wallet_address: walletAddress,
+        encrypted_private_key: this.walletService.encryptPrivateKey(newWallet.privateKey),
+      })
+    }
+
+    const defaultBuyAmountEth = "0.0001"
+
+    await supabase.from("mm_agents").insert({
+      owner_address: this.agentId,
+      token_address: this.tokenAddress,
+      token_symbol: USI_TOKEN_SYMBOL,
+      wallet_address: walletAddress,
+      is_active: false,
+      buy_amount_eth: defaultBuyAmountEth,
+      sell_percentage: 50,
+      buy_interval_seconds: 300,
+      sell_interval_seconds: 600,
+      multi_wallet_mode: false,
+      active_wallets: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
   }
 
   /**
    * Execute a buy operation - swap ETH/WETH for USI
    * Enhanced to support buying with both ETH and WETH
    */
-  async executeBuy(walletIndex: number): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  async executeBuy(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
       console.log("[MM Agent] Attempting to buy $USI...")
 
-      const wallet = await this.getWallet(walletIndex)
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
@@ -470,13 +514,12 @@ export class MarketMakerAgentService {
    * Execute a sell operation - swap accumulated USI for ETH
    * Enhanced to unwrap WETH to ETH after selling
    */
-  async executeSell(walletIndex: number): Promise<{ success: boolean; txHash?: string; error?: string }> {
-    let wallet: any
+  async executeSell(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    let walletAddress: any
 
     try {
       console.log("[MM Agent] Attempting to sell accumulated $USI...")
 
-      wallet = await this.getWallet(walletIndex)
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
@@ -495,9 +538,16 @@ export class MarketMakerAgentService {
         return { success: false, error: "No tokens to sell" }
       }
 
-      const sellAmount = usiBalance / 2n
+      const supabase = await createClient()
+      const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+
+      if (!agent) {
+        throw new Error("Agent not found")
+      }
+
+      const sellAmount = (usiBalance * BigInt(agent.sell_percentage)) / 100n
       console.log(`[MM Agent] Total balance: ${formatUnits(usiBalance, 18)} $USI`)
-      console.log(`[MM Agent] Selling 50%: ${formatUnits(sellAmount, 18)} $USI`)
+      console.log(`[MM Agent] Selling ${agent.sell_percentage}%: ${formatUnits(sellAmount, 18)} $USI`)
 
       if (sellAmount < parseUnits("1", 18)) {
         console.log(`[MM Agent] Sell amount too small, need at least 1 $USI`)
@@ -685,7 +735,7 @@ export class MarketMakerAgentService {
     } catch (error: any) {
       console.error("[MM Agent] Sell execution error:", error.message)
       await this.logActivity("error", `Sell failed: ${error.message}`, {
-        wallet: wallet?.address || "unknown",
+        wallet: walletAddress || "unknown",
       })
       return { success: false, error: error.message || "Unknown error" }
     }
@@ -694,8 +744,8 @@ export class MarketMakerAgentService {
   /**
    * Run a market making cycle (check and execute buy/sell if needed)
    */
-  async runCycle(forceBuy?: boolean, forceSell?: boolean): Promise<MMCycleResult> {
-    const supabase = await createClient()
+  async runCycle(): Promise<MMCycleResult> {
+    console.log(`[MM Agent] Starting cycle for agent ${this.agentId}`)
 
     const result: MMCycleResult = {
       buyExecuted: false,
@@ -703,51 +753,29 @@ export class MarketMakerAgentService {
       messages: [],
     }
 
-    const { data: agent, error } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+    const supabase = await createClient()
+    const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
 
-    if (error || !agent || !agent.is_active) {
+    if (!agent || !agent.is_active) {
       throw new Error("Agent not found or inactive")
     }
 
+    const wallet = await this.selectRandomWallet()
+    const walletAddress = wallet.address as `0x${string}`
+    console.log(`[MM Agent] Running cycle with wallet ${walletAddress} (multi-wallet: ${agent.multi_wallet_mode})`)
+
     const now = new Date()
 
-    // Determine which wallet to use
-    const walletAccount = await this.getNextWallet(agent)
-    const walletAddress = walletAccount.address
+    // Check if we should buy
+    const shouldBuy =
+      !agent.last_buy_at || new Date(agent.last_buy_at).getTime() + agent.buy_interval_seconds * 1000 <= now.getTime()
 
-    console.log(`[MM Agent] Running cycle with wallet ${walletAddress} (multi-wallet: ${agent.multi_wallet_mode})`)
-    result.messages.push(`Using wallet ${walletAddress}`)
-
-    // Buy logic
-    if (forceBuy || this.shouldBuy(agent, now)) {
+    if (shouldBuy) {
       try {
-        const buyResult = await this.executeBuy(1)
+        await this.executeBuy(wallet)
 
-        if (buyResult.success) {
-          await supabase.from("mm_agents").update({ last_buy_at: now.toISOString() }).eq("id", this.agentId)
-
-          // Update wallet stats
-          if (agent.multi_wallet_mode) {
-            await supabase
-              .from("mm_agent_wallets")
-              .update({
-                total_buys: supabase.rpc("increment", { x: 1 }),
-                last_used_at: now.toISOString(),
-              })
-              .eq("agent_id", this.agentId)
-              .eq("wallet_address", walletAddress)
-          }
-
-          await this.logActivity("buy", "Buy executed successfully", {
-            amount: agent.buy_amount_eth,
-            wallet: walletAddress,
-          })
-
-          result.buyExecuted = true
-          result.messages.push(`Buy executed: ${agent.buy_amount_eth} ETH`)
-        } else {
-          result.messages.push(`Buy failed: ${buyResult.error}`)
-        }
+        result.buyExecuted = true
+        result.messages.push(`Buy executed successfully with wallet ${walletAddress}`)
       } catch (error: any) {
         console.error("[MM Agent] Buy failed:", error.message)
         await this.logActivity("error", `Buy failed: ${error.message}`, {
@@ -757,35 +785,17 @@ export class MarketMakerAgentService {
       }
     }
 
-    // Sell logic
-    if (forceSell || this.shouldSell(agent, now)) {
+    // Check if we should sell
+    const shouldSell =
+      !agent.last_sell_at ||
+      new Date(agent.last_sell_at).getTime() + agent.sell_interval_seconds * 1000 <= now.getTime()
+
+    if (shouldSell) {
       try {
-        const sellResult = await this.executeSell(1)
+        await this.executeSell(wallet)
 
-        if (sellResult.success) {
-          await supabase.from("mm_agents").update({ last_sell_at: now.toISOString() }).eq("id", this.agentId)
-
-          // Update wallet stats
-          if (agent.multi_wallet_mode) {
-            await supabase
-              .from("mm_agent_wallets")
-              .update({
-                total_sells: supabase.rpc("increment", { x: 1 }),
-                last_used_at: now.toISOString(),
-              })
-              .eq("agent_id", this.agentId)
-              .eq("wallet_address", walletAddress)
-          }
-
-          await this.logActivity("sell", "Sell executed successfully", {
-            wallet: walletAddress,
-          })
-
-          result.sellExecuted = true
-          result.messages.push("Sell executed successfully")
-        } else {
-          result.messages.push(`Sell failed: ${sellResult.error}`)
-        }
+        result.sellExecuted = true
+        result.messages.push(`Sell executed successfully with wallet ${walletAddress}`)
       } catch (error: any) {
         console.error("[MM Agent] Sell failed:", error.message)
         await this.logActivity("error", `Sell failed: ${error.message}`, {
@@ -1061,30 +1071,6 @@ export class MarketMakerAgentService {
     return formatUnits(balance as bigint, 18)
   }
 
-  /**
-   * Get or create MM agent for a user
-   */
-  static async getOrCreateByOwner(ownerAddress: string): Promise<MMAgentConfig> {
-    const supabase = await createClient()
-
-    const { data: agent, error } = await supabase
-      .from("mm_agents")
-      .select("*")
-      .eq("owner_address", ownerAddress)
-      .maybeSingle()
-
-    if (error) {
-      throw new Error(`Failed to fetch MM agent: ${error.message}`)
-    }
-
-    if (agent) {
-      return agent as MMAgentConfig
-    }
-
-    // Agent doesn't exist - user needs to create one via /api/agents/mm/create
-    throw new Error("MM agent not found. Please create one first.")
-  }
-
   private async createClients(wallet: any) {
     const rpcUrl = getRpcUrl()
 
@@ -1113,44 +1099,6 @@ export class MarketMakerAgentService {
     })
 
     return { publicClient, walletClient, rpcUrl }
-  }
-
-  private async initializeAgent(ownerAddress: Address, tokenAddress: Address, tokenSymbol: string) {
-    const supabase = await createClient()
-
-    const { data: existingWallet } = await supabase
-      .from("server_wallets")
-      .select("*")
-      .eq("owner_address", ownerAddress)
-      .single()
-
-    let walletAddress: string
-
-    if (existingWallet) {
-      walletAddress = existingWallet.wallet_address
-    } else {
-      const newWallet = this.walletService.generateWallet()
-      walletAddress = newWallet.address
-
-      await supabase.from("server_wallets").insert({
-        owner_address: ownerAddress,
-        wallet_address: walletAddress,
-        encrypted_private_key: this.walletService.encryptPrivateKey(newWallet.privateKey),
-      })
-    }
-
-    const defaultBuyAmountEth = "0.0001"
-
-    await supabase.from("mm_agents").insert({
-      owner_address: ownerAddress,
-      token_address: tokenAddress,
-      token_symbol: tokenSymbol,
-      wallet_address: walletAddress,
-      is_active: false,
-      buy_amount_eth: defaultBuyAmountEth,
-      buy_interval_minutes: 5,
-      sell_interval_minutes: 10,
-    })
   }
 }
 
