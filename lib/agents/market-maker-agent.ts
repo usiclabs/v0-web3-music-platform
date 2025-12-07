@@ -1,6 +1,6 @@
 import { getAgentWalletService, type AgentWalletService } from "./wallet-service"
 import { createClient } from "@/lib/supabase/server"
-import { formatUnits, type Address, parseEther } from "viem"
+import { formatUnits, type Address, parseEther, parseUnits } from "viem"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
@@ -19,7 +19,6 @@ const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07" as Addres
 const USI_TOKEN_SYMBOL = "USI"
 const USI_TOKEN_NAME = "Universal Sound Index"
 
-const BUY_AMOUNT_ETH = "0.0001"
 const BUY_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 const SELL_INTERVAL_MS = 10 * 60 * 1000 // 10 minutes
 
@@ -91,6 +90,8 @@ export interface MMAgentConfig {
   multi_wallet_mode?: boolean
   active_wallets?: number
   owner_address?: string
+  token_address?: string
+  token_symbol?: string
 }
 
 export interface MMAgentStats {
@@ -209,7 +210,7 @@ export class MarketMakerAgentService {
       .insert({
         wallet_address: walletAddress,
         is_active: false,
-        buy_amount_eth: BUY_AMOUNT_ETH,
+        buy_amount_eth: "0.0001",
         buy_interval_minutes: 5,
         sell_interval_minutes: 10,
       })
@@ -257,12 +258,22 @@ export class MarketMakerAgentService {
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
 
+      const supabase = await createClient()
+      const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+
+      if (!agent) {
+        throw new Error("Agent not found")
+      }
+
+      const configuredBuyAmount = parseEther(agent.buy_amount_eth)
+
       // Check ETH balance
       const ethBalance = await publicClient.getBalance({
         address: wallet.address,
       })
 
       console.log(`[MM Agent] Current ETH balance: ${formatUnits(ethBalance, 18)}`)
+      console.log(`[MM Agent] Configured buy amount: ${agent.buy_amount_eth} ETH`)
 
       // Check WETH balance
       const wethBalance = (await publicClient.readContract({
@@ -274,17 +285,16 @@ export class MarketMakerAgentService {
 
       console.log(`[MM Agent] Current WETH balance: ${formatUnits(wethBalance, 18)}`)
 
-      // Determine what to use for buying (prefer WETH if available, otherwise ETH)
       let buyAmount: bigint
       let useWETH = false
 
-      if (wethBalance >= parseEther("0.0001")) {
+      if (wethBalance >= configuredBuyAmount) {
         buyAmount = wethBalance
         useWETH = true
         console.log(`[MM Agent] Using WETH for buy: ${formatUnits(buyAmount, 18)}`)
-      } else if (ethBalance >= parseEther("0.0002")) {
-        // Need at least 0.0002 ETH (0.0001 for swap + gas)
-        buyAmount = parseEther("0.0001")
+      } else if (ethBalance >= configuredBuyAmount * 2n) {
+        // Need at least 2x buy amount (buy amount + gas)
+        buyAmount = configuredBuyAmount
         console.log(`[MM Agent] Using ETH for buy: ${formatUnits(buyAmount, 18)}`)
       } else {
         const error = "Insufficient ETH/WETH balance for buy"
@@ -470,7 +480,6 @@ export class MarketMakerAgentService {
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
 
-      // Get current $USI balance
       const usiBalance = await publicClient.readContract({
         address: USI_TOKEN_ADDRESS,
         abi: ERC20_ABI,
@@ -478,22 +487,54 @@ export class MarketMakerAgentService {
         args: [wallet.address],
       })
 
+      console.log(`[v0] Raw balance from contract: ${usiBalance.toString()}`)
+
       if (usiBalance === 0n) {
         console.log(`[MM Agent] No $USI tokens to sell`)
         return { success: false, error: "No tokens to sell" }
       }
 
-      console.log(`[MM Agent] Current $USI balance: ${formatUnits(usiBalance, 18)}`)
+      const sellAmount = usiBalance / 2n
+      console.log(`[MM Agent] Total balance: ${formatUnits(usiBalance, 18)} $USI`)
+      console.log(`[MM Agent] Selling 50%: ${formatUnits(sellAmount, 18)} $USI`)
+
+      if (sellAmount < parseUnits("1", 18)) {
+        console.log(`[MM Agent] Sell amount too small, need at least 1 $USI`)
+        return { success: false, error: "Sell amount too small" }
+      }
 
       // Estimate output with 5% slippage
-      const minEthOut = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, usiBalance)
+      const minEthOut = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
       const minEthOutWithSlippage = (minEthOut * 95n) / 100n
       console.log(
         `[MM Agent] Expected WETH output: ${formatUnits(minEthOut, 18)} (min: ${formatUnits(minEthOutWithSlippage, 18)})`,
       )
 
       console.log(`[MM Agent] Checking approval for router...`)
-      await this.walletService.ensureApproval(USI_TOKEN_ADDRESS, routerAddress, usiBalance)
+      const currentAllowance = await publicClient.readContract({
+        address: USI_TOKEN_ADDRESS,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [wallet.address, routerAddress],
+      })
+
+      console.log(`[v0] Current allowance: ${formatUnits(currentAllowance as bigint, 18)} $USI`)
+
+      if ((currentAllowance as bigint) < sellAmount) {
+        console.log(`[MM Agent] Insufficient allowance, approving ${formatUnits(sellAmount, 18)} $USI`)
+
+        const approvalAmount = sellAmount * 2n // Approve 2x for future trades
+        const approveHash = await walletClient.writeContract({
+          address: USI_TOKEN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [routerAddress, approvalAmount],
+        })
+
+        console.log(`[MM Agent] Approval transaction sent: ${approveHash}`)
+        await publicClient.waitForTransactionReceipt({ hash: approveHash })
+        console.log(`[MM Agent] Approval confirmed, proceeding with swap...`)
+      }
 
       const feeTiers = [3000, 10000, 500]
       let sellTxHash: string | undefined
@@ -513,7 +554,7 @@ export class MarketMakerAgentService {
                 tokenOut: WETH_ADDRESS,
                 fee,
                 recipient: wallet.address,
-                amountIn: usiBalance,
+                amountIn: sellAmount, // Use validated sellAmount instead of full balance
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
               },
@@ -537,7 +578,7 @@ export class MarketMakerAgentService {
                 tokenOut: WETH_ADDRESS,
                 fee,
                 recipient: wallet.address,
-                amountIn: usiBalance,
+                amountIn: sellAmount, // Use validated sellAmount
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
               },
@@ -623,15 +664,15 @@ export class MarketMakerAgentService {
       }
 
       // Record the trade
-      await this.recordTrade("sell", usiBalance, minEthOutWithSlippage, sellTxHash)
+      await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash)
 
       // Log success
       await this.logActivity(
         "sell_executed",
-        `Sold ${formatUnits(usiBalance, 18)} $USI for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
+        `Sold ${formatUnits(sellAmount, 18)} $USI for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
         {
           txHash: sellTxHash,
-          amountIn: formatUnits(usiBalance, 18),
+          amountIn: formatUnits(sellAmount, 18),
           amountOut: formatUnits(minEthOutWithSlippage, 18),
         },
       )
@@ -1072,6 +1113,44 @@ export class MarketMakerAgentService {
 
     return { publicClient, walletClient, rpcUrl }
   }
+
+  private async initializeAgent(ownerAddress: Address, tokenAddress: Address, tokenSymbol: string) {
+    const supabase = await createClient()
+
+    const { data: existingWallet } = await supabase
+      .from("server_wallets")
+      .select("*")
+      .eq("owner_address", ownerAddress)
+      .single()
+
+    let walletAddress: string
+
+    if (existingWallet) {
+      walletAddress = existingWallet.wallet_address
+    } else {
+      const newWallet = this.walletService.generateWallet()
+      walletAddress = newWallet.address
+
+      await supabase.from("server_wallets").insert({
+        owner_address: ownerAddress,
+        wallet_address: walletAddress,
+        encrypted_private_key: this.walletService.encryptPrivateKey(newWallet.privateKey),
+      })
+    }
+
+    const defaultBuyAmountEth = "0.0001"
+
+    await supabase.from("mm_agents").insert({
+      owner_address: ownerAddress,
+      token_address: tokenAddress,
+      token_symbol: tokenSymbol,
+      wallet_address: walletAddress,
+      is_active: false,
+      buy_amount_eth: defaultBuyAmountEth,
+      buy_interval_minutes: 5,
+      sell_interval_minutes: 10,
+    })
+  }
 }
 
 interface MMCycleResult {
@@ -1079,3 +1158,5 @@ interface MMCycleResult {
   sellExecuted: boolean
   messages: string[]
 }
+
+const SELL_PERCENTAGE = 0.5 // Sell 50% of balance

@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +32,10 @@ import {
   Plus,
   Copy,
   ExternalLink,
+  Settings,
+  PlayCircle,
+  PauseCircle,
+  Sparkles,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { createClient } from "@/lib/supabase/client"
@@ -61,6 +67,11 @@ interface WalletStats {
   buys: number
   sells: number
   usiBalance: string
+  eth_balance?: string // Added for modal
+  token_balance?: string // Added for modal
+  total_buys?: number // Added for modal
+  total_sells?: number // Added for modal
+  is_active?: boolean // Added for modal
 }
 
 interface MMActivity {
@@ -74,27 +85,27 @@ interface MMActivity {
 function LivePulse({ active }: { active: boolean }) {
   if (!active) return null
   return (
-    <span className="relative flex h-2 w-2">
+    <span className="relative flex h-2.5 w-2.5">
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-lg shadow-emerald-500/50" />
     </span>
   )
 }
 
 function ActivityIcon({ type }: { type: string }) {
   if (type.includes("buy")) {
-    return <TrendingUp className="w-4 h-4 text-emerald-500" />
+    return <TrendingUp className="w-4 h-4 text-emerald-400" />
   }
   if (type.includes("sell")) {
-    return <TrendingDown className="w-4 h-4 text-red-500" />
+    return <TrendingDown className="w-4 h-4 text-rose-400" />
   }
   if (type.includes("error") || type.includes("failed")) {
-    return <XCircle className="w-4 h-4 text-red-500" />
+    return <XCircle className="w-4 h-4 text-rose-400" />
   }
   if (type.includes("completed")) {
-    return <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+    return <CheckCircle2 className="w-4 h-4 text-emerald-400" />
   }
-  return <Activity className="w-4 h-4 text-blue-500" />
+  return <Activity className="w-4 h-4 text-blue-400" />
 }
 
 export default function MMAgentDashboard() {
@@ -415,12 +426,21 @@ export default function MMAgentDashboard() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full">
-          <CardContent className="pt-6 text-center">
-            <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-            <p className="text-muted-foreground mb-6">Connect your wallet to access the Market Maker agent dashboard</p>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl shadow-emerald-500/5">
+          <CardContent className="pt-12 pb-12 text-center">
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 animate-glow-pulse" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <Wallet className="w-12 h-12 text-white" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
+              Connect Wallet
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
+              Connect your wallet to access the Market Maker agent control center
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -429,76 +449,101 @@ export default function MMAgentDashboard() {
 
   if (isLoadingConfig) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 animate-pulse-slow opacity-20" />
+            <div className="absolute inset-2 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center animate-glow-pulse">
+              <BarChart3 className="w-10 h-10 text-white" />
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+            <p className="text-sm text-muted-foreground animate-pulse">Initializing agent dashboard...</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!config && !configError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-2xl w-full">
-          <CardHeader>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <BarChart3 className="w-8 h-8 text-white" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+        <Card className="max-w-2xl w-full bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl">
+          <CardHeader className="space-y-6 pb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 blur-xl animate-glow-pulse" />
+                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center shadow-xl">
+                  <BarChart3 className="w-10 h-10 text-white" />
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-2xl">Create Your MM Agent</CardTitle>
-                <CardDescription>Set up your own market maker bot with dedicated wallets</CardDescription>
+              <div className="flex-1">
+                <CardTitle className="text-3xl sm:text-4xl mb-2 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                  Deploy MM Agent
+                </CardTitle>
+                <CardDescription className="text-base text-muted-foreground">
+                  Launch your automated market maker with multi-wallet infrastructure
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Users className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 space-y-4 border border-white/10">
+              <h3 className="font-semibold text-lg flex items-center gap-2 text-white">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
                 How It Works
               </h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>5 fresh wallets will be generated exclusively for your MM agent</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>Fund these wallets with ETH to enable automatic market making</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>Bot rotates through wallets to create organic trading volume</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                  <span>You maintain full control - only you can access your agent's funds</span>
-                </li>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                {[
+                  "5 dedicated wallets generated with enterprise-grade encryption",
+                  "Fund wallets with ETH to enable autonomous trading operations",
+                  "AI rotates between wallets to simulate organic market activity",
+                  "Complete custody - only you control your agent's funds",
+                ].map((item, idx) => (
+                  <li
+                    key={idx}
+                    className="flex items-start gap-3 animate-fade-in"
+                    style={{ animationDelay: `${idx * 100}ms` }}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+            <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-2xl p-5">
               <div className="flex gap-3">
-                <Activity className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-sm text-yellow-600 dark:text-yellow-400">Important</p>
-                  <p className="text-sm text-muted-foreground">
-                    Your wallet private keys will be encrypted and stored securely in the database. Only you can access
-                    your agent's wallets. Make sure you're comfortable with this before proceeding.
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <Activity className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <p className="font-semibold text-base text-amber-400">Security Notice</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Wallet keys are encrypted at rest using AES-256. Only you can access your agent wallets through your
+                    connected address.
                   </p>
                 </div>
               </div>
             </div>
 
-            <Button onClick={handleCreateAgent} disabled={isCreating} className="w-full" size="lg">
+            <Button
+              onClick={handleCreateAgent}
+              disabled={isCreating}
+              className="w-full h-14 text-base bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/30 hover-lift-premium transition-all duration-300 font-semibold"
+            >
               {isCreating ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Agent...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Deploying Agent...
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create My MM Agent
+                  <Plus className="w-5 h-5 mr-2" />
+                  Deploy Market Maker Agent
                 </>
               )}
             </Button>
@@ -517,53 +562,52 @@ export default function MMAgentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-emerald-500/10 bg-gradient-to-r from-card/80 via-emerald-500/5 to-card/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[#0a0a0a] pb-safe">
+      <div className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-xl">
+        <div className="container mx-auto px-4 sm:px-6 py-4 max-w-7xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 blur-md animate-glow-pulse" />
+                <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center shadow-xl">
                   <BarChart3 className="w-7 h-7 text-white" />
                 </div>
                 {config?.is_active && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-background flex items-center justify-center">
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#0a0a0a] border-2 border-[#0a0a0a] flex items-center justify-center">
                     <LivePulse active />
                   </div>
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">$USI Market Maker</h1>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
+                    $USI Market Maker
+                  </h1>
                   {config?.is_active && (
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                    >
                       <Radio className="w-3 h-3 mr-1" />
                       Active
                     </Badge>
                   )}
-                  {config?.multi_wallet_mode && (
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
-                      <Users className="w-3 h-3 mr-1" />
-                      {config.active_wallets} Wallets
-                    </Badge>
-                  )}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {config?.multi_wallet_mode ? "Multi-Wallet Volume Generator" : "Autonomous Volume Generator"}
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  {config?.multi_wallet_mode ? `${config.active_wallets}x Multi-Wallet Mode` : "Single Wallet Mode"}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowWalletModal(true)}
-                className="gap-2 bg-transparent"
+                className="flex-1 sm:flex-none gap-2 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-sm"
               >
                 <Wallet className="w-4 h-4" />
-                Fund Wallets
+                <span>Fund</span>
               </Button>
 
               <Button
@@ -571,33 +615,30 @@ export default function MMAgentDashboard() {
                 size="sm"
                 onClick={handleRunCycle}
                 disabled={isRunning || !config?.is_active}
-                className="gap-2 bg-transparent"
+                className="flex-1 sm:flex-none gap-2 bg-white/5 border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all backdrop-blur-sm disabled:opacity-50"
               >
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                Run Cycle
+                <span>Test Run</span>
               </Button>
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
-                <span className="text-sm font-medium text-muted-foreground">Multi-Wallet</span>
-                <Switch checked={config?.multi_wallet_mode} onCheckedChange={toggleMultiWallet} />
-                <div
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config?.multi_wallet_mode ? "bg-blue-500/10 text-blue-400" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {config?.multi_wallet_mode ? `${config.active_wallets}x` : "1x"}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border">
-                <span className="text-sm font-medium text-muted-foreground">Agent</span>
-                <Switch checked={config?.is_active} onCheckedChange={toggleAgent} />
-                <div
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config?.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {config?.is_active ? "ON" : "OFF"}
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                <Switch
+                  checked={config?.is_active}
+                  onCheckedChange={toggleAgent}
+                  className="data-[state=checked]:bg-emerald-500"
+                />
+                <div className="flex items-center gap-2">
+                  {config?.is_active ? (
+                    <>
+                      <PlayCircle className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm font-medium text-emerald-400">ON</span>
+                    </>
+                  ) : (
+                    <>
+                      <PauseCircle className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">OFF</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -605,105 +646,113 @@ export default function MMAgentDashboard() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Stats & Config */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Total Buys</p>
-                      <p className="text-3xl font-bold">{stats.totalBuys}</p>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {[
+                {
+                  label: "Total Buys",
+                  value: stats.totalBuys,
+                  icon: TrendingUp,
+                  gradient: "from-emerald-500/10 to-transparent",
+                  iconBg: "from-emerald-500/20 to-emerald-600/10",
+                  iconColor: "text-emerald-400",
+                  shadow: "shadow-emerald-500/10",
+                },
+                {
+                  label: "Total Sells",
+                  value: stats.totalSells,
+                  icon: TrendingDown,
+                  gradient: "from-rose-500/10 to-transparent",
+                  iconBg: "from-rose-500/20 to-rose-600/10",
+                  iconColor: "text-rose-400",
+                  shadow: "shadow-rose-500/10",
+                },
+                {
+                  label: "Volume Generated",
+                  value: `$${Number.parseFloat(stats.volumeGenerated || "0").toFixed(2)}`,
+                  icon: Activity,
+                  gradient: "from-blue-500/10 to-transparent",
+                  iconBg: "from-blue-500/20 to-blue-600/10",
+                  iconColor: "text-blue-400",
+                  shadow: "shadow-blue-500/10",
+                },
+                {
+                  label: "$USI Balance",
+                  value: Number.parseFloat(stats.usiBalance).toFixed(2),
+                  icon: DollarSign,
+                  gradient: "from-purple-500/10 to-transparent",
+                  iconBg: "from-purple-500/20 to-purple-600/10",
+                  iconColor: "text-purple-400",
+                  shadow: "shadow-purple-500/10",
+                },
+              ].map((stat, idx) => (
+                <Card
+                  key={stat.label}
+                  className={`bg-gradient-to-br ${stat.gradient} bg-black/40 backdrop-blur-xl border-white/10 hover:border-white/20 hover:scale-[1.02] hover:${stat.shadow} transition-all duration-300 animate-fade-in overflow-hidden`}
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                          {stat.label}
+                        </p>
+                        <p className="text-2xl sm:text-3xl font-bold text-white break-all">{stat.value}</p>
+                      </div>
+                      <div
+                        className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${stat.iconBg} flex items-center justify-center flex-shrink-0 shadow-lg`}
+                      >
+                        <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.iconColor}`} />
+                      </div>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 text-emerald-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Total Sells</p>
-                      <p className="text-3xl font-bold">{stats.totalSells}</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                      <TrendingDown className="w-6 h-6 text-red-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Volume Generated</p>
-                      <p className="text-3xl font-bold">
-                        ${Number.parseFloat(stats.volumeGenerated || "0").toFixed(4)}
-                      </p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-                      <Activity className="w-6 h-6 text-blue-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">$USI Balance</p>
-                      <p className="text-3xl font-bold">{Number.parseFloat(stats.usiBalance).toFixed(4)}</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-purple-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
-            {/* Wallet Stats Section */}
             {config?.multi_wallet_mode && stats.walletStats && stats.walletStats.length > 0 && (
-              <Card className="bg-card/50 border-emerald-500/10">
+              <Card
+                className="bg-black/40 backdrop-blur-xl border-white/10 animate-fade-in"
+                style={{ animationDelay: "400ms" }}
+              >
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Users className="w-5 h-5 text-emerald-400" />
-                    Wallet Performance
-                  </CardTitle>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg sm:text-xl text-white">Wallet Performance</CardTitle>
+                      <CardDescription className="text-sm">Multi-wallet distribution analytics</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {stats.walletStats.map((wallet, idx) => (
                       <div
                         key={wallet.address}
-                        className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-emerald-500/10"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all hover-lift gap-3"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30">
                             {idx + 1}
                           </div>
-                          <div>
-                            <div className="text-xs font-mono text-muted-foreground">
-                              {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-mono text-muted-foreground truncate">
+                              {wallet.address.slice(0, 8)}...{wallet.address.slice(-6)}
                             </div>
-                            <div className="text-sm font-medium">{wallet.usiBalance} $USI</div>
+                            <div className="text-sm font-medium text-white mt-1">{wallet.usiBalance} $USI</div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
+                        <div className="flex items-center gap-6 text-sm ml-13 sm:ml-0">
                           <div className="text-center">
-                            <div className="text-emerald-400 font-bold">{wallet.buys}</div>
+                            <div className="text-emerald-400 font-bold text-lg">{wallet.buys}</div>
                             <div className="text-xs text-muted-foreground">Buys</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-red-400 font-bold">{wallet.sells}</div>
+                            <div className="text-rose-400 font-bold text-lg">{wallet.sells}</div>
                             <div className="text-xs text-muted-foreground">Sells</div>
                           </div>
                         </div>
@@ -714,74 +763,115 @@ export default function MMAgentDashboard() {
               </Card>
             )}
 
-            {/* Configuration */}
-            <Card>
+            <Card
+              className="bg-black/40 backdrop-blur-xl border-white/10 animate-fade-in"
+              style={{ animationDelay: "500ms" }}
+            >
               <CardHeader>
-                <CardTitle>Agent Configuration</CardTitle>
-                <CardDescription>Configure your market making parameters</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="buy_amount">Buy Amount (ETH)</Label>
-                    <Input
-                      id="buy_amount"
-                      type="number"
-                      step="0.0001"
-                      value={config.buy_amount_eth}
-                      onChange={(e) => setConfig({ ...config, buy_amount_eth: e.target.value })}
-                    />
-                    <p className="text-xs text-muted-foreground">ETH to spend per buy</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-blue-400" />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="buy_interval">Buy Interval (minutes)</Label>
-                    <div className="flex items-center gap-2">
-                      <Timer className="w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="buy_interval"
-                        type="number"
-                        value={config.buy_interval_minutes}
-                        onChange={(e) =>
-                          setConfig({ ...config, buy_interval_minutes: Number.parseInt(e.target.value) })
-                        }
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">How often to buy</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="sell_interval">Sell Interval (minutes)</Label>
-                    <div className="flex items-center gap-2">
-                      <Timer className="w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="sell_interval"
-                        type="number"
-                        value={config.sell_interval_minutes}
-                        onChange={(e) =>
-                          setConfig({ ...config, sell_interval_minutes: Number.parseInt(e.target.value) })
-                        }
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">How often to sell</p>
+                  <div>
+                    <CardTitle className="text-lg sm:text-xl text-white">Configuration</CardTitle>
+                    <CardDescription className="text-sm">Fine-tune trading parameters</CardDescription>
                   </div>
                 </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    {
+                      id: "buy_amount",
+                      label: "Buy Amount (ETH)",
+                      type: "number",
+                      step: "0.0001",
+                      value: config.buy_amount_eth,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, buy_amount_eth: e.target.value }),
+                      help: "ETH per buy",
+                    },
+                    {
+                      id: "buy_interval",
+                      label: "Buy Interval (min)",
+                      type: "number",
+                      value: config.buy_interval_minutes,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, buy_interval_minutes: Number.parseInt(e.target.value) }),
+                      help: "Buy frequency",
+                      icon: Timer,
+                    },
+                    {
+                      id: "sell_interval",
+                      label: "Sell Interval (min)",
+                      type: "number",
+                      value: config.sell_interval_minutes,
+                      onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfig({ ...config, sell_interval_minutes: Number.parseInt(e.target.value) }),
+                      help: "Sell frequency",
+                      icon: Timer,
+                    },
+                  ].map((field) => (
+                    <div key={field.id} className="space-y-2">
+                      <Label htmlFor={field.id} className="text-sm font-medium text-white">
+                        {field.label}
+                      </Label>
+                      <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg px-3 focus-within:border-emerald-500/50 transition-colors">
+                        {field.icon && <field.icon className="w-4 h-4 text-muted-foreground" />}
+                        <Input
+                          id={field.id}
+                          type={field.type}
+                          step={field.step}
+                          value={field.value}
+                          onChange={field.onChange}
+                          className="border-0 bg-transparent px-0 focus-visible:ring-0 text-white"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{field.help}</p>
+                    </div>
+                  ))}
+                </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
-                  <div>
-                    <p className="font-medium">Token Address</p>
-                    <p className="text-sm text-muted-foreground font-mono">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-white">Multi-Wallet Mode</p>
+                      <p className="text-xs text-muted-foreground">
+                        Distribute trades across {config.active_wallets} wallets
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config?.multi_wallet_mode}
+                    onCheckedChange={toggleMultiWallet}
+                    className="data-[state=checked]:bg-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                  <div className="flex-1 min-w-0 mr-3">
+                    <p className="font-medium text-sm text-white">Token Address</p>
+                    <p className="text-xs text-muted-foreground font-mono truncate mt-1">
                       0x987603A52d8B966E10FBD29DcB1A574049E25B07
                     </p>
                   </div>
-                  <Badge>$USI</Badge>
+                  <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg">
+                    $USI
+                  </Badge>
                 </div>
 
-                <Button onClick={handleSaveConfig} disabled={isSaving} className="w-full">
+                <Button
+                  onClick={handleSaveConfig}
+                  disabled={isSaving}
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/30 hover-lift-premium transition-all duration-300 font-semibold"
+                >
                   {isSaving ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
+                      Saving Configuration...
                     </>
                   ) : (
                     <>
@@ -793,19 +883,21 @@ export default function MMAgentDashboard() {
               </CardContent>
             </Card>
 
-            {/* Info Card */}
-            <Card className="border-amber-500/20 bg-amber-500/5">
+            <Card
+              className="bg-gradient-to-br from-amber-500/10 to-transparent bg-black/40 backdrop-blur-xl border-amber-500/20 animate-fade-in"
+              style={{ animationDelay: "600ms" }}
+            >
               <CardContent className="pt-6">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                    <Activity className="w-5 h-5 text-amber-500" />
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 flex items-center justify-center shrink-0">
+                    <Activity className="w-6 h-6 text-amber-400" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Automated Operation</h3>
-                    <p className="text-sm text-muted-foreground">
-                      When active, this agent automatically executes buy/sell cycles based on your configured intervals.
-                      It buys $USI with ETH every {config.buy_interval_minutes} minutes and sells accumulated tokens
-                      every {config.sell_interval_minutes} minutes to generate consistent trading volume.
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base sm:text-lg mb-2 text-white">Automated Operation</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      When active, this agent executes buy/sell cycles at your configured intervals. Buys $USI with ETH
+                      every {config.buy_interval_minutes} minutes and sells accumulated tokens every{" "}
+                      {config.sell_interval_minutes} minutes to generate consistent trading volume.
                     </p>
                   </div>
                 </div>
@@ -813,45 +905,60 @@ export default function MMAgentDashboard() {
             </Card>
           </div>
 
-          {/* Right Column - Activity Feed */}
           <div className="lg:col-span-1">
-            <Card className="h-[calc(100vh-12rem)] flex flex-col">
-              <CardHeader className="pb-4">
+            <Card
+              className="bg-black/40 backdrop-blur-xl border-white/10 flex flex-col h-[500px] lg:h-[calc(100vh-12rem)] lg:sticky lg:top-24 animate-fade-in"
+              style={{ animationDelay: "700ms" }}
+            >
+              <CardHeader className="pb-4 border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Activity Feed</CardTitle>
-                    <CardDescription>Real-time MM operations</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-white">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                        <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+                      </div>
+                      Activity Feed
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm mt-1">Real-time operations</CardDescription>
                   </div>
-                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                    <ArrowRightLeft className="w-3 h-3 mr-1" />
+                  <Badge
+                    variant="outline"
+                    className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/20"
+                  >
+                    <Radio className="w-3 h-3 mr-1" />
                     Live
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
-                <ScrollArea className="h-full px-6">
+                <ScrollArea className="h-full px-4 sm:px-6">
                   {activities.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <Activity className="w-12 h-12 text-muted-foreground/50 mb-3" />
-                      <p className="text-sm text-muted-foreground">No activity yet</p>
-                      <p className="text-xs text-muted-foreground/70 mt-1">
-                        Activate the agent to start generating volume
+                      <div className="w-16 h-16 rounded-2xl bg-white/5 backdrop-blur-sm flex items-center justify-center mb-4">
+                        <Activity className="w-8 h-8 text-muted-foreground/50" />
+                      </div>
+                      <p className="text-sm font-medium text-white mb-1">No activity yet</p>
+                      <p className="text-xs text-muted-foreground max-w-[200px]">
+                        Activate the agent to start generating trading volume
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3 pb-4">
-                      {activities.map((activity) => (
+                    <div className="space-y-3 pb-4 pt-4">
+                      {activities.map((activity, idx) => (
                         <div
                           key={activity.id}
-                          className="flex gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
+                          className="flex gap-3 p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all hover-lift animate-fade-in"
+                          style={{ animationDelay: `${idx * 50}ms` }}
                         >
-                          <div className="mt-0.5">
+                          <div className="mt-0.5 flex-shrink-0">
                             <ActivityIcon type={activity.activity_type} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-tight">{activity.description}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Clock className="w-3 h-3 text-muted-foreground" />
+                            <p className="text-sm font-medium leading-tight text-white break-words">
+                              {activity.description}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                               <p className="text-xs text-muted-foreground">
                                 {new Date(activity.created_at).toLocaleTimeString()}
                               </p>
@@ -861,9 +968,10 @@ export default function MMAgentDashboard() {
                                 href={`https://basescan.org/tx/${activity.metadata.txHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline mt-1 inline-block"
+                                className="text-emerald-400 hover:text-emerald-300 hover:underline mt-2 inline-flex items-center gap-1 transition-colors text-xs"
                               >
-                                View TX
+                                View Transaction
+                                <ExternalLink className="w-3 h-3" />
                               </a>
                             )}
                           </div>
@@ -879,99 +987,108 @@ export default function MMAgentDashboard() {
       </div>
 
       <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-black/95 backdrop-blur-2xl border-white/10 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-emerald-500" />
+            <DialogTitle className="flex items-center gap-3 text-xl sm:text-2xl text-white">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-emerald-400" />
+              </div>
               Fund Your MM Agent Wallets
             </DialogTitle>
-            <DialogDescription>Send ETH to these addresses to enable market making operations</DialogDescription>
+            <DialogDescription className="text-muted-foreground">
+              Send ETH to these addresses to enable market making operations
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-              <div className="flex gap-3">
-                <Activity className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-sm text-amber-600 dark:text-amber-400">How to Fund</p>
-                  <p className="text-sm text-muted-foreground">
-                    Each wallet needs ETH on Base network to execute trades. Send at least 0.001 ETH per wallet to cover
-                    gas costs and initial buys.
-                  </p>
-                </div>
-              </div>
-            </div>
-
+          <div className="space-y-4 mt-4">
             {wallets.length === 0 ? (
-              <div className="text-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading wallets...</p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mb-4" />
+                <p className="text-sm text-muted-foreground">Loading wallet addresses...</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {wallets.map((wallet, idx) => (
-                  <div
-                    key={wallet.wallet_address}
-                    className="p-4 rounded-lg bg-background border hover:border-emerald-500/30 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold">
-                          {idx + 1}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Wallet {idx + 1}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {wallet.total_buys} buys · {wallet.total_sells} sells
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={wallet.is_active ? "default" : "secondary"}>
-                        {wallet.is_active ? "Active" : "Inactive"}
-                      </Badge>
+              wallets.map((wallet, idx) => (
+                <div
+                  key={wallet.address}
+                  className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                      {idx + 1}
                     </div>
-
-                    <div className="bg-muted/50 rounded-md p-3 mb-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <code className="text-xs font-mono flex-1 break-all">{wallet.wallet_address}</code>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm font-medium text-white">Wallet {idx + 1}</p>
+                        {wallet.total_buys > 0 || wallet.total_sells > 0 ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs"
+                          >
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-white/10 text-muted-foreground border-white/20 text-xs"
+                          >
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg">
+                        <span className="truncate flex-1">{wallet.address}</span>
                         <Button
-                          size="sm"
                           variant="ghost"
-                          onClick={() => copyToClipboard(wallet.wallet_address)}
-                          className="h-8 w-8 p-0 flex-shrink-0"
+                          size="sm"
+                          onClick={() => copyToClipboard(wallet.address)}
+                          className="h-6 w-6 p-0 hover:bg-white/10"
                         >
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        Balance: {wallet.eth_balance || "0"} ETH · {wallet.token_balance || "0"} $USI
-                      </span>
-                      <a
-                        href={`https://basescan.org/address/${wallet.wallet_address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline flex items-center gap-1"
-                      >
-                        View on Basescan
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                  <div className="grid grid-cols-2 gap-3 text-sm mt-3">
+                    <div className="bg-white/5 p-3 rounded-lg">
+                      <p className="text-muted-foreground text-xs mb-1">ETH Balance</p>
+                      <p className="font-medium text-white">{wallet.eth_balance || "0"} ETH</p>
+                    </div>
+                    <div className="bg-white/5 p-3 rounded-lg">
+                      <p className="text-muted-foreground text-xs mb-1">$USI Balance</p>
+                      <p className="font-medium text-white">{wallet.token_balance || "0"} $USI</p>
+                    </div>
+                    <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
+                      <p className="text-muted-foreground text-xs mb-1">Buys</p>
+                      <p className="font-bold text-emerald-400">{wallet.total_buys || 0}</p>
+                    </div>
+                    <div className="bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
+                      <p className="text-muted-foreground text-xs mb-1">Sells</p>
+                      <p className="font-bold text-rose-400">{wallet.total_sells || 0}</p>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <a
+                    href={`https://basescan.org/address/${wallet.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    View on Basescan
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ))
             )}
 
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 mt-4">
               <div className="flex gap-3">
-                <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">Pro Tip</p>
-                  <p className="text-sm text-muted-foreground">
-                    In multi-wallet mode, the bot rotates through all active wallets to distribute trades and create
-                    more organic-looking volume.
+                <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
+                    gas fees and trading operations. The agent will automatically use funded wallets for market making.
                   </p>
                 </div>
               </div>
