@@ -676,7 +676,7 @@ export default function MarketMakerAgentPage() {
                 },
                 {
                   label: "Volume Generated",
-                  value: `$${Number.parseFloat(stats.volumeGenerated || "0").toFixed(2)}`,
+                  value: `${Number.parseFloat(stats.volumeGenerated || "0").toFixed(4)} ETH`,
                   icon: Activity,
                   gradient: "from-blue-500/10 to-transparent",
                   iconBg: "from-blue-500/20 to-blue-600/10",

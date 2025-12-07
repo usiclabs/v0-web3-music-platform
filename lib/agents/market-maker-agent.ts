@@ -299,7 +299,7 @@ export class MarketMakerAgentService {
       } else {
         const error = `Insufficient balance. Have: ${formatUnits(ethBalance, 18)} ETH + ${formatUnits(wethBalance, 18)} WETH. Need: ${formatUnits(configuredBuyAmount + gasBuffer, 18)} ETH (or ${formatUnits(configuredBuyAmount, 18)} WETH)`
         console.error(`[MM Agent] ${error}`)
-        await this.logActivity("buy_failed", error)
+        await this.logActivity("buy_failed", error, { wallet: wallet.address })
         return { success: false, error }
       }
 
@@ -441,7 +441,7 @@ export class MarketMakerAgentService {
       if (!buyTxHash) {
         const error = `All fee tiers failed. Last error: ${lastError}`
         console.error(`[MM Agent] Buy failed: ${error}`)
-        await this.logActivity("buy_failed", error)
+        await this.logActivity("buy_failed", error, { wallet: wallet.address })
         return { success: false, error }
       }
 
@@ -449,6 +449,7 @@ export class MarketMakerAgentService {
       await this.recordTrade("buy", buyAmount, minTokensOut, buyTxHash)
 
       await this.logActivity("buy_executed", `Bought ${formatUnits(minTokensOut, 18)} $USI`, {
+        wallet: wallet.address,
         txHash: buyTxHash,
         amountIn: formatUnits(buyAmount, 18),
         currency: useWETH ? "WETH" : "ETH",
@@ -460,7 +461,7 @@ export class MarketMakerAgentService {
       return { success: true, txHash: buyTxHash }
     } catch (error: any) {
       console.error("[MM Agent] Buy execution error:", error)
-      await this.logActivity("buy_error", error.message || "Unknown error during buy")
+      await this.logActivity("buy_error", error.message || "Unknown error during buy", { wallet: wallet.address })
       return { success: false, error: error.message || "Unknown error" }
     }
   }
@@ -470,8 +471,6 @@ export class MarketMakerAgentService {
    * Enhanced to unwrap WETH to ETH after selling
    */
   async executeSell(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
-    let walletAddress: any
-
     try {
       console.log("[MM Agent] Attempting to sell accumulated $USI...")
 
@@ -614,7 +613,7 @@ export class MarketMakerAgentService {
       if (!sellTxHash) {
         const error = `All fee tiers failed. Last error: ${lastError}`
         console.error(`[MM Agent] Sell failed: ${error}`)
-        await this.logActivity("sell_failed", error)
+        await this.logActivity("sell_failed", error, { wallet: wallet.address })
         return { success: false, error }
       }
 
@@ -665,11 +664,11 @@ export class MarketMakerAgentService {
       // Record the trade
       await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash)
 
-      // Log success
       await this.logActivity(
         "sell_executed",
         `Sold ${formatUnits(sellAmount, 18)} $USI for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
         {
+          wallet: wallet.address,
           txHash: sellTxHash,
           amountIn: formatUnits(sellAmount, 18),
           amountOut: formatUnits(minEthOutWithSlippage, 18),
@@ -683,7 +682,7 @@ export class MarketMakerAgentService {
     } catch (error: any) {
       console.error("[MM Agent] Sell execution error:", error.message)
       await this.logActivity("error", `Sell failed: ${error.message}`, {
-        wallet: walletAddress || "unknown",
+        wallet: wallet.address,
       })
       return { success: false, error: error.message || "Unknown error" }
     }
@@ -863,7 +862,7 @@ export class MarketMakerAgentService {
           ? [tokenAddress, WETH_ADDRESS]
           : [WETH_ADDRESS, tokenAddress]
 
-      const feeTiers = [3000, 10000, 500, 100]
+      const feeTiers = [3000, 10000, 500]
 
       for (const fee of feeTiers) {
         try {
@@ -953,7 +952,14 @@ export class MarketMakerAgentService {
         .single()
 
       if (agent) {
-        const volumeEth = tradeType === "buy" ? Number(formatUnits(amountIn, 18)) : Number(formatUnits(amountOut, 18))
+        // This properly tracks the total value traded (both sides of the swap)
+        const inputEth = Number(formatUnits(amountIn, 18))
+        const outputEth = Number(formatUnits(amountOut, 18))
+
+        // For market maker volume, we want to track total value moved
+        // Buy: ETH in + token out value, Sell: token in value + ETH out
+        // Since tokens are priced in ETH, we use the ETH side as the volume
+        const volumeEth = tradeType === "buy" ? inputEth : outputEth
 
         const newVolume = Number(agent.total_volume_generated || 0) + volumeEth
 
@@ -964,6 +970,8 @@ export class MarketMakerAgentService {
             updated_at: new Date().toISOString(),
           })
           .eq("id", this.agentId)
+
+        console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}, volume: ${volumeEth.toFixed(6)} ETH`)
       }
 
       console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}`)
