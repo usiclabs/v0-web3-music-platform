@@ -94,21 +94,19 @@ export async function GET(req: NextRequest) {
             args: [wallet.wallet_address],
           })
 
-          // Query buy count from mm_agent_activity
           const { count: buyCount } = await supabase
             .from("mm_agent_activity")
             .select("*", { count: "exact", head: true })
             .eq("agent_id", agentId)
             .eq("wallet_address", wallet.wallet_address)
-            .eq("activity_type", "buy")
+            .in("activity_type", ["buy", "buy_executed"])
 
-          // Query sell count from mm_agent_activity
           const { count: sellCount } = await supabase
             .from("mm_agent_activity")
             .select("*", { count: "exact", head: true })
             .eq("agent_id", agentId)
             .eq("wallet_address", wallet.wallet_address)
-            .eq("activity_type", "sell")
+            .in("activity_type", ["sell", "sell_executed"])
 
           console.log(`[v0] Wallet ${wallet.wallet_address}: ${buyCount} buys, ${sellCount} sells`)
 

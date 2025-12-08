@@ -6,7 +6,10 @@ export const dynamic = "force-dynamic"
 
 /**
  * Auto-run endpoint that checks all active MM agents and runs cycles if needed
- * This should be called by a cron job every minute
+ * This is called by the cron job every minute
+ *
+ * For each active agent, it checks if enough time has passed since the last
+ * buy/sell and executes the appropriate action based on the configured intervals.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,36 +24,67 @@ export async function POST(request: NextRequest) {
     }
 
     if (!agents || agents.length === 0) {
-      return NextResponse.json({ message: "No active agents" })
+      console.log("[MM Auto-Run] No active agents found")
+      return NextResponse.json({ message: "No active agents", processed: 0 })
     }
+
+    console.log(`[MM Auto-Run] Processing ${agents.length} active agent(s)`)
 
     const results = []
 
     // Run cycle for each active agent
     for (const agent of agents) {
       try {
-        const mmService = new MarketMakerAgentService(agent.id)
-        const result = await mmService.runCycle()
-        results.push({
-          agentId: agent.id,
-          walletAddress: agent.wallet_address,
-          ...result,
-        })
-      } catch (error: any) {
+        const now = new Date()
+        const lastBuy = agent.last_buy_at ? new Date(agent.last_buy_at) : null
+        const lastSell = agent.last_sell_at ? new Date(agent.last_sell_at) : null
+
+        const buyIntervalMs = (agent.buy_interval_minutes || 5) * 60 * 1000
+        const sellIntervalMs = (agent.sell_interval_minutes || 10) * 60 * 1000
+
+        const shouldBuy = !lastBuy || now.getTime() - lastBuy.getTime() >= buyIntervalMs
+        const shouldSell = !lastSell || now.getTime() - lastSell.getTime() >= sellIntervalMs
+
+        if (shouldBuy || shouldSell) {
+          console.log(`[MM Auto-Run] Running cycle for agent ${agent.id} (buy: ${shouldBuy}, sell: ${shouldSell})`)
+
+          const mmService = new MarketMakerAgentService(agent.id)
+          const result = await mmService.runCycle()
+
+          results.push({
+            agentId: agent.id,
+            owner: agent.owner_address,
+            executed: true,
+            ...result,
+          })
+        } else {
+          console.log(`[MM Auto-Run] Skipping agent ${agent.id} - intervals not met`)
+          results.push({
+            agentId: agent.id,
+            owner: agent.owner_address,
+            executed: false,
+            message: "Intervals not met",
+          })
+        }
+      } catch (error) {
         console.error(`[MM Auto-Run] Error running cycle for agent ${agent.id}:`, error)
         results.push({
           agentId: agent.id,
+          executed: false,
           error: error.message,
         })
       }
     }
 
+    const executedCount = results.filter((r) => r.executed).length
+
     return NextResponse.json({
       success: true,
       processed: agents.length,
+      executed: executedCount,
       results,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error("[MM Auto-Run] Error:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

@@ -264,7 +264,14 @@ export class MarketMakerAgentService {
         throw new Error("Agent not found")
       }
 
-      const configuredBuyAmount = parseEther(agent.buy_amount_eth)
+      const baseBuyAmount = parseEther(agent.buy_amount_eth)
+      const randomMultiplier = 0.96 + Math.random() * 0.16 // Random between 0.96 and 1.12
+      const configuredBuyAmount = BigInt(Math.floor(Number(baseBuyAmount) * randomMultiplier))
+
+      console.log(`[MM Agent] Base buy amount: ${agent.buy_amount_eth} ETH`)
+      console.log(
+        `[MM Agent] Randomized buy amount: ${formatUnits(configuredBuyAmount, 18)} ETH (${(randomMultiplier * 100).toFixed(1)}%)`,
+      )
 
       // Check ETH balance
       const ethBalance = await publicClient.getBalance({
@@ -272,7 +279,6 @@ export class MarketMakerAgentService {
       })
 
       console.log(`[MM Agent] Current ETH balance: ${formatUnits(ethBalance, 18)} ETH`)
-      console.log(`[MM Agent] Configured buy amount: ${agent.buy_amount_eth} ETH`)
 
       // Check WETH balance
       const wethBalance = (await publicClient.readContract({

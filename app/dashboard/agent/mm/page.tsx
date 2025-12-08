@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,11 +36,96 @@ import {
   PlayCircle,
   PauseCircle,
   Sparkles,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Key,
+  AlertTriangle,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { createClient } from "@/lib/supabase/client"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
+import { toast } from "sonner"
+import { useWalletClient, usePublicClient } from "wagmi" // Added wagmi hooks
+import { parseEther, formatEther } from "viem" // Added viem functions
+
+interface StrategyPreset {
+  id: string
+  name: string
+  description: string
+  icon: string
+  config: {
+    buy_amount_eth: string
+    buy_interval_minutes: number
+    sell_interval_minutes: number
+  }
+  chartPattern: string
+}
+
+const STRATEGY_PRESETS: StrategyPreset[] = [
+  {
+    id: "bull_flag",
+    name: "Bull Flag",
+    description: "Creates an upward price channel with higher lows and steady accumulation",
+    icon: "📈",
+    config: {
+      buy_amount_eth: "0.001",
+      buy_interval_minutes: 3,
+      sell_interval_minutes: 15,
+    },
+    chartPattern: "Frequent buys with occasional sells to build upward momentum",
+  },
+  {
+    id: "accumulation",
+    name: "Accumulation Zone",
+    description: "Builds a sideways consolidation range with balanced buying and selling",
+    icon: "📊",
+    config: {
+      buy_amount_eth: "0.0008",
+      buy_interval_minutes: 5,
+      sell_interval_minutes: 5,
+    },
+    chartPattern: "Equal buy/sell frequency to create horizontal support/resistance",
+  },
+  {
+    id: "breakout",
+    name: "Breakout Setup",
+    description: "Aggressive buying with minimal selling to simulate breakout momentum",
+    icon: "🚀",
+    config: {
+      buy_amount_eth: "0.0015",
+      buy_interval_minutes: 2,
+      sell_interval_minutes: 20,
+    },
+    chartPattern: "Rapid buying with rare sells to create explosive upward movement",
+  },
+  {
+    id: "organic",
+    name: "Organic Growth",
+    description: "Natural-looking growth with varied timing and balanced activity",
+    icon: "🌱",
+    config: {
+      buy_amount_eth: "0.0005",
+      buy_interval_minutes: 8,
+      sell_interval_minutes: 12,
+    },
+    chartPattern: "Moderate pace with natural-looking volatility and progression",
+  },
+  {
+    id: "whale_activity",
+    name: "Whale Activity",
+    description: "Larger, less frequent trades to simulate institutional buying",
+    icon: "🐋",
+    config: {
+      buy_amount_eth: "0.003",
+      buy_interval_minutes: 15,
+      sell_interval_minutes: 30,
+    },
+    chartPattern: "Large infrequent buys with minimal sells for strong support",
+  },
+]
 
 interface MMAgentConfig {
   id: string
@@ -75,6 +160,7 @@ interface WalletStats {
   total_buys?: number // Added for modal
   total_sells?: number // Added for modal
   is_active?: boolean // Added for modal
+  wallet_index: number // Added for modal
 }
 
 interface MMActivity {
@@ -113,6 +199,25 @@ function ActivityIcon({ type }: { type: string }) {
 
 export default function MarketMakerAgentPage() {
   const { address, isConnected } = useWallet()
+  const { data: walletClient } = useWalletClient() // Wagmi hook
+  const publicClient = usePublicClient() // Wagmi hook
+
+  // Added state for funding modal
+  const [fundingWallet, setFundingWallet] = useState<any>(null)
+  const [fundAmount, setFundAmount] = useState("")
+  const [connectedWalletBalance, setConnectedWalletBalance] = useState("0")
+  const [isFunding, setIsFunding] = useState(false)
+
+  // Added state for withdraw modal
+  const [withdrawWallet, setWithdrawWallet] = useState<any>(null)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+
+  // Added state for export key modal
+  const [exportWallet, setExportWallet] = useState<any>(null)
+  const [exportedKey, setExportedKey] = useState("")
+  const [showPrivateKey, setShowPrivateKey] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
   const [config, setConfig] = useState<MMAgentConfig | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -121,6 +226,9 @@ export default function MarketMakerAgentPage() {
   const [isRunning, setIsRunning] = useState(false)
   const [showWalletModal, setShowWalletModal] = useState(false)
   const [wallets, setWallets] = useState<any[]>([])
+
+  // Added showStrategies state
+  const [showStrategies, setShowStrategies] = useState(false)
 
   const isMobile = useIsMobile()
 
@@ -183,6 +291,14 @@ export default function MarketMakerAgentPage() {
   }, [config?.id])
 
   useEffect(() => {
+    if (fundingWallet && address && publicClient) {
+      publicClient.getBalance({ address }).then((balance) => {
+        setConnectedWalletBalance(formatEther(balance))
+      })
+    }
+  }, [fundingWallet, address, publicClient])
+
+  useEffect(() => {
     console.log("[v0] Fund wallets modal opened, loading wallets for agent:", config?.id)
     if (showWalletModal && config?.id) {
       fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
@@ -240,10 +356,10 @@ export default function MarketMakerAgentPage() {
       }
 
       mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-      alert("Configuration saved!")
+      toast.success("Configuration saved!")
     } catch (error) {
       console.error("Failed to save config:", error)
-      alert("Failed to save configuration")
+      toast.error("Failed to save configuration")
     } finally {
       setIsSaving(false)
     }
@@ -263,102 +379,20 @@ export default function MarketMakerAgentPage() {
       const data = await response.json()
 
       if (data.success) {
-        alert(`Cycle completed!\n\n${data.messages.join("\n")}`)
+        toast.success(`Cycle completed!`, {
+          description: data.messages.join("\n"),
+        })
         mutate(`/api/agents/mm/stats?agentId=${config.id}`)
       } else {
-        alert(`Cycle failed: ${data.error}`)
+        toast.error(`Cycle failed: ${data.error}`)
       }
     } catch (error) {
       console.error("Failed to run cycle:", error)
-      alert("Failed to run cycle")
+      toast.error("Failed to run cycle")
     } finally {
       setIsRunning(false)
     }
   }
-
-  const startContinuousCycles = useCallback(() => {
-    if (!config) return
-
-    console.log("[v0] Starting continuous MM cycles...")
-
-    // Clear any existing intervals
-    if (buyIntervalRef.current) clearInterval(buyIntervalRef.current)
-    if (sellIntervalRef.current) clearInterval(sellIntervalRef.current)
-
-    // Function to execute buy
-    const executeBuy = async () => {
-      try {
-        console.log("[v0] Executing buy cycle...")
-        const response = await fetch("/api/agents/mm/cycle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId: config.id, action: "buy" }),
-        })
-        const data = await response.json()
-        if (data.success) {
-          mutate(`/api/agents/mm/stats?agentId=${config.id}`)
-        }
-      } catch (error) {
-        console.error("[v0] Buy cycle error:", error)
-      }
-    }
-
-    // Function to execute sell
-    const executeSell = async () => {
-      try {
-        console.log("[v0] Executing sell cycle...")
-        const response = await fetch("/api/agents/mm/cycle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId: config.id, action: "sell" }),
-        })
-        const data = await response.json()
-        if (data.success) {
-          mutate(`/api/agents/mm/stats?agentId=${config.id}`)
-        }
-      } catch (error) {
-        console.error("[v0] Sell cycle error:", error)
-      }
-    }
-
-    // Start buy interval (buy every 5 minutes)
-    const buyIntervalMs = config.buy_interval_minutes * 60 * 1000
-    buyIntervalRef.current = setInterval(executeBuy, buyIntervalMs)
-    console.log(`[v0] Buy interval set to ${config.buy_interval_minutes} minutes`)
-
-    // Start sell interval (sell every 10 minutes)
-    const sellIntervalMs = config.sell_interval_minutes * 60 * 1000
-    sellIntervalRef.current = setInterval(executeSell, sellIntervalMs)
-    console.log(`[v0] Sell interval set to ${config.sell_interval_minutes} minutes`)
-
-    // Execute first buy immediately
-    executeBuy()
-  }, [config, mutate])
-
-  const stopContinuousCycles = useCallback(() => {
-    console.log("[v0] Stopping continuous MM cycles...")
-    if (buyIntervalRef.current) {
-      clearInterval(buyIntervalRef.current)
-      buyIntervalRef.current = null
-    }
-    if (sellIntervalRef.current) {
-      clearInterval(sellIntervalRef.current)
-      sellIntervalRef.current = null
-    }
-  }, [])
-
-  useEffect(() => {
-    if (config?.is_active) {
-      startContinuousCycles()
-    } else {
-      stopContinuousCycles()
-    }
-
-    // Cleanup on unmount
-    return () => {
-      stopContinuousCycles()
-    }
-  }, [config?.is_active, startContinuousCycles, stopContinuousCycles])
 
   const toggleMultiWallet = async () => {
     if (!config) return
@@ -381,8 +415,10 @@ export default function MarketMakerAgentPage() {
       setConfig({ ...config, multi_wallet_mode: newMultiWallet, active_wallets: numWallets })
       mutate(`/api/agents/mm/config?ownerAddress=${address}`)
       mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+      toast.success("Multi-wallet mode updated")
     } catch (error) {
       console.error("Failed to toggle multi-wallet:", error)
+      toast.error("Failed to update multi-wallet mode")
     }
   }
 
@@ -413,12 +449,12 @@ export default function MarketMakerAgentPage() {
       // Refresh config
       mutate(`/api/agents/mm/config?ownerAddress=${address}`)
 
-      alert(
-        `Agent created successfully!\n\n${data.wallets.length} wallets generated.\nPlease fund your wallets to start market making.`,
-      )
+      toast.success(`Agent created successfully!`, {
+        description: `${data.wallets.length} wallets generated. Please fund your wallets to start market making.`,
+      })
     } catch (error: any) {
       console.error("Failed to create agent:", error)
-      alert(`Failed to create agent: ${error.message}`)
+      toast.error(`Failed to create agent: ${error.message}`)
     } finally {
       setIsCreating(false)
     }
@@ -426,7 +462,153 @@ export default function MarketMakerAgentPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    alert("Copied to clipboard!")
+    toast.success("Copied to clipboard!")
+  }
+
+  const handleFundWallet = async () => {
+    if (!fundingWallet || !walletClient || !address || !fundAmount) return
+
+    setIsFunding(true)
+    try {
+      const amount = parseEther(fundAmount)
+
+      const txHash = await walletClient.sendTransaction({
+        to: fundingWallet.wallet_address as `0x${string}`,
+        value: amount,
+      })
+
+      console.log("[v0] Funding transaction sent:", txHash)
+
+      // Record the funding
+      await fetch("/api/agents/mm/wallets/fund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config?.id,
+          walletAddress: fundingWallet.wallet_address,
+          txHash,
+        }),
+      })
+
+      toast.success("Funding Successful", {
+        description: `Sent ${fundAmount} ETH to Wallet ${fundingWallet.wallet_index}`,
+      })
+
+      setFundingWallet(null)
+      setFundAmount("")
+
+      // Reload wallets
+      if (config?.id) {
+        fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.wallets) setWallets(data.wallets)
+          })
+      }
+    } catch (error: any) {
+      console.error("[v0] Funding failed:", error)
+      toast.error("Funding Failed", {
+        description: error.message || "Failed to send transaction",
+      })
+    } finally {
+      setIsFunding(false)
+    }
+  }
+
+  const handleWithdraw = async (type: "eth" | "usi") => {
+    if (!withdrawWallet || !address || !config?.id) return
+
+    setIsWithdrawing(true)
+    try {
+      const response = await fetch("/api/agents/mm/wallets/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          walletIndex: withdrawWallet.wallet_index,
+          recipientAddress: address,
+          ownerAddress: address,
+          withdrawType: type,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Withdraw failed")
+      }
+
+      toast.success("Withdraw Successful", {
+        description: `${type.toUpperCase()} withdrawn to your wallet`,
+      })
+
+      setWithdrawWallet(null)
+
+      // Reload wallets
+      if (config?.id) {
+        fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.wallets) setWallets(data.wallets)
+          })
+      }
+    } catch (error: any) {
+      console.error("[v0] Withdraw failed:", error)
+      toast.error("Withdraw Failed", {
+        description: error.message || "Failed to withdraw",
+      })
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
+
+  const handleExportKey = async () => {
+    if (!exportWallet || !address || !config?.id) return
+
+    setIsExporting(true)
+    try {
+      const response = await fetch("/api/agents/mm/wallets/export-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          walletIndex: exportWallet.wallet_index,
+          ownerAddress: address,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Export failed")
+      }
+
+      setExportedKey(data.privateKey)
+    } catch (error: any) {
+      console.error("[v0] Export failed:", error)
+      toast.error("Export Failed", {
+        description: error.message || "Failed to export key",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Added handleApplyStrategy
+  const handleApplyStrategy = async (strategy: StrategyPreset) => {
+    if (!config) return
+
+    setConfig({
+      ...config,
+      buy_amount_eth: strategy.config.buy_amount_eth,
+      buy_interval_minutes: strategy.config.buy_interval_minutes,
+      sell_interval_minutes: strategy.config.sell_interval_minutes,
+    })
+
+    setShowStrategies(false)
+    toast.success(`Applied ${strategy.name} strategy`, {
+      description: "Remember to save your configuration",
+    })
   }
 
   if (!isConnected) {
@@ -651,7 +833,76 @@ export default function MarketMakerAgentPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
+      {/* Updated main content area */}
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Market Maker Agent
+            </h1>
+            <Button onClick={() => setShowStrategies(true)} variant="outline" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Strategy Presets
+            </Button>
+          </div>
+          <p className="text-muted-foreground">Automate market making for $USI with configurable strategies</p>
+        </div>
+
+        <Dialog open={showStrategies} onOpenChange={setShowStrategies}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Automated Trading Strategies</DialogTitle>
+              <DialogDescription>
+                Select a preset strategy to configure your market maker for specific chart patterns
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {STRATEGY_PRESETS.map((strategy) => (
+                <Card
+                  key={strategy.id}
+                  className="cursor-pointer transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10"
+                  onClick={() => handleApplyStrategy(strategy)}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <span className="text-2xl">{strategy.icon}</span>
+                          {strategy.name}
+                        </CardTitle>
+                        <CardDescription className="mt-2">{strategy.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-sm text-muted-foreground italic">{strategy.chartPattern}</div>
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Buy Amount</div>
+                        <div className="text-sm font-semibold">{strategy.config.buy_amount_eth} ETH</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Buy Every</div>
+                        <div className="text-sm font-semibold">{strategy.config.buy_interval_minutes}m</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Sell Every</div>
+                        <div className="text-sm font-semibold">{strategy.config.sell_interval_minutes}m</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Tip:</strong> After applying a strategy, you can fine-tune the parameters in the configuration
+                section below. Remember to save your changes before activating the agent.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -991,7 +1242,563 @@ export default function MarketMakerAgentPage() {
         </div>
       </div>
 
-      {isMobile ? (
+      {!isMobile && (
+        <Dialog open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
+          <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                  <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
+                </div>
+                Fund Wallet {fundingWallet?.wallet_index}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Send ETH from your connected wallet to this MM agent wallet
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-white/5 p-4 rounded-lg space-y-2">
+                <p className="text-sm text-muted-foreground">Recipient Address</p>
+                <p className="text-sm font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
+              </div>
+
+              <div className="bg-white/5 p-4 rounded-lg space-y-2">
+                <p className="text-sm text-muted-foreground">Your Balance</p>
+                <p className="text-lg font-bold text-white">{Number(connectedWalletBalance).toFixed(6)} ETH</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fundAmount">Amount (ETH)</Label>
+                <Input
+                  id="fundAmount"
+                  type="number"
+                  step="0.0001"
+                  placeholder="0.001"
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+
+              <Button
+                onClick={handleFundWallet}
+                disabled={!fundAmount || isFunding || !isConnected}
+                className="w-full bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isFunding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send ETH"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isMobile && (
+        <Drawer open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
+          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                  <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
+                </div>
+                Fund Wallet {fundingWallet?.wallet_index}
+              </DrawerTitle>
+              <DrawerDescription>Send ETH from your connected wallet to this MM agent wallet</DrawerDescription>
+            </DrawerHeader>
+
+            <div className="px-4 pb-4 space-y-4">
+              <div className="bg-white/5 p-3 rounded-lg space-y-2">
+                <p className="text-xs text-muted-foreground">Recipient Address</p>
+                <p className="text-xs font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
+              </div>
+
+              <div className="bg-white/5 p-3 rounded-lg space-y-2">
+                <p className="text-xs text-muted-foreground">Your Balance</p>
+                <p className="text-base font-bold text-white">{Number(connectedWalletBalance).toFixed(6)} ETH</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fundAmountMobile" className="text-sm">
+                  Amount (ETH)
+                </Label>
+                <Input
+                  id="fundAmountMobile"
+                  type="number"
+                  step="0.0001"
+                  placeholder="0.001"
+                  value={fundAmount}
+                  onChange={(e) => setFundAmount(e.target.value)}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+
+              <Button
+                onClick={handleFundWallet}
+                disabled={!fundAmount || isFunding || !isConnected}
+                className="w-full bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isFunding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send ETH"
+                )}
+              </Button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {!isMobile && (
+        <Dialog open={!!withdrawWallet} onOpenChange={(open) => !open && setWithdrawWallet(null)}>
+          <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                  <ArrowUpFromLine className="w-5 h-5 text-blue-400" />
+                </div>
+                Withdraw from Wallet {withdrawWallet?.wallet_index}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Reclaim ETH and $USI back to your connected wallet
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-white/5 p-4 rounded-lg space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">ETH Balance</p>
+                  <p className="text-lg font-bold text-white">{withdrawWallet?.eth_balance?.toFixed(6) || "0"} ETH</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">$USI Balance</p>
+                  <p className="text-lg font-bold text-white">
+                    {withdrawWallet?.token_balance?.toFixed(2) || "0"} $USI
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Withdrawing will transfer all funds to {address?.slice(0, 6)}...{address?.slice(-4)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => handleWithdraw("eth")}
+                  disabled={isWithdrawing || !withdrawWallet?.eth_balance || withdrawWallet.eth_balance <= 0}
+                  variant="outline"
+                  className="border-white/10 hover:bg-white/10"
+                >
+                  {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw ETH"}
+                </Button>
+                <Button
+                  onClick={() => handleWithdraw("usi")}
+                  disabled={isWithdrawing || !withdrawWallet?.token_balance || withdrawWallet.token_balance <= 0}
+                  variant="outline"
+                  className="border-white/10 hover:bg-white/10"
+                >
+                  {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw $USI"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isMobile && (
+        <Drawer open={!!withdrawWallet} onOpenChange={(open) => !open && setWithdrawWallet(null)}>
+          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+                  <ArrowUpFromLine className="w-5 h-5 text-blue-400" />
+                </div>
+                Withdraw from Wallet {withdrawWallet?.wallet_index}
+              </DrawerTitle>
+              <DrawerDescription>Reclaim ETH and $USI back to your connected wallet</DrawerDescription>
+            </DrawerHeader>
+
+            <div className="px-4 pb-4 space-y-4">
+              <div className="bg-white/5 p-3 rounded-lg space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">ETH Balance</p>
+                  <p className="text-base font-bold text-white">{withdrawWallet?.eth_balance?.toFixed(6) || "0"} ETH</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">$USI Balance</p>
+                  <p className="text-base font-bold text-white">
+                    {withdrawWallet?.token_balance?.toFixed(2) || "0"} $USI
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Withdrawing will transfer all funds to {address?.slice(0, 6)}...{address?.slice(-4)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => handleWithdraw("eth")}
+                  disabled={isWithdrawing || !withdrawWallet?.eth_balance || withdrawWallet.eth_balance <= 0}
+                  variant="outline"
+                  className="border-white/10 hover:bg-white/10"
+                >
+                  {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw ETH"}
+                </Button>
+                <Button
+                  onClick={() => handleWithdraw("usi")}
+                  disabled={isWithdrawing || !withdrawWallet?.token_balance || withdrawWallet.token_balance <= 0}
+                  variant="outline"
+                  className="border-white/10 hover:bg-white/10"
+                >
+                  {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw $USI"}
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {!isMobile && (
+        <Dialog
+          open={!!exportWallet}
+          onOpenChange={(open) => {
+            if (!open) {
+              setExportWallet(null)
+              setExportedKey("")
+              setShowPrivateKey(false)
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 flex items-center justify-center">
+                  <Key className="w-5 h-5 text-rose-400" />
+                </div>
+                Export Private Key
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Wallet {exportWallet?.wallet_index}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg p-4 space-y-2">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm text-rose-400">Security Warning</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Never share your private key with anyone. Anyone with this key can control your wallet and steal
+                      your funds.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!exportedKey ? (
+                <Button
+                  onClick={handleExportKey}
+                  disabled={isExporting}
+                  className="w-full bg-rose-600 hover:bg-rose-700"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Exporting...
+                    </>
+                  ) : (
+                    "Reveal Private Key"
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-white/5 p-4 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Private Key</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPrivateKey(!showPrivateKey)}
+                        className="h-8 px-2"
+                      >
+                        {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-sm font-mono break-all text-white">
+                      {showPrivateKey ? exportedKey : "•".repeat(64)}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(exportedKey)
+                      toast({ title: "Copied to clipboard" })
+                    }}
+                    variant="outline"
+                    className="w-full border-white/10 hover:bg-white/10"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Private Key
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isMobile && (
+        <Drawer
+          open={!!exportWallet}
+          onOpenChange={(open) => {
+            if (!open) {
+              setExportWallet(null)
+              setExportedKey("")
+              setShowPrivateKey(false)
+            }
+          }}
+        >
+          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 flex items-center justify-center">
+                  <Key className="w-5 h-5 text-rose-400" />
+                </div>
+                Export Private Key
+              </DrawerTitle>
+              <DrawerDescription>Wallet {exportWallet?.wallet_index}</DrawerDescription>
+            </DrawerHeader>
+
+            <div className="px-4 pb-4 space-y-4">
+              <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg p-3 space-y-2">
+                <div className="flex gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-xs text-rose-400">Security Warning</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Never share your private key. Anyone with this key can steal your funds.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {!exportedKey ? (
+                <Button
+                  onClick={handleExportKey}
+                  disabled={isExporting}
+                  className="w-full bg-rose-600 hover:bg-rose-700"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Exporting...
+                    </>
+                  ) : (
+                    "Reveal Private Key"
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-white/5 p-3 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Private Key</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPrivateKey(!showPrivateKey)}
+                        className="h-8 px-2"
+                      >
+                        {showPrivateKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs font-mono break-all text-white">
+                      {showPrivateKey ? exportedKey : "•".repeat(64)}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      navigator.clipboard.writeText(exportedKey)
+                      toast({ title: "Copied to clipboard" })
+                    }}
+                    variant="outline"
+                    className="w-full border-white/10 hover:bg-white/10"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Private Key
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
+      {!isMobile ? (
+        <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-black/95 backdrop-blur-2xl border-white/10">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-xl sm:text-2xl text-white">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-emerald-400" />
+                </div>
+                Fund Your MM Agent Wallets
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Send ETH to these addresses to enable market making operations
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {wallets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mb-4" />
+                  <p className="text-sm text-muted-foreground">Loading wallet addresses...</p>
+                </div>
+              ) : (
+                wallets.map((wallet, idx) => (
+                  <div
+                    key={wallet.wallet_address}
+                    className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 space-y-4"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-medium text-white">Wallet {idx + 1}</p>
+                          {wallet.total_buys > 0 || wallet.total_sells > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs"
+                            >
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="bg-white/10 text-muted-foreground border-white/20 text-xs"
+                            >
+                              Inactive
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg">
+                          <span className="truncate flex-1 break-all">{wallet.wallet_address}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(wallet.wallet_address)}
+                            className="h-6 w-6 p-0 hover:bg-white/10 flex-shrink-0"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-white/5 p-2.5 rounded-lg">
+                        <p className="text-muted-foreground text-xs mb-1">ETH Balance</p>
+                        <p className="font-medium text-white text-xs break-all">
+                          {wallet.eth_balance?.toFixed(6) || "0"} ETH
+                        </p>
+                      </div>
+                      <div className="bg-white/5 p-2.5 rounded-lg">
+                        <p className="text-muted-foreground text-xs mb-1">$USI Balance</p>
+                        <p className="font-medium text-white text-xs break-all">
+                          {wallet.token_balance?.toFixed(2) || "0"} $USI
+                        </p>
+                      </div>
+                      <div className="bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20">
+                        <p className="text-muted-foreground text-xs mb-1">Buys</p>
+                        <p className="font-bold text-emerald-400 text-sm">{wallet.total_buys || 0}</p>
+                      </div>
+                      <div className="bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20">
+                        <p className="text-muted-foreground text-xs mb-1">Sells</p>
+                        <p className="font-bold text-rose-400 text-sm">{wallet.total_sells || 0}</p>
+                      </div>
+                    </div>
+
+                    <a
+                      href={`https://basescan.org/address/${wallet.wallet_address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
+                      View on Basescan
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10">
+                      <Button
+                        onClick={() => setFundingWallet(wallet)}
+                        disabled={!isConnected}
+                        size="sm"
+                        variant="outline"
+                        className="border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-400 text-xs"
+                      >
+                        <ArrowDownToLine className="w-3 h-3 mr-1" />
+                        Fund
+                      </Button>
+                      <Button
+                        onClick={() => setWithdrawWallet(wallet)}
+                        disabled={!isConnected || (wallet.eth_balance <= 0 && wallet.token_balance <= 0)}
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400 text-xs"
+                      >
+                        <ArrowUpFromLine className="w-3 h-3 mr-1" />
+                        Withdraw
+                      </Button>
+                      <Button
+                        onClick={() => setExportWallet(wallet)}
+                        disabled={!isConnected}
+                        size="sm"
+                        variant="outline"
+                        className="border-rose-500/30 hover:bg-rose-500/10 text-rose-400 text-xs"
+                      >
+                        <Key className="w-3 h-3 mr-1" />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+
+              <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 mt-4">
+                <div className="flex gap-3">
+                  <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-2 flex-1">
+                    <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
+                      gas fees and trading operations. The agent will automatically use funded wallets for market
+                      making.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
         <Drawer open={showWalletModal} onOpenChange={setShowWalletModal}>
           <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10 max-h-[90vh]">
             <DrawerHeader className="px-4 pt-4">
@@ -1087,6 +1894,48 @@ export default function MarketMakerAgentPage() {
                       View on Basescan
                       <ExternalLink className="w-3 h-3" />
                     </a>
+
+                    <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10">
+                      <Button
+                        onClick={() => {
+                          setShowWalletModal(false)
+                          setFundingWallet(wallet)
+                        }}
+                        disabled={!isConnected}
+                        size="sm"
+                        variant="outline"
+                        className="border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-400 text-xs h-9"
+                      >
+                        <ArrowDownToLine className="w-3 h-3 mr-1" />
+                        Fund
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowWalletModal(false)
+                          setWithdrawWallet(wallet)
+                        }}
+                        disabled={!isConnected || (wallet.eth_balance <= 0 && wallet.token_balance <= 0)}
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-500/30 hover:bg-blue-500/10 text-blue-400 text-xs h-9"
+                      >
+                        <ArrowUpFromLine className="w-3 h-3 mr-1" />
+                        Withdraw
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowWalletModal(false)
+                          setExportWallet(wallet)
+                        }}
+                        disabled={!isConnected}
+                        size="sm"
+                        variant="outline"
+                        className="border-rose-500/30 hover:bg-rose-500/10 text-rose-400 text-xs h-9"
+                      >
+                        <Key className="w-3 h-3 mr-1" />
+                        Export
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}
@@ -1106,118 +1955,6 @@ export default function MarketMakerAgentPage() {
             </div>
           </DrawerContent>
         </Drawer>
-      ) : (
-        <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-black/95 backdrop-blur-2xl border-white/10 shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-xl sm:text-2xl text-white">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-emerald-400" />
-                </div>
-                Fund Your MM Agent Wallets
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Send ETH to these addresses to enable market making operations
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 mt-4">
-              {wallets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mb-4" />
-                  <p className="text-sm text-muted-foreground">Loading wallet addresses...</p>
-                </div>
-              ) : (
-                wallets.map((wallet, idx) => (
-                  <div
-                    key={wallet.wallet_address}
-                    className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all"
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="text-sm font-medium text-white">Wallet {idx + 1}</p>
-                          {wallet.total_buys > 0 || wallet.total_sells > 0 ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs"
-                            >
-                              Active
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-white/10 text-muted-foreground border-white/20 text-xs"
-                            >
-                              Inactive
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 p-2 rounded-lg">
-                          <span className="truncate flex-1">{wallet.wallet_address}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(wallet.wallet_address)}
-                            className="h-6 w-6 p-0 hover:bg-white/10"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-sm mt-3">
-                      <div className="bg-white/5 p-3 rounded-lg">
-                        <p className="text-muted-foreground text-xs mb-1">ETH Balance</p>
-                        <p className="font-medium text-white">{wallet.eth_balance?.toFixed(6) || "0"} ETH</p>
-                      </div>
-                      <div className="bg-white/5 p-3 rounded-lg">
-                        <p className="text-muted-foreground text-xs mb-1">$USI Balance</p>
-                        <p className="font-medium text-white">{wallet.token_balance?.toFixed(2) || "0"} $USI</p>
-                      </div>
-                      <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">
-                        <p className="text-muted-foreground text-xs mb-1">Buys</p>
-                        <p className="font-bold text-emerald-400">{wallet.total_buys || 0}</p>
-                      </div>
-                      <div className="bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
-                        <p className="text-muted-foreground text-xs mb-1">Sells</p>
-                        <p className="font-bold text-rose-400">{wallet.total_sells || 0}</p>
-                      </div>
-                    </div>
-
-                    <a
-                      href={`https://basescan.org/address/${wallet.wallet_address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                    >
-                      View on Basescan
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                ))
-              )}
-
-              <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 mt-4">
-                <div className="flex gap-3">
-                  <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-2 flex-1">
-                    <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
-                      gas fees and trading operations. The agent will automatically use funded wallets for market
-                      making.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       )}
     </div>
   )
