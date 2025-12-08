@@ -42,6 +42,7 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  Repeat,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { createClient } from "@/lib/supabase/client"
@@ -223,6 +224,55 @@ export default function MarketMakerAgentPage() {
   const [showKey, setShowKey] = useState(false) // Fixed: declared showKey
   const [isExporting, setIsExporting] = useState(false)
 
+  const [sellAllWallet, setSellAllWallet] = useState<any>(null)
+  const [sellAllLoading, setSellAllLoading] = useState(false)
+  const walletAddress = wagmiAddress // Renamed for clarity
+
+  const handleSellAll = async (wallet: any) => {
+    if (!config?.id) return
+
+    setSellAllLoading(true)
+    try {
+      const walletIndex = wallets.findIndex((w) => w.wallet_address === wallet.wallet_address)
+
+      const response = await fetch("/api/agents/mm/wallets/sell-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          walletNumber: walletIndex,
+          ownerAddress: walletAddress,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success || data.partialSuccess) {
+        toast.success("Sell All Successful", {
+          description: data.message || "All USI tokens have been converted to ETH",
+        })
+
+        // Refresh wallets
+        const walletsResponse = await fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+        const walletsData = await walletsResponse.json()
+        if (walletsData.wallets) {
+          setWallets(walletsData.wallets)
+        }
+
+        setSellAllWallet(null)
+      } else {
+        throw new Error(data.error || "Failed to sell tokens")
+      }
+    } catch (error: any) {
+      console.error("[v0] Sell all error:", error)
+      toast.error("Sell Failed", {
+        description: error.message || "Failed to convert tokens to ETH",
+      })
+    } finally {
+      setSellAllLoading(false)
+    }
+  }
+
   const [config, setConfig] = useState<MMAgentConfig | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
@@ -295,14 +345,15 @@ export default function MarketMakerAgentPage() {
     }
   }, [config?.id])
 
+  // CHANGE: Fetch connected wallet balances when funding modal opens
   useEffect(() => {
-    if (fundingWallet && wagmiAddress && walletClient) {
+    if (fundingWallet && wagmiAddress && publicClient) {
       // Fetch ETH balance
-      publicClient?.getBalance({ address: wagmiAddress }).then((balance) => {
+      publicClient.getBalance({ address: wagmiAddress }).then((balance) => {
         setConnectedWalletBalance(formatEther(balance))
       })
 
-      // Fetch USI balance
+      // Fetch USI balance using publicClient instead of walletClient
       const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
       const ERC20_ABI = [
         {
@@ -314,7 +365,7 @@ export default function MarketMakerAgentPage() {
         },
       ] as const
 
-      walletClient
+      publicClient
         .readContract({
           address: USI_TOKEN_ADDRESS as `0x${string}`,
           abi: ERC20_ABI,
@@ -1471,7 +1522,7 @@ export default function MarketMakerAgentPage() {
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Withdrawing will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
+                  This action will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
                 </p>
               </div>
 
@@ -1528,7 +1579,7 @@ export default function MarketMakerAgentPage() {
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
-                  Withdrawing will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
+                  This action will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
                 </p>
               </div>
 
@@ -1622,7 +1673,7 @@ export default function MarketMakerAgentPage() {
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(exportedKey)
-                      toast({ title: "Copied to clipboard" })
+                      toast.success("Copied to clipboard!")
                     }}
                     variant="outline"
                     className="w-full border-white/10 hover:bg-white/10"
@@ -1701,7 +1752,7 @@ export default function MarketMakerAgentPage() {
                   <Button
                     onClick={() => {
                       navigator.clipboard.writeText(exportedKey)
-                      toast({ title: "Copied to clipboard" })
+                      toast.success("Copied to clipboard!")
                     }}
                     variant="outline"
                     className="w-full border-white/10 hover:bg-white/10"
@@ -1833,6 +1884,16 @@ export default function MarketMakerAgentPage() {
                       >
                         <ArrowUpFromLine className="w-3 h-3 mr-1" />
                         Withdraw
+                      </Button>
+                      <Button
+                        onClick={() => setSellAllWallet(wallet)}
+                        disabled={!isConnected || wallet.token_balance <= 0}
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-500/30 hover:bg-amber-500/10 text-amber-400 text-xs"
+                      >
+                        <Repeat className="w-3 h-3 mr-1" />
+                        Sell All
                       </Button>
                       <Button
                         onClick={() => setExportWallet(wallet)}
@@ -1992,6 +2053,19 @@ export default function MarketMakerAgentPage() {
                       <Button
                         onClick={() => {
                           setShowWalletModal(false)
+                          setSellAllWallet(wallet)
+                        }}
+                        disabled={!isConnected || wallet.token_balance <= 0}
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-500/30 hover:bg-amber-500/10 text-amber-400 text-xs h-9"
+                      >
+                        <Repeat className="w-3 h-3 mr-1" />
+                        Sell All
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowWalletModal(false)
                           setExportWallet(wallet)
                         }}
                         disabled={!isConnected}
@@ -2022,6 +2096,111 @@ export default function MarketMakerAgentPage() {
             </div>
           </DrawerContent>
         </Drawer>
+      )}
+
+      {isMobile ? (
+        <Drawer open={!!sellAllWallet} onOpenChange={(open) => !open && setSellAllWallet(null)}>
+          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+            <DrawerHeader>
+              <DrawerTitle className="text-amber-400">Sell All $USI Tokens</DrawerTitle>
+              <DrawerDescription>
+                This will convert all $USI tokens in this wallet to ETH, resetting the market making cycle.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-lg font-bold text-white">{sellAllWallet?.token_balance?.toFixed(2) || "0"} $USI</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">
+                  This action will sell all $USI tokens for ETH, giving your wallet a fresh start for the next market
+                  making cycle. This is useful when you want to reset and start with pure ETH funding.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSellAllWallet(null)}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={sellAllLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => sellAllWallet && handleSellAll(sellAllWallet)}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                  disabled={sellAllLoading}
+                >
+                  {sellAllLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Selling...
+                    </>
+                  ) : (
+                    <>
+                      <Repeat className="w-4 h-4 mr-2" />
+                      Confirm Sell All
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={!!sellAllWallet} onOpenChange={(open) => !open && setSellAllWallet(null)}>
+          <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-400">
+                <Repeat className="w-5 h-5" />
+                Sell All $USI Tokens
+              </DialogTitle>
+              <DialogDescription>
+                This will convert all $USI tokens in this wallet to ETH, resetting the market making cycle.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-2xl font-bold text-white">{sellAllWallet?.token_balance?.toFixed(2) || "0"} $USI</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">
+                  This action will sell all $USI tokens for ETH, giving your wallet a fresh start for the next market
+                  making cycle. This is useful when you want to reset and start with pure ETH funding.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setSellAllWallet(null)}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={sellAllLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => sellAllWallet && handleSellAll(sellAllWallet)}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                  disabled={sellAllLoading}
+                >
+                  {sellAllLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Selling...
+                    </>
+                  ) : (
+                    <>
+                      <Repeat className="w-4 h-4 mr-2" />
+                      Confirm Sell All
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )
