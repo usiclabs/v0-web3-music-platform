@@ -92,6 +92,7 @@ export interface MMAgentConfig {
   owner_address?: string
   token_address?: string
   token_symbol?: string
+  profitable_mode?: boolean // New field for profitable mode
 }
 
 export interface MMAgentStats {
@@ -213,6 +214,7 @@ export class MarketMakerAgentService {
         buy_amount_eth: "0.0001",
         buy_interval_minutes: 5,
         sell_interval_minutes: 10,
+        profitable_mode: false, // Default profitable mode to false
       })
       .select()
       .single()
@@ -462,11 +464,33 @@ export class MarketMakerAgentService {
         amountOut: formatUnits(minTokensOut, 18),
       })
 
+      if (buyTxHash) {
+        try {
+          const ethSpent = Number(formatUnits(buyAmount, 18))
+          const usiReceived = Number(formatUnits(minTokensOut, 18))
+          const buyPrice = ethSpent / usiReceived // ETH per USI
+
+          const supabase = await createClient()
+          await supabase
+            .from("mm_agent_wallets")
+            .update({
+              last_buy_price: buyPrice,
+              last_buy_amount: usiReceived,
+            })
+            .eq("agent_id", this.agentId)
+            .eq("wallet_address", wallet.address)
+
+          console.log(`[MM Agent] Recorded buy price: ${buyPrice.toFixed(8)} ETH per USI`)
+        } catch (error) {
+          console.error("[MM Agent] Failed to record buy price:", error)
+        }
+      }
+
       await this.updateLastBuyTime()
 
       return { success: true, txHash: buyTxHash }
     } catch (error: any) {
-      console.error("[MM Agent] Buy execution error:", error)
+      console.error("[MM Agent] Buy execution error:", error.message)
       await this.logActivity("buy_error", error.message || "Unknown error during buy", { wallet: wallet.address })
       return { success: false, error: error.message || "Unknown error" }
     }
@@ -484,6 +508,13 @@ export class MarketMakerAgentService {
 
       const routerAddress = UNISWAP_V3_ROUTER[base.id as keyof typeof UNISWAP_V3_ROUTER] as Address
 
+      const supabase = await createClient()
+      const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+
+      if (!agent) {
+        throw new Error("Agent not found")
+      }
+
       const usiBalance = await publicClient.readContract({
         address: USI_TOKEN_ADDRESS,
         abi: ERC20_ABI,
@@ -496,6 +527,39 @@ export class MarketMakerAgentService {
       if (usiBalance === 0n) {
         console.log(`[MM Agent] No $USI tokens to sell`)
         return { success: false, error: "No tokens to sell" }
+      }
+
+      if (agent.profitable_mode) {
+        const { data: walletData } = await supabase
+          .from("mm_agent_wallets")
+          .select("last_buy_price")
+          .eq("agent_id", this.agentId)
+          .eq("wallet_address", wallet.address)
+          .single()
+
+        if (walletData && walletData.last_buy_price > 0) {
+          // Get current price by querying expected ETH output for 1 USI
+          const oneUsi = parseUnits("1", 18)
+          const currentEthForOneUsi = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, oneUsi)
+          const currentPrice = Number(formatUnits(currentEthForOneUsi, 18)) // ETH per USI
+
+          const buyPrice = Number(walletData.last_buy_price)
+          const profitPercent = ((currentPrice - buyPrice) / buyPrice) * 100
+
+          console.log(`[MM Agent] Profitable Mode Check:`)
+          console.log(`  Buy price: ${buyPrice.toFixed(8)} ETH per USI`)
+          console.log(`  Current price: ${currentPrice.toFixed(8)} ETH per USI`)
+          console.log(`  Profit: ${profitPercent.toFixed(2)}%`)
+
+          if (profitPercent < 10) {
+            const message = `Not profitable yet. Current profit: ${profitPercent.toFixed(2)}%, need >10%`
+            console.log(`[MM Agent] ${message}`)
+            await this.logActivity("sell_skipped", message, { wallet: wallet.address })
+            return { success: false, error: message }
+          }
+
+          console.log(`[MM Agent] ✓ Profit threshold met (${profitPercent.toFixed(2)}%), proceeding with sell`)
+        }
       }
 
       const sellAmount = usiBalance / 2n
@@ -745,6 +809,15 @@ export class MarketMakerAgentService {
       new Date(agent.last_sell_at).getTime() + agent.sell_interval_minutes * 60 * 1000 <= now.getTime()
 
     if (shouldSell) {
+      // Check if profitable mode is enabled
+      if (agent.profitable_mode) {
+        const isProfitable = await this.shouldSellInProfitableMode(wallet, agent)
+        if (!isProfitable) {
+          result.messages.push(`Skipping sell - not profitable yet (need >10% profit)`)
+          return result
+        }
+      }
+
       try {
         await this.executeSell(wallet)
 
@@ -1125,6 +1198,7 @@ export class MarketMakerAgentService {
       buy_amount_eth: defaultBuyAmountEth,
       buy_interval_minutes: 5,
       sell_interval_minutes: 10,
+      profitable_mode: false, // Default profitable mode to false
     })
   }
 
@@ -1133,6 +1207,67 @@ export class MarketMakerAgentService {
     const walletKeys = Array.from(this._walletKeys.keys())
     const randomIndex = Math.floor(Math.random() * walletKeys.length)
     return this.getWallet(walletKeys[randomIndex])
+  }
+
+  private async shouldSellInProfitableMode(wallet: any, agent: MMAgentConfig): Promise<boolean> {
+    try {
+      const { publicClient } = await this.createClients(wallet)
+
+      // Get current USI balance
+      const usiBalance = await publicClient.readContract({
+        address: USI_TOKEN_ADDRESS,
+        abi: ERC20_ABI,
+        functionName: "balanceOf",
+        args: [wallet.address],
+      })
+
+      if (usiBalance === 0n) {
+        console.log("[MM Agent] No USI tokens to check profit on")
+        return false
+      }
+
+      // Get wallet's last buy price from database
+      const supabase = await createClient()
+      const { data: walletData } = await supabase
+        .from("mm_agent_wallets")
+        .select("last_buy_price, last_buy_amount")
+        .eq("agent_id", this.agentId)
+        .eq("wallet_address", wallet.address)
+        .single()
+
+      if (!walletData || !walletData.last_buy_price || walletData.last_buy_price === 0) {
+        console.log("[MM Agent] No buy price recorded yet, skipping sell")
+        return false
+      }
+
+      const lastBuyPrice = Number(walletData.last_buy_price)
+
+      // Get current price by simulating a sell quote
+      const sellAmount = usiBalance / 2n // Check price for 50% of balance
+      const currentEthOut = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
+
+      // Calculate current price in ETH per USI
+      const currentPrice = Number(formatUnits(currentEthOut, 18)) / Number(formatUnits(sellAmount, 18))
+
+      // Calculate profit percentage
+      const profitPercent = ((currentPrice - lastBuyPrice) / lastBuyPrice) * 100
+
+      console.log(`[MM Agent] Profitable mode check:`)
+      console.log(`  Last buy price: ${lastBuyPrice.toFixed(8)} ETH per USI`)
+      console.log(`  Current price: ${currentPrice.toFixed(8)} ETH per USI`)
+      console.log(`  Profit: ${profitPercent.toFixed(2)}%`)
+
+      if (profitPercent > 10) {
+        console.log(`[MM Agent] ✅ Profit > 10%, allowing sell`)
+        return true
+      } else {
+        console.log(`[MM Agent] ❌ Profit < 10% (${profitPercent.toFixed(2)}%), skipping sell`)
+        return false
+      }
+    } catch (error: any) {
+      console.error("[MM Agent] Error checking profitable mode:", error.message)
+      return false
+    }
   }
 }
 

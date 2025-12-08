@@ -52,6 +52,7 @@ import { toast } from "sonner"
 import { useWalletClient, usePublicClient, useAccount } from "wagmi" // Added wagmi hooks
 import { parseEther, formatEther } from "viem" // Added viem functions
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import confetti from "canvas-confetti"
 
 interface StrategyPreset {
   id: string
@@ -141,6 +142,8 @@ interface MMAgentConfig {
   total_volume_generated: string
   multi_wallet_mode: boolean
   active_wallets: number
+  pro_mode?: boolean // Added pro_mode
+  profitable_mode?: boolean // Add profitable_mode field
 }
 
 interface MMStats {
@@ -152,6 +155,7 @@ interface MMStats {
 }
 
 interface WalletStats {
+  id: string // Added id for react key
   address: string
   wallet_address: string // Added for modal
   buys: number
@@ -226,6 +230,7 @@ export default function MarketMakerAgentPage() {
 
   const [sellAllWallet, setSellAllWallet] = useState<any>(null)
   const [sellAllLoading, setSellAllLoading] = useState(false)
+  const [isResettingAll, setIsResettingAll] = useState(false)
   const walletAddress = wagmiAddress // Renamed for clarity
 
   const handleSellAll = async (wallet: any) => {
@@ -233,14 +238,12 @@ export default function MarketMakerAgentPage() {
 
     setSellAllLoading(true)
     try {
-      const walletIndex = wallets.findIndex((w) => w.wallet_address === wallet.wallet_address)
-
       const response = await fetch("/api/agents/mm/wallets/sell-all", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: config.id,
-          walletNumber: walletIndex,
+          walletNumber: wallet.wallet_index, // Pass the actual wallet index (1-5)
           ownerAddress: walletAddress,
         }),
       })
@@ -250,6 +253,13 @@ export default function MarketMakerAgentPage() {
       if (data.success || data.partialSuccess) {
         toast.success("Sell All Successful", {
           description: data.message || "All USI tokens have been converted to ETH",
+        })
+
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#10b981", "#34d399", "#6ee7b7"],
         })
 
         // Refresh wallets
@@ -270,6 +280,83 @@ export default function MarketMakerAgentPage() {
       })
     } finally {
       setSellAllLoading(false)
+    }
+  }
+
+  const handleResetAllWallets = async () => {
+    if (!config?.id || !wallets.length) return
+
+    setIsResettingAll(true)
+    let successCount = 0
+    let failCount = 0
+
+    try {
+      // Process each wallet sequentially
+      for (const wallet of wallets) {
+        // Skip if wallet has no USI balance
+        if (!wallet.token_balance || wallet.token_balance <= 0) {
+          continue
+        }
+
+        try {
+          const response = await fetch("/api/agents/mm/wallets/sell-all", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              agentId: config.id,
+              walletNumber: wallet.wallet_index,
+              ownerAddress: walletAddress,
+            }),
+          })
+
+          const data = await response.json()
+
+          if (data.success || data.partialSuccess) {
+            successCount++
+          } else {
+            failCount++
+          }
+
+          // Add small delay between transactions
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+        } catch (error) {
+          console.error(`[v0] Failed to sell wallet ${wallet.wallet_index}:`, error)
+          failCount++
+        }
+      }
+
+      // Show results
+      if (successCount > 0) {
+        toast.success("Reset Complete", {
+          description: `Successfully reset ${successCount} wallet${successCount > 1 ? "s" : ""}${failCount > 0 ? `. ${failCount} failed.` : ""}`,
+        })
+
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ["#10b981", "#34d399", "#6ee7b7", "#fbbf24", "#f59e0b"],
+          scalar: 1.2,
+        })
+      } else {
+        toast.error("Reset Failed", {
+          description: "No wallets were successfully reset",
+        })
+      }
+
+      // Refresh wallets
+      const walletsResponse = await fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+      const walletsData = await walletsResponse.json()
+      if (walletsData.wallets) {
+        setWallets(walletsData.wallets)
+      }
+    } catch (error: any) {
+      console.error("[v0] Reset all error:", error)
+      toast.error("Reset Failed", {
+        description: error.message || "Failed to reset wallets",
+      })
+    } finally {
+      setIsResettingAll(false)
     }
   }
 
@@ -432,6 +519,8 @@ export default function MarketMakerAgentPage() {
           sell_interval_minutes: config.sell_interval_minutes,
           multi_wallet_mode: config.multi_wallet_mode,
           active_wallets: config.active_wallets,
+          pro_mode: config.pro_mode,
+          profitable_mode: config.profitable_mode, // Include profitable_mode
         }),
       })
 
@@ -503,6 +592,65 @@ export default function MarketMakerAgentPage() {
     } catch (error) {
       console.error("Failed to toggle multi-wallet:", error)
       toast.error("Failed to update multi-wallet mode")
+    }
+  }
+
+  const toggleProfitableMode = async () => {
+    if (!config) return
+
+    const newProfitableMode = !config.profitable_mode
+
+    try {
+      await fetch("/api/agents/mm/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          profitable_mode: newProfitableMode,
+        }),
+      })
+
+      setConfig({ ...config, profitable_mode: newProfitableMode })
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+      toast.success(
+        newProfitableMode ? "Profitable Mode enabled - only selling at >10% profit" : "Profitable Mode disabled",
+      )
+    } catch (error) {
+      console.error("Failed to toggle profitable mode:", error)
+      toast.error("Failed to update profitable mode")
+    }
+  }
+
+  const toggleProMode = async () => {
+    if (!config) return
+
+    const newProMode = !config.pro_mode
+
+    try {
+      const response = await fetch("/api/agents/mm/pro-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          ownerAddress: address,
+          enabled: newProMode,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to toggle pro mode")
+      }
+
+      // Refresh config and wallets
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+      mutate(`/api/agents/mm/wallets?agentId=${config.id}`)
+      mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+
+      toast.success(newProMode ? "Pro mode enabled! 10 wallets ready." : "Pro mode disabled, using 5 wallets")
+    } catch (error: any) {
+      console.error("Failed to toggle pro mode:", error)
+      toast.error(error.message || "Failed to toggle pro mode")
     }
   }
 
@@ -860,6 +1008,10 @@ export default function MarketMakerAgentPage() {
     walletStats: [],
   }
 
+  const displayedWallets = config?.pro_mode
+    ? wallets // Show all 10 wallets in pro mode
+    : wallets.slice(0, 5) // Show only first 5 in standard mode
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-xl">
@@ -899,6 +1051,16 @@ export default function MarketMakerAgentPage() {
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-medium">Pro Mode (10x Wallets)</span>
+                <Switch checked={config.pro_mode || false} onCheckedChange={toggleProMode} />
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <span className="text-sm font-medium">Profitable Mode ({">"}10%)</span>
+                <Switch checked={config.profitable_mode || false} onCheckedChange={toggleProfitableMode} />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -1098,14 +1260,22 @@ export default function MarketMakerAgentPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {stats.walletStats.map((wallet, idx) => (
+                    {displayedWallets.map((wallet, index) => (
                       <div
-                        key={wallet.address}
+                        key={wallet.id} // Use wallet.id as key
                         className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all hover-lift gap-3"
                       >
+                        {wallet.wallet_index > 5 && (
+                          <div className="absolute -top-2 -right-2 z-10">
+                            <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              Pro
+                            </Badge>
+                          </div>
+                        )}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30">
-                            {idx + 1}
+                            {index + 1} {/* Use index here */}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-mono text-muted-foreground truncate">
@@ -1216,6 +1386,23 @@ export default function MarketMakerAgentPage() {
                     checked={config?.multi_wallet_mode}
                     onCheckedChange={toggleMultiWallet}
                     className="data-[state=checked]:bg-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-white">Profitable Mode</p>
+                      <p className="text-xs text-muted-foreground">Only sell when profit exceeds 10%</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config?.profitable_mode || false}
+                    onCheckedChange={(checked) => setConfig({ ...config, profitable_mode: checked })}
+                    className="data-[state=checked]:bg-green-500"
                   />
                 </div>
 
@@ -1354,7 +1541,7 @@ export default function MarketMakerAgentPage() {
         </div>
       </div>
 
-      {/* Desktop Fund Wallet Modal */}
+      {/* Fund Wallet Modal */}
       <Dialog open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
         <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
           <DialogHeader>
@@ -1791,7 +1978,7 @@ export default function MarketMakerAgentPage() {
               ) : (
                 wallets.map((wallet, idx) => (
                   <div
-                    key={wallet.wallet_address}
+                    key={wallet.id}
                     className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 space-y-4"
                   >
                     <div className="flex items-start gap-2">
@@ -1915,7 +2102,7 @@ export default function MarketMakerAgentPage() {
                   <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="space-y-2 flex-1">
                     <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
                       gas fees and trading operations. The agent will automatically use funded wallets for market
                       making.
@@ -1949,10 +2136,7 @@ export default function MarketMakerAgentPage() {
                 </div>
               ) : (
                 wallets.map((wallet, idx) => (
-                  <div
-                    key={wallet.wallet_address}
-                    className="p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10"
-                  >
+                  <div key={wallet.id} className="p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
                     <div className="flex items-start gap-2 mb-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/30 flex-shrink-0">
                         {idx + 1}
@@ -2113,7 +2297,7 @@ export default function MarketMakerAgentPage() {
                 <p className="text-lg font-bold text-white">{sellAllWallet?.token_balance?.toFixed(2) || "0"} $USI</p>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   This action will sell all $USI tokens for ETH, giving your wallet a fresh start for the next market
                   making cycle. This is useful when you want to reset and start with pure ETH funding.
                 </p>

@@ -39,14 +39,21 @@ export interface GeneratedWallet {
 }
 
 /**
- * Generate 5 fresh wallets for a user's MM agent
+ * Generate wallets for a user's MM agent
+ * @param count - Number of wallets to generate (5 for standard, 10 for pro)
+ * @param startIndex - Starting index for wallet numbering (1 for initial, 6 for pro upgrade)
  */
-export async function generateWalletsForAgent(agentId: string, ownerAddress: string): Promise<GeneratedWallet[]> {
+export async function generateWalletsForAgent(
+  agentId: string,
+  ownerAddress: string,
+  count = 5,
+  startIndex = 1,
+): Promise<GeneratedWallet[]> {
   const supabase = createAdminClient()
   const wallets: GeneratedWallet[] = []
 
-  // Generate 5 new wallets
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 0; i < count; i++) {
+    const walletIndex = startIndex + i
     const privateKey = generatePrivateKey()
     const account = privateKeyToAccount(privateKey)
 
@@ -56,21 +63,21 @@ export async function generateWalletsForAgent(agentId: string, ownerAddress: str
     // Store in database
     const { error } = await supabase.from("mm_agent_wallets").insert({
       agent_id: agentId,
-      wallet_index: i,
+      wallet_index: walletIndex,
       wallet_address: account.address,
       private_key_encrypted: encrypted,
       is_active: true,
     })
 
     if (error) {
-      console.error(`[WalletGenerator] Failed to store wallet ${i}:`, error)
-      throw new Error(`Failed to generate wallet ${i}: ${error.message}`)
+      console.error(`[WalletGenerator] Failed to store wallet ${walletIndex}:`, error)
+      throw new Error(`Failed to generate wallet ${walletIndex}: ${error.message}`)
     }
 
     wallets.push({
       address: account.address,
       privateKey: privateKey,
-      index: i,
+      index: walletIndex,
     })
   }
 

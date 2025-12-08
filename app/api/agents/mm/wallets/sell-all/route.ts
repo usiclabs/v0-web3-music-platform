@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { MarketMakerAgentService } from "@/lib/agents/market-maker-agent"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getAgentWalletKeys } from "@/lib/agents/wallet-generator"
+import { privateKeyToAccount } from "viem/accounts"
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,19 +29,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Create service instance
-    const service = new MarketMakerAgentService(agent.id)
-
-    // Load wallet keys
-    const wallets = await service.loadWalletKeys()
-
-    if (!wallets[walletNumber]) {
-      return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
+    // Validate wallet number is in valid range (1-5)
+    if (walletNumber < 1 || walletNumber > 5) {
+      console.error(`[API] Invalid wallet number: ${walletNumber}`)
+      return NextResponse.json({ error: "Invalid wallet number. Must be between 1 and 5." }, { status: 400 })
     }
 
-    const wallet = wallets[walletNumber]
+    const keyMap = await getAgentWalletKeys(agent.id, ownerAddress)
+    const privateKey = keyMap.get(walletNumber)
+
+    if (!privateKey) {
+      console.error(`[API] Wallet ${walletNumber} not found in keyMap`)
+      return NextResponse.json({ error: `Wallet ${walletNumber} not found` }, { status: 404 })
+    }
+
+    const formattedKey = privateKey.startsWith("0x")
+      ? (privateKey as `0x${string}`)
+      : (`0x${privateKey}` as `0x${string}`)
+    const wallet = privateKeyToAccount(formattedKey)
 
     console.log(`[API] Executing sell all for wallet ${wallet.address}`)
+
+    // Create service instance
+    const service = new MarketMakerAgentService(agent.id)
 
     // Execute sell (the executeSell already sells 50% of balance)
     // We'll call it twice to sell all

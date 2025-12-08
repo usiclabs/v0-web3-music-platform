@@ -467,7 +467,8 @@
 }
 
 @keyframes heart-beat {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   25% {
@@ -517,6 +518,19 @@
 
 .zoom-in {
   animation-name: zoom-in;
+}
+
+/* Fixed animation utility classes to use proper syntax */
+.animate-slide-in-from-right-8 {
+  animation: slide-in-from-right-8 0.4s ease-out;
+}
+
+.animate-slide-in-from-left-8 {
+  animation: slide-in-from-left-8 0.4s ease-out;
+}
+
+.animate-zoom-in {
+  animation: zoom-in 0.5s ease-out;
 }
 
 .animate-slide-in-left {
