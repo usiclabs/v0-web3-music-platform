@@ -789,8 +789,10 @@ export class MarketMakerAgentService {
       .select("activity_type")
       .eq("agent_id", this.agentId)
 
-    const totalBuys = activities?.filter((a) => a.activity_type === "buy").length || 0
-    const totalSells = activities?.filter((a) => a.activity_type === "sell").length || 0
+    const totalBuys =
+      activities?.filter((a) => a.activity_type === "buy" || a.activity_type === "buy_executed").length || 0
+    const totalSells =
+      activities?.filter((a) => a.activity_type === "sell" || a.activity_type === "sell_executed").length || 0
 
     let walletStats = undefined
     if (agent.multi_wallet_mode) {
