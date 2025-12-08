@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { agentId, walletAddress, txHash } = body
+    const { agentId, walletAddress, txHash, asset = "ETH" } = body
 
     if (!agentId || !walletAddress || !txHash) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("[API] Error updating wallet funded timestamp:", error)
     }
+
+    console.log(`[API] Wallet funded: ${walletAddress} with ${asset} (tx: ${txHash})`)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

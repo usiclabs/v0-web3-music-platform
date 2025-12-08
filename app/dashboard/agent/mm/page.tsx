@@ -48,8 +48,9 @@ import { createClient } from "@/lib/supabase/client"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
 import { toast } from "sonner"
-import { useWalletClient, usePublicClient } from "wagmi" // Added wagmi hooks
+import { useWalletClient, usePublicClient, useAccount } from "wagmi" // Added wagmi hooks
 import { parseEther, formatEther } from "viem" // Added viem functions
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface StrategyPreset {
   id: string
@@ -201,12 +202,16 @@ export default function MarketMakerAgentPage() {
   const { address, isConnected } = useWallet()
   const { data: walletClient } = useWalletClient() // Wagmi hook
   const publicClient = usePublicClient() // Wagmi hook
+  // Use useAccount from wagmi
+  const { address: wagmiAddress, isConnected: wagmiIsConnected } = useAccount()
 
   // Added state for funding modal
   const [fundingWallet, setFundingWallet] = useState<any>(null)
   const [fundAmount, setFundAmount] = useState("")
   const [connectedWalletBalance, setConnectedWalletBalance] = useState("0")
   const [isFunding, setIsFunding] = useState(false)
+  const [fundingAsset, setFundingAsset] = useState<"ETH" | "USI">("ETH")
+  const [connectedWalletUsiBalance, setConnectedWalletUsiBalance] = useState("0")
 
   // Added state for withdraw modal
   const [withdrawWallet, setWithdrawWallet] = useState<any>(null)
@@ -215,7 +220,7 @@ export default function MarketMakerAgentPage() {
   // Added state for export key modal
   const [exportWallet, setExportWallet] = useState<any>(null)
   const [exportedKey, setExportedKey] = useState("")
-  const [showPrivateKey, setShowPrivateKey] = useState(false)
+  const [showKey, setShowKey] = useState(false) // Fixed: declared showKey
   const [isExporting, setIsExporting] = useState(false)
 
   const [config, setConfig] = useState<MMAgentConfig | null>(null)
@@ -291,12 +296,40 @@ export default function MarketMakerAgentPage() {
   }, [config?.id])
 
   useEffect(() => {
-    if (fundingWallet && address && publicClient) {
-      publicClient.getBalance({ address }).then((balance) => {
+    if (fundingWallet && wagmiAddress && walletClient) {
+      // Fetch ETH balance
+      publicClient?.getBalance({ address: wagmiAddress }).then((balance) => {
         setConnectedWalletBalance(formatEther(balance))
       })
+
+      // Fetch USI balance
+      const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
+      const ERC20_ABI = [
+        {
+          inputs: [{ name: "account", type: "address" }],
+          name: "balanceOf",
+          outputs: [{ name: "", type: "uint256" }],
+          stateMutability: "view",
+          type: "function",
+        },
+      ] as const
+
+      walletClient
+        .readContract({
+          address: USI_TOKEN_ADDRESS as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [wagmiAddress],
+        })
+        .then((balance) => {
+          setConnectedWalletUsiBalance(formatEther(balance as bigint))
+        })
+        .catch((error) => {
+          console.error("[v0] Error fetching USI balance:", error)
+          setConnectedWalletUsiBalance("0")
+        })
     }
-  }, [fundingWallet, address, publicClient])
+  }, [fundingWallet, wagmiAddress, walletClient, publicClient])
 
   useEffect(() => {
     console.log("[v0] Fund wallets modal opened, loading wallets for agent:", config?.id)
@@ -466,18 +499,44 @@ export default function MarketMakerAgentPage() {
   }
 
   const handleFundWallet = async () => {
-    if (!fundingWallet || !walletClient || !address || !fundAmount) return
+    if (!fundingWallet || !walletClient || !wagmiAddress || !fundAmount) return
 
     setIsFunding(true)
     try {
       const amount = parseEther(fundAmount)
+      let txHash: string
 
-      const txHash = await walletClient.sendTransaction({
-        to: fundingWallet.wallet_address as `0x${string}`,
-        value: amount,
-      })
+      if (fundingAsset === "ETH") {
+        // Send ETH directly
+        txHash = await walletClient.sendTransaction({
+          to: fundingWallet.wallet_address as `0x${string}`,
+          value: amount,
+        })
+        console.log("[v0] ETH funding transaction sent:", txHash)
+      } else {
+        // Send USI tokens
+        const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
+        const ERC20_ABI = [
+          {
+            inputs: [
+              { name: "to", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+            name: "transfer",
+            outputs: [{ name: "", type: "bool" }],
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ] as const
 
-      console.log("[v0] Funding transaction sent:", txHash)
+        txHash = await walletClient.writeContract({
+          address: USI_TOKEN_ADDRESS as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "transfer",
+          args: [fundingWallet.wallet_address as `0x${string}`, amount],
+        })
+        console.log("[v0] USI funding transaction sent:", txHash)
+      }
 
       // Record the funding
       await fetch("/api/agents/mm/wallets/fund", {
@@ -487,15 +546,17 @@ export default function MarketMakerAgentPage() {
           agentId: config?.id,
           walletAddress: fundingWallet.wallet_address,
           txHash,
+          asset: fundingAsset,
         }),
       })
 
       toast.success("Funding Successful", {
-        description: `Sent ${fundAmount} ETH to Wallet ${fundingWallet.wallet_index}`,
+        description: `Sent ${fundAmount} ${fundingAsset} to Wallet ${fundingWallet.wallet_index}`,
       })
 
       setFundingWallet(null)
       setFundAmount("")
+      setFundingAsset("ETH")
 
       // Reload wallets
       if (config?.id) {
@@ -516,7 +577,7 @@ export default function MarketMakerAgentPage() {
   }
 
   const handleWithdraw = async (type: "eth" | "usi") => {
-    if (!withdrawWallet || !address || !config?.id) return
+    if (!withdrawWallet || !wagmiAddress || !config?.id) return
 
     setIsWithdrawing(true)
     try {
@@ -526,8 +587,8 @@ export default function MarketMakerAgentPage() {
         body: JSON.stringify({
           agentId: config.id,
           walletIndex: withdrawWallet.wallet_index,
-          recipientAddress: address,
-          ownerAddress: address,
+          recipientAddress: wagmiAddress,
+          ownerAddress: wagmiAddress,
           withdrawType: type,
         }),
       })
@@ -563,7 +624,7 @@ export default function MarketMakerAgentPage() {
   }
 
   const handleExportKey = async () => {
-    if (!exportWallet || !address || !config?.id) return
+    if (!exportWallet || !wagmiAddress || !config?.id) return
 
     setIsExporting(true)
     try {
@@ -573,7 +634,7 @@ export default function MarketMakerAgentPage() {
         body: JSON.stringify({
           agentId: config.id,
           walletIndex: exportWallet.wallet_index,
-          ownerAddress: address,
+          ownerAddress: wagmiAddress,
         }),
       })
 
@@ -611,7 +672,7 @@ export default function MarketMakerAgentPage() {
     })
   }
 
-  if (!isConnected) {
+  if (!wagmiIsConnected) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
         <Card className="max-w-md w-full bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl shadow-emerald-500/5">
@@ -1242,121 +1303,141 @@ export default function MarketMakerAgentPage() {
         </div>
       </div>
 
-      {!isMobile && (
-        <Dialog open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
-          <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-xl">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
-                  <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
-                </div>
-                Fund Wallet {fundingWallet?.wallet_index}
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Send ETH from your connected wallet to this MM agent wallet
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="bg-white/5 p-4 rounded-lg space-y-2">
-                <p className="text-sm text-muted-foreground">Recipient Address</p>
-                <p className="text-sm font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
+      {/* Desktop Fund Wallet Modal */}
+      <Dialog open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
+        <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
               </div>
+              Fund Wallet {fundingWallet?.wallet_index}
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Send ETH or $USI from your connected wallet to this MM agent wallet
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="bg-white/5 p-4 rounded-lg space-y-2">
-                <p className="text-sm text-muted-foreground">Your Balance</p>
-                <p className="text-lg font-bold text-white">{Number(connectedWalletBalance).toFixed(6)} ETH</p>
-              </div>
+          <div className="space-y-4">
+            <Tabs value={fundingAsset} onValueChange={(v) => setFundingAsset(v as "ETH" | "USI")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="ETH">ETH</TabsTrigger>
+                <TabsTrigger value="USI">$USI</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-              <div className="space-y-2">
-                <Label htmlFor="fundAmount">Amount (ETH)</Label>
-                <Input
-                  id="fundAmount"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.001"
-                  value={fundAmount}
-                  onChange={(e) => setFundAmount(e.target.value)}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-
-              <Button
-                onClick={handleFundWallet}
-                disabled={!fundAmount || isFunding || !isConnected}
-                className="w-full bg-emerald-600 hover:bg-emerald-700"
-              >
-                {isFunding ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send ETH"
-                )}
-              </Button>
+            <div className="bg-white/5 p-4 rounded-lg space-y-2">
+              <p className="text-sm text-muted-foreground">Recipient Address</p>
+              <p className="text-sm font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
-      {isMobile && (
-        <Drawer open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
-          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
-            <DrawerHeader>
-              <DrawerTitle className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
-                  <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
-                </div>
-                Fund Wallet {fundingWallet?.wallet_index}
-              </DrawerTitle>
-              <DrawerDescription>Send ETH from your connected wallet to this MM agent wallet</DrawerDescription>
-            </DrawerHeader>
-
-            <div className="px-4 pb-4 space-y-4">
-              <div className="bg-white/5 p-3 rounded-lg space-y-2">
-                <p className="text-xs text-muted-foreground">Recipient Address</p>
-                <p className="text-xs font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
-              </div>
-
-              <div className="bg-white/5 p-3 rounded-lg space-y-2">
-                <p className="text-xs text-muted-foreground">Your Balance</p>
-                <p className="text-base font-bold text-white">{Number(connectedWalletBalance).toFixed(6)} ETH</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fundAmountMobile" className="text-sm">
-                  Amount (ETH)
-                </Label>
-                <Input
-                  id="fundAmountMobile"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.001"
-                  value={fundAmount}
-                  onChange={(e) => setFundAmount(e.target.value)}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-
-              <Button
-                onClick={handleFundWallet}
-                disabled={!fundAmount || isFunding || !isConnected}
-                className="w-full bg-emerald-600 hover:bg-emerald-700"
-              >
-                {isFunding ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Sending...
-                  </>
-                ) : (
-                  "Send ETH"
-                )}
-              </Button>
+            <div className="bg-white/5 p-4 rounded-lg space-y-2">
+              <p className="text-sm text-muted-foreground">Your Balance</p>
+              <p className="text-lg font-bold text-white">
+                {fundingAsset === "ETH"
+                  ? `${Number(connectedWalletBalance).toFixed(6)} ETH`
+                  : `${Number(connectedWalletUsiBalance).toFixed(2)} $USI`}
+              </p>
             </div>
-          </DrawerContent>
-        </Drawer>
-      )}
+
+            <div className="space-y-2">
+              <Label htmlFor="fundAmount">Amount ({fundingAsset})</Label>
+              <Input
+                id="fundAmount"
+                type="number"
+                step={fundingAsset === "ETH" ? "0.0001" : "1"}
+                placeholder={fundingAsset === "ETH" ? "0.001" : "100"}
+                value={fundAmount}
+                onChange={(e) => setFundAmount(e.target.value)}
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+
+            <Button
+              onClick={handleFundWallet}
+              disabled={!fundAmount || isFunding || !isConnected}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isFunding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : (
+                `Send ${fundingAsset}`
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile Fund Wallet Drawer */}
+      <Drawer open={!!fundingWallet} onOpenChange={(open) => !open && setFundingWallet(null)}>
+        <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+                <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
+              </div>
+              Fund Wallet {fundingWallet?.wallet_index}
+            </DrawerTitle>
+            <DrawerDescription>Send ETH or $USI from your connected wallet to this MM agent wallet</DrawerDescription>
+          </DrawerHeader>
+
+          <div className="px-4 pb-4 space-y-4">
+            <Tabs value={fundingAsset} onValueChange={(v) => setFundingAsset(v as "ETH" | "USI")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="ETH">ETH</TabsTrigger>
+                <TabsTrigger value="USI">$USI</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="bg-white/5 p-3 rounded-lg space-y-2">
+              <p className="text-xs text-muted-foreground">Recipient Address</p>
+              <p className="text-xs font-mono break-all text-white">{fundingWallet?.wallet_address}</p>
+            </div>
+
+            <div className="bg-white/5 p-3 rounded-lg space-y-2">
+              <p className="text-xs text-muted-foreground">Your Balance</p>
+              <p className="text-base font-bold text-white">
+                {fundingAsset === "ETH"
+                  ? `${Number(connectedWalletBalance).toFixed(6)} ETH`
+                  : `${Number(connectedWalletUsiBalance).toFixed(2)} $USI`}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fundAmountMobile" className="text-sm">
+                Amount ({fundingAsset})
+              </Label>
+              <Input
+                id="fundAmountMobile"
+                type="number"
+                step={fundingAsset === "ETH" ? "0.0001" : "1"}
+                placeholder={fundingAsset === "ETH" ? "0.001" : "100"}
+                value={fundAmount}
+                onChange={(e) => setFundAmount(e.target.value)}
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+
+            <Button
+              onClick={handleFundWallet}
+              disabled={!fundAmount || isFunding || !isConnected}
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+            >
+              {isFunding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : (
+                `Send ${fundingAsset}`
+              )}
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {!isMobile && (
         <Dialog open={!!withdrawWallet} onOpenChange={(open) => !open && setWithdrawWallet(null)}>
@@ -1390,7 +1471,7 @@ export default function MarketMakerAgentPage() {
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
                 <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Withdrawing will transfer all funds to {address?.slice(0, 6)}...{address?.slice(-4)}
+                  Withdrawing will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
                 </p>
               </div>
 
@@ -1447,7 +1528,7 @@ export default function MarketMakerAgentPage() {
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
-                  Withdrawing will transfer all funds to {address?.slice(0, 6)}...{address?.slice(-4)}
+                  Withdrawing will transfer all funds to {wagmiAddress?.slice(0, 6)}...{wagmiAddress?.slice(-4)}
                 </p>
               </div>
 
@@ -1481,7 +1562,7 @@ export default function MarketMakerAgentPage() {
             if (!open) {
               setExportWallet(null)
               setExportedKey("")
-              setShowPrivateKey(false)
+              setShowKey(false)
             }
           }}
         >
@@ -1532,18 +1613,11 @@ export default function MarketMakerAgentPage() {
                   <div className="bg-white/5 p-4 rounded-lg space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">Private Key</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowPrivateKey(!showPrivateKey)}
-                        className="h-8 px-2"
-                      >
-                        {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <Button variant="ghost" size="sm" onClick={() => setShowKey(!showKey)} className="h-8 px-2">
+                        {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </Button>
                     </div>
-                    <p className="text-sm font-mono break-all text-white">
-                      {showPrivateKey ? exportedKey : "•".repeat(64)}
-                    </p>
+                    <p className="text-sm font-mono break-all text-white">{showKey ? exportedKey : "•".repeat(64)}</p>
                   </div>
                   <Button
                     onClick={() => {
@@ -1570,7 +1644,7 @@ export default function MarketMakerAgentPage() {
             if (!open) {
               setExportWallet(null)
               setExportedKey("")
-              setShowPrivateKey(false)
+              setShowKey(false)
             }
           }}
         >
@@ -1618,18 +1692,11 @@ export default function MarketMakerAgentPage() {
                   <div className="bg-white/5 p-3 rounded-lg space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-muted-foreground">Private Key</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowPrivateKey(!showPrivateKey)}
-                        className="h-8 px-2"
-                      >
-                        {showPrivateKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      <Button variant="ghost" size="sm" onClick={() => setShowKey(!showKey)} className="h-8 px-2">
+                        {showKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                       </Button>
                     </div>
-                    <p className="text-xs font-mono break-all text-white">
-                      {showPrivateKey ? exportedKey : "•".repeat(64)}
-                    </p>
+                    <p className="text-xs font-mono break-all text-white">{showKey ? exportedKey : "•".repeat(64)}</p>
                   </div>
                   <Button
                     onClick={() => {
