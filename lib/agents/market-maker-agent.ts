@@ -273,7 +273,7 @@ export class MarketMakerAgentService {
       }
 
       const baseBuyAmount = parseEther(agent.buy_amount_eth)
-      const randomMultiplier = 0.96 + Math.random() * 0.16 // Random between 0.96 and 1.12
+      const randomMultiplier = 0.75 + Math.random() * 0.5 // Random between 0.75 and 1.25 (±5-25%)
       const configuredBuyAmount = BigInt(Math.floor(Number(baseBuyAmount) * randomMultiplier))
 
       console.log(`[MM Agent] Base buy amount: ${agent.buy_amount_eth} ETH`)
