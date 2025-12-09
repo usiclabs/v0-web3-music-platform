@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    // Validate wallet number is in valid range (1-5)
-    if (walletNumber < 1 || walletNumber > 5) {
+    // Validate wallet number is in valid range (1-10)
+    if (walletNumber < 1 || walletNumber > 10) {
       console.error(`[API] Invalid wallet number: ${walletNumber}`)
-      return NextResponse.json({ error: "Invalid wallet number. Must be between 1 and 5." }, { status: 400 })
+      return NextResponse.json({ error: "Invalid wallet number. Must be between 1 and 10." }, { status: 400 })
     }
 
     const keyMap = await getAgentWalletKeys(agent.id, ownerAddress)

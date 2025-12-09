@@ -93,6 +93,9 @@ export interface MMAgentConfig {
   token_address?: string
   token_symbol?: string
   profitable_mode?: boolean // New field for profitable mode
+  burst_mode?: boolean // New field for burst mode
+  burst_trades_count?: number // New field for burst trades count
+  burst_delay_seconds?: number // New field for burst delay seconds
 }
 
 export interface MMAgentStats {
@@ -215,6 +218,9 @@ export class MarketMakerAgentService {
         buy_interval_minutes: 5,
         sell_interval_minutes: 10,
         profitable_mode: false, // Default profitable mode to false
+        burst_mode: false, // Default burst mode to false
+        burst_trades_count: 5, // Default burst trades count
+        burst_delay_seconds: 3, // Default burst delay seconds
       })
       .select()
       .single()
@@ -832,6 +838,20 @@ export class MarketMakerAgentService {
       }
     }
 
+    // Check if burst mode is enabled
+    if (agent.burst_mode) {
+      try {
+        const burstResult = await this.executeBurst()
+        result.messages.push(`Burst mode executed: ${burstResult.success ? "Success" : "Failure"}`)
+      } catch (error: any) {
+        console.error("[MM Agent] Burst mode failed:", error.message)
+        await this.logActivity("error", `Burst mode failed: ${error.message}`, {
+          wallet: walletAddress,
+        })
+        result.messages.push(`Burst mode failed: ${error.message}`)
+      }
+    }
+
     await this.logActivity("cycle_complete", "Market making cycle completed", {
       wallet: walletAddress,
     })
@@ -857,28 +877,29 @@ export class MarketMakerAgentService {
       }
     }
 
-    const { data: activities } = await supabase
-      .from("mm_agent_activity")
-      .select("activity_type")
+    const { data: wallets } = await supabase
+      .from("mm_agent_wallets")
+      .select("total_buys, total_sells")
       .eq("agent_id", this.agentId)
+      .eq("is_active", true)
 
-    const totalBuys =
-      activities?.filter((a) => a.activity_type === "buy" || a.activity_type === "buy_executed").length || 0
-    const totalSells =
-      activities?.filter((a) => a.activity_type === "sell" || a.activity_type === "sell_executed").length || 0
+    const totalBuys = wallets?.reduce((sum, wallet) => sum + (wallet.total_buys || 0), 0) || 0
+    const totalSells = wallets?.reduce((sum, wallet) => sum + (wallet.total_sells || 0), 0) || 0
+
+    console.log("[v0] MM Agent stats calculated:", { totalBuys, totalSells, walletCount: wallets?.length })
 
     let walletStats = undefined
     if (agent.multi_wallet_mode) {
-      const { data: wallets } = await supabase
+      const { data: walletsWithDetails } = await supabase
         .from("mm_agent_wallets")
         .select("*")
         .eq("agent_id", this.agentId)
         .eq("is_active", true)
         .order("wallet_index")
 
-      if (wallets) {
+      if (walletsWithDetails) {
         walletStats = await Promise.all(
-          wallets.map(async (wallet) => {
+          walletsWithDetails.map(async (wallet) => {
             const balance = await this.getTokenBalance(wallet.wallet_address as Address)
             return {
               address: wallet.wallet_address,
@@ -1199,6 +1220,9 @@ export class MarketMakerAgentService {
       buy_interval_minutes: 5,
       sell_interval_minutes: 10,
       profitable_mode: false, // Default profitable mode to false
+      burst_mode: false, // Default burst mode to false
+      burst_trades_count: 5, // Default burst trades count
+      burst_delay_seconds: 3, // Default burst delay seconds
     })
   }
 
@@ -1267,6 +1291,83 @@ export class MarketMakerAgentService {
     } catch (error: any) {
       console.error("[MM Agent] Error checking profitable mode:", error.message)
       return false
+    }
+  }
+
+  /**
+   * Execute a burst trading sequence - rapid fire buys and sells
+   */
+  async executeBurst(): Promise<{ success: boolean; results: any[]; error?: string }> {
+    console.log(`[MM Agent] Starting burst mode...`)
+
+    const supabase = await createClient()
+    const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+
+    if (!agent) {
+      throw new Error("Agent not found")
+    }
+
+    const burstCount = agent.burst_trades_count || 5
+    const burstDelay = (agent.burst_delay_seconds || 3) * 1000 // Convert to ms
+
+    const results: any[] = []
+
+    console.log(`[MM Agent] Executing ${burstCount} rapid trades with ${burstDelay}ms delay...`)
+
+    for (let i = 0; i < burstCount; i++) {
+      const wallet = await this.getNextWallet(agent)
+      console.log(`[MM Agent] Burst ${i + 1}/${burstCount} - Using wallet ${wallet.address}`)
+
+      // Alternate between buy and sell
+      const isBuy = i % 2 === 0
+
+      try {
+        if (isBuy) {
+          const buyResult = await this.executeBuy(wallet)
+          results.push({
+            trade: i + 1,
+            type: "buy",
+            wallet: wallet.address,
+            ...buyResult,
+          })
+        } else {
+          const sellResult = await this.executeSell(wallet)
+          results.push({
+            trade: i + 1,
+            type: "sell",
+            wallet: wallet.address,
+            ...sellResult,
+          })
+        }
+
+        // Wait before next trade (except on last iteration)
+        if (i < burstCount - 1) {
+          await new Promise((resolve) => setTimeout(resolve, burstDelay))
+        }
+      } catch (error: any) {
+        console.error(`[MM Agent] Burst trade ${i + 1} failed:`, error.message)
+        results.push({
+          trade: i + 1,
+          type: isBuy ? "buy" : "sell",
+          wallet: wallet.address,
+          success: false,
+          error: error.message,
+        })
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length
+    console.log(`[MM Agent] Burst complete: ${successCount}/${burstCount} trades successful`)
+
+    await this.logActivity("burst_complete", `Burst mode completed: ${successCount}/${burstCount} successful`, {
+      burstCount,
+      successCount,
+      results,
+    })
+
+    return {
+      success: successCount > 0,
+      results,
     }
   }
 }

@@ -144,6 +144,9 @@ interface MMAgentConfig {
   active_wallets: number
   pro_mode?: boolean // Added pro_mode
   profitable_mode?: boolean // Add profitable_mode field
+  burst_mode?: boolean
+  burst_trades_count?: number
+  burst_delay_seconds?: number
 }
 
 interface MMStats {
@@ -232,6 +235,10 @@ export default function MarketMakerAgentPage() {
   const [sellAllLoading, setSellAllLoading] = useState(false)
   const [isResettingAll, setIsResettingAll] = useState(false)
   const walletAddress = wagmiAddress // Renamed for clarity
+
+  const [burstLoading, setBurstLoading] = useState(false)
+  const [burstCount, setBurstCount] = useState(5)
+  const [burstDelay, setBurstDelay] = useState(3)
 
   const handleSellAll = async (wallet: any) => {
     if (!config?.id) return
@@ -382,6 +389,35 @@ export default function MarketMakerAgentPage() {
     fetch(url).then((res) => res.json()),
   )
 
+  // Helper to update config state and then save
+  const updateConfig = async (newConfigPartial: Partial<MMAgentConfig>) => {
+    if (!config) return
+    const updatedConfig = { ...config, ...newConfigPartial }
+    setConfig(updatedConfig)
+
+    // Debounce or throttle this to prevent too many API calls
+    // For now, let's just save immediately for simplicity
+    try {
+      await fetch("/api/agents/mm/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          ...newConfigPartial,
+        }),
+      })
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+      toast.success("Configuration updated!")
+    } catch (error) {
+      console.error("Failed to update config:", error)
+      toast.error("Failed to update configuration")
+      // Revert if save fails
+      setConfig(config)
+    }
+  }
+
+  const [saving, setSaving] = useState(false) // Renamed isSaving to saving for consistency
+
   useEffect(() => {
     if (configData?.config) {
       setConfig(configData.config)
@@ -507,7 +543,7 @@ export default function MarketMakerAgentPage() {
   const handleSaveConfig = async () => {
     if (!config) return
 
-    setIsSaving(true)
+    setIsSaving(true) // UsesetIsSaving for this specific action
     try {
       const response = await fetch("/api/agents/mm/config", {
         method: "PUT",
@@ -851,6 +887,64 @@ export default function MarketMakerAgentPage() {
       })
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  const handleBurstMode = async () => {
+    if (!config?.id || !address) {
+      toast.error("Please connect wallet and enable MM agent")
+      return
+    }
+
+    setBurstLoading(true)
+    try {
+      // Update burst settings first
+      await fetch("/api/agents/mm/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          burst_trades_count: burstCount,
+          burst_delay_seconds: burstDelay,
+        }),
+      })
+
+      // Execute burst
+      const response = await fetch("/api/agents/mm/burst", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          ownerAddress: address,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        const successCount = data.results.filter((r: any) => r.success).length
+        toast.success(`Burst complete! ${successCount}/${data.results.length} trades executed`)
+
+        // Trigger confetti
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#ef4444", "#f59e0b", "#10b981"],
+        })
+
+        // Refresh data
+        mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+        mutate(`/api/agents/mm/wallets?agentId=${config.id}`)
+        mutate(`/api/agents/mm/activities?agentId=${config.id}`)
+      } else {
+        toast.error("Burst mode failed")
+      }
+    } catch (error) {
+      console.error("Burst error:", error)
+      toast.error("Failed to execute burst mode")
+    } finally {
+      setBurstLoading(false)
     }
   }
 
@@ -1456,6 +1550,76 @@ export default function MarketMakerAgentPage() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-500/10 to-transparent border-orange-500/20">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center shrink-0">
+                    <Zap className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base text-white mb-1">Burst Mode</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Rapidly fire off multiple buy and sell trades in quick succession to generate instant volume and
+                      activity
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="burstCount" className="text-xs text-muted-foreground">
+                      Number of Trades
+                    </Label>
+                    <Input
+                      id="burstCount"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={burstCount}
+                      onChange={(e) => setBurstCount(Number(e.target.value))}
+                      className="bg-white/5 border-white/10 h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="burstDelay" className="text-xs text-muted-foreground">
+                      Delay (seconds)
+                    </Label>
+                    <Input
+                      id="burstDelay"
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={burstDelay}
+                      onChange={(e) => setBurstDelay(Number(e.target.value))}
+                      className="bg-white/5 border-white/10 h-9"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleBurstMode}
+                  disabled={burstLoading || !config?.is_active}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/20"
+                >
+                  {burstLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Executing Burst...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Fire Burst Mode
+                    </>
+                  )}
+                </Button>
+
+                {!config?.is_active && (
+                  <p className="text-xs text-orange-400/60 text-center">Agent must be active to use Burst Mode</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -2282,57 +2446,7 @@ export default function MarketMakerAgentPage() {
         </Drawer>
       )}
 
-      {isMobile ? (
-        <Drawer open={!!sellAllWallet} onOpenChange={(open) => !open && setSellAllWallet(null)}>
-          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
-            <DrawerHeader>
-              <DrawerTitle className="text-amber-400">Sell All $USI Tokens</DrawerTitle>
-              <DrawerDescription>
-                This will convert all $USI tokens in this wallet to ETH, resetting the market making cycle.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 pb-4 space-y-4">
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                <p className="text-sm text-muted-foreground">Current Balance</p>
-                <p className="text-lg font-bold text-white">{sellAllWallet?.token_balance?.toFixed(2) || "0"} $USI</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
-                <p className="text-sm text-muted-foreground">
-                  This action will sell all $USI tokens for ETH, giving your wallet a fresh start for the next market
-                  making cycle. This is useful when you want to reset and start with pure ETH funding.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setSellAllWallet(null)}
-                  variant="outline"
-                  className="flex-1"
-                  disabled={sellAllLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => sellAllWallet && handleSellAll(sellAllWallet)}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
-                  disabled={sellAllLoading}
-                >
-                  {sellAllLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Selling...
-                    </>
-                  ) : (
-                    <>
-                      <Repeat className="w-4 h-4 mr-2" />
-                      Confirm Sell All
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
-      ) : (
+      {!isMobile ? (
         <Dialog open={!!sellAllWallet} onOpenChange={(open) => !open && setSellAllWallet(null)}>
           <DialogContent className="sm:max-w-md bg-black/95 backdrop-blur-2xl border-white/10">
             <DialogHeader>
@@ -2385,6 +2499,56 @@ export default function MarketMakerAgentPage() {
             </div>
           </DialogContent>
         </Dialog>
+      ) : (
+        <Drawer open={!!sellAllWallet} onOpenChange={(open) => !open && setSellAllWallet(null)}>
+          <DrawerContent className="bg-black/95 backdrop-blur-2xl border-white/10">
+            <DrawerHeader>
+              <DrawerTitle className="text-amber-400">Sell All $USI Tokens</DrawerTitle>
+              <DrawerDescription>
+                This will convert all $USI tokens in this wallet to ETH, resetting the market making cycle.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">Current Balance</p>
+                <p className="text-lg font-bold text-white">{sellAllWallet?.token_balance?.toFixed(2) || "0"} $USI</p>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">
+                  This action will sell all $USI tokens for ETH, giving your wallet a fresh start for the next market
+                  making cycle. This is useful when you want to reset and start with pure ETH funding.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSellAllWallet(null)}
+                  variant="outline"
+                  className="flex-1"
+                  disabled={sellAllLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => sellAllWallet && handleSellAll(sellAllWallet)}
+                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
+                  disabled={sellAllLoading}
+                >
+                  {sellAllLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Selling...
+                    </>
+                  ) : (
+                    <>
+                      <Repeat className="w-4 h-4 mr-2" />
+                      Confirm Sell All
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
       )}
     </div>
   )

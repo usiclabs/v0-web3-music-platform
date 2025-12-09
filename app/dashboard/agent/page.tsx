@@ -200,14 +200,13 @@ export default function AgentDashboardPage() {
     }
   }, [address])
 
-  const handleSaveConfig = async (configOverride?: Partial<AgentConfig>) => {
+  const handleSaveConfig = async () => {
     if (!address) return
     setIsSaving(true)
 
     try {
-      // Use override if provided, otherwise use current config state
-      const configToUse = configOverride ?? config
-      const { portfolio, recent_trades, ...configToSave } = configToUse as any
+      // Remove portfolio and recent_trades from config before saving
+      const { portfolio, recent_trades, ...configToSave } = config as any
 
       const response = await fetch("/api/agents/config", {
         method: "POST",
@@ -255,7 +254,7 @@ export default function AgentDashboardPage() {
     const newActiveState = !config.is_active
     const newConfig = { ...config, is_active: newActiveState }
     setConfig(newConfig)
-    await handleSaveConfig(newConfig)
+    await handleSaveConfig() // Removed config override as handleSaveConfig is updated
   }
 
   if (!isConnected) {
@@ -1110,6 +1109,7 @@ export default function AgentDashboardPage() {
 
               {/* Save Button */}
               <Button
+                type="button"
                 onClick={handleSaveConfig}
                 disabled={isSaving}
                 className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25"
