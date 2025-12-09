@@ -55,7 +55,11 @@ export default function StartLivePage() {
 
         const data = await res.json()
         console.log("[v0] Eligibility data received:", JSON.stringify(data))
-        setEligibility(data)
+        setEligibility({
+          eligible: data.eligible,
+          trackCount: data.trackCount,
+          requiredTracks: data.requiredTracks,
+        })
         console.log("[v0] Eligibility state updated")
       } catch (error) {
         console.error("[v0] Error checking eligibility:", error)
