@@ -886,8 +886,6 @@ export class MarketMakerAgentService {
     const totalBuys = wallets?.reduce((sum, wallet) => sum + (wallet.total_buys || 0), 0) || 0
     const totalSells = wallets?.reduce((sum, wallet) => sum + (wallet.total_sells || 0), 0) || 0
 
-    console.log("[v0] MM Agent stats calculated:", { totalBuys, totalSells, walletCount: wallets?.length })
-
     let walletStats = undefined
     if (agent.multi_wallet_mode) {
       const { data: walletsWithDetails } = await supabase
@@ -912,7 +910,7 @@ export class MarketMakerAgentService {
       }
     }
 
-    const usiBalance = await this.getTokenBalance(agent.multi_wallet_mode ? undefined : await this.getWallet(1).address)
+    const usiBalance = await this.getTokenBalance(undefined)
 
     return {
       totalBuys,
@@ -1151,6 +1149,7 @@ export class MarketMakerAgentService {
           const currentBalance = await this.getTokenBalance(tokenAddress as Address)
           const currentPrice = ethSpent / tokenAmount // Current price from this trade
           const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
+          const unrealizedPnl = currentValue - newTotalInvested // Calculate PnL based on current value
 
           await supabase
             .from("agent_portfolio")
@@ -1159,7 +1158,7 @@ export class MarketMakerAgentService {
               total_invested: newTotalInvested,
               avg_buy_price: newAvgPrice,
               current_value: currentValue,
-              unrealized_pnl: currentValue - newTotalInvested,
+              unrealized_pnl: unrealizedPnl,
               last_updated_at: new Date().toISOString(),
             })
             .eq("id", existing.id)
@@ -1168,6 +1167,7 @@ export class MarketMakerAgentService {
             amount: newAmount,
             invested: newTotalInvested,
             currentValue,
+            unrealizedPnl,
           })
         } else {
           // Create new position
@@ -1200,15 +1200,19 @@ export class MarketMakerAgentService {
         const newAmount = Number.parseFloat(existing.amount || "0") - tokensSold
         const costBasis = tokensSold * Number.parseFloat(existing.avg_buy_price || "0")
         const realizedPnl = ethReceived - costBasis
+        const currentTotalInvested = Number.parseFloat(existing.total_invested || "0")
+        const newTotalInvested = currentTotalInvested - costBasis // Reduce invested capital by the cost basis of sold tokens
 
         if (newAmount <= 0.0001) {
           // Position fully closed - but keep record with zero amount
+          const currentRealizedPnl = Number.parseFloat(existing.realized_pnl || "0")
           await supabase
             .from("agent_portfolio")
             .update({
               amount: 0,
               current_value: 0,
-              realized_pnl: Number.parseFloat(existing.realized_pnl || "0") + realizedPnl,
+              total_invested: 0, // Reset invested capital
+              realized_pnl: currentRealizedPnl + realizedPnl,
               unrealized_pnl: 0,
               last_updated_at: new Date().toISOString(),
             })
@@ -1220,7 +1224,8 @@ export class MarketMakerAgentService {
           const currentBalance = await this.getTokenBalance(tokenAddress as Address)
           const currentPrice = ethReceived / tokensSold // Price from this sell
           const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
-          const newTotalInvested = Number.parseFloat(existing.total_invested || "0") - costBasis
+          const currentRealizedPnl = Number.parseFloat(existing.realized_pnl || "0")
+          const unrealizedPnl = currentValue - newTotalInvested // Calculate new unrealized PnL
 
           await supabase
             .from("agent_portfolio")
@@ -1228,8 +1233,8 @@ export class MarketMakerAgentService {
               amount: newAmount,
               total_invested: newTotalInvested,
               current_value: currentValue,
-              realized_pnl: Number.parseFloat(existing.realized_pnl || "0") + realizedPnl,
-              unrealized_pnl: currentValue - newTotalInvested,
+              realized_pnl: currentRealizedPnl + realizedPnl,
+              unrealized_pnl: unrealizedPnl,
               last_updated_at: new Date().toISOString(),
             })
             .eq("id", existing.id)
@@ -1238,6 +1243,7 @@ export class MarketMakerAgentService {
             newAmount,
             currentValue,
             realizedPnl,
+            unrealizedPnl,
           })
         }
       }
