@@ -54,6 +54,19 @@ import { parseEther, formatEther } from "viem" // Added viem functions
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import confetti from "canvas-confetti"
 
+const SUPPORTED_TOKENS = [
+  {
+    address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+    symbol: "USI",
+    name: "Universal Sound Index",
+  },
+  {
+    address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+    symbol: "DEUS",
+    name: "DEUS",
+  },
+] as const
+
 interface StrategyPreset {
   id: string
   name: string
@@ -147,6 +160,8 @@ interface MMAgentConfig {
   burst_mode?: boolean
   burst_trades_count?: number
   burst_delay_seconds?: number
+  token_address?: string // Added token_address
+  token_symbol?: string // Added token_symbol
 }
 
 interface MMStats {
@@ -557,6 +572,7 @@ export default function MarketMakerAgentPage() {
           active_wallets: config.active_wallets,
           pro_mode: config.pro_mode,
           profitable_mode: config.profitable_mode, // Include profitable_mode
+          token_address: config.token_address, // Include token_address
         }),
       })
 
@@ -1500,16 +1516,53 @@ export default function MarketMakerAgentPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                  <div className="flex-1 min-w-0 mr-3">
-                    <p className="font-medium text-sm text-white">Token Address</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate mt-1">
-                      0x987603A52d8B966E10FBD29DcB1A574049E25B07
-                    </p>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-white">Market Making Token</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {SUPPORTED_TOKENS.map((token) => (
+                      <button
+                        key={token.address}
+                        type="button"
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            token_address: token.address,
+                            token_symbol: token.symbol,
+                          })
+                        }
+                        className={`
+                          p-4 rounded-xl border-2 transition-all duration-200
+                          ${
+                            config?.token_address === token.address
+                              ? "border-emerald-500 bg-emerald-500/10"
+                              : "border-white/10 bg-white/5 hover:border-white/20"
+                          }
+                        `}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge
+                            className={`
+                              ${
+                                config?.token_address === token.address
+                                  ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                                  : "bg-white/10 text-white"
+                              }
+                              border-0 shadow-lg
+                            `}
+                          >
+                            ${token.symbol}
+                          </Badge>
+                          {config?.token_address === token.address && (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono truncate text-left">
+                          {token.address.slice(0, 6)}...{token.address.slice(-4)}
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                  <Badge className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-0 shadow-lg">
-                    $USI
-                  </Badge>
+                  <p className="text-xs text-muted-foreground">Select which token the agent should market make for</p>
                 </div>
 
                 <Button

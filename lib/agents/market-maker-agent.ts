@@ -15,7 +15,7 @@ import {
 } from "@/lib/web3/contracts"
 import { getAgentWalletKeys, generateWalletsForAgent } from "./wallet-generator"
 
-const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07" as Address
+// Removed hardcoded USI_TOKEN_ADDRESS, it will be fetched from agent config
 const USI_TOKEN_SYMBOL = "USI"
 const USI_TOKEN_NAME = "Universal Sound Index"
 
@@ -259,7 +259,7 @@ export class MarketMakerAgentService {
    */
   async executeBuy(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
-      console.log("[MM Agent] Attempting to buy $USI...")
+      console.log("[MM Agent] Attempting to buy tokens...")
 
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
@@ -271,6 +271,10 @@ export class MarketMakerAgentService {
       if (!agent) {
         throw new Error("Agent not found")
       }
+
+      const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
+      const TOKEN_SYMBOL = agent.token_symbol || "USI"
+      console.log(`[MM Agent] Trading token: ${TOKEN_SYMBOL} (${TOKEN_ADDRESS})`)
 
       const baseBuyAmount = parseEther(agent.buy_amount_eth)
       const randomMultiplier = 0.75 + Math.random() * 0.5 // Random between 0.75 and 1.25 (±5-25%)
@@ -318,10 +322,10 @@ export class MarketMakerAgentService {
       }
 
       // Get quote for expected output with 5% slippage
-      const expectedTokens = await this.getQuote(useWETH ? WETH_ADDRESS : WETH_ADDRESS, USI_TOKEN_ADDRESS, buyAmount)
+      const expectedTokens = await this.getQuote(useWETH ? WETH_ADDRESS : WETH_ADDRESS, TOKEN_ADDRESS, buyAmount)
       const minTokensOut = (expectedTokens * 95n) / 100n
       console.log(
-        `[MM Agent] Expected $USI output: ${formatUnits(expectedTokens, 18)} (min: ${formatUnits(minTokensOut, 18)})`,
+        `[MM Agent] Expected ${TOKEN_SYMBOL} output: ${formatUnits(expectedTokens, 18)} (min: ${formatUnits(minTokensOut, 18)})`,
       )
 
       if (useWETH) {
@@ -346,7 +350,7 @@ export class MarketMakerAgentService {
               args: [
                 {
                   tokenIn: WETH_ADDRESS,
-                  tokenOut: USI_TOKEN_ADDRESS,
+                  tokenOut: TOKEN_ADDRESS, // Use configured token
                   fee,
                   recipient: wallet.address,
                   amountIn: buyAmount,
@@ -367,7 +371,7 @@ export class MarketMakerAgentService {
               args: [
                 {
                   tokenIn: WETH_ADDRESS,
-                  tokenOut: USI_TOKEN_ADDRESS,
+                  tokenOut: TOKEN_ADDRESS, // Use configured token
                   fee,
                   recipient: wallet.address,
                   amountIn: buyAmount,
@@ -395,7 +399,7 @@ export class MarketMakerAgentService {
               args: [
                 {
                   tokenIn: WETH_ADDRESS,
-                  tokenOut: USI_TOKEN_ADDRESS,
+                  tokenOut: TOKEN_ADDRESS, // Use configured token
                   fee,
                   recipient: wallet.address,
                   amountIn: buyAmount,
@@ -417,7 +421,7 @@ export class MarketMakerAgentService {
               args: [
                 {
                   tokenIn: WETH_ADDRESS,
-                  tokenOut: USI_TOKEN_ADDRESS,
+                  tokenOut: TOKEN_ADDRESS, // Use configured token
                   fee,
                   recipient: wallet.address,
                   amountIn: buyAmount,
@@ -462,7 +466,7 @@ export class MarketMakerAgentService {
       // Record the trade
       await this.recordTrade("buy", buyAmount, minTokensOut, buyTxHash, wallet.address)
 
-      await this.logActivity("buy_executed", `Bought ${formatUnits(minTokensOut, 18)} $USI`, {
+      await this.logActivity("buy_executed", `Bought ${formatUnits(minTokensOut, 18)} ${TOKEN_SYMBOL}`, {
         wallet: wallet.address,
         txHash: buyTxHash,
         amountIn: formatUnits(buyAmount, 18),
@@ -473,20 +477,20 @@ export class MarketMakerAgentService {
       if (buyTxHash) {
         try {
           const ethSpent = Number(formatUnits(buyAmount, 18))
-          const usiReceived = Number(formatUnits(minTokensOut, 18))
-          const buyPrice = ethSpent / usiReceived // ETH per USI
+          const tokensReceived = Number(formatUnits(minTokensOut, 18))
+          const buyPrice = ethSpent / tokensReceived // ETH per token
 
           const supabase = await createClient()
           await supabase
             .from("mm_agent_wallets")
             .update({
               last_buy_price: buyPrice,
-              last_buy_amount: usiReceived,
+              last_buy_amount: tokensReceived,
             })
             .eq("agent_id", this.agentId)
             .eq("wallet_address", wallet.address)
 
-          console.log(`[MM Agent] Recorded buy price: ${buyPrice.toFixed(8)} ETH per USI`)
+          console.log(`[MM Agent] Recorded buy price: ${buyPrice.toFixed(8)} ETH per ${TOKEN_SYMBOL}`)
         } catch (error) {
           console.error("[MM Agent] Failed to record buy price:", error)
         }
@@ -508,7 +512,7 @@ export class MarketMakerAgentService {
    */
   async executeSell(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
-      console.log("[MM Agent] Attempting to sell accumulated $USI...")
+      console.log("[MM Agent] Attempting to sell accumulated tokens...")
 
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
 
@@ -521,17 +525,21 @@ export class MarketMakerAgentService {
         throw new Error("Agent not found")
       }
 
-      const usiBalance = await publicClient.readContract({
-        address: USI_TOKEN_ADDRESS,
+      const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
+      const TOKEN_SYMBOL = agent.token_symbol || "USI"
+      console.log(`[MM Agent] Selling token: ${TOKEN_SYMBOL} (${TOKEN_ADDRESS})`)
+
+      const tokenBalance = await publicClient.readContract({
+        address: TOKEN_ADDRESS, // Use configured token
         abi: ERC20_ABI,
         functionName: "balanceOf",
         args: [wallet.address],
       })
 
-      console.log(`[v0] Raw balance from contract: ${usiBalance.toString()}`)
+      console.log(`[v0] Raw balance from contract: ${tokenBalance.toString()}`)
 
-      if (usiBalance === 0n) {
-        console.log(`[MM Agent] No $USI tokens to sell`)
+      if (tokenBalance === 0n) {
+        console.log(`[MM Agent] No ${TOKEN_SYMBOL} tokens to sell`)
         return { success: false, error: "No tokens to sell" }
       }
 
@@ -544,17 +552,17 @@ export class MarketMakerAgentService {
           .single()
 
         if (walletData && walletData.last_buy_price > 0) {
-          // Get current price by querying expected ETH output for 1 USI
-          const oneUsi = parseUnits("1", 18)
-          const currentEthForOneUsi = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, oneUsi)
-          const currentPrice = Number(formatUnits(currentEthForOneUsi, 18)) // ETH per USI
+          // Get current price by querying expected ETH output for 1 token
+          const oneToken = parseUnits("1", 18)
+          const currentEthForOneToken = await this.getQuote(TOKEN_ADDRESS, WETH_ADDRESS, oneToken)
+          const currentPrice = Number(formatUnits(currentEthForOneToken, 18)) // ETH per token
 
           const buyPrice = Number(walletData.last_buy_price)
           const profitPercent = ((currentPrice - buyPrice) / buyPrice) * 100
 
           console.log(`[MM Agent] Profitable Mode Check:`)
-          console.log(`  Buy price: ${buyPrice.toFixed(8)} ETH per USI`)
-          console.log(`  Current price: ${currentPrice.toFixed(8)} ETH per USI`)
+          console.log(`  Buy price: ${buyPrice.toFixed(8)} ETH per ${TOKEN_SYMBOL}`)
+          console.log(`  Current price: ${currentPrice.toFixed(8)} ETH per ${TOKEN_SYMBOL}`)
           console.log(`  Profit: ${profitPercent.toFixed(2)}%`)
 
           if (profitPercent < 10) {
@@ -568,17 +576,17 @@ export class MarketMakerAgentService {
         }
       }
 
-      const sellAmount = usiBalance / 2n
-      console.log(`[MM Agent] Total balance: ${formatUnits(usiBalance, 18)} $USI`)
-      console.log(`[MM Agent] Selling 50%: ${formatUnits(sellAmount, 18)} $USI`)
+      const sellAmount = tokenBalance / 2n
+      console.log(`[MM Agent] Total balance: ${formatUnits(tokenBalance, 18)} ${TOKEN_SYMBOL}`)
+      console.log(`[MM Agent] Selling 50%: ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL}`)
 
       if (sellAmount < parseUnits("1", 18)) {
-        console.log(`[MM Agent] Sell amount too small, need at least 1 $USI`)
+        console.log(`[MM Agent] Sell amount too small, need at least 1 ${TOKEN_SYMBOL}`)
         return { success: false, error: "Sell amount too small" }
       }
 
       // Estimate output with 5% slippage
-      const minEthOut = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
+      const minEthOut = await this.getQuote(TOKEN_ADDRESS, WETH_ADDRESS, sellAmount) // Use configured token
       const minEthOutWithSlippage = (minEthOut * 95n) / 100n
       console.log(
         `[MM Agent] Expected WETH output: ${formatUnits(minEthOut, 18)} (min: ${formatUnits(minEthOutWithSlippage, 18)})`,
@@ -586,20 +594,20 @@ export class MarketMakerAgentService {
 
       console.log(`[MM Agent] Checking approval for router...`)
       const currentAllowance = await publicClient.readContract({
-        address: USI_TOKEN_ADDRESS,
+        address: TOKEN_ADDRESS, // Use configured token
         abi: ERC20_ABI,
         functionName: "allowance",
         args: [wallet.address, routerAddress],
       })
 
-      console.log(`[v0] Current allowance: ${formatUnits(currentAllowance as bigint, 18)} $USI`)
+      console.log(`[v0] Current allowance: ${formatUnits(currentAllowance as bigint, 18)} ${TOKEN_SYMBOL}`)
 
       if ((currentAllowance as bigint) < sellAmount) {
-        console.log(`[MM Agent] Insufficient allowance, approving ${formatUnits(sellAmount, 18)} $USI`)
+        console.log(`[MM Agent] Insufficient allowance, approving ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL}`)
 
         const approvalAmount = sellAmount * 2n // Approve 2x for future trades
         const approveHash = await walletClient.writeContract({
-          address: USI_TOKEN_ADDRESS,
+          address: TOKEN_ADDRESS, // Use configured token
           abi: ERC20_ABI,
           functionName: "approve",
           args: [routerAddress, approvalAmount],
@@ -624,11 +632,11 @@ export class MarketMakerAgentService {
             functionName: "exactInputSingle",
             args: [
               {
-                tokenIn: USI_TOKEN_ADDRESS,
+                tokenIn: TOKEN_ADDRESS, // Use configured token
                 tokenOut: WETH_ADDRESS,
                 fee,
                 recipient: wallet.address,
-                amountIn: sellAmount, // Use validated sellAmount instead of full balance
+                amountIn: sellAmount,
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
               },
@@ -648,11 +656,11 @@ export class MarketMakerAgentService {
             functionName: "exactInputSingle",
             args: [
               {
-                tokenIn: USI_TOKEN_ADDRESS,
+                tokenIn: TOKEN_ADDRESS, // Use configured token
                 tokenOut: WETH_ADDRESS,
                 fee,
                 recipient: wallet.address,
-                amountIn: sellAmount, // Use validated sellAmount
+                amountIn: sellAmount,
                 amountOutMinimum: minEthOutWithSlippage,
                 sqrtPriceLimitX96: 0n,
               },
@@ -742,7 +750,7 @@ export class MarketMakerAgentService {
 
       await this.logActivity(
         "sell_executed",
-        `Sold ${formatUnits(sellAmount, 18)} $USI for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
+        `Sold ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL} for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
         {
           wallet: wallet.address,
           txHash: sellTxHash,
@@ -1272,6 +1280,10 @@ export class MarketMakerAgentService {
 
       let totalBalance = 0n
       for (const wallet of wallets) {
+        // FIX: USI_TOKEN_ADDRESS was undeclared. It's defined in the agent config.
+        const agent = await supabase.from("mm_agents").select("token_address").eq("id", this.agentId).single()
+        const USI_TOKEN_ADDRESS = agent.data.token_address as Address
+
         const balance = await publicClient.readContract({
           address: USI_TOKEN_ADDRESS,
           abi: ERC20_ABI,
@@ -1289,6 +1301,10 @@ export class MarketMakerAgentService {
       chain: base,
       transport: http(rpcUrl),
     })
+
+    // FIX: USI_TOKEN_ADDRESS was undeclared. It's defined in the agent config.
+    const agent = await createClient().from("mm_agents").select("token_address").eq("id", this.agentId).single()
+    const USI_TOKEN_ADDRESS = agent.data.token_address as Address
 
     const balance = await publicClient.readContract({
       address: USI_TOKEN_ADDRESS,
@@ -1408,6 +1424,7 @@ export class MarketMakerAgentService {
       const { publicClient } = await this.createClients(wallet)
 
       // Get current USI balance
+      const USI_TOKEN_ADDRESS = agent.token_address as Address
       const usiBalance = await publicClient.readContract({
         address: USI_TOKEN_ADDRESS,
         abi: ERC20_ABI,
@@ -1438,10 +1455,10 @@ export class MarketMakerAgentService {
 
       // Get current price by simulating a sell quote
       const sellAmount = usiBalance / 2n // Check price for 50% of balance
-      const currentEthOut = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
+      const currentEthForOneToken = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
 
       // Calculate current price in ETH per USI
-      const currentPrice = Number(formatUnits(currentEthOut, 18)) / Number(formatUnits(sellAmount, 18))
+      const currentPrice = Number(formatUnits(currentEthForOneToken, 18)) / Number(formatUnits(sellAmount, 18))
 
       // Calculate profit percentage
       const profitPercent = ((currentPrice - lastBuyPrice) / lastBuyPrice) * 100
