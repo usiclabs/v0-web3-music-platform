@@ -1050,7 +1050,7 @@ export class MarketMakerAgentService {
       // Update volume in mm_agents table
       const { data: agent } = await supabase
         .from("mm_agents")
-        .select("total_volume_generated")
+        .select("total_volume_generated, id, token_address, token_symbol")
         .eq("id", this.agentId)
         .single()
 
@@ -1075,6 +1075,15 @@ export class MarketMakerAgentService {
           .eq("id", this.agentId)
 
         console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}, volume: ${volumeEth.toFixed(6)} ETH`)
+
+        await this.updateMMPortfolio(
+          agent.id,
+          agent.token_address,
+          agent.token_symbol || "USI",
+          tradeType,
+          amountIn,
+          amountOut,
+        )
       }
 
       if (walletAddress) {
@@ -1106,6 +1115,134 @@ export class MarketMakerAgentService {
       console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}`)
     } catch (error) {
       console.error("[MM Agent] Failed to record trade:", error)
+    }
+  }
+
+  private async updateMMPortfolio(
+    agentId: string,
+    tokenAddress: string,
+    tokenSymbol: string,
+    tradeType: "buy" | "sell",
+    amountIn: bigint,
+    amountOut: bigint,
+  ): Promise<void> {
+    try {
+      const supabase = await createClient()
+
+      // Get current portfolio entry
+      const { data: existing } = await supabase
+        .from("agent_portfolio")
+        .select("*")
+        .eq("agent_id", agentId)
+        .eq("token_address", tokenAddress)
+        .single()
+
+      if (tradeType === "buy") {
+        const tokenAmount = Number(formatUnits(amountOut, 18))
+        const ethSpent = Number(formatUnits(amountIn, 18))
+
+        if (existing) {
+          // Update existing position
+          const newAmount = Number.parseFloat(existing.amount || "0") + tokenAmount
+          const newTotalInvested = Number.parseFloat(existing.total_invested || "0") + ethSpent
+          const newAvgPrice = newTotalInvested / newAmount
+
+          // Get current token balance to calculate current_value
+          const currentBalance = await this.getTokenBalance(tokenAddress as Address)
+          const currentPrice = ethSpent / tokenAmount // Current price from this trade
+          const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
+
+          await supabase
+            .from("agent_portfolio")
+            .update({
+              amount: newAmount,
+              total_invested: newTotalInvested,
+              avg_buy_price: newAvgPrice,
+              current_value: currentValue,
+              unrealized_pnl: currentValue - newTotalInvested,
+              last_updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.id)
+
+          console.log("[MM Agent] Updated portfolio:", {
+            amount: newAmount,
+            invested: newTotalInvested,
+            currentValue,
+          })
+        } else {
+          // Create new position
+          const avgPrice = ethSpent / tokenAmount
+          const currentValue = tokenAmount * avgPrice
+
+          await supabase.from("agent_portfolio").insert({
+            agent_id: agentId,
+            token_address: tokenAddress,
+            token_symbol: tokenSymbol,
+            token_name: tokenSymbol,
+            amount: tokenAmount,
+            avg_buy_price: avgPrice,
+            total_invested: ethSpent,
+            current_value: currentValue,
+            unrealized_pnl: 0,
+            first_buy_at: new Date().toISOString(),
+            last_updated_at: new Date().toISOString(),
+          })
+
+          console.log("[MM Agent] Created portfolio position:", {
+            amount: tokenAmount,
+            invested: ethSpent,
+          })
+        }
+      } else if (tradeType === "sell" && existing) {
+        // Sell: reduce position
+        const tokensSold = Number(formatUnits(amountIn, 18))
+        const ethReceived = Number(formatUnits(amountOut, 18))
+        const newAmount = Number.parseFloat(existing.amount || "0") - tokensSold
+        const costBasis = tokensSold * Number.parseFloat(existing.avg_buy_price || "0")
+        const realizedPnl = ethReceived - costBasis
+
+        if (newAmount <= 0.0001) {
+          // Position fully closed - but keep record with zero amount
+          await supabase
+            .from("agent_portfolio")
+            .update({
+              amount: 0,
+              current_value: 0,
+              realized_pnl: Number.parseFloat(existing.realized_pnl || "0") + realizedPnl,
+              unrealized_pnl: 0,
+              last_updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.id)
+
+          console.log("[MM Agent] Closed portfolio position, realized P&L:", realizedPnl)
+        } else {
+          // Get current balance and estimate current value
+          const currentBalance = await this.getTokenBalance(tokenAddress as Address)
+          const currentPrice = ethReceived / tokensSold // Price from this sell
+          const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
+          const newTotalInvested = Number.parseFloat(existing.total_invested || "0") - costBasis
+
+          await supabase
+            .from("agent_portfolio")
+            .update({
+              amount: newAmount,
+              total_invested: newTotalInvested,
+              current_value: currentValue,
+              realized_pnl: Number.parseFloat(existing.realized_pnl || "0") + realizedPnl,
+              unrealized_pnl: currentValue - newTotalInvested,
+              last_updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.id)
+
+          console.log("[MM Agent] Reduced portfolio position:", {
+            newAmount,
+            currentValue,
+            realizedPnl,
+          })
+        }
+      }
+    } catch (error) {
+      console.error("[MM Agent] Failed to update portfolio:", error)
     }
   }
 

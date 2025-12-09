@@ -418,6 +418,30 @@ export async function runAgentCycle(agentId: string): Promise<{
       return results
     }
 
+    try {
+      const { data: wallet } = await supabase
+        .from("investment_agent_wallets")
+        .select("*")
+        .eq("agent_id", agentId)
+        .single()
+
+      if (!wallet) {
+        results.errors.push("Agent wallet not found - please fund your agent wallet first")
+        return results
+      }
+
+      if (wallet.usdc_balance <= 0) {
+        results.errors.push("Agent wallet has no USDC balance - please fund your wallet")
+        return results
+      }
+
+      // Log the wallet being used
+      console.log(`[StrategyEngine] Using agent wallet: ${wallet.wallet_address} with ${wallet.usdc_balance} USDC`)
+    } catch (error: any) {
+      results.errors.push(`Wallet check error: ${error.message}`)
+      return results
+    }
+
     // Log cycle start
     await walletService.logActivity(agentId, "scan", "Starting autonomous scan cycle")
 

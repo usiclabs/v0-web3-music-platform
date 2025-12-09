@@ -457,10 +457,14 @@ export class AgentWalletService {
 
       if (tradeType === "buy") {
         if (existing) {
-          // Update existing position
           const newAmount = Number.parseFloat(existing.amount) + Number(formatUnits(amount, 18))
           const newTotalInvested = Number.parseFloat(existing.total_invested) + Number(formatUnits(usdcAmount, 6))
           const newAvgPrice = newTotalInvested / newAmount
+
+          // Estimate current value using the latest trade price
+          const latestPrice = Number(formatUnits(usdcAmount, 6)) / Number(formatUnits(amount, 18))
+          const currentValue = newAmount * latestPrice
+          const unrealizedPnl = currentValue - newTotalInvested
 
           await supabase
             .from("agent_portfolio")
@@ -468,13 +472,15 @@ export class AgentWalletService {
               amount: newAmount,
               total_invested: newTotalInvested,
               avg_buy_price: newAvgPrice,
+              current_value: currentValue,
+              unrealized_pnl: unrealizedPnl,
               last_updated_at: new Date().toISOString(),
             })
             .eq("id", existing.id)
         } else {
-          // Create new position
           const amountFloat = Number(formatUnits(amount, 18))
           const investedFloat = Number(formatUnits(usdcAmount, 6))
+          const avgPrice = investedFloat / amountFloat
 
           await supabase.from("agent_portfolio").insert({
             agent_id: agentId,
@@ -482,17 +488,26 @@ export class AgentWalletService {
             token_symbol: tokenSymbol,
             token_name: tokenName,
             amount: amountFloat,
-            avg_buy_price: investedFloat / amountFloat,
+            avg_buy_price: avgPrice,
             total_invested: investedFloat,
+            current_value: investedFloat, // Initially, current value equals invested
+            unrealized_pnl: 0,
+            first_buy_at: new Date().toISOString(),
+            last_updated_at: new Date().toISOString(),
           })
         }
       } else if (tradeType === "sell" && existing) {
-        // Reduce position
         const soldAmount = Number(formatUnits(amount, 18))
         const newAmount = Number.parseFloat(existing.amount) - soldAmount
         const proceeds = Number(formatUnits(usdcAmount, 6))
         const costBasis = soldAmount * Number.parseFloat(existing.avg_buy_price)
         const realizedPnl = proceeds - costBasis
+
+        // Calculate new current value proportionally
+        const remainingPercent = newAmount / Number.parseFloat(existing.amount)
+        const newCurrentValue = Number.parseFloat(existing.current_value || "0") * remainingPercent
+        const newTotalInvested = Number.parseFloat(existing.total_invested) * remainingPercent
+        const newUnrealizedPnl = newCurrentValue - newTotalInvested
 
         if (newAmount <= 0) {
           // Position fully closed
@@ -502,6 +517,9 @@ export class AgentWalletService {
             .from("agent_portfolio")
             .update({
               amount: newAmount,
+              total_invested: newTotalInvested,
+              current_value: newCurrentValue,
+              unrealized_pnl: newUnrealizedPnl,
               realized_pnl: Number.parseFloat(existing.realized_pnl || "0") + realizedPnl,
               last_updated_at: new Date().toISOString(),
             })

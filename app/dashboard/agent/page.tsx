@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import Link from "next/link"
-import { checkAgentTokenGate, type AgentTokenGateStatus } from "@/lib/web3/agent-token-gate"
+import type { AgentTokenGateStatus } from "@/lib/w eb3/agent-token-gate"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
@@ -142,6 +142,13 @@ export default function AgentDashboardPage() {
   const { address, isConnected } = useWallet()
   const [isSaving, setIsSaving] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
+  const [agentWallet, setAgentWallet] = useState<{ address: string; usdcBalance: number; ethBalance: number } | null>(
+    null,
+  )
+  const [fundAmount, setFundAmount] = useState("")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [isFunding, setIsFunding] = useState(false)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [config, setConfig] = useState<Partial<AgentConfig>>({
     name: "My Investment Agent",
     is_active: false,
@@ -169,10 +176,23 @@ export default function AgentDashboardPage() {
     fetcher,
   )
 
+  const { data: walletData, error: walletError } = useSWR(
+    agentData?.agent?.id && address ? `/api/agents/wallet?agentId=${agentData.agent.id}&ownerAddress=${address}` : null,
+    fetcher,
+    { refreshInterval: 30000 },
+  )
+
+  console.log("[v0] Agent wallet fetch - agentId:", agentData?.agent?.id, "address:", address)
+  console.log("[v0] Wallet data:", walletData)
+  console.log("[v0] Wallet error:", walletError)
+
   // Fetch portfolio
   const { data: portfolioData } = useSWR(
     agentData?.agent?.id ? `/api/agents/portfolio?agentId=${agentData.agent.id}` : null,
     fetcher,
+    {
+      refreshInterval: config.is_active ? 30000 : 0,
+    },
   )
 
   // Fetch trades
@@ -194,19 +214,100 @@ export default function AgentDashboardPage() {
     }
   }, [agentData])
 
-  useEffect(() => {
-    if (address) {
-      checkAgentTokenGate(address).then(setTokenGateStatus)
-    }
-  }, [address])
+  const handleFundWallet = async () => {
+    if (!agentData?.agent?.id || !address || !fundAmount) return
+    setIsFunding(true)
 
-  const handleSaveConfig = async () => {
+    try {
+      const response = await fetch("/api/agents/wallet/fund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agentData.agent.id,
+          ownerAddress: address,
+          amount: Number.parseFloat(fundAmount),
+          txHash: `0x${Date.now().toString(16)}`, // Placeholder - would be real tx hash
+        }),
+      })
+
+      if (response.ok) {
+        mutate(`/api/agents/wallet?agentId=${agentData.agent.id}&ownerAddress=${address}`)
+        setFundAmount("")
+      }
+    } catch (error) {
+      console.error("Failed to fund wallet:", error)
+    } finally {
+      setIsFunding(false)
+    }
+  }
+
+  useEffect(() => {
+    if (walletData) {
+      setAgentWallet(walletData)
+    }
+  }, [walletData])
+
+  useEffect(() => {
+    if (!config.is_active || !agentData?.agent?.id) return
+
+    const refreshPortfolioValues = async () => {
+      try {
+        await fetch(`/api/agents/portfolio/refresh-values?agentId=${agentData.agent.id}`, {
+          method: "POST",
+        })
+      } catch (error) {
+        console.error("Failed to refresh portfolio values:", error)
+      }
+    }
+
+    // Refresh immediately
+    refreshPortfolioValues()
+
+    // Then refresh every 60 seconds
+    const interval = setInterval(refreshPortfolioValues, 60000)
+
+    return () => clearInterval(interval)
+  }, [config.is_active, agentData?.agent?.id])
+
+  // </CHANGE> Fixed the withdraw function - removed double JSON.JSON.stringify
+  const handleWithdrawFromWallet = async () => {
+    if (!agentData?.agent?.id || !address || !withdrawAmount) return
+    setIsWithdrawing(true)
+
+    try {
+      const response = await fetch("/api/agents/wallet/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agentData.agent.id,
+          ownerAddress: address,
+          amount: Number.parseFloat(withdrawAmount),
+        }),
+      })
+
+      if (response.ok) {
+        mutate(`/api/agents/wallet?agentId=${agentData.agent.id}&ownerAddress=${address}`)
+        setWithdrawAmount("")
+      }
+    } catch (error) {
+      console.error("Failed to withdraw from wallet:", error)
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
+
+  const handleSaveConfig = async (configOverride?: typeof config) => {
     if (!address) return
     setIsSaving(true)
 
     try {
+      // Only use configOverride if it's a valid config object (not a React event)
+      // React events have a 'nativeEvent' property
+      const isValidConfig = configOverride && !("nativeEvent" in configOverride)
+      const configToUse = isValidConfig ? configOverride : config
+
       // Remove portfolio and recent_trades from config before saving
-      const { portfolio, recent_trades, ...configToSave } = config as any
+      const { portfolio, recent_trades, ...configToSave } = configToUse as any
 
       const response = await fetch("/api/agents/config", {
         method: "POST",
@@ -235,7 +336,7 @@ export default function AgentDashboardPage() {
       const response = await fetch("/api/agents/run-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agentData.agent.id }),
+        body: JSON.JSON.stringify({ agentId: agentData.agent.id }),
       })
 
       if (response.ok) {
@@ -254,7 +355,7 @@ export default function AgentDashboardPage() {
     const newActiveState = !config.is_active
     const newConfig = { ...config, is_active: newActiveState }
     setConfig(newConfig)
-    await handleSaveConfig() // Removed config override as handleSaveConfig is updated
+    await handleSaveConfig(newConfig) // Pass the new config directly
   }
 
   if (!isConnected) {
@@ -941,6 +1042,112 @@ export default function AgentDashboardPage() {
                           <p className="text-xs text-muted-foreground">$USI held</p>
                         </div>
                       </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
+                <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
+                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-red-500" />
+                    Agent Wallet
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
+                    Dedicated wallet for your agent's trading operations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 pt-2 md:pt-3">
+                  {agentWallet ? (
+                    <>
+                      {/* Wallet Address */}
+                      <div className="p-3 md:p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-muted-foreground">Wallet Address</span>
+                        </div>
+                        <code className="text-xs md:text-sm font-mono text-foreground break-all">
+                          {agentWallet.address}
+                        </code>
+                      </div>
+
+                      {/* Balances */}
+                      <div className="grid grid-cols-2 gap-3 md:gap-4">
+                        <div className="p-3 md:p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">USDC Balance</p>
+                          <p className="text-lg md:text-2xl font-bold font-mono">
+                            ${agentWallet?.usdcBalance?.toFixed(2) ?? "0.00"}
+                          </p>
+                        </div>
+                        <div className="p-3 md:p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">ETH Balance</p>
+                          <p className="text-lg md:text-2xl font-bold font-mono">
+                            {agentWallet?.ethBalance?.toFixed(4) ?? "0.0000"} ETH
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Fund Wallet */}
+                      <div className="space-y-2">
+                        <Label htmlFor="fund-amount" className="text-xs md:text-sm">
+                          Fund Agent Wallet (USDC)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="fund-amount"
+                            type="number"
+                            placeholder="Amount in USDC"
+                            value={fundAmount}
+                            onChange={(e) => setFundAmount(e.target.value)}
+                            className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                          />
+                          <Button
+                            onClick={handleFundWallet}
+                            disabled={isFunding || !fundAmount || Number.parseFloat(fundAmount) <= 0}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                          >
+                            {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fund"}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Transfer USDC from your connected wallet to your agent's wallet
+                        </p>
+                      </div>
+
+                      {/* Withdraw from Wallet */}
+                      <div className="space-y-2">
+                        <Label htmlFor="withdraw-amount" className="text-xs md:text-sm">
+                          Withdraw from Agent Wallet (USDC)
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="withdraw-amount"
+                            type="number"
+                            placeholder="Amount in USDC"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                          />
+                          <Button
+                            onClick={handleWithdrawFromWallet}
+                            disabled={
+                              isWithdrawing ||
+                              !withdrawAmount ||
+                              Number.parseFloat(withdrawAmount) <= 0 ||
+                              Number.parseFloat(withdrawAmount) > (agentWallet?.usdcBalance ?? 0)
+                            }
+                            variant="outline"
+                            className="border-red-500/20"
+                          >
+                            {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw"}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Transfer USDC back to your connected wallet</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-red-500" />
+                      <p className="text-sm text-muted-foreground">Creating your agent wallet...</p>
                     </div>
                   )}
                 </CardContent>
