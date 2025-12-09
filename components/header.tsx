@@ -66,41 +66,28 @@ export function Header() {
 
           <nav className="hidden md:flex items-center gap-4 lg:gap-6">
             <Link
-              href="/discover"
+              href="/explore"
               className={`text-sm font-medium transition-all relative group ${
-                isActive("/discover") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                isActive("/explore") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Discover
+              Explore
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/discover") ? "w-full" : "w-0 group-hover:w-full"
+                  isActive("/explore") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>
             <Link
-              href="/trending"
+              href="/artists"
               className={`text-sm font-medium transition-all relative group ${
-                isActive("/trending") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                isActive("/artists") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Trending
+              Artists
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/trending") ? "w-full" : "w-0 group-hover:w-full"
-                }`}
-              />
-            </Link>
-            <Link
-              href="/analytics"
-              className={`text-sm font-medium transition-all relative group ${
-                isActive("/analytics") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Activity
-              <span
-                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/analytics") ? "w-full" : "w-0 group-hover:w-full"
+                  isActive("/artists") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>
@@ -118,19 +105,6 @@ export function Header() {
               />
             </Link>
             <Link
-              href="/explore"
-              className={`text-sm font-medium transition-all relative group ${
-                isActive("/explore") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Explore
-              <span
-                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/explore") ? "w-full" : "w-0 group-hover:w-full"
-                }`}
-              />
-            </Link>
-            <Link
               href="/live"
               className={`text-sm font-medium transition-all relative group ${
                 isActive("/live") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
@@ -144,15 +118,15 @@ export function Header() {
               />
             </Link>
             <Link
-              href="/artists"
+              href="/analytics"
               className={`text-sm font-medium transition-all relative group ${
-                isActive("/artists") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                isActive("/analytics") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Artists
+              Activity
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/artists") ? "w-full" : "w-0 group-hover:w-full"
+                  isActive("/analytics") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>

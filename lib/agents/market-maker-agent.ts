@@ -460,7 +460,7 @@ export class MarketMakerAgentService {
       }
 
       // Record the trade
-      await this.recordTrade("buy", buyAmount, minTokensOut, buyTxHash)
+      await this.recordTrade("buy", buyAmount, minTokensOut, buyTxHash, wallet.address)
 
       await this.logActivity("buy_executed", `Bought ${formatUnits(minTokensOut, 18)} $USI`, {
         wallet: wallet.address,
@@ -738,7 +738,7 @@ export class MarketMakerAgentService {
       }
 
       // Record the trade
-      await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash)
+      await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash, wallet.address)
 
       await this.logActivity(
         "sell_executed",
@@ -1042,6 +1042,7 @@ export class MarketMakerAgentService {
     amountIn: bigint,
     amountOut: bigint,
     txHash: string,
+    walletAddress?: string,
   ): Promise<void> {
     try {
       const supabase = await createClient()
@@ -1074,6 +1075,32 @@ export class MarketMakerAgentService {
           .eq("id", this.agentId)
 
         console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}, volume: ${volumeEth.toFixed(6)} ETH`)
+      }
+
+      if (walletAddress) {
+        const incrementField = tradeType === "buy" ? "total_buys" : "total_sells"
+
+        // Get current count
+        const { data: walletData } = await supabase
+          .from("mm_agent_wallets")
+          .select(incrementField)
+          .eq("agent_id", this.agentId)
+          .eq("wallet_address", walletAddress)
+          .single()
+
+        if (walletData) {
+          const currentCount = walletData[incrementField] || 0
+          await supabase
+            .from("mm_agent_wallets")
+            .update({
+              [incrementField]: currentCount + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("agent_id", this.agentId)
+            .eq("wallet_address", walletAddress)
+
+          console.log(`[MM Agent] Updated ${incrementField} for wallet ${walletAddress}: ${currentCount + 1}`)
+        }
       }
 
       console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}`)
@@ -1298,7 +1325,7 @@ export class MarketMakerAgentService {
    * Execute a burst trading sequence - rapid fire buys and sells
    */
   async executeBurst(): Promise<{ success: boolean; results: any[]; error?: string }> {
-    console.log(`[MM Agent] Starting burst mode...`)
+    console.log(`[v0] Starting burst mode...`)
 
     const supabase = await createClient()
     const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
@@ -1312,18 +1339,20 @@ export class MarketMakerAgentService {
 
     const results: any[] = []
 
-    console.log(`[MM Agent] Executing ${burstCount} rapid trades with ${burstDelay}ms delay...`)
+    console.log(`[v0] Executing ${burstCount} rapid trades with ${burstDelay}ms delay...`)
 
     for (let i = 0; i < burstCount; i++) {
       const wallet = await this.getNextWallet(agent)
-      console.log(`[MM Agent] Burst ${i + 1}/${burstCount} - Using wallet ${wallet.address}`)
+      console.log(`[v0] Burst ${i + 1}/${burstCount} - Using wallet ${wallet.address}`)
 
-      // Alternate between buy and sell
       const isBuy = i % 2 === 0
+      console.log(`[v0] Trade type for iteration ${i}: ${isBuy ? "BUY" : "SELL"}`)
 
       try {
         if (isBuy) {
+          console.log(`[v0] Executing BUY for wallet ${wallet.address}`)
           const buyResult = await this.executeBuy(wallet)
+          console.log(`[v0] Buy result:`, buyResult)
           results.push({
             trade: i + 1,
             type: "buy",
@@ -1331,7 +1360,9 @@ export class MarketMakerAgentService {
             ...buyResult,
           })
         } else {
+          console.log(`[v0] Executing SELL for wallet ${wallet.address}`)
           const sellResult = await this.executeSell(wallet)
+          console.log(`[v0] Sell result:`, sellResult)
           results.push({
             trade: i + 1,
             type: "sell",
@@ -1345,7 +1376,7 @@ export class MarketMakerAgentService {
           await new Promise((resolve) => setTimeout(resolve, burstDelay))
         }
       } catch (error: any) {
-        console.error(`[MM Agent] Burst trade ${i + 1} failed:`, error.message)
+        console.error(`[v0] Burst trade ${i + 1} failed:`, error.message)
         results.push({
           trade: i + 1,
           type: isBuy ? "buy" : "sell",
@@ -1357,13 +1388,27 @@ export class MarketMakerAgentService {
     }
 
     const successCount = results.filter((r) => r.success).length
-    console.log(`[MM Agent] Burst complete: ${successCount}/${burstCount} trades successful`)
+    const buyCount = results.filter((r) => r.type === "buy").length
+    const sellCount = results.filter((r) => r.type === "sell").length
+    const successfulBuys = results.filter((r) => r.type === "buy" && r.success).length
+    const successfulSells = results.filter((r) => r.type === "sell" && r.success).length
 
-    await this.logActivity("burst_complete", `Burst mode completed: ${successCount}/${burstCount} successful`, {
-      burstCount,
-      successCount,
-      results,
-    })
+    console.log(`[v0] Burst complete: ${successCount}/${burstCount} trades successful`)
+    console.log(`[v0] Breakdown: ${successfulBuys}/${buyCount} buys, ${successfulSells}/${sellCount} sells`)
+
+    await this.logActivity(
+      "burst_complete",
+      `Burst mode completed: ${successCount}/${burstCount} successful (${successfulBuys} buys, ${successfulSells} sells)`,
+      {
+        burstCount,
+        successCount,
+        buyCount,
+        sellCount,
+        successfulBuys,
+        successfulSells,
+        results,
+      },
+    )
 
     return {
       success: successCount > 0,
