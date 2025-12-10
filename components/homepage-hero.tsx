@@ -126,9 +126,9 @@ export function HomepageHero() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            Music without{" "}
+            Music that{" "}
             <span className="bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(229,62,62,0.3)]">
-              middlemen
+              pays artists
             </span>
           </h1>
 
@@ -137,7 +137,7 @@ export function HomepageHero() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            Powered by payments that move at the speed of sound.
+            Micropayments that move at the speed of sound.
           </p>
 
           <p
@@ -145,7 +145,7 @@ export function HomepageHero() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            Stream any song. Pay creators directly. Earn as you listen.
+            No subscriptions. No platform fees. Artists get 100% of what you pay.
           </p>
 
           <div

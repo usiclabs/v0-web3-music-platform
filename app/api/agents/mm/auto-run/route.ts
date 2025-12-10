@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic"
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log("[v0] [MM Auto-Run] ========== Auto-run triggered ==========")
+
     const supabase = await createClient()
 
     // Get all active MM agents
@@ -27,6 +29,13 @@ export async function POST(request: NextRequest) {
       console.log("[MM Auto-Run] No active agents found")
       return NextResponse.json({ message: "No active agents", processed: 0 })
     }
+
+    console.log(`[v0] [MM Auto-Run] Found ${agents.length} active agent(s):`)
+    agents.forEach((agent) => {
+      console.log(
+        `[v0]   - Agent ${agent.id}: token=${agent.token_symbol || "USI"} (${agent.token_address || "default"}), owner=${agent.owner_address}`,
+      )
+    })
 
     console.log(`[MM Auto-Run] Processing ${agents.length} active agent(s)`)
 
@@ -46,6 +55,10 @@ export async function POST(request: NextRequest) {
         const shouldSell = !lastSell || now.getTime() - lastSell.getTime() >= sellIntervalMs
 
         if (shouldBuy || shouldSell) {
+          console.log(`[v0] [MM Auto-Run] ✓ Running cycle for agent ${agent.id}`)
+          console.log(`[v0]   Token: ${agent.token_symbol || "USI"} (${agent.token_address || "default"})`)
+          console.log(`[v0]   Should buy: ${shouldBuy}, Should sell: ${shouldSell}`)
+
           console.log(`[MM Auto-Run] Running cycle for agent ${agent.id} (buy: ${shouldBuy}, sell: ${shouldSell})`)
 
           const mmService = new MarketMakerAgentService(agent.id)
@@ -58,6 +71,10 @@ export async function POST(request: NextRequest) {
             ...result,
           })
         } else {
+          console.log(`[v0] [MM Auto-Run] ✗ Skipping agent ${agent.id} - intervals not met`)
+          console.log(`[v0]   Last buy: ${agent.last_buy_at}, interval: ${agent.buy_interval_minutes}m`)
+          console.log(`[v0]   Last sell: ${agent.last_sell_at}, interval: ${agent.sell_interval_minutes}m`)
+
           console.log(`[MM Auto-Run] Skipping agent ${agent.id} - intervals not met`)
           results.push({
             agentId: agent.id,
@@ -68,6 +85,8 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         console.error(`[MM Auto-Run] Error running cycle for agent ${agent.id}:`, error)
+        console.error(`[v0] [MM Auto-Run] Error stack:`, error.stack)
+
         results.push({
           agentId: agent.id,
           executed: false,

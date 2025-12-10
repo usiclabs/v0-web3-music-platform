@@ -259,6 +259,8 @@ export class MarketMakerAgentService {
    */
   async executeBuy(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
+      console.log("[v0] [MM Agent] Starting executeBuy...")
+
       console.log("[MM Agent] Attempting to buy tokens...")
 
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
@@ -274,6 +276,10 @@ export class MarketMakerAgentService {
 
       const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
       const TOKEN_SYMBOL = agent.token_symbol || "USI"
+      console.log(`[v0] [MM Agent] Token config - Address: ${TOKEN_ADDRESS}, Symbol: ${TOKEN_SYMBOL}`)
+      console.log(
+        `[v0] [MM Agent] Agent config - token_address: ${agent.token_address}, token_symbol: ${agent.token_symbol}`,
+      )
       console.log(`[MM Agent] Trading token: ${TOKEN_SYMBOL} (${TOKEN_ADDRESS})`)
 
       const baseBuyAmount = parseEther(agent.buy_amount_eth)
@@ -512,6 +518,8 @@ export class MarketMakerAgentService {
    */
   async executeSell(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
+      console.log("[v0] [MM Agent] Starting executeSell...")
+
       console.log("[MM Agent] Attempting to sell accumulated tokens...")
 
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
@@ -527,6 +535,10 @@ export class MarketMakerAgentService {
 
       const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
       const TOKEN_SYMBOL = agent.token_symbol || "USI"
+      console.log(`[v0] [MM Agent] Token config - Address: ${TOKEN_ADDRESS}, Symbol: ${TOKEN_SYMBOL}`)
+      console.log(
+        `[v0] [MM Agent] Agent config - token_address: ${agent.token_address}, token_symbol: ${agent.token_symbol}`,
+      )
       console.log(`[MM Agent] Selling token: ${TOKEN_SYMBOL} (${TOKEN_ADDRESS})`)
 
       const tokenBalance = await publicClient.readContract({
@@ -776,6 +788,7 @@ export class MarketMakerAgentService {
    * Run a market making cycle (check and execute buy/sell if needed)
    */
   async runCycle(): Promise<MMCycleResult> {
+    console.log(`[v0] [MM Agent] ========== Starting cycle for agent ${this.agentId} ==========`)
     console.log(`[MM Agent] Starting cycle for agent ${this.agentId}`)
 
     const result: MMCycleResult = {
@@ -791,6 +804,17 @@ export class MarketMakerAgentService {
       throw new Error("Agent not found or inactive")
     }
 
+    console.log(`[v0] [MM Agent] Agent config:`, {
+      id: agent.id,
+      is_active: agent.is_active,
+      token_address: agent.token_address,
+      token_symbol: agent.token_symbol,
+      buy_interval: agent.buy_interval_minutes,
+      sell_interval: agent.sell_interval_minutes,
+      last_buy_at: agent.last_buy_at,
+      last_sell_at: agent.last_sell_at,
+    })
+
     const wallet = await this.selectRandomWallet()
     const walletAddress = wallet.address as `0x${string}`
     console.log(`[MM Agent] Running cycle with wallet ${walletAddress} (multi-wallet: ${agent.multi_wallet_mode})`)
@@ -802,14 +826,22 @@ export class MarketMakerAgentService {
       !agent.last_buy_at ||
       new Date(agent.last_buy_at).getTime() + agent.buy_interval_minutes * 60 * 1000 <= now.getTime()
 
+    console.log(`[v0] [MM Agent] Should buy: ${shouldBuy}`, {
+      last_buy_at: agent.last_buy_at,
+      interval_minutes: agent.buy_interval_minutes,
+      time_since_last: agent.last_buy_at ? now.getTime() - new Date(agent.last_buy_at).getTime() : "never",
+    })
+
     if (shouldBuy) {
       try {
+        console.log(`[v0] [MM Agent] Executing buy...`)
         await this.executeBuy(wallet)
 
         result.buyExecuted = true
         result.messages.push(`Buy executed successfully with wallet ${walletAddress}`)
       } catch (error: any) {
         console.error("[MM Agent] Buy failed:", error.message)
+        console.error("[v0] [MM Agent] Buy error stack:", error.stack)
         await this.logActivity("error", `Buy failed: ${error.message}`, {
           wallet: walletAddress,
         })
@@ -822,6 +854,12 @@ export class MarketMakerAgentService {
       !agent.last_sell_at ||
       new Date(agent.last_sell_at).getTime() + agent.sell_interval_minutes * 60 * 1000 <= now.getTime()
 
+    console.log(`[v0] [MM Agent] Should sell: ${shouldSell}`, {
+      last_sell_at: agent.last_sell_at,
+      interval_minutes: agent.sell_interval_minutes,
+      time_since_last: agent.last_sell_at ? now.getTime() - new Date(agent.last_sell_at).getTime() : "never",
+    })
+
     if (shouldSell) {
       // Check if profitable mode is enabled
       if (agent.profitable_mode) {
@@ -833,12 +871,14 @@ export class MarketMakerAgentService {
       }
 
       try {
+        console.log(`[v0] [MM Agent] Executing sell...`)
         await this.executeSell(wallet)
 
         result.sellExecuted = true
         result.messages.push(`Sell executed successfully with wallet ${walletAddress}`)
       } catch (error: any) {
         console.error("[MM Agent] Sell failed:", error.message)
+        console.error("[v0] [MM Agent] Sell error stack:", error.stack)
         await this.logActivity("error", `Sell failed: ${error.message}`, {
           wallet: walletAddress,
         })
@@ -853,6 +893,7 @@ export class MarketMakerAgentService {
         result.messages.push(`Burst mode executed: ${burstResult.success ? "Success" : "Failure"}`)
       } catch (error: any) {
         console.error("[MM Agent] Burst mode failed:", error.message)
+        console.error("[v0] [MM Agent] Burst mode error stack:", error.stack)
         await this.logActivity("error", `Burst mode failed: ${error.message}`, {
           wallet: walletAddress,
         })
@@ -865,6 +906,7 @@ export class MarketMakerAgentService {
     })
     result.messages.push("Cycle completed")
 
+    console.log(`[v0] [MM Agent] ========== Cycle complete for agent ${this.agentId} ==========`)
     return result
   }
 
@@ -1537,6 +1579,7 @@ export class MarketMakerAgentService {
         }
       } catch (error: any) {
         console.error(`[v0] Burst trade ${i + 1} failed:`, error.message)
+        console.error(`[v0] Burst trade ${i + 1} error stack:`, error.stack)
         results.push({
           trade: i + 1,
           type: isBuy ? "buy" : "sell",

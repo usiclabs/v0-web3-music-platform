@@ -72,7 +72,7 @@ export function HomepageSections() {
             <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
               How It Works
             </h2>
-            <p className="text-xl text-foreground/70">Making blockchain payments simple and instant</p>
+            <p className="text-xl text-foreground/70">Simple streaming. Instant payments.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 max-w-6xl mx-auto">
@@ -80,24 +80,24 @@ export function HomepageSections() {
               {
                 icon: Play,
                 number: "1",
-                title: "Click Play",
-                description: "You press play on a song you love.",
+                title: "Stream",
+                description: "Press play on any track.",
                 color: "accent",
                 delay: "100ms",
               },
               {
                 icon: Zap,
                 number: "2",
-                title: "Instant Payment",
-                description: "Your wallet sends a fraction of a cent directly to the artist using X402.",
+                title: "Pay",
+                description: "Micropayment sent instantly to the artist.",
                 color: "primary",
                 delay: "200ms",
               },
               {
                 icon: Sparkles,
                 number: "3",
-                title: "Music Unlocks",
-                description: "No subscriptions. No middlemen. Just instant music.",
+                title: "Done",
+                description: "Artist gets paid. You keep listening.",
                 color: "chart-3",
                 delay: "300ms",
               },
@@ -138,7 +138,7 @@ export function HomepageSections() {
             }`}
           >
             <p className="text-2xl font-semibold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent mb-6">
-              Every stream is a payment. Every artist gets paid instantly.
+              Every stream is a payment. Every payment is instant.
             </p>
           </div>
         </div>
@@ -206,7 +206,7 @@ export function HomepageSections() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-${feature.color}-500/20 shadow-xl p-8 rounded-3xl hover:scale-105 hover:shadow-2xl hover:shadow-${feature.color}-500/10 transition-all duration-500 group ${
+                className={`bg-card/30 backdrop-blur-xl border border-${feature.color}-500/20 shadow-xl p-8 rounded-3xl hover:scale-105 hover:shadow-xl hover:shadow-${feature.color}-500/10 transition-all duration-500 group ${
                   isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: feature.delay }}
@@ -273,33 +273,33 @@ export function HomepageSections() {
               }`}
             >
               <h2 className="text-5xl md:text-7xl font-bold mb-8 text-balance leading-tight">
-                Take back control of your music.
+                Keep 100% of your earnings.
               </h2>
 
               <div className="space-y-8">
                 {[
                   {
                     icon: Zap,
-                    title: "Instant royalties, not 90-day payouts",
-                    description: "Get paid the moment someone streams your track. No waiting, no delays.",
+                    title: "Get paid per stream",
+                    description: "Instant micropayments. No 90-day holds.",
                     color: "accent",
                   },
                   {
                     icon: BarChart3,
-                    title: "Transparent splits for every song",
-                    description: "Set royalty splits on-chain. Every collaborator sees exactly what they earn.",
+                    title: "Split royalties on-chain",
+                    description: "Transparent splits. Every collaborator sees their share.",
                     color: "primary",
                   },
                   {
                     icon: Wallet,
-                    title: "No label needed — your wallet is your business",
-                    description: "You own your music, your earnings, and your future. No intermediaries.",
+                    title: "Your wallet, your business",
+                    description: "No label. No middlemen. Just you and your fans.",
                     color: "chart-3",
                   },
                   {
                     icon: TrendingUp,
-                    title: "Track plays, tips, and collectors in real time",
-                    description: "Live dashboard shows every stream, tip, and NFT sale as it happens.",
+                    title: "Watch earnings in real-time",
+                    description: "Live dashboard. Every play, tip, and sale tracked instantly.",
                     color: "accent",
                   },
                 ].map((feature, index) => (
@@ -366,12 +366,10 @@ export function HomepageSections() {
               isVisible("for-fans") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Listen. Support. Own.</h2>
-            <p className="text-2xl text-foreground/80 mb-4">Pay less. Support more.</p>
+            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Stream music. Pay artists.</h2>
+            <p className="text-2xl text-foreground/80 mb-4">Pennies per play. 100% to creators.</p>
             <p className="text-lg text-foreground/60">
-              Stream songs for pennies. Every play pays the artist directly.
-              <br />
-              Tip, collect, or unlock exclusive NFT editions.
+              No subscriptions. No ads. Just direct support for the music you love.
             </p>
           </div>
 
@@ -379,22 +377,22 @@ export function HomepageSections() {
             {[
               {
                 icon: Coins,
-                title: "Pay-Per-Play Freedom",
-                description: "No subscriptions. Pay only for what you love. Stream for pennies, not dollars.",
+                title: "Pay as you listen",
+                description: "Stream for fractions of a cent. Only pay for what you play.",
                 color: "primary",
                 delay: "100ms",
               },
               {
                 icon: Heart,
-                title: "Direct Artist Support",
-                description: "Every cent goes to the creator. No platform fees, no label cuts, no delays.",
+                title: "Support artists directly",
+                description: "100% goes to creators. Zero platform fees or label cuts.",
                 color: "accent",
                 delay: "200ms",
               },
               {
                 icon: Award,
-                title: "Collect & Earn",
-                description: "Collect track NFTs that unlock bonuses or resale value. Own a piece of music history.",
+                title: "Own music as NFTs",
+                description: "Collect limited editions. Unlock perks. Resell for value.",
                 color: "chart-3",
                 delay: "300ms",
               },
