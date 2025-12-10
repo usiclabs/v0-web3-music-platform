@@ -96,6 +96,8 @@ export interface MMAgentConfig {
   burst_mode?: boolean // New field for burst mode
   burst_trades_count?: number // New field for burst trades count
   burst_delay_seconds?: number // New field for burst delay seconds
+  pro_mode?: boolean // Added pro_mode
+  max_mode?: boolean // Added max_mode for 20 wallets
 }
 
 export interface MMAgentStats {
@@ -221,6 +223,8 @@ export class MarketMakerAgentService {
         burst_mode: false, // Default burst mode to false
         burst_trades_count: 5, // Default burst trades count
         burst_delay_seconds: 3, // Default burst delay seconds
+        pro_mode: false, // Default pro mode to false
+        max_mode: false, // Default max mode to false
       })
       .select()
       .single()
@@ -1451,6 +1455,8 @@ export class MarketMakerAgentService {
       burst_mode: false, // Default burst mode to false
       burst_trades_count: 5, // Default burst trades count
       burst_delay_seconds: 3, // Default burst delay seconds
+      pro_mode: false, // Default pro mode to false
+      max_mode: false, // Default max mode to false
     })
   }
 

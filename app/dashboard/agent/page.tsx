@@ -336,7 +336,7 @@ export default function AgentDashboardPage() {
       const response = await fetch("/api/agents/run-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.JSON.stringify({ agentId: agentData.agent.id }),
+        body: JSON.stringify({ agentId: agentData.agent.id }),
       })
 
       if (response.ok) {

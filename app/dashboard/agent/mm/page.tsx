@@ -162,6 +162,7 @@ interface MMAgentConfig {
   burst_delay_seconds?: number
   token_address?: string // Added token_address
   token_symbol?: string // Added token_symbol
+  max_mode?: boolean // Add max_mode field
 }
 
 interface MMStats {
@@ -647,6 +648,43 @@ export default function MarketMakerAgentPage() {
     }
   }
 
+  const toggleMaxMode = async () => {
+    if (!config) return
+
+    const newMaxMode = !config.max_mode
+
+    try {
+      const response = await fetch("/api/agents/mm/max-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          ownerAddress: walletAddress,
+          enabled: newMaxMode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setConfig({
+          ...config,
+          max_mode: newMaxMode,
+          pro_mode: newMaxMode ? true : config.pro_mode, // Max mode implies pro mode
+          active_wallets: newMaxMode ? 20 : 10,
+        })
+        mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+        mutate(`/api/agents/mm/stats?agentId=${config.id}`)
+        toast.success(data.message)
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (error: any) {
+      console.error("Failed to toggle max mode:", error)
+      toast.error(error.message || "Failed to toggle max mode")
+    }
+  }
+
   const toggleProfitableMode = async () => {
     if (!config) return
 
@@ -684,7 +722,7 @@ export default function MarketMakerAgentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           agentId: config.id,
-          ownerAddress: address,
+          ownerAddress: walletAddress,
           enabled: newProMode,
         }),
       })
@@ -694,12 +732,21 @@ export default function MarketMakerAgentPage() {
         throw new Error(error.error || "Failed to toggle pro mode")
       }
 
-      // Refresh config and wallets
+      const data = await response.json() // Assuming the response has a success and message field
+
+      // Update local state and trigger mutations
+      setConfig((prevConfig) => ({
+        ...prevConfig!,
+        pro_mode: newProMode,
+        active_wallets: newProMode ? 10 : 5, // Adjust based on your logic
+      }))
       mutate(`/api/agents/mm/config?ownerAddress=${address}`)
       mutate(`/api/agents/mm/wallets?agentId=${config.id}`)
       mutate(`/api/agents/mm/stats?agentId=${config.id}`)
 
-      toast.success(newProMode ? "Pro mode enabled! 10 wallets ready." : "Pro mode disabled, using 5 wallets")
+      toast.success(
+        data.message || (newProMode ? "Pro mode enabled! 10 wallets ready." : "Pro mode disabled, using 5 wallets"),
+      )
     } catch (error: any) {
       console.error("Failed to toggle pro mode:", error)
       toast.error(error.message || "Failed to toggle pro mode")
@@ -1166,6 +1213,28 @@ export default function MarketMakerAgentPage() {
                 <span className="text-sm font-medium">Pro Mode (10x Wallets)</span>
                 <Switch checked={config.pro_mode || false} onCheckedChange={toggleProMode} />
               </div>
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border/40 bg-gradient-to-br from-purple-500/5 to-pink-500/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="config-max-mode" className="font-medium cursor-pointer">
+                        Max Mode
+                      </Label>
+                      <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">
+                        20 Wallets
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Maximum distribution across 20 wallets for extreme volume
+                    </p>
+                  </div>
+                </div>
+                <Switch id="config-max-mode" checked={config?.max_mode || false} onCheckedChange={toggleMaxMode} />
+              </div>
+
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-emerald-500" />
                 <span className="text-sm font-medium">Profitable Mode ({">"}10%)</span>
@@ -1376,7 +1445,7 @@ export default function MarketMakerAgentPage() {
                         className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-emerald-500/30 transition-all hover-lift gap-3"
                       >
                         {wallet.wallet_index > 5 && (
-                          <div className="absolute -top-2 -right-2 z-10">
+                          <div className="absolute -bottom-2 -right-2 z-10">
                             <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
                               <Sparkles className="h-3 w-3 mr-1" />
                               Pro
@@ -1488,7 +1557,8 @@ export default function MarketMakerAgentPage() {
                     <div>
                       <p className="font-medium text-sm text-white">Multi-Wallet Mode</p>
                       <p className="text-xs text-muted-foreground">
-                        Distribute trades across {config.active_wallets} wallets
+                        Distribute trades across {config.active_wallets || 1} wallet
+                        {(config.active_wallets || 1) > 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
@@ -1496,6 +1566,25 @@ export default function MarketMakerAgentPage() {
                     checked={config?.multi_wallet_mode}
                     onCheckedChange={toggleMultiWallet}
                     className="data-[state=checked]:bg-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-white">Max Mode</p>
+                      <p className="text-xs text-muted-foreground">
+                        Distribute trades across 20 wallets for maximum volume
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config?.max_mode}
+                    onCheckedChange={toggleMaxMode}
+                    className="data-[state=checked]:bg-purple-500"
                   />
                 </div>
 
@@ -2317,7 +2406,7 @@ export default function MarketMakerAgentPage() {
               <div className="bg-amber-500/10 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 mt-4">
                 <div className="flex gap-3">
                   <Activity className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-2 flex-1">
+                  <div className="space-y-1.5 flex-1 min-w-0">
                     <p className="font-semibold text-sm text-amber-400">Funding Instructions</p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Send ETH from your wallet to any of these addresses. Each wallet needs at least 0.001 ETH to cover
