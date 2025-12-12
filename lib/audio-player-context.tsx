@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useRef, useEffect, type ReactNode } from "react"
 import type { TrackWithArtist } from "@/types/database"
-import { requestChunk, verifyPayment } from "@/lib/x402/client"
+import { requestChunk, verifyPayment, checkTrackOwnership, updateSession } from "@/lib/x402/client"
 import { X402_CONFIG } from "@/lib/web3/contracts"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEIP3009 } from "@/lib/web3/use-eip3009"
@@ -65,6 +65,23 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return false
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   }
+
+  useEffect(() => {
+    if (currentTrack && address) {
+      checkTrackOwnership(address, currentTrack.id).then((owns) => {
+        if (owns) {
+          console.log("[v0] User already owns this track - unlocking all chunks")
+          const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
+          const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
+          setUnlockedChunks(allChunks)
+          toast({
+            title: "Track Owned",
+            description: "You already purchased this track. Enjoy unlimited replays!",
+          })
+        }
+      })
+    }
+  }, [currentTrack, address])
 
   useEffect(() => {
     if (!audioRef.current) {
@@ -288,6 +305,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
         console.warn("[v0] Failed to record payment in database:", err)
         // Don't throw - recording failure shouldn't block playback
       }
+
+      updateSession(address, currentTrack.id, paymentChainId)
 
       paymentJustSucceededRef.current = true
       setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))

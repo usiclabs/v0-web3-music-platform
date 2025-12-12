@@ -34,7 +34,17 @@ export interface X402PaymentPayload {
   builderCode?: string
 }
 
+export interface X402Session {
+  walletAddress: string
+  tracksPurchased: string[]
+  expiresAt: number
+  signature: string
+  chainId: number
+  createdAt: number
+}
+
 const pendingRequests = new Map<string, Promise<any>>()
+const activeSessions = new Map<string, X402Session>()
 
 function deduplicateRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
   const existing = pendingRequests.get(key)
@@ -111,7 +121,7 @@ export async function settlePayment(
   trackId: string,
   listenerAddress: string,
   chunkIndex: number,
-): Promise<{ success: boolean; chunkUnlocked: number; txHash?: string }> {
+): Promise<{ success: boolean; chunkUnlocked: number; txHash?: string; sessionCreated?: boolean }> {
   const settleKey = `settle-${paymentPayload.authorization.nonce}`
 
   return deduplicateRequest(settleKey, async () => {
@@ -133,8 +143,81 @@ export async function settlePayment(
       throw new Error(error.error || error.details || "Payment settlement failed")
     }
 
-    return response.json()
+    const result = await response.json()
+
+    if (result.success) {
+      updateSession(listenerAddress, trackId, paymentPayload.chainId)
+    }
+
+    return result
   })
+}
+
+export async function checkTrackOwnership(walletAddress: string, trackId: string): Promise<boolean> {
+  try {
+    const session = activeSessions.get(walletAddress.toLowerCase())
+
+    // Check session first
+    if (session && session.expiresAt > Date.now() && session.tracksPurchased.includes(trackId)) {
+      console.log("[v0] Track ownership verified via session:", trackId)
+      return true
+    }
+
+    // Fall back to database check
+    const response = await fetch(`/api/x402/ownership?address=${walletAddress}&trackId=${trackId}`)
+    if (response.ok) {
+      const { owns } = await response.json()
+
+      // Update session if they own it
+      if (owns && session) {
+        if (!session.tracksPurchased.includes(trackId)) {
+          session.tracksPurchased.push(trackId)
+        }
+      }
+
+      return owns
+    }
+
+    return false
+  } catch (error) {
+    console.error("[v0] Failed to check track ownership:", error)
+    return false
+  }
+}
+
+export function updateSession(walletAddress: string, trackId: string, chainId: number, signature?: string): void {
+  const key = walletAddress.toLowerCase()
+  const existing = activeSessions.get(key)
+
+  const session: X402Session = {
+    walletAddress,
+    tracksPurchased: existing ? [...existing.tracksPurchased, trackId] : [trackId],
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+    signature: signature || existing?.signature || "",
+    chainId,
+    createdAt: existing?.createdAt || Date.now(),
+  }
+
+  // Deduplicate track IDs
+  session.tracksPurchased = [...new Set(session.tracksPurchased)]
+
+  activeSessions.set(key, session)
+  console.log("[v0] Session updated for wallet:", walletAddress, "- Tracks:", session.tracksPurchased.length)
+}
+
+export function getSession(walletAddress: string): X402Session | null {
+  const session = activeSessions.get(walletAddress.toLowerCase())
+
+  if (session && session.expiresAt > Date.now()) {
+    return session
+  }
+
+  // Clean up expired session
+  if (session) {
+    activeSessions.delete(walletAddress.toLowerCase())
+  }
+
+  return null
 }
 
 export async function checkPaymentStatus(

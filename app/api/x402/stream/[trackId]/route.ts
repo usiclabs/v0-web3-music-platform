@@ -10,6 +10,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const searchParams = request.nextUrl.searchParams
     const chunkIndex = Number.parseInt(searchParams.get("chunk") || "0")
     const chainId = Number.parseInt(searchParams.get("chainId") || "8453") // Default to Base mainnet
+    const sessionToken = request.headers.get("x-session-token") || searchParams.get("sessionToken")
+    const walletAddress = request.headers.get("x-wallet-address") || searchParams.get("walletAddress")
 
     // Get track details
     const supabase = await createClient()
@@ -64,6 +66,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const network = getX402Network(chainId)
 
+    if (walletAddress && sessionToken) {
+      // TODO: Validate session token
+      const ownershipResponse = await fetch(
+        `${request.nextUrl.origin}/api/x402/ownership?address=${walletAddress}&trackId=${trackId}`,
+      )
+
+      if (ownershipResponse.ok) {
+        const { owns } = await ownershipResponse.json()
+
+        if (owns) {
+          console.log("[v0] User already owns track, skipping payment:", walletAddress, trackId)
+          // Return audio directly without payment requirement
+          // Note: Actual audio streaming implementation would go here
+          return NextResponse.json({
+            message: "Track already purchased - streaming enabled",
+            owned: true,
+          })
+        }
+      }
+    }
+
     // Return 402 Payment Required with X402 payment instructions
     const paymentInstructions = {
       scheme: "exact",
@@ -91,6 +114,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         status: 402,
         headers: {
           "Content-Type": "application/json",
+          "Payment-Required": "true",
+          "Payment-Scheme": "exact",
+          "Payment-Network": network,
+          "Payment-Chain-Id": chainId.toString(),
+          // V1 headers for backwards compatibility
           "X-Payment-Required": "true",
           "X-Payment-Scheme": "exact",
           "X-Payment-Network": network,
