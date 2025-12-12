@@ -1,36 +1,44 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Briefcase, Heart, Zap, Globe, Users, ArrowRight } from "lucide-react"
+import { Briefcase, Heart, Zap, Globe, ArrowRight, MapPin, Clock } from "lucide-react"
+import Link from "next/link"
+
+interface JobPosting {
+  id: string
+  title: string
+  department: string
+  location: string
+  type: string
+  description?: string
+  salary_range?: string
+}
 
 export default function CareersPage() {
-  const openings = [
-    {
-      title: "Senior Blockchain Engineer",
-      department: "Engineering",
-      location: "Remote",
-      type: "Full-time",
-    },
-    {
-      title: "Product Designer",
-      department: "Design",
-      location: "Remote",
-      type: "Full-time",
-    },
-    {
-      title: "Community Manager",
-      department: "Marketing",
-      location: "Remote",
-      type: "Full-time",
-    },
-    {
-      title: "Smart Contract Auditor",
-      department: "Security",
-      location: "Remote",
-      type: "Contract",
-    },
-  ]
+  const [jobs, setJobs] = useState<JobPosting[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchJobs()
+  }, [])
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch("/api/careers")
+      if (response.ok) {
+        const data = await response.json()
+        setJobs(data)
+      }
+    } catch (error) {
+      console.error("Error fetching jobs:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-16 max-w-6xl">
         {/* Hero */}
         <div className="text-center mb-16 animate-slide-up">
@@ -43,7 +51,7 @@ export default function CareersPage() {
 
         {/* Values */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-center">Why USI?</h2>
+          <h2 className="text-3xl font-bold mb-8 text-center">Why MyUSIC?</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 hover-lift animate-slide-up">
               <div className="w-12 h-12 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center mb-4">
@@ -86,37 +94,57 @@ export default function CareersPage() {
         {/* Open Positions */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold mb-8">Open Positions</h2>
-          <div className="space-y-4">
-            {openings.map((job, index) => (
-              <div
-                key={index}
-                className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 hover-lift animate-slide-up flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
-                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Briefcase className="h-4 w-4" />
-                      {job.department}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Globe className="h-4 w-4" />
-                      {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {job.type}
-                    </span>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+              <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-xl font-semibold mb-2">No Open Positions Yet</h3>
+              <p className="text-muted-foreground">
+                We don't have any open positions at the moment, but we're always looking for talented people.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {jobs.map((job, index) => (
+                <Link
+                  key={job.id}
+                  href={`/careers/${job.id}`}
+                  className="block bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 hover-lift animate-slide-up transition-all hover:border-primary/50"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
+                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Briefcase className="h-4 w-4" />
+                          {job.department}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {job.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {job.type}
+                        </span>
+                        {job.salary_range && (
+                          <span className="flex items-center gap-1 text-primary">💰 {job.salary_range}</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      View Details
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-                <Button variant="outline" className="gap-2 bg-transparent">
-                  View Details
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* CTA */}
@@ -126,9 +154,11 @@ export default function CareersPage() {
             <p className="text-muted-foreground mb-6">
               We're always looking for talented people. Send us your resume and tell us how you can contribute.
             </p>
-            <Button size="lg" className="gap-2">
-              Send General Application
-              <ArrowRight className="h-4 w-4" />
+            <Button size="lg" className="gap-2" asChild>
+              <a href="mailto:careers@myusic.io">
+                Send General Application
+                <ArrowRight className="h-4 w-4" />
+              </a>
             </Button>
           </div>
         </section>

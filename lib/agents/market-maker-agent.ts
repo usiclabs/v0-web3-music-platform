@@ -1,6 +1,6 @@
 import { getAgentWalletService, type AgentWalletService } from "./wallet-service"
 import { createClient } from "@/lib/supabase/server"
-import { formatUnits, type Address, parseEther, parseUnits } from "viem"
+import { formatUnits, type Address, parseEther, parseUnits, formatEther } from "viem"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { base } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
@@ -98,6 +98,7 @@ export interface MMAgentConfig {
   burst_delay_seconds?: number // New field for burst delay seconds
   pro_mode?: boolean // Added pro_mode
   max_mode?: boolean // Added max_mode for 20 wallets
+  volume_generated?: bigint // Changed to bigint to match Supabase type
 }
 
 export interface MMAgentStats {
@@ -225,6 +226,7 @@ export class MarketMakerAgentService {
         burst_delay_seconds: 3, // Default burst delay seconds
         pro_mode: false, // Default pro mode to false
         max_mode: false, // Default max mode to false
+        volume_generated: BigInt(0), // Initialize volume_generated as BigInt
       })
       .select()
       .single()
@@ -931,14 +933,20 @@ export class MarketMakerAgentService {
       }
     }
 
-    const { data: wallets } = await supabase
-      .from("mm_agent_wallets")
-      .select("total_buys, total_sells")
+    const { count: totalBuys } = await supabase
+      .from("mm_agent_activity")
+      .select("*", { count: "exact", head: true })
       .eq("agent_id", this.agentId)
-      .eq("is_active", true)
+      .in("activity_type", ["buy", "buy_executed"])
 
-    const totalBuys = wallets?.reduce((sum, wallet) => sum + (wallet.total_buys || 0), 0) || 0
-    const totalSells = wallets?.reduce((sum, wallet) => sum + (wallet.total_sells || 0), 0) || 0
+    const { count: totalSells } = await supabase
+      .from("mm_agent_activity")
+      .select("*", { count: "exact", head: true })
+      .eq("agent_id", this.agentId)
+      .in("activity_type", ["sell", "sell_executed"])
+
+    console.log("[v0] [MM Agent] getStats - totalBuys:", totalBuys || 0)
+    console.log("[v0] [MM Agent] getStats - totalSells:", totalSells || 0)
 
     let walletStats = undefined
     if (agent.multi_wallet_mode) {
@@ -967,9 +975,9 @@ export class MarketMakerAgentService {
     const usiBalance = await this.getTokenBalance(undefined)
 
     return {
-      totalBuys,
-      totalSells,
-      volumeGenerated: agent.total_volume_generated?.toString() || "0",
+      totalBuys: totalBuys || 0,
+      totalSells: totalSells || 0,
+      volumeGenerated: formatEther(agent.volume_generated || BigInt(0)),
       usiBalance,
       walletStats,
     }
@@ -1183,11 +1191,11 @@ export class MarketMakerAgentService {
 
       // Get current portfolio entry
       const { data: existing } = await supabase
-        .from("agent_portfolio")
+        .from("mm_agent_portfolio")
         .select("*")
         .eq("agent_id", agentId)
         .eq("token_address", tokenAddress)
-        .single()
+        .maybeSingle()
 
       if (tradeType === "buy") {
         const tokenAmount = Number(formatUnits(amountOut, 18))
@@ -1206,7 +1214,7 @@ export class MarketMakerAgentService {
           const unrealizedPnl = currentValue - newTotalInvested // Calculate PnL based on current value
 
           await supabase
-            .from("agent_portfolio")
+            .from("mm_agent_portfolio")
             .update({
               amount: newAmount,
               total_invested: newTotalInvested,
@@ -1228,7 +1236,7 @@ export class MarketMakerAgentService {
           const avgPrice = ethSpent / tokenAmount
           const currentValue = tokenAmount * avgPrice
 
-          await supabase.from("agent_portfolio").insert({
+          await supabase.from("mm_agent_portfolio").insert({
             agent_id: agentId,
             token_address: tokenAddress,
             token_symbol: tokenSymbol,
@@ -1261,7 +1269,7 @@ export class MarketMakerAgentService {
           // Position fully closed - but keep record with zero amount
           const currentRealizedPnl = Number.parseFloat(existing.realized_pnl || "0")
           await supabase
-            .from("agent_portfolio")
+            .from("mm_agent_portfolio")
             .update({
               amount: 0,
               current_value: 0,
@@ -1282,7 +1290,7 @@ export class MarketMakerAgentService {
           const unrealizedPnl = currentValue - newTotalInvested // Calculate new unrealized PnL
 
           await supabase
-            .from("agent_portfolio")
+            .from("mm_agent_portfolio")
             .update({
               amount: newAmount,
               total_invested: newTotalInvested,
@@ -1457,6 +1465,7 @@ export class MarketMakerAgentService {
       burst_delay_seconds: 3, // Default burst delay seconds
       pro_mode: false, // Default pro mode to false
       max_mode: false, // Default max mode to false
+      volume_generated: BigInt(0), // Initialize volume_generated as BigInt
     })
   }
 

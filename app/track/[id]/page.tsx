@@ -1,9 +1,24 @@
 import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { TrackDetailContent } from "@/components/track-detail-content"
+
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(str)
+}
 
 export default async function TrackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  if (!isValidUUID(id)) {
+    // If someone navigates to /track/trending, redirect to /trending
+    if (id === "trending") {
+      redirect("/trending")
+    }
+    // For other invalid IDs, show 404
+    notFound()
+  }
+
   const supabase = await createClient()
 
   // Fetch track with artist and royalty splits

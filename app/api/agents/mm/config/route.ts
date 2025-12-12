@@ -25,14 +25,26 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const supabase = await createClient()
     const body = await request.json()
     const { agentId, ...updates } = body
 
-    if (!agentId) {
-      return NextResponse.json({ error: "Agent ID required" }, { status: 400 })
+    console.log("[API] Updating MM agent config:", { agentId, updates })
+
+    if (updates.token_address) {
+      const SUPPORTED_TOKENS = [
+        { address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", symbol: "USI", name: "Universal Sound Index" },
+        { address: "0x73582df1cad3187cD0746b7A473d65c06386837e", symbol: "DEUS", name: "Deus" },
+      ]
+
+      const matchedToken = SUPPORTED_TOKENS.find((t) => t.address.toLowerCase() === updates.token_address.toLowerCase())
+
+      if (matchedToken) {
+        updates.token_symbol = matchedToken.symbol
+        console.log(`[API] Auto-synced token_symbol to ${matchedToken.symbol} for address ${updates.token_address}`)
+      }
     }
 
-    const supabase = await createClient()
     const { data, error } = await supabase
       .from("mm_agents")
       .update({

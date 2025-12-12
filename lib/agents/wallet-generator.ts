@@ -57,7 +57,6 @@ export async function generateWalletsForAgent(
     const privateKey = generatePrivateKey()
     const account = privateKeyToAccount(privateKey)
 
-    // Encrypt the private key before storing
     const encrypted = encryptPrivateKey(privateKey, ownerAddress)
 
     // Store in database
@@ -107,6 +106,78 @@ export async function getAgentWalletKeys(agentId: string, ownerAddress: string):
   for (const wallet of wallets || []) {
     const decrypted = decryptPrivateKey(wallet.private_key_encrypted, ownerAddress)
     keyMap.set(wallet.wallet_index, decrypted)
+  }
+
+  return keyMap
+}
+
+/**
+ * Generate wallets for auto-stream agents
+ */
+export async function generateWalletsForAutoStreamAgent(
+  agentId: string,
+  ownerAddress: string,
+  count = 1,
+): Promise<GeneratedWallet[]> {
+  const supabase = createAdminClient()
+  const wallets: GeneratedWallet[] = []
+
+  for (let i = 0; i < count; i++) {
+    const walletNumber = i + 1
+    const privateKey = generatePrivateKey()
+    const account = privateKeyToAccount(privateKey)
+
+    const encrypted = encryptPrivateKey(privateKey, ownerAddress)
+
+    const { error } = await supabase.from("auto_stream_agent_wallets").insert({
+      agent_id: agentId,
+      wallet_number: walletNumber,
+      wallet_address: account.address,
+      private_key_encrypted: encrypted,
+      is_active: true,
+    })
+
+    if (error) {
+      console.error(`[WalletGenerator] Failed to store auto-stream wallet ${walletNumber}:`, error)
+      throw new Error(`Failed to generate auto-stream wallet ${walletNumber}: ${error.message}`)
+    }
+
+    wallets.push({
+      address: account.address,
+      privateKey: privateKey,
+      index: walletNumber,
+    })
+  }
+
+  console.log(`[WalletGenerator] Generated ${wallets.length} auto-stream wallets for agent ${agentId}`)
+  return wallets
+}
+
+/**
+ * Retrieve decrypted private keys for auto-stream agent wallets
+ */
+export async function getAutoStreamAgentWalletKeys(
+  agentId: string,
+  ownerAddress: string,
+): Promise<Map<number, string>> {
+  const supabase = createAdminClient()
+
+  const { data: wallets, error } = await supabase
+    .from("auto_stream_agent_wallets")
+    .select("wallet_number, private_key_encrypted")
+    .eq("agent_id", agentId)
+    .eq("is_active", true)
+    .order("wallet_number")
+
+  if (error) {
+    throw new Error(`Failed to retrieve auto-stream wallet keys: ${error.message}`)
+  }
+
+  const keyMap = new Map<number, string>()
+
+  for (const wallet of wallets || []) {
+    const decrypted = decryptPrivateKey(wallet.private_key_encrypted, ownerAddress)
+    keyMap.set(wallet.wallet_number, decrypted)
   }
 
   return keyMap
