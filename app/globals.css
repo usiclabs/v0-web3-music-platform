@@ -814,3 +814,32 @@
 video {
   will-change: transform;
 }
+
+/* Added 3D perspective and card tilt animations for agent cards */
+.perspective {
+  perspective: 1200px;
+}
+
+.group:hover .perspective {
+  transform-style: preserve-3d;
+}
+
+@keyframes card-tilt {
+  0% {
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: rotateX(-5deg) rotateY(5deg);
+  }
+}
+
+.animate-card-tilt {
+  animation: card-tilt 0.6s ease-out;
+}
+
+/* Enhanced glassmorphism effects for premium card appearance */
+.glass-card {
+  background: rgba(10, 10, 10, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}

@@ -6,23 +6,26 @@ import type { Account } from "viem"
 export interface AutonomousArtistConfig {
   id: string
   owner_address: string
-  wallet_address: string
-  artist_name: string
-  artist_bio: string
+  name: string
   is_active: boolean
-  generation_interval_hours: number
-  max_daily_generations: number
-  music_styles: string[]
-  genres: string[]
-  generation_prompt_template: string
-  min_generation_duration: number
-  max_generation_duration: number
+  generation_frequency_hours: number
   auto_list_on_platform: boolean
-  total_generated_count: number
-  total_spent_on_generation: string
-  total_spent_on_listing: string
+  total_songs_generated: number
+  total_spent_usdc: string
   last_generation_at: string | null
   created_at: string
+  artist_style?: string
+  preferred_genres?: string[]
+  album_art_style?: string
+  daily_budget_usdc?: number
+  generation_cost_usdc?: number
+  listing_cost_usdc?: number
+  daily_spent_usdc?: number
+  total_songs_listing?: number
+  total_songs_earning?: number
+  total_earnings_usdc?: number
+  next_generation_at?: string | null
+  updated_at?: string
 }
 
 export interface GenerationCycleResult {
@@ -62,7 +65,7 @@ export class AutonomousArtistAgentService {
         .from("autonomous_artist_agents")
         .select("owner_address")
         .eq("id", this.agentId)
-        .single()
+        .maybeSingle()
 
       if (!agent?.owner_address) {
         throw new Error("Agent owner address not found")
@@ -112,35 +115,27 @@ export class AutonomousArtistAgentService {
 
     const agentId = crypto.randomUUID()
 
-    // Create a temporary wallet
-    const tempWalletKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")
-    const formattedKey = `0x${tempWalletKey}` as `0x${string}`
-    const tempWalletAccount = privateKeyToAccount(formattedKey)
-
     const { data: newAgent, error: agentError } = await supabase
       .from("autonomous_artist_agents")
       .insert({
         id: agentId,
         owner_address: ownerAddress,
-        wallet_address: tempWalletAccount.address,
-        artist_name: artistConfig?.artist_name || "Anonymous Artist",
-        artist_bio: artistConfig?.artist_bio || "An AI-powered autonomous music creator",
+        name: artistConfig?.name || "Anonymous Artist",
+        artist_style: artistConfig?.artist_style || "electronic",
+        preferred_genres: artistConfig?.preferred_genres || ["electronic", "ambient"],
+        album_art_style: artistConfig?.album_art_style || "abstract",
         is_active: false,
-        generation_interval_hours: artistConfig?.generation_interval_hours || 24,
-        max_daily_generations: artistConfig?.max_daily_generations || 3,
-        music_styles: artistConfig?.music_styles || ["electronic", "ambient"],
-        genres: artistConfig?.genres || ["electronic"],
-        generation_prompt_template:
-          artistConfig?.generation_prompt_template ||
-          "Create an original {genre} track with {styles} vibes. Make it experimental and unique.",
-        min_generation_duration: artistConfig?.min_generation_duration || 20,
-        max_generation_duration: artistConfig?.max_generation_duration || 40,
+        generation_frequency_hours: artistConfig?.generation_frequency_hours || 24,
         auto_list_on_platform: artistConfig?.auto_list_on_platform ?? true,
-        total_generated_count: 0,
-        total_spent_on_generation: "0",
-        total_spent_on_listing: "0",
+        daily_budget_usdc: artistConfig?.daily_budget_usdc || 10,
+        generation_cost_usdc: 1.0,
+        listing_cost_usdc: 1.0,
+        daily_spent_usdc: 0,
+        total_songs_generated: 0,
+        total_songs_listing: 0,
+        total_songs_earning: 0,
+        total_spent_usdc: "0",
+        total_earnings_usdc: "0",
       })
       .select()
       .single()
@@ -166,11 +161,11 @@ export class AutonomousArtistAgentService {
    * Generate music using Suno API
    */
   private async generateMusic(config: AutonomousArtistConfig): Promise<any> {
-    // Build the prompt from template
-    const randomStyle = config.music_styles[Math.floor(Math.random() * config.music_styles.length)]
-    const randomGenre = config.genres[Math.floor(Math.random() * config.genres.length)]
+    const randomGenre =
+      config.preferred_genres?.[Math.floor(Math.random() * config.preferred_genres.length)] || "electronic"
+    const style = config.artist_style || "electronic"
 
-    const prompt = config.generation_prompt_template.replace("{genre}", randomGenre).replace("{styles}", randomStyle)
+    const prompt = `Create an original ${randomGenre} track with ${style} vibes. Make it experimental and unique.`
 
     console.log(`[Autonomous Artist Agent] Generating music with prompt: ${prompt}`)
 
@@ -179,8 +174,8 @@ export class AutonomousArtistAgentService {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt,
-        title: `${config.artist_name} - ${new Date().toLocaleDateString()}`,
-        style: `${randomGenre}, ${randomStyle}`,
+        title: `${config.name} - ${new Date().toLocaleDateString()}`,
+        style: `${randomGenre}, ${style}`,
         instrumental: false,
         model: "V5",
         customMode: false,
@@ -224,26 +219,24 @@ export class AutonomousArtistAgentService {
       .from("profiles")
       .select("id")
       .eq("wallet_address", this.ownerAddress)
-      .single()
+      .maybeSingle()
 
     if (!artistProfile) {
       throw new Error("Artist profile not found")
     }
 
-    // Create track record
     const trackRecord = {
       title: track.title,
-      suno_track_id: track.id,
       artist_id: artistProfile.id,
-      genre: config.genres[0],
+      genre: config.preferred_genres?.[0] || "electronic",
       description: `Generated by autonomous artist agent on ${new Date().toLocaleDateString()}`,
       audio_url: track.audioUrl,
-      image_url: track.imageUrl,
+      cover_url: track.imageUrl,
       duration: track.duration || 30,
       is_active: true,
-      mint_price: 0.005,
-      token_ticker: "MUSIC",
-      agent_id: this.agentId,
+      price_per_chunk: 0.005,
+      ai_generated: true,
+      ai_style: config.artist_style || "electronic",
     }
 
     const { data: createdTrack, error } = await supabase.from("tracks").insert(trackRecord).select("id").single()
@@ -258,9 +251,13 @@ export class AutonomousArtistAgentService {
     await supabase.from("autonomous_artist_activity").insert({
       agent_id: this.agentId,
       track_id: createdTrack.id,
-      action: "upload",
-      spent: "1.00",
-      transaction_hash: await this.payForGeneration("1"),
+      suno_track_id: track.id,
+      song_title: track.title,
+      audio_url: track.audioUrl,
+      generation_style: config.artist_style,
+      activity_type: "upload",
+      cost_usdc: 1.0,
+      tx_hash: await this.payForGeneration("1"),
     })
 
     return createdTrack.id
@@ -273,7 +270,11 @@ export class AutonomousArtistAgentService {
     console.log(`[Autonomous Artist Agent] Starting generation cycle for agent ${this.agentId}`)
 
     const supabase = await createClient()
-    const { data: agent } = await supabase.from("autonomous_artist_agents").select("*").eq("id", this.agentId).single()
+    const { data: agent } = await supabase
+      .from("autonomous_artist_agents")
+      .select("*")
+      .eq("id", this.agentId)
+      .maybeSingle()
 
     if (!agent || !agent.is_active) {
       throw new Error("Agent not found or inactive")
@@ -283,7 +284,7 @@ export class AutonomousArtistAgentService {
     const now = new Date()
     if (agent.last_generation_at) {
       const lastGen = new Date(agent.last_generation_at)
-      const intervalMs = agent.generation_interval_hours * 60 * 60 * 1000
+      const intervalMs = agent.generation_frequency_hours * 60 * 60 * 1000
       if (now.getTime() - lastGen.getTime() < intervalMs) {
         return { generated: false, error: "Generation interval not met" }
       }
@@ -295,10 +296,11 @@ export class AutonomousArtistAgentService {
       .from("autonomous_artist_activity")
       .select("*", { count: "exact", head: true })
       .eq("agent_id", this.agentId)
-      .eq("action", "generate")
+      .eq("activity_type", "generate")
       .gte("created_at", todayStart.toISOString())
 
-    if (todayGenerations && todayGenerations >= agent.max_daily_generations) {
+    const maxDailyFromBudget = Math.floor((agent.daily_budget_usdc || 10) / (agent.generation_cost_usdc || 1))
+    if (todayGenerations && todayGenerations >= maxDailyFromBudget) {
       return { generated: false, error: "Daily generation limit reached" }
     }
 
@@ -315,26 +317,29 @@ export class AutonomousArtistAgentService {
 
       // Pay for generation
       const generationTxHash = await this.payForGeneration("1")
-      let totalSpent = "1.00"
+      let totalSpent = 1.0
 
       // Log generation activity
       await supabase.from("autonomous_artist_activity").insert({
         agent_id: this.agentId,
-        track_id: track.id,
-        action: "generate",
-        spent: "1.00",
-        transaction_hash: generationTxHash,
+        suno_track_id: track.id,
+        song_title: track.title,
+        audio_url: track.audioUrl,
+        generation_style: agent.artist_style,
+        activity_type: "generate",
+        cost_usdc: 1.0,
+        tx_hash: generationTxHash,
       })
 
       let listedTrackId: string | undefined
-      let listingSpent = "0"
+      let listingSpent = 0
 
       // Auto-list on platform if enabled
       if (agent.auto_list_on_platform) {
         try {
           listedTrackId = await this.uploadTrackToPlatform(track, agent)
-          listingSpent = "1.00"
-          totalSpent = (Number.parseFloat(totalSpent) + Number.parseFloat(listingSpent)).toString()
+          listingSpent = agent.listing_cost_usdc || 1.0
+          totalSpent += listingSpent
           console.log(`[Autonomous Artist Agent] Track listed on platform: ${listedTrackId}`)
         } catch (listingError) {
           console.error("[Autonomous Artist Agent] Listing failed:", listingError)
@@ -347,11 +352,10 @@ export class AutonomousArtistAgentService {
         .from("autonomous_artist_agents")
         .update({
           last_generation_at: now.toISOString(),
-          total_generated_count: agent.total_generated_count + 1,
-          total_spent_on_generation: (Number.parseFloat(agent.total_spent_on_generation) + 1.0).toString(),
-          total_spent_on_listing: (
-            Number.parseFloat(agent.total_spent_on_listing) + Number.parseFloat(listingSpent)
-          ).toString(),
+          total_songs_generated: agent.total_songs_generated + 1,
+          total_spent_usdc: (Number.parseFloat(agent.total_spent_usdc) + totalSpent).toString(),
+          daily_spent_usdc: Number.parseFloat(agent.daily_spent_usdc || 0) + totalSpent,
+          total_songs_listing: listedTrackId ? agent.total_songs_listing + 1 : agent.total_songs_listing,
         })
         .eq("id", this.agentId)
 
@@ -361,7 +365,7 @@ export class AutonomousArtistAgentService {
         trackTitle: track.title,
         audioUrl: track.audioUrl,
         listed: !!listedTrackId,
-        totalSpent,
+        totalSpent: totalSpent.toString(),
       }
     } catch (error: any) {
       console.error("[Autonomous Artist Agent] Generation cycle failed:", error)
@@ -375,13 +379,12 @@ export class AutonomousArtistAgentService {
   static async getStats(agentId: string): Promise<{
     config: AutonomousArtistConfig
     totalGenerated: number
-    totalSpentOnGeneration: string
-    totalSpentOnListing: string
+    totalSpent: string
     recentActivity: any[]
   }> {
     const supabase = await createClient()
 
-    const { data: agent } = await supabase.from("autonomous_artist_agents").select("*").eq("id", agentId).single()
+    const { data: agent } = await supabase.from("autonomous_artist_agents").select("*").eq("id", agentId).maybeSingle()
 
     const { data: activities } = await supabase
       .from("autonomous_artist_activity")
@@ -392,9 +395,8 @@ export class AutonomousArtistAgentService {
 
     return {
       config: agent,
-      totalGenerated: agent?.total_generated_count || 0,
-      totalSpentOnGeneration: agent?.total_spent_on_generation || "0",
-      totalSpentOnListing: agent?.total_spent_on_listing || "0",
+      totalGenerated: agent?.total_songs_generated || 0,
+      totalSpent: agent?.total_spent_usdc || "0",
       recentActivity: activities || [],
     }
   }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle, DollarSign, Sparkles, Music } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
+import { useEIP3009 } from "@/lib/web3/use-eip3009"
 import { createPublicClient, createWalletClient, custom, http, isAddress } from "viem"
 import { base } from "viem/chains"
 import { USDC_ADDRESS } from "@/lib/web3/contracts"
@@ -50,6 +51,7 @@ const ERC20_ABI = [
 
 export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402GenerationModalProps) {
   const { address, isConnected } = useWallet()
+  const { isSmartWallet } = useEIP3009()
   const [step, setStep] = useState<PaymentStep>("checking")
   const [error, setError] = useState<string | null>(null)
   const [balance, setBalance] = useState<string>("0")
@@ -70,10 +72,9 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
 
     setStep("checking")
     setError(null)
-    setRelayerAddress(null) // Reset relayer address on each check
+    setRelayerAddress(null)
 
     try {
-      // Get payment requirements
       const response = await fetch("/api/x402/generate")
 
       if (!response.ok && response.status !== 402) {
@@ -163,7 +164,10 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
         return
       }
 
-      if (!verifyData.hasAllowance) {
+      if (isSmartWallet) {
+        console.log("[v0] Smart wallet detected - skipping approval step")
+        setStep("pay")
+      } else if (!verifyData.hasAllowance) {
         setStep("approve")
       } else {
         setStep("pay")
@@ -240,10 +244,11 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
     setStep("processing")
 
     try {
-      console.log("[v0] Starting payment transfer for address:", address)
+      console.log("[v0] Starting payment for address:", address, "Smart wallet:", isSmartWallet)
 
-      // Request the relayer to execute the transfer
-      const response = await fetch("/api/x402/generate/transfer", {
+      const endpoint = isSmartWallet ? "/api/x402/generate/smart-wallet-transfer" : "/api/x402/generate/transfer"
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
