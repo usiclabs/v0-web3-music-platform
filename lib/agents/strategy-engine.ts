@@ -423,7 +423,7 @@ export async function runAgentCycle(agentId: string): Promise<{
         .from("investment_agent_wallets")
         .select("*")
         .eq("agent_id", agentId)
-        .single()
+        .maybeSingle()
 
       if (!wallet) {
         results.errors.push("Agent wallet not found - please fund your agent wallet first")

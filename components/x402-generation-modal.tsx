@@ -240,6 +240,8 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
     setStep("processing")
 
     try {
+      console.log("[v0] Starting payment transfer for address:", address)
+
       // Request the relayer to execute the transfer
       const response = await fetch("/api/x402/generate/transfer", {
         method: "POST",
@@ -252,11 +254,17 @@ export function X402GenerationModal({ isOpen, onClose, onPaymentComplete }: X402
 
       const data = await response.json()
 
+      console.log("[v0] Transfer response status:", response.status, "data:", data)
+
       if (!response.ok) {
-        throw new Error(data.error || "Payment failed")
+        throw new Error(data.error || data.details || "Payment failed")
       }
 
-      console.log("[v0] Payment complete:", data.txHash)
+      if (!data.success || !data.txHash) {
+        throw new Error(data.message || "Payment did not complete successfully")
+      }
+
+      console.log("[v0] Payment transfer confirmed with tx:", data.txHash)
       setStep("complete")
 
       // Wait a moment then trigger the generation

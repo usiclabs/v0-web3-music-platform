@@ -39,7 +39,7 @@ export async function createOrGetInvestmentWallet(agentId: string) {
     .from("investment_agent_wallets")
     .select("*")
     .eq("agent_id", agentId)
-    .single()
+    .maybeSingle()
 
   if (existingWallet) {
     return {
@@ -66,7 +66,7 @@ export async function createOrGetInvestmentWallet(agentId: string) {
       eth_balance: 0,
     })
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) throw error
 
@@ -78,7 +78,11 @@ export async function createOrGetInvestmentWallet(agentId: string) {
 }
 
 export async function getInvestmentWalletAccount(agentId: string) {
-  const { data: wallet } = await supabase.from("investment_agent_wallets").select("*").eq("agent_id", agentId).single()
+  const { data: wallet } = await supabase
+    .from("investment_agent_wallets")
+    .select("*")
+    .eq("agent_id", agentId)
+    .maybeSingle()
 
   if (!wallet) throw new Error("Wallet not found")
 

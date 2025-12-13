@@ -34,6 +34,7 @@ import Link from "next/link"
 import type { AgentTokenGateStatus } from "@/lib/w eb3/agent-token-gate"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 
 interface AgentConfig {
   id: string
@@ -329,23 +330,32 @@ export default function AgentDashboardPage() {
   }
 
   const handleRunCycle = async () => {
-    if (!agentData?.agent?.id) return
-    setIsRunning(true)
-
     try {
+      setIsRunning(true)
+      toast.info("Starting Drop Scout cycle...")
+
       const response = await fetch("/api/agents/run-cycle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agentData.agent.id }),
+        body: JSON.stringify({ agentId: agentData?.agent?.id }),
       })
 
-      if (response.ok) {
-        mutate(`/api/agents/portfolio?agentId=${agentData.agent.id}`)
-        mutate(`/api/agents/trades?agentId=${agentData.agent.id}`)
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to run cycle")
+      }
+
+      if (agentData?.agent?.id) {
         mutate(`/api/agents/activity?agentId=${agentData.agent.id}`)
       }
-    } catch (error) {
+
+      toast.success(`Drop Scout complete! Scanned ${data.scanned} tracks, found ${data.signals} signals`)
+
+      mutate(`/api/agents?address=${address}`)
+    } catch (error: any) {
       console.error("Failed to run cycle:", error)
+      toast.error(error.message || "Failed to run Drop Scout cycle")
     } finally {
       setIsRunning(false)
     }

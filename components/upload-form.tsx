@@ -456,11 +456,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
         throw new Error(`Failed to create profile: ${profileError.message}`)
       }
 
-      let mediaUrl: string
       let duration: number
-      const thumbnailUrl: string | null = null
-
-      // Use prefilled URLs if no file is uploaded
       let currentAudioUrl = prefilledAudioUrl
       let currentVideoUrl = prefilledVideoUrl
       let currentCoverUrl = prefilledCoverUrl || uploadedCoverUrl // Use existing uploaded cover if available
@@ -510,18 +506,16 @@ export function UploadForm({ prefillData }: UploadFormProps) {
           }
 
           const { data: uploadSuccessData } = supabase.storage.from("audio").getPublicUrl(path)
-          mediaUrl = uploadSuccessData.publicUrl
-          currentVideoUrl = mediaUrl // Update currentVideoUrl with the uploaded URL
-          console.log("[v0] Video uploaded successfully:", mediaUrl)
+          currentVideoUrl = uploadSuccessData.publicUrl
+          console.log("[v0] Video uploaded successfully:", currentVideoUrl)
         } else {
-          mediaUrl = prefilledVideoUrl! // Use prefilled URL if no file uploaded
-          currentVideoUrl = mediaUrl
-          console.log("[v0] Using prefilled video URL:", mediaUrl)
+          currentVideoUrl = prefilledVideoUrl! // Use prefilled URL if no file uploaded
+          console.log("[v0] Using prefilled video URL:", currentVideoUrl)
         }
 
         setUploadProgress("Processing video metadata...")
         const video = document.createElement("video")
-        video.src = mediaUrl // Use the determined mediaUrl
+        video.src = currentVideoUrl // Use the determined mediaUrl
         await new Promise((resolve) => {
           video.addEventListener("loadedmetadata", resolve)
         })
@@ -560,29 +554,12 @@ export function UploadForm({ prefillData }: UploadFormProps) {
           console.log("[v0] Using generated GIF as thumbnail:", currentCoverUrl)
         }
       } else if (contentType === "audio") {
-        // In the audio file input section, show prefilled state
+        let mediaUrl: string | undefined
+
         if (prefilledAudioUrl && !audioFile) {
-          ;<div className="mt-2 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <Music className="h-5 w-5 text-emerald-500" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-emerald-500">AI-Generated Audio Ready</p>
-                <p className="text-xs text-muted-foreground">Audio from AI Studio will be used</p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setPrefilledAudioUrl(null)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <audio src={prefilledAudioUrl} controls className="w-full mt-3 h-10" />
-          </div>
+          mediaUrl = prefilledAudioUrl
+          currentAudioUrl = prefilledAudioUrl
+          console.log("[v0] Using prefilled audio URL:", prefilledAudioUrl)
         } else {
           if (!audioFile) {
             throw new Error("Please upload an audio file or provide a prefilled URL.")
@@ -628,7 +605,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
 
           const { data: uploadSuccessData } = supabase.storage.from("audio").getPublicUrl(path)
           mediaUrl = uploadSuccessData.publicUrl
-          currentAudioUrl = mediaUrl // Update currentAudioUrl with the uploaded URL
+          currentAudioUrl = mediaUrl
           console.log("[v0] Audio uploaded successfully:", mediaUrl)
         }
 
