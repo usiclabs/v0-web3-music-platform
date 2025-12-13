@@ -3,8 +3,6 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL!)
-
 export async function POST(request: NextRequest) {
   try {
     const { from, nonce } = await request.json()
@@ -14,6 +12,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Smart wallet generation transfer request:", { from, nonce })
+
+    const sql = neon(process.env.DATABASE_URL!)
 
     // Get Supabase client for database operations
     const cookieStore = cookies()
