@@ -26,7 +26,6 @@ export default function AgentsPage() {
   const { isConnected, address } = useAccount()
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
-  const [activeTouchCard, setActiveTouchCard] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -48,14 +47,14 @@ export default function AgentsPage() {
     {
       id: "market-maker",
       name: "Market Maker",
-      title: "Liquidity Agent (V3/V4)",
+      title: "Liquidity Agent",
       description:
-        "Provide liquidity to $USI token pools and earn trading fees. Supports both Uniswap V3 and V4 pools with automatic version selection.",
+        "Provide liquidity to $USI token pools and earn trading fees. This agent automatically optimizes your liquidity positions across multiple pools.",
       icon: <Zap className="w-8 h-8" />,
       href: isConnected ? "/dashboard/agent/mm" : "/agents/market-maker",
       color: "from-blue-500 to-cyan-600",
       gradient: "group-hover:from-blue-600 group-hover:to-cyan-700",
-      features: ["Uniswap V3/V4", "Fee Optimization", "Multi-chain Support"],
+      features: ["Liquidity Pools", "Fee Optimization", "Multi-chain Support"],
     },
     {
       id: "auto-stream",
@@ -95,130 +94,131 @@ export default function AgentsPage() {
       </div>
 
       <div className="relative z-10">
-        {/* Header Section - Enhanced mobile padding and font scaling */}
-        <div className="pt-8 sm:pt-16 lg:pt-20 px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12 text-center">
-          <div className="inline-flex items-center gap-2 mb-4 sm:mb-6 bg-white/5 backdrop-blur-xl rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-white/10 animate-fade-in">
-            <Sparkles className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-accent" />
-            <span className="text-xs sm:text-sm font-medium text-white/80">Choose Your Agent</span>
+        {/* Header Section */}
+        <div className="pt-20 px-4 sm:px-6 lg:px-8 mb-12 text-center">
+          <div className="inline-flex items-center gap-2 mb-6 bg-white/5 backdrop-blur-xl rounded-full px-4 py-2 border border-white/10 animate-fade-in">
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-white/80">Choose Your Agent</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent animate-slide-up leading-tight">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-4 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent animate-slide-up">
             Select Your AI Agent
           </h1>
 
-          <p className="text-base sm:text-lg lg:text-xl text-white/60 max-w-2xl mx-auto mb-2 px-2 animate-slide-up animation-delay-2000">
+          <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-2 animate-slide-up animation-delay-2000">
             Choose from our suite of autonomous agents to automate your music career or investments
           </p>
 
           {!isConnected && (
-            <p className="text-xs sm:text-sm text-accent/80 mt-2 animate-slide-up animation-delay-4000">
+            <p className="text-sm text-accent/80 animate-slide-up animation-delay-4000">
               Connect your wallet to access agent dashboards
             </p>
           )}
         </div>
 
-        {/* Cards Grid - Improved responsive columns and gap */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-12">
+        {/* Cards Grid */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {agents.map((agent, index) => (
               <Link
                 key={agent.id}
                 href={agent.href}
                 onMouseEnter={() => setHoveredCard(agent.id)}
                 onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => setActiveTouchCard(activeTouchCard === agent.id ? null : agent.id)}
-                className="group h-full active:scale-95 transition-transform duration-200 md:active:scale-100"
+                className="group h-full"
               >
                 <div
                   className="h-full relative perspective transition-all duration-500"
                   style={{
-                    transform:
-                      hoveredCard === agent.id || activeTouchCard === agent.id
-                        ? "translateY(-8px) scale(1.02)"
-                        : "translateY(0) scale(1)",
+                    transform: hoveredCard === agent.id ? "translateY(-8px) scale(1.02)" : "translateY(0) scale(1)",
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-white/[0.02] rounded-2xl blur-xl opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-opacity duration-500 group-hover:from-white/[0.12] group-hover:to-white/[0.04]" />
+                  {/* Premium glass background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] to-white/[0.02] rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 group-hover:from-white/[0.12] group-hover:to-white/[0.04]" />
 
                   {/* Main card */}
-                  <div className="relative h-full p-4 sm:p-6 rounded-2xl border border-white/10 group-hover:border-white/30 md:group-hover:border-white/30 transition-colors duration-500 backdrop-blur-xl bg-white/[0.02] hover:bg-white/[0.04] md:hover:bg-white/[0.04] overflow-hidden">
+                  <div className="relative h-full p-6 rounded-2xl border border-white/10 group-hover:border-white/30 transition-colors duration-500 backdrop-blur-xl bg-white/[0.02] hover:bg-white/[0.04] overflow-hidden">
                     {/* Gradient accent */}
                     <div
-                      className={`absolute inset-0 bg-gradient-to-br ${agent.color} opacity-0 group-hover:opacity-5 md:group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`}
+                      className={`absolute inset-0 bg-gradient-to-br ${agent.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`}
                     />
 
                     {/* Content */}
                     <div className="relative z-10 flex flex-col h-full">
-                      <div className="mb-3 sm:mb-4">
+                      {/* Icon section */}
+                      <div className="mb-4">
                         <div
-                          className={`inline-flex items-center justify-center w-10 sm:w-12 h-10 sm:h-12 rounded-lg bg-gradient-to-br ${agent.color} text-white shadow-lg transition-all duration-500 group-hover:shadow-xl md:group-hover:shadow-xl group-hover:scale-110 md:group-hover:scale-110`}
+                          className={`inline-flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br ${agent.color} text-white shadow-lg transition-all duration-500 group-hover:shadow-xl group-hover:scale-110`}
                         >
                           {agent.icon}
                         </div>
                       </div>
 
-                      <div className="mb-2 sm:mb-3">
-                        <h3 className="text-lg sm:text-xl font-bold text-white mb-0.5 sm:mb-1 group-hover:text-accent md:group-hover:text-accent transition-colors duration-300">
+                      {/* Title and subtitle */}
+                      <div className="mb-3">
+                        <h3 className="text-xl font-bold text-white mb-1 group-hover:text-accent transition-colors duration-300">
                           {agent.name}
                         </h3>
                         <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">{agent.title}</p>
                       </div>
 
-                      <p className="text-sm text-white/70 mb-3 sm:mb-4 flex-grow line-clamp-2 sm:line-clamp-3 group-hover:text-white/80 md:group-hover:text-white/80 transition-colors duration-300">
+                      {/* Description */}
+                      <p className="text-sm text-white/70 mb-4 flex-grow line-clamp-3 group-hover:text-white/80 transition-colors duration-300">
                         {agent.description}
                       </p>
 
-                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                      {/* Features */}
+                      <div className="flex flex-wrap gap-2 mb-4">
                         {agent.features.map((feature, i) => (
                           <span
                             key={i}
-                            className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 group-hover:bg-white/10 md:group-hover:bg-white/10 group-hover:text-white/80 md:group-hover:text-white/80 transition-all duration-300 whitespace-nowrap"
+                            className="text-xs px-2 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 group-hover:bg-white/10 group-hover:text-white/80 transition-all duration-300"
                           >
                             {feature}
                           </span>
                         ))}
                       </div>
 
+                      {/* CTA Button */}
                       <div className="mt-auto">
-                        <button className="w-full inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-white/10 to-white/5 hover:from-white/20 md:hover:from-white/20 hover:to-white/10 md:hover:to-white/10 border border-white/20 text-white/80 hover:text-white md:hover:text-white font-medium text-sm transition-all duration-300 group-hover:border-white/30 md:group-hover:border-white/30 min-h-[2.75rem] sm:min-h-[2.5rem]">
+                        <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-white/10 to-white/5 hover:from-white/20 hover:to-white/10 border border-white/20 text-white/80 hover:text-white font-medium text-sm transition-all duration-300 group-hover:border-white/30">
                           <span>View Agent</span>
-                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 md:group-hover:translate-x-1 transition-transform duration-300" />
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Shine effect on hover - Disabled on mobile for performance */}
-                    <div className="hidden md:block absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                    {/* Shine effect on hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
                   </div>
                 </div>
               </Link>
             ))}
           </div>
 
-          {/* Info Section - Improved mobile layout */}
-          <div className="mt-12 sm:mt-16 pt-8 sm:pt-12 border-t border-white/10">
-            <div className="grid grid-cols-3 gap-4 sm:gap-8">
+          {/* Info Section */}
+          <div className="mt-16 pt-12 border-t border-white/10">
+            <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center animate-slide-up animation-delay-2000">
-                <div className="text-2xl sm:text-4xl font-bold text-accent mb-1 sm:mb-2">4</div>
-                <p className="text-xs sm:text-base text-white/60">Autonomous Agents</p>
+                <div className="text-4xl font-bold text-accent mb-2">4</div>
+                <p className="text-white/60">Autonomous Agents</p>
               </div>
               <div className="text-center animate-slide-up animation-delay-4000">
-                <div className="text-2xl sm:text-4xl font-bold text-accent mb-1 sm:mb-2">24/7</div>
-                <p className="text-xs sm:text-base text-white/60">Always Working</p>
+                <div className="text-4xl font-bold text-accent mb-2">24/7</div>
+                <p className="text-white/60">Always Working</p>
               </div>
               <div className="text-center animate-slide-up animation-delay-4000">
-                <div className="text-2xl sm:text-4xl font-bold text-accent mb-1 sm:mb-2">∞</div>
-                <p className="text-xs sm:text-base text-white/60">Earning Potential</p>
+                <div className="text-4xl font-bold text-accent mb-2">∞</div>
+                <p className="text-white/60">Earning Potential</p>
               </div>
             </div>
           </div>
 
+          {/* Footer CTA */}
           {!isConnected && (
-            <div className="mt-8 sm:mt-12 text-center px-4">
-              <p className="text-white/60 mb-4 text-sm sm:text-base">
-                Ready to automate? Connect your wallet to get started
-              </p>
-              <Button size="lg" className="animate-fade-in w-full sm:w-auto">
+            <div className="mt-12 text-center">
+              <p className="text-white/60 mb-4">Ready to automate? Connect your wallet to get started</p>
+              <Button size="lg" className="animate-fade-in">
                 <Link href="/dashboard">Connect Wallet</Link>
               </Button>
             </div>
