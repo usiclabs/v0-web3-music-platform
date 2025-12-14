@@ -15,6 +15,7 @@ import {
   UNISWAP_V3_QUOTER,
 } from "@/lib/web3/contracts"
 import { getAgentWalletKeys, generateWalletsForAgent } from "./wallet-generator"
+import { uniswapV4Service } from "./uniswap-v4-service" // Added import
 
 // Removed hardcoded USI_TOKEN_ADDRESS, it will be fetched from agent config
 const USI_TOKEN_SYMBOL = "USI"
@@ -100,6 +101,9 @@ export interface MMAgentConfig {
   pro_mode?: boolean // Added pro_mode
   max_mode?: boolean // Added max_mode for 20 wallets
   volume_generated?: bigint // Changed to bigint to match Supabase type
+  prefer_uniswap_v4?: boolean // Added V4 pool preference
+  v4_hooks_whitelist?: string[]
+  min_pool_liquidity?: string
 }
 
 export interface MMAgentStats {
@@ -126,6 +130,7 @@ export class MarketMakerAgentService {
   private _walletKeys: Map<number, string> = new Map()
   private _walletAccounts: Map<number, any> = new Map()
   private _currentWalletIndex = 0
+  private chainId: number = base.id
 
   constructor(agentId: string, ownerAddress?: string) {
     this.walletService = getAgentWalletService()
@@ -180,7 +185,7 @@ export class MarketMakerAgentService {
     return account
   }
 
-  private async getNextWallet(agent: any): Promise<any> {
+  private async getNextWallet(agent: MMAgentConfig): Promise<any> {
     if (!agent.multi_wallet_mode) {
       // Single wallet mode - use wallet 1
       return await this.getWallet(1)
@@ -228,6 +233,9 @@ export class MarketMakerAgentService {
         pro_mode: false, // Default pro mode to false
         max_mode: false, // Default max mode to false
         volume_generated: BigInt(0), // Initialize volume_generated as BigInt
+        prefer_uniswap_v4: false, // Default V4 preference to false
+        v4_hooks_whitelist: [], // Default V4 hooks whitelist to empty
+        min_pool_liquidity: "0", // Default min pool liquidity to 0
       })
       .select()
       .single()
@@ -330,7 +338,7 @@ export class MarketMakerAgentService {
         console.log(`[MM Agent] Using ETH for buy: ${formatUnits(buyAmount, 18)} ETH`)
       } else {
         const error = `Insufficient balance. Have: ${formatUnits(ethBalance, 18)} ETH + ${formatUnits(wethBalance, 18)} WETH. Need: ${formatUnits(configuredBuyAmount + gasBuffer, 18)} ETH (or ${formatUnits(configuredBuyAmount, 18)} WETH)`
-        console.error(`[MM Agent] ${error}`)
+        console.Error(`[MM Agent] ${error}`)
         await this.logActivity("buy_failed", error, { wallet: wallet.address })
         return { success: false, error }
       }
@@ -348,150 +356,26 @@ export class MarketMakerAgentService {
       }
 
       // Execute the swap
-      const bestPool = await this.getBestPoolByLiquidity(publicClient, TOKEN_ADDRESS, chainId)
+      const { success, txHash, error } = await this.executeSwap(agent, "buy", this.walletService)
 
-      if (!bestPool) {
-        const error = "No liquidity pool found for this token"
-        console.error(`[MM Agent] ${error}`)
-        await this.logActivity("buy_failed", error, { wallet: wallet.address })
-        return { success: false, error }
-      }
-
-      const feeTier = bestPool.fee
-
-      let buyTxHash: string | undefined
-      let lastError = ""
-
-      try {
-        console.log(`[MM Agent] Executing buy with best pool fee tier ${feeTier} (${feeTier / 10000}%)`)
-
-        if (useWETH) {
-          const gasEstimate = await publicClient.estimateContractGas({
-            address: routerAddress,
-            abi: UNISWAP_V3_ROUTER_ABI,
-            functionName: "exactInputSingle",
-            args: [
-              {
-                tokenIn: WETH_ADDRESS,
-                tokenOut: TOKEN_ADDRESS,
-                fee: feeTier,
-                recipient: wallet.address,
-                amountIn: buyAmount,
-                amountOutMinimum: minTokensOut,
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-            account: wallet,
-          })
-
-          const gasLimit = (gasEstimate * 120n) / 100n
-          const gasPrice = await publicClient.getGasPrice()
-
-          const txHash = await walletClient.writeContract({
-            address: routerAddress,
-            abi: UNISWAP_V3_ROUTER_ABI,
-            functionName: "exactInputSingle",
-            args: [
-              {
-                tokenIn: WETH_ADDRESS,
-                tokenOut: TOKEN_ADDRESS,
-                fee: feeTier,
-                recipient: wallet.address,
-                amountIn: buyAmount,
-                amountOutMinimum: minTokensOut,
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-            gas: gasLimit,
-            gasPrice: gasPrice,
-          })
-
-          console.log(`[MM Agent] Buy transaction (WETH) sent: ${txHash}`)
-          const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-          if (receipt.status === "success") {
-            console.log(`[MM Agent] Buy successful! TX: ${txHash}`)
-            buyTxHash = txHash
-          }
-        } else {
-          const gasEstimate = await publicClient.estimateContractGas({
-            address: routerAddress,
-            abi: UNISWAP_V3_ROUTER_ABI,
-            functionName: "exactInputSingle",
-            args: [
-              {
-                tokenIn: WETH_ADDRESS,
-                tokenOut: TOKEN_ADDRESS,
-                fee: feeTier,
-                recipient: wallet.address,
-                amountIn: buyAmount,
-                amountOutMinimum: minTokensOut,
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-            account: wallet,
-            value: buyAmount,
-          })
-
-          const gasLimit = (gasEstimate * 120n) / 100n
-          const gasPrice = await publicClient.getGasPrice()
-
-          const txHash = await walletClient.writeContract({
-            address: routerAddress,
-            abi: UNISWAP_V3_ROUTER_ABI,
-            functionName: "exactInputSingle",
-            args: [
-              {
-                tokenIn: WETH_ADDRESS,
-                tokenOut: TOKEN_ADDRESS,
-                fee: feeTier,
-                recipient: wallet.address,
-                amountIn: buyAmount,
-                amountOutMinimum: minTokensOut,
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-            value: buyAmount,
-            gas: gasLimit,
-            gasPrice: gasPrice,
-          })
-
-          console.log(`[MM Agent] Buy transaction (ETH) sent: ${txHash}`)
-          const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-          if (receipt.status === "success") {
-            console.log(`[MM Agent] Buy successful! TX: ${txHash}`)
-            buyTxHash = txHash
-          }
-        }
-      } catch (error: any) {
-        lastError = error.message || error.toString()
-        console.log(`[MM Agent] Best pool fee tier ${feeTier} failed: ${lastError}`)
-
-        if (lastError.includes("insufficient funds")) {
-          console.error(`[MM Agent] Insufficient funds for gas. Please fund the wallet.`)
-        }
-      }
-
-      if (!buyTxHash) {
-        const error = `Trade failed with best pool: ${lastError}`
+      if (!success) {
         console.error(`[MM Agent] Buy failed: ${error}`)
-        await this.logActivity("buy_failed", error, { wallet: wallet.address })
+        await this.logActivity("buy_failed", error || "Unknown error during swap", { wallet: wallet.address })
         return { success: false, error }
       }
 
       // Record the trade
-      await this.recordTrade("buy", buyAmount, minTokensOut, buyTxHash, wallet.address)
+      await this.recordTrade("buy", buyAmount, minTokensOut, txHash!, wallet.address)
 
       await this.logActivity("buy_executed", `Bought ${formatUnits(minTokensOut, 18)} ${TOKEN_SYMBOL}`, {
         wallet: wallet.address,
-        txHash: buyTxHash,
+        txHash: txHash,
         amountIn: formatUnits(buyAmount, 18),
         currency: useWETH ? "WETH" : "ETH",
         amountOut: formatUnits(minTokensOut, 18),
       })
 
-      if (buyTxHash) {
+      if (txHash) {
         try {
           const ethSpent = Number(formatUnits(buyAmount, 18))
           const tokensReceived = Number(formatUnits(minTokensOut, 18))
@@ -515,7 +399,7 @@ export class MarketMakerAgentService {
 
       await this.updateLastBuyTime()
 
-      return { success: true, txHash: buyTxHash }
+      return { success: true, txHash: txHash }
     } catch (error: any) {
       console.error("[MM Agent] Buy execution error:", error.message)
       await this.logActivity("buy_error", error.message || "Unknown error during buy", { wallet: wallet.address })
@@ -594,7 +478,7 @@ export class MarketMakerAgentService {
           console.log(`  Profit: ${profitPercent.toFixed(2)}%`)
 
           if (profitPercent < 10) {
-            const message = `Not profitable yet. Current profit: ${profitPercent.toFixed(2)}%, need >10%`
+            const message = `Not profitable yet. Current profit: ${profitPercent.toFixed(2)}%`
             console.log(`[MM Agent] ${message}`)
             await this.logActivity("sell_skipped", message, { wallet: wallet.address })
             return { success: false, error: message }
@@ -654,91 +538,12 @@ export class MarketMakerAgentService {
         console.log(`[MM Agent] Approval confirmed, proceeding with swap...`)
       }
 
-      // Get the best pool by liquidity and use its fee tier
-      const bestPool = await this.getBestPoolByLiquidity(publicClient, TOKEN_ADDRESS, chainId)
+      // Execute the swap
+      const { success, txHash, error } = await this.executeSwap(agent, "sell", this.walletService)
 
-      if (!bestPool) {
-        const error = "No liquidity pool found for this token"
-        console.error(`[MM Agent] ${error}`)
-        await this.logActivity("sell_failed", error, { wallet: wallet.address })
-        return { success: false, error }
-      }
-
-      const feeTier = bestPool.fee
-
-      let sellTxHash: string | undefined
-      let lastError = ""
-
-      try {
-        console.log(`[MM Agent] Executing sell with best pool fee tier ${feeTier} (${feeTier / 10000}%)`)
-
-        const gasEstimate = await publicClient.estimateContractGas({
-          address: routerAddress,
-          abi: UNISWAP_V3_ROUTER_ABI,
-          functionName: "exactInputSingle",
-          args: [
-            {
-              tokenIn: TOKEN_ADDRESS, // Use configured token
-              tokenOut: WETH_ADDRESS,
-              fee: feeTier,
-              recipient: wallet.address,
-              amountIn: sellAmount,
-              amountOutMinimum: minEthOutWithSlippage,
-              sqrtPriceLimitX96: 0n,
-            },
-          ],
-          account: wallet,
-        })
-
-        const gasLimit = (gasEstimate * 120n) / 100n
-        console.log(`[MM Agent] Gas estimate: ${gasEstimate}, using limit: ${gasLimit}`)
-
-        const gasPrice = await publicClient.getGasPrice()
-        console.log(`[MM Agent] Current gas price: ${formatUnits(gasPrice, 9)} gwei`)
-
-        const txHash = await walletClient.writeContract({
-          address: routerAddress,
-          abi: UNISWAP_V3_ROUTER_ABI,
-          functionName: "exactInputSingle",
-          args: [
-            {
-              tokenIn: TOKEN_ADDRESS, // Use configured token
-              tokenOut: WETH_ADDRESS,
-              fee: feeTier,
-              recipient: wallet.address,
-              amountIn: sellAmount,
-              amountOutMinimum: minEthOutWithSlippage,
-              sqrtPriceLimitX96: 0n,
-            },
-          ],
-          gas: gasLimit,
-          gasPrice: gasPrice,
-        })
-
-        console.log(`[MM Agent] Sell transaction sent: ${txHash}`)
-
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
-
-        if (receipt.status === "success") {
-          console.log(`[MM Agent] Sell successful! TX: ${txHash}`)
-          sellTxHash = txHash
-        } else {
-          lastError = `Transaction reverted for fee tier ${feeTier}`
-          console.log(`[MM Agent] ${lastError}`)
-        }
-      } catch (error: any) {
-        lastError = error.message || error.toString()
-        console.log(`[MM Agent] Best pool fee tier ${feeTier} failed: ${lastError}`)
-
-        if (lastError.includes("insufficient funds")) {
-          console.error(`[MM Agent] Insufficient funds for gas. Please fund the wallet.`)
-        }
-      }
-
-      if (!sellTxHash) {
-        const error = `Trade failed with best pool: ${lastError}`
+      if (!success) {
         console.error(`[MM Agent] Sell failed: ${error}`)
-        await this.logActivity("sell_failed", error, { wallet: wallet.address })
+        await this.logActivity("sell_failed", error || "Unknown error during swap", { wallet: wallet.address })
         return { success: false, error }
       }
 
@@ -787,14 +592,14 @@ export class MarketMakerAgentService {
       }
 
       // Record the trade
-      await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash, wallet.address)
+      await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, txHash!, wallet.address)
 
       await this.logActivity(
         "sell_executed",
         `Sold ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL} for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
         {
           wallet: wallet.address,
-          txHash: sellTxHash,
+          txHash: txHash,
           amountIn: formatUnits(sellAmount, 18),
           amountOut: formatUnits(minEthOutWithSlippage, 18),
         },
@@ -803,7 +608,7 @@ export class MarketMakerAgentService {
       // Update last sell time
       await this.updateLastSellTime()
 
-      return { success: true, txHash: sellTxHash }
+      return { success: true, txHash: txHash }
     } catch (error: any) {
       console.error("[MM Agent] Sell execution error:", error.message)
       await this.logActivity("error", `Sell failed: ${error.message}`, {
@@ -1559,6 +1364,9 @@ export class MarketMakerAgentService {
       pro_mode: false, // Default pro mode to false
       max_mode: false, // Default max mode to false
       volume_generated: BigInt(0), // Initialize volume_generated as BigInt
+      prefer_uniswap_v4: false, // Default V4 preference to false
+      v4_hooks_whitelist: [], // Default V4 hooks whitelist to empty
+      min_pool_liquidity: "0", // Default min pool liquidity to 0
     })
   }
 
@@ -1725,6 +1533,182 @@ export class MarketMakerAgentService {
       success: successCount > 0,
       results,
     }
+  }
+
+  // Add executeSwap method
+  async executeSwap(
+    config: MMAgentConfig,
+    swapType: "buy" | "sell",
+    walletService: AgentWalletService,
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const privateKey = await walletService.getWalletPrivateKey(config.wallet_address)
+    if (!privateKey) throw new Error(`No private key found for wallet ${config.wallet_address}`)
+
+    const account = privateKeyToAccount(privateKey as `0x${string}`)
+    const walletClient = createWalletClient({
+      account,
+      chain: base,
+      transport: http(getRpcUrl()),
+    })
+
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(getRpcUrl()),
+    })
+
+    try {
+      const tokenIn = swapType === "buy" ? WETH_ADDRESS : (config.token_address as Address)
+      const tokenOut = swapType === "buy" ? (config.token_address as Address) : WETH_ADDRESS
+      const amount = swapType === "buy" ? parseEther(config.buy_amount_eth) : parseUnits(config.buy_amount_eth, 18)
+
+      const preferV4 = config.prefer_uniswap_v4 ?? false
+
+      if (preferV4) {
+        try {
+          console.log(`[MM Agent] Attempting V4 swap (${swapType}) for ${config.token_symbol}`)
+          const result = await uniswapV4Service.executeSwap({
+            tokenIn,
+            tokenOut,
+            amount,
+            slippage: 0.5,
+            deadline: Math.floor(Date.now() / 1000) + 60 * 20,
+            walletClient,
+            publicClient,
+            hooksWhitelist: config.v4_hooks_whitelist || [],
+          })
+
+          console.log(`[MM Agent] V4 swap successful: ${result.txHash}`)
+          return { txHash: result.txHash, amountOut: result.amountOut.toString(), success: true }
+        } catch (v4Error) {
+          console.log(`[MM Agent] V4 swap failed, falling back to V3: ${v4Error}`)
+          // Continue to V3 fallback
+        }
+      }
+
+      console.log(`[MM Agent] Executing V3 swap (${swapType}) for ${config.token_symbol}`)
+      const txHash = await this.executeV3Swap(walletClient, publicClient, tokenIn, tokenOut, amount)
+      if (!txHash) {
+        return { success: false, error: "V3 swap failed" }
+      }
+      return { txHash, amountOut: "0", success: true }
+    } catch (error: any) {
+      console.error(`[MM Agent] Swap execution failed:`, error)
+      return {
+        success: false,
+        error: error.message || `Failed to execute ${swapType}`,
+      }
+    }
+  }
+
+  // Add executeV3Swap method
+  private async executeV3Swap(
+    walletClient: any,
+    publicClient: any,
+    tokenIn: Address,
+    tokenOut: Address,
+    amountIn: bigint,
+  ): Promise<string | undefined> {
+    try {
+      const config = await this.getConfig()
+      const bestPool = await this.getBestPoolByLiquidity(publicClient, tokenIn, this.chainId)
+
+      if (!bestPool) {
+        const error = "No V3 liquidity pool found for this token"
+        console.error(`[MM Agent] ${error}`)
+        await this.logActivity("swap_failed", error, { wallet: walletClient.account.address })
+        return undefined
+      }
+
+      const feeTier = bestPool.fee
+      const routerAddress = UNISWAP_V3_ROUTER[this.chainId as keyof typeof UNISWAP_V3_ROUTER] as Address
+
+      console.log(`[MM Agent] Executing V3 swap with fee tier ${feeTier / 10000}%`)
+
+      // Estimate output for slippage calculation
+      const estimatedAmountOut = await this.getQuote(tokenIn, tokenOut, amountIn)
+      const amountOutMinimum = (estimatedAmountOut * 95n) / 100n // 5% slippage
+
+      const gasEstimate = await publicClient.estimateContractGas({
+        address: routerAddress,
+        abi: UNISWAP_V3_ROUTER_ABI,
+        functionName: "exactInputSingle",
+        args: [
+          {
+            tokenIn,
+            tokenOut,
+            fee: feeTier,
+            recipient: walletClient.account.address,
+            amountIn,
+            amountOutMinimum,
+            sqrtPriceLimitX96: 0n,
+          },
+        ],
+        account: walletClient.account,
+      })
+
+      const gasLimit = (gasEstimate * 120n) / 100n
+      const gasPrice = await publicClient.getGasPrice()
+
+      const txHash = await walletClient.writeContract({
+        address: routerAddress,
+        abi: UNISWAP_V3_ROUTER_ABI,
+        functionName: "exactInputSingle",
+        args: [
+          {
+            tokenIn,
+            tokenOut,
+            fee: feeTier,
+            recipient: walletClient.account.address,
+            amountIn,
+            amountOutMinimum,
+            sqrtPriceLimitX96: 0n,
+          },
+        ],
+        gas: gasLimit,
+        gasPrice,
+      })
+
+      console.log(`[MM Agent] V3 swap transaction sent: ${txHash}`)
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+      if (receipt.status === "success") {
+        console.log(`[MM Agent] V3 swap successful!`)
+        return txHash
+      } else {
+        console.error(`[MM Agent] V3 swap failed: Transaction reverted`)
+        await this.logActivity("swap_failed", "V3 swap transaction reverted", {
+          txHash,
+          wallet: walletClient.account.address,
+        })
+        return undefined
+      }
+    } catch (error: any) {
+      console.error(`[MM Agent] V3 swap error:`, error)
+      await this.logActivity("swap_failed", `V3 swap error: ${error.message}`, {
+        wallet: walletClient.account.address,
+        error: error.message,
+      })
+      return undefined
+    }
+  }
+
+  // Add getConfig method
+  private async getConfig(): Promise<MMAgentConfig> {
+    const supabase = await createClient() // Assuming createClient is available in this scope
+    const { data, error } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).maybeSingle()
+
+    if (error) throw error
+    if (!data) throw new Error("Agent not found")
+
+    return data as MMAgentConfig
+  }
+
+  // Add getWalletClients method
+  private async getWalletClients() {
+    const agentConfig = await this.getConfig()
+    const wallet = await this.getNextWallet(agentConfig)
+    const { publicClient, walletClient } = await this.createClients(wallet)
+    return { walletClient, publicClient, wallet }
   }
 }
 

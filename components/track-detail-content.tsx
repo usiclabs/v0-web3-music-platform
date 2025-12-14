@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight, ImageIcon } from 'lucide-react'
+import { Share2, ExternalLink, Zap, Loader2, AlertCircle, Info, Flag, ArrowLeftRight, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { PlayTrackButton } from "@/components/play-track-button"
@@ -11,7 +11,7 @@ import { LikeButton } from "@/components/like-button"
 import { ReportTrackDialog } from "@/components/report-track-dialog"
 import { TrackAnalyticsCharts } from "@/components/track-analytics-charts"
 import { VideoPlayer } from "@/components/video-player"
-import { useEffect, useState, useRef, useCallback, useMemo } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
@@ -33,6 +33,8 @@ import { TrackComments } from "@/components/track-comments"
 import SimilarTracks from "@/components/similar-tracks"
 import SocialShareButtons from "@/components/social-share-buttons"
 import ThumbnailUploadDialog from "@/components/thumbnail-upload-dialog"
+import { BoostModal } from "@/components/boost-modal"
+import type { Address } from "viem"
 
 const WETH_ADDRESS = {
   8453: "0x4200000000000000000000000000000000000006",
@@ -65,6 +67,7 @@ export function TrackDetailContent({
   const [isVisible, setIsVisible] = useState(false)
   const [statsVisible, setStatsVisible] = useState(false)
   const [analyticsVisible, setAnalyticsVisible] = useState(false)
+  const [boostModalOpen, setBoostModalOpen] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
   const analyticsRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
@@ -106,7 +109,6 @@ export function TrackDetailContent({
     setAnalyticsVisible(true)
   }, [])
 
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -123,7 +125,7 @@ export function TrackDetailContent({
       },
       {
         threshold: 0.1,
-        rootMargin: '50px' // Start loading slightly before element enters viewport
+        rootMargin: "50px", // Start loading slightly before element enters viewport
       },
     )
 
@@ -393,9 +395,7 @@ export function TrackDetailContent({
                 />
               </div>
             ) : (
-              <div
-                className="relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary/20 via-card/50 to-accent/20 backdrop-blur-xl border border-border/50 group"
-              >
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-primary/20 via-card/50 to-accent/20 backdrop-blur-xl border border-border/50 group">
                 <div className="absolute inset-0 bg-primary/30 blur-lg rounded-lg animate-pulse" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -442,6 +442,16 @@ export function TrackDetailContent({
                   Swap
                 </Button>
               )}
+              {isTokenized && isAdmin && (
+                <Button
+                  onClick={() => setBoostModalOpen(true)}
+                  size="lg"
+                  className="flex-1 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 hover:scale-105 hover:shadow-2xl hover:shadow-accent/30 transition-all duration-300"
+                >
+                  <Zap className="h-5 w-5 mr-2" />
+                  Boost
+                </Button>
+              )}
               <LikeButton
                 trackId={track.id}
                 initialLikeCount={likeCount || 0}
@@ -473,6 +483,18 @@ export function TrackDetailContent({
                   title="Edit thumbnail/cover image"
                 >
                   <ImageIcon className="h-5 w-5" />
+                </Button>
+              )}
+              {/* Add Boost button */}
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setBoostModalOpen(true)}
+                  className="bg-transparent hover:bg-primary/10 hover:scale-110 hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                  title="Boost track"
+                >
+                  <Zap className="h-5 w-5" />
                 </Button>
               )}
             </div>
@@ -890,6 +912,18 @@ export function TrackDetailContent({
         isVideo={track.content_type === "video"}
         onSuccess={handleThumbnailUpdate}
       />
+
+      {/* Add BoostModal component */}
+      {isTokenized && (
+        <BoostModal
+          open={boostModalOpen}
+          onOpenChange={setBoostModalOpen}
+          tokenAddress={track.coin_address as Address}
+          tokenSymbol={track.coin_symbol || "TOKEN"}
+          artistAddress={track.artist_id as Address}
+          artistName={track.artist?.artist_name || "Artist"}
+        />
+      )}
     </div>
   )
 }

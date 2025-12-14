@@ -11,7 +11,7 @@ export interface AutonomousArtistConfig {
   generation_frequency_hours: number
   auto_list_on_platform: boolean
   total_songs_generated: number
-  total_spent_usdc: string
+  total_spent_usdc: number
   last_generation_at: string | null
   created_at: string
   artist_style?: string
@@ -21,7 +21,7 @@ export interface AutonomousArtistConfig {
   generation_cost_usdc?: number
   listing_cost_usdc?: number
   daily_spent_usdc?: number
-  total_songs_listing?: number
+  total_songs_listed?: number
   total_songs_earning?: number
   total_earnings_usdc?: number
   next_generation_at?: string | null
@@ -132,10 +132,10 @@ export class AutonomousArtistAgentService {
         listing_cost_usdc: 1.0,
         daily_spent_usdc: 0,
         total_songs_generated: 0,
-        total_songs_listing: 0,
+        total_songs_listed: 0,
         total_songs_earning: 0,
-        total_spent_usdc: "0",
-        total_earnings_usdc: "0",
+        total_spent_usdc: 0,
+        total_earnings_usdc: 0,
       })
       .select()
       .single()
@@ -353,9 +353,9 @@ export class AutonomousArtistAgentService {
         .update({
           last_generation_at: now.toISOString(),
           total_songs_generated: agent.total_songs_generated + 1,
-          total_spent_usdc: (Number.parseFloat(agent.total_spent_usdc) + totalSpent).toString(),
+          total_spent_usdc: Number.parseFloat(agent.total_spent_usdc) + totalSpent,
           daily_spent_usdc: Number.parseFloat(agent.daily_spent_usdc || 0) + totalSpent,
-          total_songs_listing: listedTrackId ? agent.total_songs_listing + 1 : agent.total_songs_listing,
+          total_songs_listed: listedTrackId ? agent.total_songs_listed + 1 : agent.total_songs_listed,
         })
         .eq("id", this.agentId)
 
@@ -379,7 +379,7 @@ export class AutonomousArtistAgentService {
   static async getStats(agentId: string): Promise<{
     config: AutonomousArtistConfig
     totalGenerated: number
-    totalSpent: string
+    totalSpent: number
     recentActivity: any[]
   }> {
     const supabase = await createClient()
@@ -396,7 +396,7 @@ export class AutonomousArtistAgentService {
     return {
       config: agent,
       totalGenerated: agent?.total_songs_generated || 0,
-      totalSpent: agent?.total_spent_usdc || "0",
+      totalSpent: agent?.total_spent_usdc || 0,
       recentActivity: activities || [],
     }
   }

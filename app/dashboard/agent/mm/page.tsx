@@ -102,6 +102,7 @@ interface MMAgentConfig {
   burst_mode?: boolean
   burst_trades_count?: number
   burst_delay_seconds?: number
+  prefer_uniswap_v4?: boolean // ADDED: V4 preference
 }
 
 interface MMStats {
@@ -238,6 +239,7 @@ export default function MarketMakerAgentPage() {
   const [showWalletsModal, setShowWalletsModal] = useState(false)
   const [wallets, setWallets] = useState<any[]>([])
   const [activities, setActivities] = useState<MMActivity[]>([])
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false) // ADDED: for loading state in save config
 
   const [fundingWallet, setFundingWallet] = useState<any>(null)
   const [fundAmount, setFundAmount] = useState("")
@@ -253,9 +255,11 @@ export default function MarketMakerAgentPage() {
   const [isSelling, setIsSelling] = useState(false)
   const [isSellingAll, setIsSellingAll] = useState(false) // Added for selling all specific wallet
 
+  const [preferV4, setPreferV4] = useState(false) // ADDED: V4 preference state
+
   const isMobile = useIsMobile()
 
-  const { data: configData, isLoading: isLoadingConfig } = useSWR<{ config: MMAgentConfig }>(
+  const { data: configData, isLoading: isLoadingConfigData } = useSWR<{ config: MMAgentConfig }>(
     address ? `/api/agents/mm/config?ownerAddress=${address}` : null,
     (url) => fetch(url).then((res) => res.json()),
   )
@@ -269,6 +273,8 @@ export default function MarketMakerAgentPage() {
   useEffect(() => {
     if (configData?.config) {
       setConfig(configData.config)
+      // ADDED: initialize V4 preference
+      setPreferV4(configData.config.prefer_uniswap_v4 ?? false)
     }
   }, [configData])
 
@@ -621,7 +627,39 @@ export default function MarketMakerAgentPage() {
     })
   }
 
-  if (isLoadingConfig) {
+  const handleSaveConfig = async () => {
+    try {
+      setIsLoadingConfig(true)
+
+      const configPayload = {
+        agentId: config.id,
+        buy_amount_eth: config.buy_amount_eth,
+        buy_interval_minutes: config.buy_interval_minutes,
+        sell_interval_minutes: config.sell_interval_minutes,
+        burst_trades_count: config.burst_trades_count,
+        burst_delay_seconds: config.burst_delay_seconds,
+        // ADDED: include V4 preference in config save
+        prefer_uniswap_v4: preferV4,
+      }
+
+      const response = await fetch("/api/agents/mm/config", {
+        method: "POST", // Changed from PUT to POST to align with updates
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(configPayload),
+      })
+
+      if (!response.ok) throw new Error("Failed to save config")
+
+      toast.success("MM Agent config updated")
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`) // Adjusted mutate to match the URL
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save config")
+    } finally {
+      setIsLoadingConfig(false)
+    }
+  }
+
+  if (isLoadingConfigData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -966,6 +1004,58 @@ export default function MarketMakerAgentPage() {
                 </div>
               )}
             </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* ADDED: V4 Pool Selector Toggle */}
+        <Card className="bg-card/50 backdrop-blur border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-400" />
+              Pool Version Selection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/50">
+              <div>
+                <p className="font-medium">Uniswap V4 Support</p>
+                <p className="text-sm text-muted-foreground">
+                  When enabled, agent will prefer V4 pools when available and fall back to V3
+                </p>
+              </div>
+              <Switch checked={preferV4} onCheckedChange={setPreferV4} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <p className="font-medium text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  V4 Advantages
+                </p>
+                <ul className="mt-2 space-y-1 text-emerald-300/80">
+                  <li>• Lower gas fees via flash accounting</li>
+                  <li>• Native ETH support (no WETH wrap)</li>
+                  <li>• Singleton architecture benefits</li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="font-medium text-blue-400 flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Safe Fallback
+                </p>
+                <ul className="mt-2 space-y-1 text-blue-300/80">
+                  <li>• Automatic V3 fallback if V4 unavailable</li>
+                  <li>• Maintains current trading performance</li>
+                  <li>• Zero downtime migration</li>
+                </ul>
+              </div>
+            </div>
+
+            <Button onClick={handleSaveConfig} disabled={isLoadingConfig} className="w-full">
+              {isLoadingConfig ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save Pool Preferences
+            </Button>
           </CardContent>
         </Card>
       </div>

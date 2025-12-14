@@ -4,7 +4,7 @@ import { useState } from "react"
 import { TrackCard } from "@/components/track-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { TrackWithArtist } from "@/types/database"
-import { DollarSign, Music, Play, Users, Radio, Sparkles, TrendingUp } from "lucide-react"
+import { DollarSign, Music, Play, Users, Radio, Sparkles, TrendingUp, Zap } from "lucide-react"
 import { FollowButton } from "@/components/follow-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ListeningHistory } from "@/components/listening-history"
@@ -14,8 +14,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CopyTokenAddressButton } from "@/components/copy-token-address-button"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import { BoostModal } from "@/components/boost-modal"
 import { VerifiedBadge } from "@/components/verified-badge"
-import type { Address } from "viem"
 
 interface ArtistPageClientProps {
   artist: any
@@ -51,6 +51,7 @@ export function ArtistPageClient({
   aiTracks,
 }: ArtistPageClientProps) {
   const [showSwapModal, setShowSwapModal] = useState(false)
+  const [showBoostModal, setShowBoostModal] = useState(false)
 
   function formatAddress(addr: string) {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -247,6 +248,14 @@ export function ArtistPageClient({
                   >
                     Swap
                   </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 h-8 text-xs bg-accent hover:bg-accent/90 text-accent-foreground"
+                    onClick={() => setShowBoostModal(true)}
+                  >
+                    <Zap className="h-3 w-3 mr-1" />
+                    Boost
+                  </Button>
                 </div>
               </div>
             )}
@@ -426,10 +435,22 @@ export function ArtistPageClient({
       {/* Native Swap Modal */}
       {showSwapModal && (artist as any).profile_token_address && (
         <ProfileTokenSwapModal
-          tokenAddress={(artist as any).profile_token_address as Address}
-          tokenName={artist.artist_name || "Profile Token"}
-          tokenSymbol={artist.artist_name?.toUpperCase().slice(0, 4)}
+          isOpen={showSwapModal}
           onClose={() => setShowSwapModal(false)}
+          tokenAddress={(artist as any).profile_token_address}
+          artistName={artist.artist_name}
+        />
+      )}
+
+      {/* Boost Modal */}
+      {showBoostModal && (
+        <BoostModal
+          open={showBoostModal}
+          onOpenChange={setShowBoostModal}
+          artistAddress={address as `0x${string}`}
+          artistName={artist.artist_name}
+          tokenAddress={(artist as any).profile_token_address as `0x${string}`}
+          tokenSymbol={artist.profile_token_symbol || "TOKEN"}
         />
       )}
     </>
