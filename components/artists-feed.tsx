@@ -42,12 +42,20 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
   useEffect(() => {
     const fetchMetrics = async () => {
       const tokenizedArtists = artists.filter((a) => a.profile_token_address)
+      console.log(`[v0] Fetching metrics for ${tokenizedArtists.length} tokenized artists`)
+
       const metricsPromises = tokenizedArtists.map(async (artist) => {
         try {
-          const res = await fetch(`/api/token/metrics/${artist.profile_token_address}`)
+          const tokenAddress = artist.profile_token_address
+          console.log(`[v0] Fetching metrics for token: ${tokenAddress}`)
+
+          const res = await fetch(`/api/token/metrics/${tokenAddress}`)
           if (res.ok) {
             const metrics = await res.json()
+            console.log(`[v0] Got metrics for ${artist.wallet_address}:`, metrics)
             return { address: artist.wallet_address, marketCap: metrics.marketCap || 0 }
+          } else {
+            console.error(`[v0] API returned status ${res.status} for ${tokenAddress}`)
           }
         } catch (error) {
           console.error(`[v0] Failed to fetch metrics for ${artist.wallet_address}:`, error)
@@ -63,6 +71,7 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
         },
         {} as Record<string, { marketCap: number }>,
       )
+      console.log(`[v0] Market cap metrics map:`, metricsMap)
       setProfileTokenMetrics(metricsMap)
     }
 
