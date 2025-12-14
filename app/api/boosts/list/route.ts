@@ -1,34 +1,33 @@
+import { createAdminClient } from "@/lib/supabase/admin"
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const userAddress = req.nextUrl.searchParams.get("address")
+    const ownerAddress = request.headers.get("x-user-address")
 
-    if (!userAddress) {
-      return NextResponse.json({ error: "Address required" }, { status: 400 })
+    if (!ownerAddress) {
+      return NextResponse.json({ message: "User address required" }, { status: 401 })
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data: boosts, error } = await supabase
       .from("boosts")
-      .select(`
-        *,
-        boost_wallets(*),
-        boost_activity(*)
-      `)
-      .eq("boosted_by_address", userAddress.toLowerCase())
+      .select("*")
+      .eq("owner_address", ownerAddress)
       .order("created_at", { ascending: false })
 
-    if (error) throw error
+    if (error) {
+      console.error("[Boosts List] Error:", error)
+      return NextResponse.json({ message: error.message }, { status: 500 })
+    }
 
-    return NextResponse.json({
-      success: true,
-      boosts: boosts || [],
-    })
-  } catch (error: any) {
-    console.error("[API] Boosts list error:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ boosts })
+  } catch (error) {
+    console.error("[Boosts List API] Error:", error)
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }

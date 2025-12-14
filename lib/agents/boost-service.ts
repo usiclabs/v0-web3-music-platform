@@ -1,18 +1,21 @@
 import { createAdminClient } from "@/lib/supabase/admin"
-import { privateKeyToAccount, generatePrivateKey } from "viem/accounts"
-import { createPublicClient, createWalletClient, http } from "viem"
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
+import { encrypt } from "@/lib/crypto"
+import { createPublicClient, http } from "viem"
 import { base } from "viem/chains"
-import { parseUnits, type Address } from "viem"
-import { encrypt, decrypt } from "@/lib/crypto"
-import { UNISWAP_V3_ROUTER, UNISWAP_V3_ROUTER_ABI } from "@/lib/web3/contracts"
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(),
+})
 
 export class BoostService {
   async createBoost(
-    boostedByAddress: Address,
-    artistAddress: Address,
-    tokenAddress: Address,
+    ownerAddress: string,
+    artistAddress: string,
+    tokenAddress: string,
     tokenSymbol: string,
-    fundingAmountEth: number,
+    initialEthFunding: bigint,
   ) {
     const supabase = createAdminClient()
 
@@ -20,139 +23,136 @@ export class BoostService {
     const { data: boost, error: boostError } = await supabase
       .from("boosts")
       .insert({
-        boosted_by_address: boostedByAddress.toLowerCase(),
-        artist_address: artistAddress.toLowerCase(),
-        token_address: tokenAddress.toLowerCase(),
+        owner_address: ownerAddress,
+        artist_address: artistAddress,
+        token_address: tokenAddress,
         token_symbol: tokenSymbol,
-        initial_eth_funding: fundingAmountEth,
-        current_balance: fundingAmountEth,
+        initial_eth_funding: initialEthFunding.toString(),
+        current_balance: initialEthFunding.toString(),
+        status: "active",
       })
       .select()
       .single()
 
-    if (boostError || !boost) throw new Error(`Failed to create boost: ${boostError?.message}`)
+    if (boostError) throw boostError
 
+    // Create wallet for boost
     const privateKey = generatePrivateKey()
-    const wallet = privateKeyToAccount(privateKey)
+    const account = privateKeyToAccount(privateKey)
     const encryptedKey = encrypt(privateKey)
 
-    const { data: boostWallet, error: walletError } = await supabase
-      .from("boost_wallets")
-      .insert({
-        boost_id: boost.id,
-        wallet_address: wallet.address,
-        private_key_encrypted: encryptedKey,
-        eth_balance: fundingAmountEth,
-      })
-      .select()
-      .single()
+    const { error: walletError } = await supabase.from("boost_wallets").insert({
+      boost_id: boost.id,
+      wallet_address: account.address,
+      private_key_encrypted: encryptedKey,
+    })
 
-    if (walletError || !boostWallet) throw new Error(`Failed to create wallet: ${walletError?.message}`)
+    if (walletError) throw walletError
 
-    return { boost, wallet: boostWallet }
+    return {
+      boostId: boost.id,
+      walletAddress: account.address,
+      initialFunding: initialEthFunding.toString(),
+    }
   }
 
-  async getBoostsByUser(userAddress: Address) {
+  async getBoosts(ownerAddress: string) {
     const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from("boosts")
-      .select("*, boost_wallets(*), boost_activity(*)")
-      .eq("boosted_by_address", userAddress.toLowerCase())
+      .select("*")
+      .eq("owner_address", ownerAddress)
       .order("created_at", { ascending: false })
 
-    if (error) throw new Error(`Failed to fetch boosts: ${error.message}`)
+    if (error) throw error
     return data
   }
 
-  async logActivity(
+  async getBoostDetails(boostId: string) {
+    const supabase = createAdminClient()
+
+    const { data: boost, error: boostError } = await supabase.from("boosts").select("*").eq("id", boostId).single()
+
+    if (boostError) throw boostError
+
+    const { data: wallet, error: walletError } = await supabase
+      .from("boost_wallets")
+      .select("*")
+      .eq("boost_id", boostId)
+      .single()
+
+    if (walletError) throw walletError
+
+    const { data: activity, error: activityError } = await supabase
+      .from("boost_activity")
+      .select("*")
+      .eq("boost_id", boostId)
+      .order("created_at", { ascending: false })
+
+    if (activityError) throw activityError
+
+    return { boost, wallet, activity }
+  }
+
+  async updateBoostBalance(boostId: string, newBalance: bigint) {
+    const supabase = createAdminClient()
+
+    const { error } = await supabase
+      .from("boosts")
+      .update({
+        current_balance: newBalance.toString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", boostId)
+
+    if (error) throw error
+  }
+
+  async logBoostActivity(
     boostId: string,
     activityType: string,
-    data: {
-      txHash?: string
-      tokenAmount?: number
-      ethAmount?: number
-      pricePerToken?: number
-      profitLoss?: number
-      slippage?: number
-      gasUsed?: number
-      status?: string
-      error?: string
-    },
+    txHash?: string,
+    amountTraded?: bigint,
+    profitLoss?: bigint,
+    gasFee?: bigint,
   ) {
     const supabase = createAdminClient()
 
     const { error } = await supabase.from("boost_activity").insert({
       boost_id: boostId,
       activity_type: activityType,
-      tx_hash: data.txHash,
-      token_amount: data.tokenAmount,
-      eth_amount: data.ethAmount,
-      price_per_token: data.pricePerToken,
-      profit_loss: data.profitLoss,
-      slippage_percent: data.slippage,
-      gas_used: data.gasUsed,
-      status: data.status || "completed",
-      error_message: data.error,
+      tx_hash: txHash,
+      amount_traded: amountTraded?.toString(),
+      profit_loss: profitLoss?.toString(),
+      gas_fee: gasFee?.toString(),
     })
 
-    if (error) throw new Error(`Failed to log activity: ${error.message}`)
+    if (error) throw error
   }
 
-  async executeBoostTrade(boostId: string, tokenAddress: Address, tradeType: "buy" | "sell") {
+  async pauseBoost(boostId: string) {
     const supabase = createAdminClient()
 
-    // Get boost and wallet
-    const { data: boost } = await supabase.from("boosts").select("*").eq("id", boostId).single()
+    const { error } = await supabase.from("boosts").update({ status: "paused" }).eq("id", boostId)
 
-    if (!boost) throw new Error("Boost not found")
+    if (error) throw error
+  }
 
-    const { data: boostWallet } = await supabase.from("boost_wallets").select("*").eq("boost_id", boostId).single()
+  async resumeBoost(boostId: string) {
+    const supabase = createAdminClient()
 
-    if (!boostWallet) throw new Error("Boost wallet not found")
+    const { error } = await supabase.from("boosts").update({ status: "active" }).eq("id", boostId)
 
-    const decryptedKey = decrypt(boostWallet.private_key_encrypted)
-    const account = privateKeyToAccount(decryptedKey as `0x${string}`)
+    if (error) throw error
+  }
 
-    const publicClient = createPublicClient({ chain: base, transport: http() })
-    const walletClient = createWalletClient({ account, chain: base, transport: http() })
+  async stopBoost(boostId: string) {
+    const supabase = createAdminClient()
 
-    try {
-      const routerAddress = UNISWAP_V3_ROUTER[8453 as keyof typeof UNISWAP_V3_ROUTER] as Address
+    const { error } = await supabase.from("boosts").update({ status: "stopped" }).eq("id", boostId)
 
-      const amountIn = parseUnits("0.0001", 18) // 0.0001 ETH minimum
-
-      const txHash = await walletClient.writeContract({
-        address: routerAddress,
-        abi: UNISWAP_V3_ROUTER_ABI,
-        functionName: "exactInputSingle",
-        args: [
-          {
-            tokenIn: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" as Address,
-            tokenOut: tokenAddress,
-            fee: 3000,
-            recipient: account.address,
-            amountIn,
-            amountOutMinimum: 0n,
-            sqrtPriceLimitX96: 0n,
-          },
-        ],
-      })
-
-      await this.logActivity(boostId, tradeType, {
-        txHash,
-        ethAmount: 0.0001,
-        status: "pending",
-      })
-
-      return { success: true, txHash }
-    } catch (error: any) {
-      await this.logActivity(boostId, tradeType, {
-        status: "failed",
-        error: error.message,
-      })
-      throw error
-    }
+    if (error) throw error
   }
 }
 

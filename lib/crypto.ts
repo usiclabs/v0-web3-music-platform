@@ -1,58 +1,35 @@
 import crypto from "crypto"
 
-/**
- * Encryption utilities for storing sensitive data like private keys
- * Uses AES-256-CBC for encryption with a configurable key
- */
+const ENCRYPTION_ALGORITHM = "aes-256-cbc"
+const WALLET_ENCRYPTION_KEY = process.env.WALLET_ENCRYPTION_KEY || "default-dev-key-32-char-minimum!"
 
-const getEncryptionKey = (): Buffer => {
-  const key = process.env.WALLET_ENCRYPTION_KEY || "default-key-change-in-production-32b"
-  // Ensure key is 32 bytes for AES-256
-  const keyBuffer = Buffer.from(key.padEnd(32, "0").substring(0, 32), "utf8")
-  return keyBuffer
+export function encrypt(text: string): string {
+  const iv = crypto.randomBytes(16)
+  const cipher = crypto.createCipheriv(
+    ENCRYPTION_ALGORITHM,
+    Buffer.from(WALLET_ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
+    iv,
+  )
+
+  let encrypted = cipher.update(text)
+  encrypted = Buffer.concat([encrypted, cipher.final()])
+
+  return iv.toString("hex") + ":" + encrypted.toString("hex")
 }
 
-/**
- * Encrypt data using AES-256-CBC
- */
-export function encrypt(data: string): string {
-  try {
-    const key = getEncryptionKey()
-    const iv = crypto.randomBytes(16)
-    const cipher = crypto.createCipheriv("aes-256-cbc", key, iv)
+export function decrypt(text: string): string {
+  const parts = text.split(":")
+  const iv = Buffer.from(parts[0], "hex")
+  const encryptedText = Buffer.from(parts[1], "hex")
 
-    let encrypted = cipher.update(data, "utf8", "hex")
-    encrypted += cipher.final("hex")
+  const decipher = crypto.createDecipheriv(
+    ENCRYPTION_ALGORITHM,
+    Buffer.from(WALLET_ENCRYPTION_KEY.padEnd(32, "0").slice(0, 32)),
+    iv,
+  )
 
-    // Prepend IV to encrypted data (IV doesn't need to be secret)
-    return iv.toString("hex") + ":" + encrypted
-  } catch (error) {
-    console.error("[Crypto] Encryption error:", error)
-    throw error
-  }
-}
+  let decrypted = decipher.update(encryptedText)
+  decrypted = Buffer.concat([decrypted, decipher.final()])
 
-/**
- * Decrypt data using AES-256-CBC
- */
-export function decrypt(encryptedData: string): string {
-  try {
-    const key = getEncryptionKey()
-    const [ivHex, encrypted] = encryptedData.split(":")
-
-    if (!ivHex || !encrypted) {
-      throw new Error("Invalid encrypted data format")
-    }
-
-    const iv = Buffer.from(ivHex, "hex")
-    const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv)
-
-    let decrypted = decipher.update(encrypted, "hex", "utf8")
-    decrypted += decipher.final("utf8")
-
-    return decrypted
-  } catch (error) {
-    console.error("[Crypto] Decryption error:", error)
-    throw error
-  }
+  return decrypted.toString()
 }

@@ -1,90 +1,69 @@
--- Create boosts table for tracking active boosts
-CREATE TABLE IF NOT EXISTS boosts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  boosted_by_address TEXT NOT NULL,
-  artist_address TEXT NOT NULL,
-  token_address TEXT NOT NULL,
-  token_symbol TEXT NOT NULL,
-  initial_usdc_funding NUMERIC NOT NULL,
-  current_balance NUMERIC NOT NULL DEFAULT 0,
-  strategy_type TEXT DEFAULT 'profitable_10', -- 10% profitable strategy
-  is_active BOOLEAN DEFAULT true,
-  started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  ended_at TIMESTAMP WITH TIME ZONE,
-  total_trades INTEGER DEFAULT 0,
-  total_profit_usdc NUMERIC DEFAULT 0,
-  user_earnings NUMERIC DEFAULT 0,
-  artist_earnings NUMERIC DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create boosts table
+CREATE TABLE IF NOT EXISTS public.boosts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_address text NOT NULL,
+  artist_address text NOT NULL,
+  token_address text NOT NULL,
+  token_symbol text,
+  initial_eth_funding numeric NOT NULL,
+  current_balance numeric DEFAULT 0,
+  total_spent_eth numeric DEFAULT 0,
+  total_earned_eth numeric DEFAULT 0,
+  strategy_type text DEFAULT '10-percent-profitable',
+  status text DEFAULT 'active',
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),
+  UNIQUE(owner_address, token_address)
 );
 
--- Create boost wallets table for isolated wallet management
-CREATE TABLE IF NOT EXISTS boost_wallets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  boost_id UUID NOT NULL REFERENCES boosts(id) ON DELETE CASCADE,
-  wallet_address TEXT NOT NULL UNIQUE,
-  private_key_encrypted TEXT NOT NULL,
-  eth_balance NUMERIC DEFAULT 0,
-  usdc_balance NUMERIC DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create boost_wallets table
+CREATE TABLE IF NOT EXISTS public.boost_wallets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  boost_id uuid NOT NULL REFERENCES public.boosts(id) ON DELETE CASCADE,
+  wallet_address text NOT NULL UNIQUE,
+  private_key_encrypted text NOT NULL,
+  created_at timestamp DEFAULT now()
 );
 
--- Create boost activity table for tracking all trades
-CREATE TABLE IF NOT EXISTS boost_activity (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  boost_id UUID NOT NULL REFERENCES boosts(id) ON DELETE CASCADE,
-  activity_type TEXT NOT NULL, -- 'buy', 'sell', 'profit', 'loss'
-  tx_hash TEXT,
-  token_amount NUMERIC,
-  usdc_amount NUMERIC,
-  price_per_token NUMERIC,
-  profit_loss NUMERIC,
-  slippage_percent NUMERIC,
-  gas_used NUMERIC,
-  status TEXT DEFAULT 'completed', -- 'pending', 'completed', 'failed'
-  error_message TEXT,
-  metadata JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Create boost_activity table
+CREATE TABLE IF NOT EXISTS public.boost_activity (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  boost_id uuid NOT NULL REFERENCES public.boosts(id) ON DELETE CASCADE,
+  activity_type text NOT NULL,
+  tx_hash text,
+  amount_traded numeric,
+  profit_loss numeric,
+  gas_fee numeric,
+  created_at timestamp DEFAULT now()
 );
+
+-- Add indexes
+CREATE INDEX IF NOT EXISTS boosts_owner_idx ON boosts(owner_address);
+CREATE INDEX IF NOT EXISTS boosts_artist_idx ON boosts(artist_address);
+CREATE INDEX IF NOT EXISTS boosts_token_idx ON boosts(token_address);
+CREATE INDEX IF NOT EXISTS boost_wallets_boost_idx ON boost_wallets(boost_id);
+CREATE INDEX IF NOT EXISTS boost_activity_boost_idx ON boost_activity(boost_id);
 
 -- Enable RLS
 ALTER TABLE boosts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE boost_wallets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE boost_activity ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for boosts
+-- Boosts RLS policies
 CREATE POLICY "Users can view their own boosts" ON boosts
-  FOR SELECT USING (auth.uid()::text = boosted_by_address OR auth.uid()::text = artist_address);
+  FOR SELECT
+  USING (owner_address = auth.uid()::text OR auth.uid() IS NULL);
 
 CREATE POLICY "Users can create boosts" ON boosts
-  FOR INSERT WITH CHECK (auth.uid()::text = boosted_by_address);
+  FOR INSERT
+  WITH CHECK (owner_address = auth.uid()::text);
 
-CREATE POLICY "Anyone can view public boost activity" ON boosts
-  FOR SELECT USING (true);
+-- Boost wallets RLS policies
+CREATE POLICY "Service role can manage wallets" ON boost_wallets
+  FOR ALL
+  USING (true);
 
--- RLS Policies for boost_wallets (service role only)
-CREATE POLICY "Service can manage boost wallets" ON boost_wallets
-  FOR ALL USING (true);
-
--- RLS Policies for boost_activity
-CREATE POLICY "Users can view boost activity" ON boost_activity
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM boosts 
-      WHERE boosts.id = boost_activity.boost_id
-      AND (auth.uid()::text = boosted_by_address OR auth.uid()::text = artist_address)
-    )
-  );
-
-CREATE POLICY "Service can log activity" ON boost_activity
-  FOR INSERT WITH CHECK (true);
-
--- Create indexes for performance
-CREATE INDEX idx_boosts_boosted_by ON boosts(boosted_by_address);
-CREATE INDEX idx_boosts_artist ON boosts(artist_address);
-CREATE INDEX idx_boosts_token ON boosts(token_address);
-CREATE INDEX idx_boost_activity_boost_id ON boost_activity(boost_id);
-CREATE INDEX idx_boost_wallets_boost_id ON boost_wallets(boost_id);
+-- Boost activity RLS policies
+CREATE POLICY "Users can view their boost activity" ON boost_activity
+  FOR SELECT
+  USING (boost_id IN (SELECT id FROM boosts WHERE owner_address = auth.uid()::text));

@@ -1,70 +1,74 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { useWallet } from "@/lib/web3/wallet-context"
 import { Loader2, Zap } from "lucide-react"
-import type { Address } from "viem"
 
 interface BoostModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tokenAddress: Address
+  artistAddress: string
+  tokenAddress: string
   tokenSymbol: string
-  artistAddress: Address
-  artistName: string
 }
 
-export function BoostModal({
-  open,
-  onOpenChange,
-  tokenAddress,
-  tokenSymbol,
-  artistAddress,
-  artistName,
-}: BoostModalProps) {
-  const [fundingAmount, setFundingAmount] = useState("0.01")
+export function BoostModal({ open, onOpenChange, artistAddress, tokenAddress, tokenSymbol }: BoostModalProps) {
+  const [ethAmount, setEthAmount] = useState("0.01")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-  const { address: userAddress } = useWallet()
+
+  const MIN_ETH = 0.001
+  const MAX_ETH = 10
 
   const handleCreateBoost = async () => {
-    if (!userAddress) {
-      toast({ title: "Connect wallet", description: "Please connect your wallet to create a boost" })
-      return
-    }
-
-    setIsLoading(true)
     try {
+      const amount = Number.parseFloat(ethAmount)
+
+      if (isNaN(amount) || amount < MIN_ETH || amount > MAX_ETH) {
+        toast({
+          title: "Invalid amount",
+          description: `Boost amount must be between ${MIN_ETH} and ${MAX_ETH} ETH`,
+          variant: "destructive",
+        })
+        return
+      }
+
+      setIsLoading(true)
+
       const response = await fetch("/api/boosts/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          boostedByAddress: userAddress,
           artistAddress,
           tokenAddress,
           tokenSymbol,
-          fundingAmountEth: Number.parseFloat(fundingAmount),
+          ethAmount: amount,
         }),
       })
 
-      if (!response.ok) throw new Error(await response.text())
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || "Failed to create boost")
+      }
 
       const data = await response.json()
 
       toast({
         title: "Boost created!",
-        description: `Started boosting ${artistName}'s token with ${fundingAmount} ETH`,
+        description: `MM agent wallet: ${data.walletAddress.slice(0, 6)}...${data.walletAddress.slice(-4)}`,
       })
 
       onOpenChange(false)
-      setFundingAmount("0.01")
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      setEthAmount("0.01")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create boost",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -72,82 +76,59 @@ export function BoostModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-accent" />
-            Boost {artistName}'s Token
+            <Zap className="w-5 h-5" />
+            Boost {tokenSymbol}
           </DialogTitle>
-          <DialogDescription>
-            Fund an autonomous market maker to increase token volume and earn profits
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="rounded-lg bg-secondary/50 p-3 text-sm text-secondary-foreground">
-            <div className="mb-2 font-semibold">10% Profitable Strategy</div>
-            <div className="space-y-1 text-xs opacity-90">
-              <div>• Autonomous buy/sell execution</div>
-              <div>• Share profits with {artistName}</div>
-              <div>• Zero management required</div>
-            </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">ETH Amount</label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Minimum: {MIN_ETH} ETH, Maximum: {MAX_ETH} ETH
+            </p>
+            <Input
+              type="number"
+              step="0.001"
+              min={MIN_ETH}
+              max={MAX_ETH}
+              value={ethAmount}
+              onChange={(e) => setEthAmount(e.target.value)}
+              placeholder="0.01"
+              disabled={isLoading}
+            />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="funding">
-              Funding Amount (ETH)
-              <span className="ml-2 text-xs text-muted-foreground">Min: 0.001 ETH</span>
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="funding"
-                type="number"
-                step="0.001"
-                min="0.001"
-                max="100"
-                value={fundingAmount}
-                onChange={(e) => setFundingAmount(e.target.value)}
-                placeholder="0.01"
-              />
-              <Button variant="outline" size="sm" onClick={() => setFundingAmount("0.01")} className="px-3">
-                0.01 ETH
+          <div className="grid grid-cols-3 gap-2">
+            {[0.001, 0.01, 0.1].map((amount) => (
+              <Button
+                key={amount}
+                variant="outline"
+                size="sm"
+                onClick={() => setEthAmount(amount.toString())}
+                disabled={isLoading}
+              >
+                {amount} ETH
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setFundingAmount("0.05")} className="px-3">
-                0.05 ETH
-              </Button>
-            </div>
+            ))}
           </div>
 
-          <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 text-sm">
-            <div className="font-semibold text-accent">Expected Returns</div>
-            <div className="mt-2 text-xs opacity-80">
-              <div>Funding: {fundingAmount} ETH</div>
-              <div>Strategy: 10% profitable per cycle</div>
-              <div>Artist cut: 20% of profits</div>
-            </div>
+          <div className="bg-accent/10 p-3 rounded-lg">
+            <p className="text-sm">
+              <strong>Strategy:</strong> 10% Profitable Trades
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Market maker will execute profitable buy/sell cycles on {tokenSymbol}. Artist earns trading fees from
+              increased volume.
+            </p>
           </div>
-        </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="flex-1">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateBoost}
-            disabled={isLoading || Number.parseFloat(fundingAmount) < 0.001}
-            className="flex-1"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Zap className="mr-2 h-4 w-4" />
-                Create Boost
-              </>
-            )}
+          <Button onClick={handleCreateBoost} disabled={isLoading} className="w-full">
+            {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Create Boost
           </Button>
         </div>
       </DialogContent>

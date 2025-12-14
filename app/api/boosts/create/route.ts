@@ -1,37 +1,83 @@
+import { createAdminClient } from "@/lib/supabase/admin"
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
+import { encrypt } from "@/lib/crypto"
+import { parseEther } from "viem"
 import { type NextRequest, NextResponse } from "next/server"
-import { boostService } from "@/lib/agents/boost-service"
-import { isAddress } from "viem"
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { boostedByAddress, artistAddress, tokenAddress, tokenSymbol, fundingAmountEth } = await req.json()
+    const body = await request.json()
+    const { artistAddress, tokenAddress, tokenSymbol, ethAmount } = body
 
-    // Validate inputs
-    if (!isAddress(boostedByAddress) || !isAddress(artistAddress) || !isAddress(tokenAddress)) {
-      return NextResponse.json({ error: "Invalid addresses" }, { status: 400 })
+    if (!artistAddress || !tokenAddress || !ethAmount) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
-    if (fundingAmountEth < 0.001) {
-      return NextResponse.json({ error: "Minimum funding is 0.001 ETH" }, { status: 400 })
+    const supabase = createAdminClient()
+
+    // Get current user from request (would need auth context in real implementation)
+    // For now, we'll extract from headers or require it to be passed
+    const ownerAddress = (request.headers.get("x-user-address") || "0x0") as string
+
+    if (ownerAddress === "0x0") {
+      return NextResponse.json({ message: "User address required" }, { status: 401 })
     }
 
-    const { boost, wallet } = await boostService.createBoost(
-      boostedByAddress,
-      artistAddress,
-      tokenAddress,
-      tokenSymbol,
-      fundingAmountEth,
-    )
+    const ethWei = parseEther(ethAmount.toString())
+
+    // Create boost record
+    const { data: boost, error: boostError } = await supabase
+      .from("boosts")
+      .insert({
+        owner_address: ownerAddress,
+        artist_address: artistAddress,
+        token_address: tokenAddress,
+        token_symbol: tokenSymbol,
+        initial_eth_funding: ethWei.toString(),
+        current_balance: ethWei.toString(),
+        status: "active",
+      })
+      .select()
+      .single()
+
+    if (boostError) {
+      console.error("[Boost] Creation error:", boostError)
+      return NextResponse.json({ message: boostError.message }, { status: 500 })
+    }
+
+    // Create wallet for boost
+    const privateKey = generatePrivateKey()
+    const account = privateKeyToAccount(privateKey)
+    const encryptedKey = encrypt(privateKey)
+
+    const { error: walletError } = await supabase.from("boost_wallets").insert({
+      boost_id: boost.id,
+      wallet_address: account.address,
+      private_key_encrypted: encryptedKey,
+    })
+
+    if (walletError) {
+      console.error("[Boost] Wallet creation error:", walletError)
+      return NextResponse.json({ message: walletError.message }, { status: 500 })
+    }
+
+    // Log creation activity
+    await supabase.from("boost_activity").insert({
+      boost_id: boost.id,
+      activity_type: "created",
+      amount_traded: ethWei.toString(),
+    })
 
     return NextResponse.json({
-      success: true,
-      boost,
-      wallet: {
-        address: wallet.wallet_address,
-      },
+      boostId: boost.id,
+      walletAddress: account.address,
+      initialFunding: ethWei.toString(),
     })
-  } catch (error: any) {
-    console.error("[API] Boost creation error:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    console.error("[Boost API] Error:", error)
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }
