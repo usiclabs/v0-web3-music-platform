@@ -2,7 +2,7 @@ import { createPublicClient, http, formatUnits } from "viem"
 import { base, baseSepolia } from "viem/chains"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "./contracts"
 
-export const AGENT_REQUIRED_BALANCE = BigInt("2000000000000000000000000000") // 2,000,000,000 tokens (2 billion)
+export const AGENT_REQUIRED_BALANCE = BigInt("500000000000000000000000000") // 500,000,000 tokens (500 million)
 
 export const USI_TOTAL_SUPPLY = BigInt("100000000000000000000000000000") // 100,000,000,000 tokens (100 billion)
 
@@ -48,7 +48,7 @@ export async function checkAgentTokenGate(address: string, chainId = 8453): Prom
     const percentageOwned = Number((balance * BigInt(1000000)) / USI_TOTAL_SUPPLY) / 10000
 
     console.log("[Agent Token Gate] Balance:", formatUnits(balance, 18), "$USI")
-    console.log("[Agent Token Gate] Required:", formatUnits(AGENT_REQUIRED_BALANCE, 18), "$USI (2%)")
+    console.log("[Agent Token Gate] Required:", formatUnits(AGENT_REQUIRED_BALANCE, 18), "$USI (0.5%)")
     console.log("[Agent Token Gate] Percent owned:", percentageOwned, "%")
 
     const hasAccess = balance >= AGENT_REQUIRED_BALANCE
