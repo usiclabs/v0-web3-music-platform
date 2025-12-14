@@ -1,13 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Share2, Music, TrendingUp, Users, Play } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import { TrackCard } from "@/components/track-card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import type { TrackWithArtist } from "@/types/database"
+import { DollarSign, Music, Play, Users, Radio, Sparkles, TrendingUp } from "lucide-react"
 import { FollowButton } from "@/components/follow-button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ListeningHistory } from "@/components/listening-history"
+import { FollowersList } from "@/components/followers-list"
+import { FollowingList } from "@/components/following-list"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { CopyTokenAddressButton } from "@/components/copy-token-address-button"
+import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
+import { VerifiedBadge } from "@/components/verified-badge"
+import type { Address } from "viem"
 
 interface ArtistPageClientProps {
   artist: any
@@ -43,285 +51,387 @@ export function ArtistPageClient({
   aiTracks,
 }: ArtistPageClientProps) {
   const [showSwapModal, setShowSwapModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<"tracks" | "streams" | "following">("tracks")
-  const [showBoostModal, setShowBoostModal] = useState(false)
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toString()
-  }
-
-  const formatEarnings = (amount: number) => {
-    return `$${(amount / 1000000).toFixed(2)}`
+  function formatAddress(addr: string) {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      {/* Hero Section */}
-      <div className="relative">
-        <div className="absolute inset-0 h-80 bg-gradient-to-b from-accent/10 to-transparent" />
+    <>
+      <div className="min-h-screen relative">
+        {/* Blurred Background Layer */}
+        <div className="fixed inset-0 z-0">
+          {/* Avatar Background Image */}
+          {artist.avatar_url && (
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${artist.avatar_url})`,
+                filter: "blur(80px) brightness(0.4)",
+                transform: "scale(1.2)",
+              }}
+            />
+          )}
+          {/* Fallback gradient if no avatar */}
+          {!artist.avatar_url && (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20" />
+          )}
+          {/* Dark overlay for readability */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        </div>
 
-        <div className="relative px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-          <div className="max-w-6xl mx-auto">
-            {/* Profile Header */}
-            <div className="flex flex-col sm:flex-row gap-6 mb-8">
-              <div className="flex-shrink-0">
-                <Image
-                  src={artist?.avatar_url || `/placeholder.svg?height=160&width=160&query=artist+avatar`}
-                  alt={artist?.artist_name || "Artist"}
-                  width={160}
-                  height={160}
-                  className="rounded-full border-4 border-accent/20"
-                />
-              </div>
-
+        {/* Content Layer */}
+        <main className="relative z-10 container py-12 px-4 sm:px-6">
+          {/* Artist Header */}
+          <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 sm:p-8 mb-8">
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              <Avatar className="h-32 w-32 border-4 border-primary/30">
+                <AvatarImage src={artist.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary/20 text-primary text-3xl">
+                  {artist.artist_name?.[0]?.toUpperCase() || "A"}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1">
-                <h1 className="text-3xl sm:text-4xl font-bold mb-2">{artist?.artist_name || "Unknown Artist"}</h1>
-                <p className="text-muted-foreground mb-4">{address}</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl md:text-4xl font-bold">{artist.artist_name || "Anonymous Artist"}</h1>
+                      {artist.verified && <VerifiedBadge size="lg" />}
+                      {isCurrentlyLive && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full">
+                          <div className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                          </div>
+                          <span className="text-xs font-semibold text-red-500 uppercase">Live</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-muted-foreground mb-2">{formatAddress(artist.wallet_address)}</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold">{followerCount}</span>
+                        <span className="text-muted-foreground">followers</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold">{followingCount}</span>
+                        <span className="text-muted-foreground">following</span>
+                      </div>
+                    </div>
+                  </div>
+                  <FollowButton artistAddress={address} initialFollowerCount={followerCount} size="lg" />
+                </div>
+                {artist.bio && <p className="text-muted-foreground leading-relaxed max-w-2xl mb-4">{artist.bio}</p>}
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                  <div>
-                    <div className="text-2xl font-bold">{formatNumber(followerCount)}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Followers</div>
+                {((artist as any).farcaster_url ||
+                  (artist as any).x_url ||
+                  (artist as any).zora_url ||
+                  (artist as any).tiktok_url) && (
+                  <div className="flex items-center gap-3 mt-4">
+                    {(artist as any).farcaster_url && (
+                      <a
+                        href={(artist as any).farcaster_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                        aria-label="Farcaster"
+                      >
+                        <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M20.04 0H3.96A3.96 3.96 0 0 0 0 3.96v16.08A3.96 3.96 0 0 0 3.96 24h16.08A3.96 3.96 0 0 0 24 20.04V3.96A3.96 3.96 0 0 0 20.04 0zM8.4 18H6V8.4h2.4V18zm9.6 0h-2.4v-4.8c0-1.32-1.08-2.4-2.4-2.4s-2.4 1.08-2.4 2.4V18H8.4V8.4h2.4v1.2c.72-.96 1.92-1.6 3.2-1.6 2.64 0 4.8 2.16 4.8 4.8V18z" />
+                        </svg>
+                      </a>
+                    )}
+                    {(artist as any).x_url && (
+                      <a
+                        href={(artist as any).x_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                        aria-label="X (Twitter)"
+                      >
+                        <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 8 12 11.82 4.18 8 12 4.18zM4 9.48l7 3.5v7.84l-7-3.5V9.48zm16 0v7.84l-7 3.5v-7.84l7-3.5z" />
+                        </svg>
+                      </a>
+                    )}
+                    {(artist as any).zora_url && (
+                      <a
+                        href={(artist as any).zora_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                        aria-label="Zora"
+                      >
+                        <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2L2 7v10l10 5 10-5V7l-10-5zm0 2.18L19.82 8 12 11.82 4.18 8 12 4.18zM4 9.48l7 3.5v7.84l-7-3.5V9.48zm16 0v7.84l-7 3.5v-7.84l7-3.5z" />
+                        </svg>
+                      </a>
+                    )}
+                    {(artist as any).tiktok_url && (
+                      <a
+                        href={(artist as any).tiktok_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                        aria-label="TikTok"
+                      >
+                        <svg className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+                        </svg>
+                      </a>
+                    )}
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold">{formatNumber(followingCount)}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Following</div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-${(artist as any).profile_token_address ? "2 lg:grid-cols-4" : "3"} gap-4 mb-8`}
+          >
+            <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Earned</p>
+                  <p className="text-2xl font-bold">${totalEarnings.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Music className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Tracks</p>
+                  <p className="text-2xl font-bold">{tracks?.length || 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Play className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Plays</p>
+                  <p className="text-2xl font-bold">{totalPlays}</p>
+                </div>
+              </div>
+            </div>
+
+            {(artist as any).profile_token_address && (
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl border border-green-500/30 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-green-500/20 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold">{formatNumber(totalPlays)}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Total Plays</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{formatEarnings(totalEarnings)}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Total Earnings</div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Market Cap</p>
+                    <p className="text-2xl font-bold text-green-500">{profileTokenMarketCap || "Loading..."}</p>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  <FollowButton address={artist?.wallet_address} />
-                  {artist?.profile_token_address && (
-                    <>
-                      <Button onClick={() => setShowSwapModal(true)} className="bg-accent hover:bg-accent/90" size="sm">
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        Swap
-                      </Button>
-                      <Button
-                        onClick={() => setShowBoostModal(true)}
-                        className="bg-accent/80 hover:bg-accent/70"
-                        size="sm"
-                      >
-                        <Music className="w-4 h-4 mr-2" />
-                        Boost
-                      </Button>
-                    </>
-                  )}
-                  <Button variant="outline" size="sm">
-                    <Share2 className="w-4 h-4" />
+                <div className="flex items-center gap-2 mt-3">
+                  <CopyTokenAddressButton address={(artist as any).profile_token_address} />
+                  <Button
+                    size="sm"
+                    className="flex-1 h-8 text-xs bg-green-500 hover:bg-green-600 text-white"
+                    onClick={() => setShowSwapModal(true)}
+                  >
+                    Swap
                   </Button>
                 </div>
               </div>
-            </div>
-
-            {/* Live Indicator */}
-            {isCurrentlyLive && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-red-500 font-semibold">🔴 LIVE NOW</span>
-                </div>
-              </div>
             )}
-
-            {/* Profile Token Info */}
-            {artist?.profile_token_address && (
-              <Card className="mb-8 p-4 sm:p-6 border-accent/20 bg-accent/5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h3 className="font-semibold mb-1">{artist?.artist_name} Token</h3>
-                    <p className="text-sm text-muted-foreground">{artist?.profile_token_address}</p>
-                  </div>
-                  {profileTokenMarketCap && (
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-accent">{profileTokenMarketCap}</div>
-                      <div className="text-xs text-muted-foreground">Market Cap</div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {/* Tabs */}
-            <div className="mb-8">
-              <div className="flex gap-2 sm:gap-4 border-b border-border overflow-x-auto">
-                <button
-                  onClick={() => setActiveTab("tracks")}
-                  className={`pb-3 px-2 sm:px-4 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
-                    activeTab === "tracks"
-                      ? "text-accent border-b-2 border-accent"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Tracks ({tracks.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("streams")}
-                  className={`pb-3 px-2 sm:px-4 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
-                    activeTab === "streams"
-                      ? "text-accent border-b-2 border-accent"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Streams ({streams.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("following")}
-                  className={`pb-3 px-2 sm:px-4 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
-                    activeTab === "following"
-                      ? "text-accent border-b-2 border-accent"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Following ({followingCount})
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div>
-              {activeTab === "tracks" && (
-                <div className="grid gap-4">
-                  {tracks.length === 0 ? (
-                    <Card className="p-8 text-center">
-                      <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-muted-foreground">No tracks yet</p>
-                    </Card>
-                  ) : (
-                    tracks.map((track) => (
-                      <Link key={track.id} href={`/track/${track.id}`}>
-                        <Card className="p-4 hover:bg-accent/5 transition-colors cursor-pointer">
-                          <div className="flex gap-4">
-                            <div className="flex-shrink-0">
-                              <Image
-                                src={track.cover_url || `/placeholder.svg?height=64&width=64&query=music+cover`}
-                                alt={track.title}
-                                width={64}
-                                height={64}
-                                className="rounded"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold truncate">{track.title}</h3>
-                              <p className="text-sm text-muted-foreground">{track.artist?.artist_name}</p>
-                            </div>
-                            <div className="flex-shrink-0 text-right">
-                              <div className="text-sm font-semibold">{track.duration || "0:00"}</div>
-                            </div>
-                          </div>
-                        </Card>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {activeTab === "streams" && (
-                <div className="grid gap-4">
-                  {streams.length === 0 ? (
-                    <Card className="p-8 text-center">
-                      <Play className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-muted-foreground">No stream history</p>
-                    </Card>
-                  ) : (
-                    streams.map((stream) => (
-                      <Card key={stream.id} className="p-4">
-                        <div className="flex gap-4">
-                          <Image
-                            src={
-                              stream.tracks?.cover_url ||
-                              `/placeholder.svg?height=64&width=64&query=music+cover` ||
-                              "/placeholder.svg"
-                            }
-                            alt={stream.tracks?.title}
-                            width={64}
-                            height={64}
-                            className="rounded"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{stream.tracks?.title}</h3>
-                            <p className="text-sm text-muted-foreground">{stream.tracks?.artist?.artist_name}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(stream.last_played_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-semibold">
-                              ${(Number(stream.total_paid) / 1000000).toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {activeTab === "following" && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {following.length === 0 ? (
-                    <div className="col-span-full text-center py-8">
-                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-muted-foreground">Not following anyone yet</p>
-                    </div>
-                  ) : (
-                    following.map((f) => (
-                      <Link key={f.following?.wallet_address} href={`/artist/${f.following?.wallet_address}`}>
-                        <Card className="p-4 text-center hover:bg-accent/5 transition-colors cursor-pointer">
-                          <Image
-                            src={
-                              f.following?.avatar_url ||
-                              `/placeholder.svg?height=80&width=80&query=artist+avatar` ||
-                              "/placeholder.svg"
-                            }
-                            alt={f.following?.artist_name}
-                            width={80}
-                            height={80}
-                            className="rounded-full mx-auto mb-2"
-                          />
-                          <p className="font-semibold text-sm truncate">{f.following?.artist_name}</p>
-                        </Card>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
           </div>
-        </div>
+
+          <Tabs defaultValue="tracks" className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-8 bg-card/50 backdrop-blur-xl border border-border/50 p-1">
+              <TabsTrigger
+                value="tracks"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                title="Tracks"
+              >
+                <Music className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Tracks</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="ai-creations"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                title="AI Creations"
+              >
+                <Sparkles className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">AI</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="live"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary relative"
+                title="Live Streams"
+              >
+                <Radio className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Live</span>
+                {isCurrentlyLive && (
+                  <span className="absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="history"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                title="Listening History"
+              >
+                <Play className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">History</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="followers"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                title="Followers"
+              >
+                <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Followers</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="following"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2.5 sm:py-2 min-h-[44px] data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                title="Following"
+              >
+                <Users className="h-5 w-5 sm:h-4 sm:w-4 shrink-0" />
+                <span className="hidden sm:inline">Following</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="tracks">
+              {tracks && tracks.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                  {tracks.map((track) => (
+                    <TrackCard key={track.id} track={track as TrackWithArtist} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+                  <Music className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No tracks uploaded yet</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="ai-creations">
+              {aiTracks && aiTracks.length > 0 ? (
+                <div>
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-6 w-6 text-accent" />
+                      <h2 className="text-2xl font-bold">AI Creations</h2>
+                    </div>
+                    <p className="text-muted-foreground">
+                      {aiTracks.length} AI-generated {aiTracks.length === 1 ? "track" : "tracks"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    {aiTracks.map((track) => (
+                      <TrackCard key={track.id} track={track as TrackWithArtist} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+                  <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No AI-generated tracks yet</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="live">
+              {liveStreams && liveStreams.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {liveStreams.map((stream) => (
+                    <Link
+                      key={stream.id}
+                      href={`/live/${stream.id}`}
+                      className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 hover:border-primary/50 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Radio className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
+                            {stream.title || "Untitled Stream"}
+                          </h3>
+                        </div>
+                        {stream.is_live && (
+                          <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-500/20 border border-red-500/50 rounded-full">
+                            <div className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                            </div>
+                            <span className="text-xs font-semibold text-red-500 uppercase">Live</span>
+                          </div>
+                        )}
+                      </div>
+                      {stream.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{stream.description}</p>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4">
+                          {stream.viewer_count !== null && (
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              <span>{stream.viewer_count} watching</span>
+                            </div>
+                          )}
+                        </div>
+                        <span>
+                          {stream.is_live
+                            ? "Live now"
+                            : stream.ended_at
+                              ? new Date(stream.ended_at).toLocaleDateString()
+                              : new Date(stream.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-12 text-center">
+                  <Radio className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No live streams yet</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="history">
+              <ListeningHistory streams={streams || []} />
+            </TabsContent>
+
+            <TabsContent value="followers">
+              <FollowersList followers={followers} />
+            </TabsContent>
+
+            <TabsContent value="following">
+              <FollowingList following={following} />
+            </TabsContent>
+          </Tabs>
+        </main>
       </div>
 
-      {/* Modals */}
-      {artist?.profile_token_address && (
-        <>
-          <ProfileTokenSwapModal
-            isOpen={showSwapModal}
-            onClose={() => setShowSwapModal(false)}
-            tokenAddress={artist.profile_token_address}
-            tokenSymbol={artist.artist_name}
-          />
-          {/* <BoostModal
-            open={showBoostModal}
-            onOpenChange={setShowBoostModal}
-            tokenAddress={artist.profile_token_address}
-            tokenSymbol={artist.artist_name}
-          /> */}
-        </>
+      {/* Native Swap Modal */}
+      {showSwapModal && (artist as any).profile_token_address && (
+        <ProfileTokenSwapModal
+          tokenAddress={(artist as any).profile_token_address as Address}
+          tokenName={artist.artist_name || "Profile Token"}
+          tokenSymbol={artist.artist_name?.toUpperCase().slice(0, 4)}
+          onClose={() => setShowSwapModal(false)}
+        />
       )}
-    </div>
+    </>
   )
 }
-
-export default ArtistPageClient

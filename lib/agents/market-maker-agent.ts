@@ -577,7 +577,7 @@ export class MarketMakerAgentService {
           .select("last_buy_price")
           .eq("agent_id", this.agentId)
           .eq("wallet_address", wallet.address)
-          .maybeSingle() // Use maybeSingle() here
+          .single()
 
         if (walletData && walletData.last_buy_price > 0) {
           // Get current price by querying expected ETH output for 1 token
@@ -1242,12 +1242,13 @@ export class MarketMakerAgentService {
       if (walletAddress) {
         const incrementField = tradeType === "buy" ? "total_buys" : "total_sells"
 
+        // Get current count
         const { data: walletData } = await supabase
           .from("mm_agent_wallets")
           .select(incrementField)
           .eq("agent_id", this.agentId)
           .eq("wallet_address", walletAddress)
-          .maybeSingle()
+          .single()
 
         if (walletData) {
           const currentCount = walletData[incrementField] || 0
@@ -1593,7 +1594,7 @@ export class MarketMakerAgentService {
         .select("last_buy_price, last_buy_amount")
         .eq("agent_id", this.agentId)
         .eq("wallet_address", wallet.address)
-        .maybeSingle() // Use maybeSingle() here
+        .single()
 
       if (!walletData || !walletData.last_buy_price || walletData.last_buy_price === 0) {
         console.log("[MM Agent] No buy price recorded yet, skipping sell")
