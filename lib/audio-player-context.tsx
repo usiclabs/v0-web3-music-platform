@@ -74,10 +74,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
           const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
           const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
           setUnlockedChunks(allChunks)
-          toast({
-            title: "Track Owned",
-            description: "You already purchased this track. Enjoy unlimited replays!",
-          })
+          // Removed toast on track load - user already knows they own it
         }
       })
     }
@@ -98,10 +95,6 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       const newChunkIndex = Math.floor(newTime / X402_CONFIG.CHUNK_DURATION)
       if (newChunkIndex !== currentChunk) {
         setCurrentChunk(newChunkIndex)
-
-        if (currentTrack && address) {
-          logStreamActivity(currentTrack.id, address, newChunkIndex)
-        }
 
         if (!unlockedChunks.has(newChunkIndex)) {
           audio.pause()

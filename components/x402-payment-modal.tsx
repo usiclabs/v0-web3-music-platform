@@ -164,7 +164,7 @@ export function X402PaymentModal() {
       setPaymentStep("success")
       addToast({
         title: "Payment Successful!",
-        description: `Segment ${segmentNumber} unlocked. ${txHash ? "Transaction confirmed on Base." : ""}`,
+        description: `${isFullUnlock ? "Full track unlocked" : `Segment ${segmentNumber} unlocked`}. ${txHash ? "Transaction confirmed on Base." : ""}`,
         variant: "success",
         duration: 4000,
       })
