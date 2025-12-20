@@ -216,19 +216,17 @@ export default function PredictionsPage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/5 opacity-0 transition-opacity group-hover:opacity-100" />
 
                   <div className="relative p-4 sm:p-6">
-                    <div className="flex items-center justify-between gap-2">
-                      <Badge
-                        className={`gap-1 transition-all text-xs sm:text-sm truncate ${getCategoryColor(market.category)}`}
-                      >
+                    <div className="flex items-center justify-between">
+                      <Badge className={`gap-1 transition-all text-xs ${getCategoryColor(market.category)}`}>
                         {getCategoryIcon(market.category)}
                         <span className="hidden sm:inline">{market.category}</span>
                       </Badge>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span className="hidden sm:inline text-xs">
+                        <span className="hidden sm:inline">
                           {formatDistanceToNow(new Date(market.resolution_date))}
                         </span>
-                        <span className="sm:hidden text-xs">
+                        <span className="sm:hidden">
                           {formatDistanceToNow(new Date(market.resolution_date), { addSuffix: false }).split(" ")[0]}
                         </span>
                       </div>
@@ -243,10 +241,10 @@ export default function PredictionsPage() {
                         <img
                           src={market.target_image_url || "/placeholder.svg"}
                           alt={market.target_name}
-                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-border shrink-0"
+                          className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-border"
                         />
                       ) : (
-                        <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-gradient-to-br from-accent/20 to-accent/5 shrink-0" />
+                        <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-gradient-to-br from-accent/20 to-accent/5" />
                       )}
                       <span className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                         {market.target_name}
@@ -254,7 +252,7 @@ export default function PredictionsPage() {
                     </div>
 
                     <div className="mt-4 sm:mt-6">
-                      <div className="flex items-end justify-between gap-2">
+                      <div className="flex items-end justify-between">
                         <div>
                           <p className="text-xs font-medium text-muted-foreground">YES</p>
                           <p className="mt-0.5 sm:mt-1 font-mono text-2xl sm:text-3xl font-bold text-emerald-500">
@@ -312,7 +310,6 @@ export default function PredictionsPage() {
               Explore prediction markets across different music metrics
             </p>
           </div>
-          {/* Added better responsive layout for category cards */}
           <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
             {[
               {
@@ -346,36 +343,33 @@ export default function PredictionsPage() {
             ].map((category) => {
               const IconComponent = category.icon
               return (
-                <Link
+                <Card
                   key={category.name}
-                  href={`/predictions?category=${category.name.toLowerCase()}`}
-                  className="w-full"
+                  className="group cursor-pointer overflow-hidden transition-all duration-300 active:scale-[0.98] sm:hover:-translate-y-1 sm:hover:shadow-xl"
                 >
-                  <Card className="group cursor-pointer overflow-hidden transition-all duration-300 active:scale-[0.98] sm:hover:-translate-y-1 sm:hover:shadow-xl h-full">
-                    <div className="relative p-4 sm:p-6">
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br from-${category.color}-500/5 to-${category.color}-500/0 opacity-0 transition-opacity group-hover:opacity-100`}
-                      />
+                  <div className="relative p-4 sm:p-6">
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br from-${category.color}-500/5 to-${category.color}-500/0 opacity-0 transition-opacity group-hover:opacity-100`}
+                    />
 
-                      <div className="relative">
-                        <div className={`inline-flex rounded-xl bg-${category.color}-500/10 p-2 sm:p-3`}>
-                          <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 text-${category.color}-500`} />
-                        </div>
-                        <h3 className="mt-3 sm:mt-4 text-base sm:text-xl font-semibold">{category.name}</h3>
-                        <p className="mt-1 text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
-                          {category.desc}
-                        </p>
+                    <div className="relative">
+                      <div className={`inline-flex rounded-xl bg-${category.color}-500/10 p-2 sm:p-3`}>
+                        <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 text-${category.color}-500`} />
+                      </div>
+                      <h3 className="mt-3 sm:mt-4 text-base sm:text-xl font-semibold">{category.name}</h3>
+                      <p className="mt-1 text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
+                        {category.desc}
+                      </p>
 
-                        <div className="mt-3 sm:mt-4 flex items-center justify-between">
-                          <Badge variant="secondary" className="text-xs">
-                            {category.count}
-                          </Badge>
-                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-100 sm:opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
-                        </div>
+                      <div className="mt-3 sm:mt-4 flex items-center justify-between">
+                        <Badge variant="secondary" className="text-xs">
+                          {category.count}
+                        </Badge>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-100 sm:opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100" />
                       </div>
                     </div>
-                  </Card>
-                </Link>
+                  </div>
+                </Card>
               )
             })}
           </div>

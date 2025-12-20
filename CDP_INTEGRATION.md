@@ -16,11 +16,11 @@ The CDP SDK provides backend tools for:
 
 The platform uses CDP SDK to automatically process artist payouts:
 
-```typescript
+\`\`\`typescript
 // Process all pending artist payouts
 const result = await processArtistPayouts()
 // Returns: { success: 10, failed: 0, totalAmount: "1250.50" }
-```
+\`\`\`
 
 **How it works:**
 1. Aggregates unpaid streams for each artist
@@ -33,14 +33,14 @@ const result = await processArtistPayouts()
 
 New users can perform transactions without paying gas fees:
 
-```typescript
+\`\`\`typescript
 // Sponsor a transaction for a user
 const txHash = await sponsorTransaction(userAddress, {
   to: contractAddress,
   data: encodedData,
   value: "0"
 })
-```
+\`\`\`
 
 **Use cases:**
 - First-time user onboarding
@@ -51,7 +51,7 @@ const txHash = await sponsorTransaction(userAddress, {
 
 A secure server-side wallet handles automated operations:
 
-```typescript
+\`\`\`typescript
 // Get server wallet
 const wallet = await getServerWallet()
 
@@ -61,7 +61,7 @@ const txHash = await sendTokens(
   "10.50", // amount in USDC
   "usdc"
 )
-```
+\`\`\`
 
 ## Setup
 
@@ -75,23 +75,23 @@ const txHash = await sendTokens(
 
 Add these to your `.env` file or Vercel environment variables:
 
-```bash
+\`\`\`bash
 # CDP API Credentials
 CDP_API_KEY_NAME=your_api_key_name
 CDP_API_KEY_PRIVATE_KEY=your_private_key
 
 # Server Wallet Data (generated on first run)
 CDP_SERVER_WALLET_DATA={"walletId":"...","seed":"..."}
-```
+\`\`\`
 
 ### 3. Initialize Server Wallet
 
 On first run, the system will create a server wallet and output the wallet data:
 
-```bash
+\`\`\`bash
 # Run the payout endpoint to initialize
 curl -X POST http://localhost:3000/api/admin/payouts
-```
+\`\`\`
 
 Copy the wallet data from the logs and add it to `CDP_SERVER_WALLET_DATA`.
 
@@ -99,12 +99,12 @@ Copy the wallet data from the logs and add it to `CDP_SERVER_WALLET_DATA`.
 
 Transfer USDC to the server wallet address for payouts:
 
-```typescript
+\`\`\`typescript
 // Get wallet address
 const wallet = await getServerWallet()
 const address = await wallet.getDefaultAddress()
 console.log("Server wallet address:", address)
-```
+\`\`\`
 
 ## API Endpoints
 
@@ -115,7 +115,7 @@ console.log("Server wallet address:", address)
 Triggers artist payout processing. Should be called via cron job or admin panel.
 
 **Response:**
-```json
+\`\`\`json
 {
   "success": true,
   "success": 10,
@@ -123,7 +123,7 @@ Triggers artist payout processing. Should be called via cron job or admin panel.
   "totalAmount": "1250.50",
   "message": "Processed 10 payouts..."
 }
-```
+\`\`\`
 
 ### Check Payout Status
 
@@ -132,28 +132,28 @@ Triggers artist payout processing. Should be called via cron job or admin panel.
 Returns CDP configuration status.
 
 **Response:**
-```json
+\`\`\`json
 {
   "cdpConfigured": true,
   "message": "CDP is configured and ready for payouts"
 }
-```
+\`\`\`
 
 ## Usage Examples
 
 ### Manual Artist Payout
 
-```typescript
+\`\`\`typescript
 import { payoutArtist } from "@/lib/cdp/payouts"
 
 // Payout a specific artist
 const result = await payoutArtist("0x1234...")
 console.log(`Paid ${result.amount} USDC, tx: ${result.txHash}`)
-```
+\`\`\`
 
 ### Batch Payouts
 
-```typescript
+\`\`\`typescript
 import { batchSendTokens } from "@/lib/cdp/client"
 
 const recipients = [
@@ -162,17 +162,17 @@ const recipients = [
 ]
 
 const txHashes = await batchSendTokens(recipients, "usdc")
-```
+\`\`\`
 
 ### Check Wallet Balance
 
-```typescript
+\`\`\`typescript
 import { getServerWallet, getWalletBalance } from "@/lib/cdp/client"
 
 const wallet = await getServerWallet()
 const balance = await getWalletBalance(wallet, "usdc")
 console.log(`Server wallet balance: ${balance} USDC`)
-```
+\`\`\`
 
 ## Security Considerations
 
@@ -187,20 +187,20 @@ console.log(`Server wallet balance: ${balance} USDC`)
 For automated payouts, set up a cron job:
 
 **Vercel Cron** (vercel.json):
-```json
+\`\`\`json
 {
   "crons": [{
     "path": "/api/admin/payouts",
     "schedule": "0 0 * * *"
   }]
 }
-```
+\`\`\`
 
 **Or use external cron service:**
-```bash
+\`\`\`bash
 # Daily at midnight
 0 0 * * * curl -X POST https://your-domain.com/api/admin/payouts
-```
+\`\`\`
 
 ## Troubleshooting
 

@@ -10,8 +10,6 @@ import { ArrowLeft, Share2, TrendingUp, TrendingDown, Users, Clock, Target, Exte
 import { formatDistanceToNow, format } from "date-fns"
 import { useParams, useRouter } from "next/navigation"
 import { useAccount } from "wagmi"
-import { Label } from "@/components/ui/label"
-import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from "recharts"
 
 interface MarketDetails {
   id: string
@@ -53,32 +51,13 @@ export default function MarketDetailPage() {
   const [amount, setAmount] = useState("")
   const [loading, setLoading] = useState(true)
   const [trading, setTrading] = useState(false)
-  const [priceHistory, setPriceHistory] = useState<any[]>([])
 
   useEffect(() => {
-    if (params.id && params.id !== "create") {
+    if (params.id) {
       fetchMarket()
       if (address) {
         fetchPosition()
       }
-    }
-
-    let interval: NodeJS.Timeout | undefined
-    if (params.id && params.id !== "create") {
-      interval = setInterval(() => {
-        fetchMarket()
-        if (address) {
-          fetchPosition()
-        }
-      }, 5000)
-    }
-
-    if (params.id && params.id !== "create") {
-      fetchPriceHistory()
-    }
-
-    return () => {
-      if (interval) clearInterval(interval)
     }
   }, [params.id, address])
 
@@ -104,16 +83,6 @@ export default function MarketDetailPage() {
     }
   }
 
-  const fetchPriceHistory = async () => {
-    try {
-      const res = await fetch(`/api/predictions/markets/${params.id}/history`)
-      const data = await res.json()
-      setPriceHistory(data)
-    } catch (error) {
-      console.error("[v0] Error fetching price history:", error)
-    }
-  }
-
   const handleTrade = async () => {
     if (!address || !amount || !market) return
 
@@ -127,7 +96,7 @@ export default function MarketDetailPage() {
           userAddress: address,
           tradeType: activeTab.toUpperCase(),
           outcomeSide: selectedOutcome,
-          amount: activeTab === "sell" && position ? Number.parseFloat(amount) : Number.parseFloat(amount),
+          amount: Number.parseFloat(amount),
         }),
       })
 
@@ -324,7 +293,7 @@ export default function MarketDetailPage() {
                     <TabsTrigger value="buy" className="text-sm">
                       Buy
                     </TabsTrigger>
-                    <TabsTrigger value="sell" className="text-sm" disabled={!position}>
+                    <TabsTrigger value="sell" className="text-sm">
                       Sell
                     </TabsTrigger>
                   </TabsList>
@@ -404,77 +373,13 @@ export default function MarketDetailPage() {
                     </Button>
                   </TabsContent>
 
-                  <TabsContent value="sell" className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
-                    {position ? (
-                      <>
-                        <div className="rounded-xl border border-border bg-muted/50 p-3 sm:p-4 space-y-3">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Your Shares</span>
-                            <span className="font-mono font-bold">{position.shares.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Avg Entry</span>
-                            <span className="font-mono">${position.avg_price.toFixed(4)}</span>
-                          </div>
-                          <div className="flex justify-between border-t border-border pt-3 text-sm">
-                            <span className="font-medium">Current P&L</span>
-                            <span
-                              className={`font-mono font-bold ${position.unrealized_pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}
-                            >
-                              {position.unrealized_pnl >= 0 ? "+" : ""}${position.unrealized_pnl.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="sell-amount" className="text-sm">
-                            Shares to Sell
-                          </Label>
-                          <Input
-                            id="sell-amount"
-                            type="number"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            max={position.shares}
-                            className="h-11 sm:h-12 text-base sm:text-lg"
-                          />
-                          <p className="text-xs text-muted-foreground">Max: {position.shares.toFixed(2)} shares</p>
-                        </div>
-
-                        {amount && (
-                          <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-3 sm:p-4">
-                            <div className="flex justify-between text-xs sm:text-sm">
-                              <span className="text-muted-foreground">Est. Proceeds</span>
-                              <span className="font-mono font-bold">
-                                ${(Number.parseFloat(amount) * position.avg_price).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs sm:text-sm">
-                              <span className="text-muted-foreground">Current Market Price</span>
-                              <span className="font-mono">${position.avg_price.toFixed(4)}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        <Button
-                          className="w-full h-11 sm:h-12 text-base sm:text-lg font-semibold shadow-lg transition-all hover:shadow-xl"
-                          size="lg"
-                          onClick={handleTrade}
-                          disabled={!address || !amount || Number.parseFloat(amount) > position.shares || trading}
-                          variant="destructive"
-                        >
-                          {trading ? "Processing..." : `Sell ${Number.parseFloat(amount).toFixed(2)} Shares`}
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="rounded-xl border border-border bg-muted/30 p-6 sm:p-8 text-center">
-                        <Users className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
-                        <p className="mt-4 text-xs sm:text-sm text-muted-foreground">
-                          Buy shares first to enable selling
-                        </p>
-                      </div>
-                    )}
+                  <TabsContent value="sell" className="mt-4 sm:mt-6">
+                    <div className="rounded-xl border border-border bg-muted/30 p-6 sm:p-8 text-center">
+                      <Users className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                      <p className="mt-4 text-xs sm:text-sm text-muted-foreground">
+                        Sell functionality will be available once you hold shares in this market
+                      </p>
+                    </div>
                   </TabsContent>
                 </Tabs>
 
@@ -515,31 +420,6 @@ export default function MarketDetailPage() {
             </Card>
           </div>
         </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-6xl mt-8">
-        <Card>
-          <div className="p-4 sm:p-6">
-            <h3 className="font-semibold mb-4">Price History</h3>
-            {priceHistory.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={priceHistory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="yesProbability" stroke="#10b981" name="YES Probability" />
-                  <Line type="monotone" dataKey="noProbability" stroke="#ef4444" name="NO Probability" />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                No price history available
-              </div>
-            )}
-          </div>
-        </Card>
       </div>
     </div>
   )

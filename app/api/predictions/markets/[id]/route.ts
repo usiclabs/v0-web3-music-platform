@@ -4,16 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-
-    if (id === "create") {
-      return NextResponse.json({ error: "Use /predictions/create instead" }, { status: 404 })
-    }
-
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(id)) {
-      return NextResponse.json({ error: "Invalid market ID format" }, { status: 400 })
-    }
-
     const supabase = await createClient()
 
     const { data: market, error } = await supabase.from("prediction_markets").select("*").eq("id", id).single()

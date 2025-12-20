@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import {
   Activity,
   Loader2,
   Zap,
+  Wallet2,
   ArrowRightLeft,
   Settings,
   PlayCircle,
@@ -32,12 +33,6 @@ import {
   Sparkles,
   DollarSign,
   Shield,
-  Brain,
-  Target,
-  Rocket,
-  Flame,
-  Crown,
-  Info,
 } from "lucide-react"
 import useSWR, { mutate } from "swr"
 import { createClient } from "@/lib/supabase/client"
@@ -48,150 +43,6 @@ import { parseEther, formatEther } from "viem"
 import confetti from "canvas-confetti"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-import { FOMO_PATTERNS } from "@/lib/agents/fomo-mode-engine"
-import { useRouter } from "next/navigation"
-
-const SUPPORTED_TOKENS = [
-  {
-    address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
-    symbol: "USI",
-    name: "Universal Sound Index",
-  },
-  {
-    address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
-    symbol: "DEUS",
-    name: "DEUS",
-  },
-] as const
-
-const PRESET_STRATEGIES = [
-  {
-    name: "Conservative",
-    description: "Low-risk, slow & steady approach",
-    longDescription:
-      "Perfect for cautious traders. Small position sizes with long intervals minimize risk while maintaining market presence.",
-    config: {
-      buy_amount_eth: "0.01",
-      buy_interval_minutes: 60,
-      sell_interval_minutes: 120,
-      pro_mode: false,
-      max_mode: false,
-      profitable_mode: true,
-      burst_mode: false,
-      fomo_mode: false,
-      fomo_intensity: undefined,
-      fomo_pattern: undefined,
-    },
-    icon: Shield,
-    color: "from-blue-500 to-cyan-500",
-    riskLevel: 1,
-    expectedVolume: "Low",
-  },
-  {
-    name: "Moderate",
-    description: "Balanced risk & opportunity",
-    longDescription: "The sweet spot for most traders. Pro mode enabled with moderate intervals and profit protection.",
-    config: {
-      buy_amount_eth: "0.05",
-      buy_interval_minutes: 30,
-      sell_interval_minutes: 60,
-      pro_mode: true,
-      max_mode: false,
-      profitable_mode: true,
-      burst_mode: false,
-      fomo_mode: false,
-      fomo_intensity: undefined,
-      fomo_pattern: undefined,
-    },
-    icon: Activity,
-    color: "from-amber-500 to-orange-500",
-    riskLevel: 2,
-    expectedVolume: "Medium",
-  },
-  {
-    name: "Aggressive",
-    description: "High-volume, rapid trading",
-    longDescription:
-      "Maximum volume generation with 20 wallets. Fast intervals and burst mode for serious market making.",
-    config: {
-      buy_amount_eth: "0.1",
-      buy_interval_minutes: 15,
-      sell_interval_minutes: 30,
-      pro_mode: true,
-      max_mode: true,
-      profitable_mode: false,
-      burst_mode: true,
-      fomo_mode: false,
-      fomo_intensity: undefined,
-      fomo_pattern: undefined,
-    },
-    icon: Zap,
-    color: "from-rose-500 to-red-500",
-    riskLevel: 3,
-    expectedVolume: "High",
-  },
-  {
-    name: "FOMO Mode",
-    description: "Psychological MM strategy",
-    longDescription:
-      "Leverages trading psychology to create buying pressure. Uses reversal patterns to attract organic buyers.",
-    config: {
-      buy_amount_eth: "0.08",
-      buy_interval_minutes: 5,
-      sell_interval_minutes: 60,
-      pro_mode: true,
-      max_mode: true,
-      profitable_mode: true,
-      burst_mode: false,
-      fomo_mode: true,
-      fomo_intensity: 7,
-      fomo_pattern: "reversal",
-    },
-    icon: Brain,
-    color: "from-purple-500 via-pink-500 to-rose-500",
-    isPremium: true,
-    riskLevel: 4,
-    expectedVolume: "Very High",
-  },
-  {
-    name: "Apex Predator",
-    description: "The ultimate chart reversal weapon",
-    longDescription:
-      "Combines ALL psychological triggers in a 10-phase coordinated assault. Whale signals, momentum cascades, support building, and FOMO amplification.",
-    config: {
-      buy_amount_eth: "0.15",
-      buy_interval_minutes: 2,
-      sell_interval_minutes: 120,
-      pro_mode: true,
-      max_mode: true,
-      profitable_mode: true,
-      burst_mode: true,
-      burst_trades_count: 15,
-      burst_delay_seconds: 2,
-      fomo_mode: true,
-      fomo_intensity: 10,
-      fomo_pattern: "apex_predator",
-    },
-    icon: Crown,
-    color: "from-yellow-400 via-amber-500 to-orange-600",
-    isPremium: true,
-    isUltimate: true,
-    riskLevel: 5,
-    expectedVolume: "Maximum",
-    features: [
-      "10-phase psychological warfare",
-      "Whale signal mimicry (10x buys)",
-      "Momentum cascade generation",
-      "Support floor building",
-      "Short squeeze triggering",
-      "Sentiment flip: Fear → Greed",
-    ],
-  },
-] as const
 
 // Helper component for Connect Wallet Button
 function ConnectWalletButton() {
@@ -218,6 +69,19 @@ function ConnectWalletButton() {
   )
 }
 
+const SUPPORTED_TOKENS = [
+  {
+    address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+    symbol: "USI",
+    name: "Universal Sound Index",
+  },
+  {
+    address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+    symbol: "DEUS",
+    name: "DEUS",
+  },
+] as const
+
 interface MMAgentConfig {
   id: string
   wallet_address: string
@@ -238,9 +102,6 @@ interface MMAgentConfig {
   burst_mode?: boolean
   burst_trades_count?: number
   burst_delay_seconds?: number
-  fomo_mode?: boolean
-  fomo_intensity?: number
-  fomo_pattern?: string
 }
 
 interface MMStats {
@@ -365,11 +226,10 @@ function ActivityItem({ activity }: { activity: MMActivity }) {
 }
 
 export default function MarketMakerAgentPage() {
-  const { connect, isConnected, address } = useWallet()
+  const { address, isConnected, connect } = useWallet()
   const { address: wagmiAddress } = useAccount()
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
-  const router = useRouter()
 
   const [config, setConfig] = useState<MMAgentConfig | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -393,10 +253,6 @@ export default function MarketMakerAgentPage() {
   const [isSelling, setIsSelling] = useState(false)
   const [isSellingAll, setIsSellingAll] = useState(false) // Added for selling all specific wallet
 
-  // Add state for FOMO execution
-  const [isExecutingFOMO, setIsExecutingFOMO] = useState(false)
-  const [fomoProgress, setFomoProgress] = useState(0)
-
   const isMobile = useIsMobile()
 
   const { data: configData, isLoading: isLoadingConfig } = useSWR<{ config: MMAgentConfig }>(
@@ -409,12 +265,6 @@ export default function MarketMakerAgentPage() {
     (url) => fetch(url).then((res) => res.json()),
     { refreshInterval: 10000 },
   )
-
-  useEffect(() => {
-    if (statsData) {
-      console.log("[v0] Stats data received:", statsData)
-    }
-  }, [statsData])
 
   useEffect(() => {
     if (configData?.config) {
@@ -771,123 +621,6 @@ export default function MarketMakerAgentPage() {
     })
   }
 
-  // (These were already moved outside above)
-
-  const applyPreset = useCallback(
-    async (preset: (typeof PRESET_STRATEGIES)[number]) => {
-      if (!config) return
-
-      try {
-        const newConfig = {
-          ...config,
-          buy_amount_eth: preset.config.buy_amount_eth,
-          buy_interval_minutes: preset.config.buy_interval_minutes,
-          sell_interval_minutes: preset.config.sell_interval_minutes,
-          pro_mode: preset.config.pro_mode,
-          max_mode: preset.config.max_mode,
-          profitable_mode: preset.config.profitable_mode,
-          burst_mode: preset.config.burst_mode,
-          fomo_mode: preset.config.fomo_mode,
-          fomo_intensity: preset.config.fomo_intensity,
-          fomo_pattern: preset.config.fomo_pattern,
-        }
-
-        await fetch("/api/agents/mm/config", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            agentId: config.id,
-            ...newConfig,
-          }),
-        })
-
-        setConfig(newConfig)
-
-        if (preset.isPremium) {
-          confetti({
-            particleCount: preset.isUltimate ? 150 : 80,
-            spread: preset.isUltimate ? 100 : 70,
-            origin: { y: 0.6 },
-            colors: preset.isUltimate
-              ? ["#fbbf24", "#f59e0b", "#d97706", "#ea580c"]
-              : ["#a855f7", "#ec4899", "#f43f5e"],
-          })
-        }
-
-        toast.success(`${preset.name} preset applied!`, {
-          description:
-            preset.longDescription || `Your MM agent is now configured for ${preset.description.toLowerCase()}`,
-        })
-        mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-      } catch (error) {
-        toast.error("Failed to apply preset")
-        console.error(error)
-      }
-    },
-    [config, address],
-  )
-
-  const handleFOMOExecution = useCallback(async () => {
-    if (!config?.fomo_mode || isExecutingFOMO) return
-
-    setIsExecutingFOMO(true)
-    setFomoProgress(0)
-
-    const progressSteps = config.fomo_pattern === "apex_predator" ? 10 : 5
-    let currentStep = 0
-    const interval = setInterval(() => {
-      currentStep++
-      setFomoProgress(Math.min((currentStep / progressSteps) * 100, 95))
-    }, 500)
-
-    try {
-      const response = await fetch("/api/agents/mm/fomo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId: config.id,
-          pattern: config.fomo_pattern || "reversal",
-          intensity: config.fomo_intensity || 7,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "FOMO execution failed")
-      }
-
-      const result = await response.json()
-      setFomoProgress(100)
-
-      confetti({
-        particleCount: 200,
-        spread: 120,
-        origin: { y: 0.5 },
-        colors:
-          config.fomo_pattern === "apex_predator"
-            ? ["#fbbf24", "#f59e0b", "#d97706", "#ea580c", "#10b981"]
-            : ["#a855f7", "#ec4899", "#f43f5e", "#10b981"],
-      })
-
-      toast.success("FOMO Pattern Executed!", {
-        description: `${result.tradesExecuted} trades completed. Buy pressure: ${result.buyPressureRatio}x`,
-      })
-
-      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-      mutate(`/api/agents/mm/stats?agentId=${config.id}`)
-    } catch (error: any) {
-      toast.error("FOMO execution failed", {
-        description: error.message,
-      })
-    } finally {
-      setTimeout(() => {
-        setIsExecutingFOMO(false)
-        setFomoProgress(0)
-      }, 1000)
-      clearInterval(interval)
-    }
-  }, [config, isExecutingFOMO, address])
-
   if (isLoadingConfig) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1073,7 +806,7 @@ export default function MarketMakerAgentPage() {
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="max-w-lg w-full glass-premium">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-blue-400/20 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-400/20 to-blue-400/20 flex items-center justify-center">
               <BarChart3 className="h-8 w-8 text-emerald-400" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Deploy Market Maker</h2>
@@ -1116,1265 +849,717 @@ export default function MarketMakerAgentPage() {
 
   const aggregateWalletStats = wallets.reduce(
     (acc, wallet) => ({
-      totalEth: acc.totalEth + (Number.parseFloat(wallet.eth_balance || "0") || 0),
-      totalToken: acc.totalToken + (Number.parseFloat(wallet.token_balance || "0") || 0),
-      totalBuys: acc.totalBuys + (wallet.buy_count || 0),
-      totalSells: acc.totalSells + (wallet.sell_count || 0),
+      totalEth: acc.totalEth + (wallet.eth_balance ? Number.parseFloat(wallet.eth_balance) : 0),
+      totalToken: acc.totalToken + (wallet.token_balance ? Number.parseFloat(wallet.token_balance) : 0),
+      totalBuys: acc.totalBuys + (wallet.total_buys || 0),
+      totalSells: acc.totalSells + (wallet.total_sells || 0),
     }),
     { totalEth: 0, totalToken: 0, totalBuys: 0, totalSells: 0 },
   )
 
-  if (config) {
-    return (
-      <TooltipProvider>
-        <div className="space-y-6 p-4 md:p-6 pb-24">
-          {/* Header with status */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-                Market Maker Agent
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">Autonomous trading with psychological market making</p>
-            </div>
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
+        <div className="container max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <LiveIndicator active={config.is_active} />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center backdrop-blur">
+                <BarChart3 className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold">{tokenSymbol} Market Maker</h1>
+                <LiveIndicator active={config.is_active} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
               <Button
-                onClick={toggleAgent}
-                variant={config.is_active ? "destructive" : "default"}
-                size="sm"
-                className={cn(
-                  "min-w-[100px]",
-                  !config.is_active &&
-                    "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600",
-                )}
+                variant="outline"
+                size={isMobile ? "icon" : "default"}
+                onClick={() => setShowWalletsModal(true)}
+                className="border-border/50"
               >
-                {config.is_active ? (
-                  <>
-                    <PauseCircle className="h-4 w-4 mr-2" />
-                    Pause
-                  </>
-                ) : (
-                  <>
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Start
-                  </>
-                )}
+                <Wallet2 className="h-4 w-4" />
+                {!isMobile && <span className="ml-2">Wallets</span>}
+              </Button>
+              <Button
+                variant="outline"
+                size={isMobile ? "icon" : "default"}
+                onClick={() => setShowConfigModal(true)}
+                className="border-border/50"
+              >
+                <Settings className="h-4 w-4" />
+                {!isMobile && <span className="ml-2">Config</span>}
               </Button>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Quick Preset Strategies */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-400" />
-                Quick Preset Strategies
-              </h2>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="max-w-xs">
-                  <p>
-                    Select a preset to instantly configure your MM agent. Premium presets use advanced psychological
-                    triggers.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+      <div className="container max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={handleRunCycle}
+            disabled={isRunning || !config.is_active}
+            size="lg"
+            variant="outline"
+            className="h-14 border-border/50 hover:border-border bg-transparent"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Test Run
+          </Button>
+          <Button
+            onClick={toggleAgent}
+            size="lg"
+            className={cn(
+              "h-14",
+              config.is_active
+                ? "bg-rose-500 hover:bg-rose-600 text-white"
+                : "bg-emerald-500 hover:bg-emerald-600 text-white",
+            )}
+          >
+            {config.is_active ? (
+              <>
+                <PauseCircle className="h-4 w-4 mr-2" />
+                Stop
+              </>
+            ) : (
+              <>
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Start
+              </>
+            )}
+          </Button>
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-              {PRESET_STRATEGIES.map((preset, index) => {
-                const PresetIcon = preset.icon
-                const isActive =
-                  config.buy_amount_eth === preset.config.buy_amount_eth &&
-                  config.buy_interval_minutes === preset.config.buy_interval_minutes &&
-                  config.sell_interval_minutes === preset.config.sell_interval_minutes &&
-                  config.pro_mode === preset.config.pro_mode &&
-                  config.max_mode === preset.config.max_mode &&
-                  config.profitable_mode === preset.config.profitable_mode &&
-                  config.burst_mode === preset.config.burst_mode &&
-                  config.fomo_mode === preset.config.fomo_mode
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Total Buys" value={stats.totalBuys.toLocaleString()} icon={TrendingUp} trend="up" />
+          <StatCard label="Total Sells" value={stats.totalSells.toLocaleString()} icon={TrendingDown} trend="down" />
+          <StatCard
+            label="Volume Generated"
+            value={`${Number(stats.volumeGenerated).toFixed(4)} ETH`}
+            icon={ArrowRightLeft}
+            trend="neutral"
+          />
+        </div>
 
-                return (
-                  <button
-                    key={preset.name}
-                    onClick={() => applyPreset(preset)}
-                    className={cn(
-                      "relative group rounded-xl p-4 sm:p-5 text-left transition-all duration-300",
-                      "bg-card/50 backdrop-blur-xl border hover:scale-[1.02] active:scale-[0.98]",
-                      "hover:shadow-lg hover:shadow-primary/5",
-                      isActive
-                        ? "border-emerald-500 bg-emerald-500/10 shadow-emerald-500/20 shadow-lg"
-                        : "border-border/50 hover:border-border",
-                      preset.isUltimate &&
-                        !isActive &&
-                        "border-amber-500/30 hover:border-amber-500/60 hover:shadow-amber-500/10",
-                      preset.isPremium &&
-                        !preset.isUltimate &&
-                        !isActive &&
-                        "border-purple-500/30 hover:border-purple-500/50",
-                    )}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    {/* Glow effect for premium presets */}
-                    {preset.isUltimate && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                    {preset.isPremium && !preset.isUltimate && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-
-                    {/* Badge */}
-                    {preset.isUltimate && (
-                      <div className="absolute -top-1 -right-1 bg-gradient-to-br from-amber-400 to-orange-600 text-[10px] font-bold text-white px-2 py-0.5 rounded-full shadow-lg">
-                        ULTIMATE
-                      </div>
-                    )}
-                    {preset.isPremium && !preset.isUltimate && (
-                      <div className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 to-pink-500 text-[10px] font-bold text-white px-2 py-0.5 rounded-full shadow-lg">
-                        PRO
-                      </div>
-                    )}
-
-                    <div className="relative">
-                      {/* Icon */}
-                      <div
-                        className={cn(
-                          "inline-flex p-2.5 rounded-lg bg-gradient-to-br mb-3 transition-transform group-hover:scale-110",
-                          preset.color,
-                        )}
-                      >
-                        <PresetIcon className="h-5 w-5 text-white" />
-                      </div>
-
-                      {/* Title & Description */}
-                      <h3 className="font-semibold text-sm sm:text-base mb-1">{preset.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{preset.description}</p>
-
-                      {/* Features for ultimate preset */}
-                      {preset.features && (
-                        <div className="space-y-1 mb-3 hidden sm:block">
-                          {preset.features.slice(0, 2).map((feature, idx) => (
-                            <div key={idx} className="flex items-center text-[10px] text-amber-400/80">
-                              <div className="w-1 h-1 rounded-full bg-amber-500 mr-1.5 flex-shrink-0" />
-                              <span className="truncate">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Stats */}
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between text-zinc-500">
-                          <span>Buy:</span>
-                          <span className="text-zinc-300 font-medium">{preset.config.buy_amount_eth} ETH</span>
-                        </div>
-                        <div className="flex justify-between text-zinc-500">
-                          <span>Interval:</span>
-                          <span className="text-zinc-300 font-medium">{preset.config.buy_interval_minutes}m</span>
-                        </div>
-                        <div className="flex justify-between text-zinc-500">
-                          <span>Volume:</span>
-                          <span
-                            className={cn(
-                              "font-medium",
-                              preset.expectedVolume === "Maximum" && "text-amber-400",
-                              preset.expectedVolume === "Very High" && "text-purple-400",
-                              preset.expectedVolume === "High" && "text-rose-400",
-                              preset.expectedVolume === "Medium" && "text-orange-400",
-                              preset.expectedVolume === "Low" && "text-blue-400",
-                            )}
-                          >
-                            {preset.expectedVolume}
-                          </span>
-                        </div>
-
-                        {/* Risk indicator */}
-                        <div className="flex justify-between items-center text-zinc-500 pt-1">
-                          <span>Risk:</span>
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((level) => (
-                              <div
-                                key={level}
-                                className={cn(
-                                  "w-2 h-2 rounded-full transition-colors",
-                                  level <= preset.riskLevel
-                                    ? preset.riskLevel >= 4
-                                      ? "bg-amber-500"
-                                      : preset.riskLevel >= 3
-                                        ? "bg-rose-500"
-                                        : preset.riskLevel >= 2
-                                          ? "bg-orange-500"
-                                          : "bg-blue-500"
-                                    : "bg-zinc-700",
-                                )}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Active indicator */}
-                      {isActive && (
-                        <div className="mt-3 pt-3 border-t border-emerald-500/30 text-xs text-emerald-400 font-medium flex items-center gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Active
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {config.fomo_mode && (
-            <Card
-              className={cn(
-                "border-2 overflow-hidden transition-all duration-300",
-                config.fomo_pattern === "apex_predator"
-                  ? "border-amber-500/50 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent"
-                  : "border-purple-500/50 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent",
-              )}
-            >
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  {config.fomo_pattern === "apex_predator" ? (
-                    <>
-                      <div className="relative">
-                        <Crown className="h-6 w-6 text-amber-400" />
-                        <div className="absolute inset-0 animate-ping">
-                          <Crown className="h-6 w-6 text-amber-400/30" />
-                        </div>
-                      </div>
-                      <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent font-bold">
-                        Apex Predator Mode Active
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="h-6 w-6 text-purple-400" />
-                      <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-bold">
-                        FOMO Mode Active
-                      </span>
-                    </>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                  {[
-                    { label: "Pattern", value: config.fomo_pattern?.replace("_", " ") || "Reversal" },
-                    { label: "Intensity", value: `${config.fomo_intensity || 7}/10` },
-                    { label: "Phases", value: config.fomo_pattern === "apex_predator" ? "10" : "4-5" },
-                    { label: "Max Multiplier", value: config.fomo_pattern === "apex_predator" ? "10x" : "4x" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="bg-black/20 backdrop-blur-sm rounded-lg p-3 text-center">
-                      <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">{stat.label}</div>
-                      <div
-                        className={cn(
-                          "font-bold text-sm sm:text-base capitalize",
-                          config.fomo_pattern === "apex_predator" ? "text-amber-400" : "text-purple-400",
-                        )}
-                      >
-                        {stat.value}
-                      </div>
-                    </div>
+        {/* Activity Feed */}
+        <Card className="bg-card/50 backdrop-blur border-border/50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px]">
+              {activities.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
+                  <Activity className="h-8 w-8 mb-2 opacity-50" />
+                  <p className="text-sm">No activity yet</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {activities.map((activity) => (
+                    <ActivityItem key={activity.id} activity={activity} />
                   ))}
                 </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
 
-                {/* Execute Button */}
-                <Button
-                  onClick={handleFOMOExecution}
-                  disabled={isExecutingFOMO || !config.is_active}
-                  size="lg"
-                  className={cn(
-                    "w-full h-14 font-bold text-base transition-all duration-300",
-                    config.fomo_pattern === "apex_predator"
-                      ? "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-400 hover:via-orange-400 hover:to-red-400 shadow-lg shadow-amber-500/25"
-                      : "bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 hover:from-purple-400 hover:via-pink-400 hover:to-rose-400 shadow-lg shadow-purple-500/25",
-                    isExecutingFOMO && "animate-pulse",
-                  )}
-                >
-                  {isExecutingFOMO ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Executing... {Math.round(fomoProgress)}%
-                    </>
-                  ) : (
-                    <>
-                      {config.fomo_pattern === "apex_predator" ? (
-                        <Crown className="h-5 w-5 mr-2" />
-                      ) : (
-                        <Flame className="h-5 w-5 mr-2" />
-                      )}
-                      Execute {config.fomo_pattern === "apex_predator" ? "Apex Predator" : "FOMO Pattern"}
-                    </>
-                  )}
-                </Button>
-
-                {/* Progress Bar */}
-                {isExecutingFOMO && (
-                  <div className="space-y-2">
-                    <Progress
-                      value={fomoProgress}
-                      className={cn(
-                        "h-3 rounded-full",
-                        config.fomo_pattern === "apex_predator"
-                          ? "[&>div]:bg-gradient-to-r [&>div]:from-amber-500 [&>div]:via-orange-500 [&>div]:to-red-500"
-                          : "[&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:via-pink-500 [&>div]:to-rose-500",
-                      )}
-                    />
-                    <p className="text-xs text-center text-muted-foreground animate-pulse">
-                      {config.fomo_pattern === "apex_predator"
-                        ? `Phase ${Math.ceil(fomoProgress / 10)} of 10: Executing psychological warfare sequence...`
-                        : "Deploying FOMO pattern to attract organic buyers..."}
-                    </p>
-                  </div>
-                )}
-
-                {/* Pattern Description */}
-                <div
-                  className={cn(
-                    "text-xs p-3 rounded-lg border",
-                    config.fomo_pattern === "apex_predator"
-                      ? "bg-amber-500/5 text-amber-200/90 border-amber-500/20"
-                      : "bg-purple-500/5 text-purple-200/90 border-purple-500/20",
-                  )}
-                >
-                  {config.fomo_pattern === "apex_predator" ? (
-                    <p>
-                      <strong className="text-amber-400">Apex Predator</strong> combines all psychological triggers:
-                      whale signals (10x buys), momentum cascades, support building, and FOMO amplification in a
-                      coordinated 10-phase assault designed to flip sentiment from fear to greed.
-                    </p>
-                  ) : config.fomo_pattern === "reversal" ? (
-                    <p>
-                      <strong className="text-purple-400">Dip Reversal Engine</strong> aggressively absorbs sell
-                      pressure and converts panic sellers into FOMO buyers as the reversal becomes apparent.
-                    </p>
-                  ) : config.fomo_pattern === "whale_signal" ? (
-                    <p>
-                      <strong className="text-purple-400">Whale Signal Mimicry</strong> simulates large whale
-                      accumulation patterns that trigger retail FOMO and create viral whale alert moments.
-                    </p>
-                  ) : (
-                    <p>
-                      <strong className="text-purple-400">FOMO Pattern</strong> uses proven psychological triggers to
-                      create buying pressure and attract organic market participants.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() => setShowConfigModal(true)}
-                variant="outline"
-                className="flex-1 border-border/50 hover:bg-muted/50"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Advanced Settings
-              </Button>
-              <Button
-                onClick={() => setShowWalletsModal(true)}
-                variant="outline"
-                className="flex-1 border-border/50 hover:bg-muted/50"
-              >
-                <Wallet className="h-4 w-4 mr-2" />
-                Wallets & Funding
-              </Button>
+      <Dialog open={showWalletsModal} onOpenChange={setShowWalletsModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
+          <div className="p-4 sm:p-6 border-b border-border/50 bg-card/50 backdrop-blur">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10">
+                <Wallet className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg sm:text-xl">Fund Your MM Agent Wallets</DialogTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Send ETH to these addresses to enable market making operations
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4">
+              <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
+                <p className="text-xs text-muted-foreground font-medium">ETH Balance</p>
+                <p className="text-base sm:text-lg font-bold mt-1">{aggregateWalletStats.totalEth.toFixed(6)} ETH</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
+                <p className="text-xs text-muted-foreground font-medium">{tokenSymbol} Balance</p>
+                <p className="text-base sm:text-lg font-bold mt-1 truncate">
+                  {aggregateWalletStats.totalToken.toFixed(2)}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-xs text-muted-foreground font-medium">Buys</p>
+                <p className="text-base sm:text-lg font-bold text-emerald-400 mt-1">{aggregateWalletStats.totalBuys}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                <p className="text-xs text-muted-foreground font-medium">Sells</p>
+                <p className="text-base sm:text-lg font-bold text-rose-400 mt-1">{aggregateWalletStats.totalSells}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
               <Button
-                onClick={handleRunCycle}
-                disabled={isRunning || !config.is_active}
-                size="lg"
                 variant="outline"
-                className="h-14 border-border/50 hover:border-border bg-transparent"
+                size="sm"
+                onClick={() => setFundingWallet(wallets[0])}
+                className="border-emerald-500/30 hover:bg-emerald-500/10 text-xs"
               >
-                <Zap className="h-4 w-4 mr-2" />
-                Test Run
+                <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
+                Fund
               </Button>
               <Button
-                onClick={toggleAgent}
-                size="lg"
-                className={cn(
-                  "h-14",
-                  config.is_active
-                    ? "bg-rose-500 hover:bg-rose-600 text-white"
-                    : "bg-emerald-500 hover:bg-emerald-600 text-white",
-                )}
+                variant="outline"
+                size="sm"
+                onClick={() => setWithdrawingWallet(wallets[0])}
+                className="border-blue-500/30 hover:bg-blue-500/10 text-xs"
               >
-                {config.is_active ? (
-                  <>
-                    <PauseCircle className="h-4 w-4 mr-2" />
-                    Stop
-                  </>
-                ) : (
-                  <>
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Start
-                  </>
-                )}
+                <ArrowUpFromLine className="h-3.5 w-3.5 mr-1.5" />
+                Withdraw
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSellAll()}
+                className="border-orange-500/30 hover:bg-orange-500/10 text-xs"
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Sell All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportWallets}
+                className="border-rose-500/30 hover:bg-rose-500/10 text-xs bg-transparent"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Export
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard label="Total Buys" value={stats.totalBuys.toLocaleString()} icon={TrendingUp} trend="up" />
-              <StatCard
-                label="Total Sells"
-                value={stats.totalSells.toLocaleString()}
-                icon={TrendingDown}
-                trend="down"
-              />
-              <StatCard
-                label="Volume Generated"
-                value={`${Number(stats.volumeGenerated).toFixed(4)} ETH`}
-                icon={ArrowRightLeft}
-                trend="neutral"
-              />
-            </div>
-
-            {/* Activity Feed */}
-            <Card className="bg-card/50 backdrop-blur border-border/50">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[300px]">
-                  {activities.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[280px] text-muted-foreground">
-                      <Activity className="h-8 w-8 mb-2 opacity-50" />
-                      <p className="text-sm">No activity yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {activities.map((activity) => (
-                        <ActivityItem key={activity.id} activity={activity} />
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Wallets Modal */}
-          <Dialog open={showWalletsModal} onOpenChange={setShowWalletsModal}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
-              <div className="p-4 sm:p-6 border-b border-border/50 bg-card/50 backdrop-blur">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2.5 rounded-lg bg-emerald-500/10">
-                    <Wallet className="h-5 w-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-lg sm:text-xl">Fund Your MM Agent Wallets</DialogTitle>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                      Send ETH to these addresses to enable market making operations
-                    </p>
-                  </div>
+          <ScrollArea className="h-[50vh] sm:h-[400px]">
+            <div className="p-4 sm:p-6 space-y-3">
+              {wallets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Wallet className="h-12 w-12 mb-3 opacity-50" />
+                  <p className="text-sm">No wallets found</p>
                 </div>
+              ) : (
+                wallets.map((wallet, index) => (
+                  <Card key={wallet.wallet_address} className="bg-card/50 border-border/30 overflow-hidden">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm sm:text-base font-bold text-emerald-400">{index + 1}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs sm:text-sm font-semibold">Wallet {index + 1}</span>
+                              {wallet.is_active && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <code className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
+                                {wallet.wallet_address}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 flex-shrink-0"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(wallet.wallet_address)
+                                  toast.success("Address copied!")
+                                }}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-4">
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
-                    <p className="text-xs text-muted-foreground font-medium">ETH Balance</p>
-                    <p className="text-base sm:text-lg font-bold mt-1">
-                      {aggregateWalletStats.totalEth.toFixed(6)} ETH
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
-                    <p className="text-xs text-muted-foreground font-medium">{tokenSymbol} Balance</p>
-                    <p className="text-base sm:text-lg font-bold mt-1 truncate">
-                      {aggregateWalletStats.totalToken.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <p className="text-xs text-muted-foreground">Buys</p>
-                    <p className="text-base sm:text-lg font-bold text-emerald-400 mt-1">
-                      {aggregateWalletStats.totalBuys}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                    <p className="text-xs text-muted-foreground">Sells</p>
-                    <p className="text-base sm:text-lg font-bold text-rose-400 mt-1">
-                      {aggregateWalletStats.totalSells}
-                    </p>
-                  </div>
-                </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="p-2 rounded bg-muted/30">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">ETH Balance</p>
+                          <p className="text-xs sm:text-sm font-semibold mt-0.5 truncate">
+                            {(wallet.eth_balance ? Number.parseFloat(wallet.eth_balance) : 0).toFixed(6)} ETH
+                          </p>
+                        </div>
+                        <div className="p-2 rounded bg-muted/30">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">{tokenSymbol} Balance</p>
+                          <p className="text-xs sm:text-sm font-semibold mt-0.5 truncate">
+                            {(wallet.token_balance ? Number.parseFloat(wallet.token_balance) : 0).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFundingWallet(wallets[0])}
-                    className="border-emerald-500/30 hover:bg-emerald-500/10 text-xs"
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">Buys</p>
+                          <p className="text-sm sm:text-base font-bold text-emerald-400 mt-0.5">
+                            {wallet.total_buys || 0}
+                          </p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">Sells</p>
+                          <p className="text-sm sm:text-base font-bold text-rose-400 mt-0.5">
+                            {wallet.total_sells || 0}
+                          </p>
+                        </div>
+                      </div>
+
+                      <a
+                        href={`https://basescan.org/address/${wallet.wallet_address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 mb-3"
+                      >
+                        View on Basescan
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFundingWallet(wallet)}
+                          className="border-emerald-500/30 text-xs h-8"
+                        >
+                          <ArrowDownToLine className="h-3 w-3 mr-1" />
+                          Fund
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setWithdrawingWallet(wallet)}
+                          className="border-blue-500/30 text-xs h-8"
+                        >
+                          <ArrowUpFromLine className="h-3 w-3 mr-1" />
+                          Withdraw
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSellAll(wallet)}
+                          disabled={isSellingAll}
+                          className="border-orange-500/30 text-xs h-8 col-span-2"
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Sell All
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!fundingWallet} onOpenChange={() => setFundingWallet(null)}>
+        <DialogContent className="bg-black/95 border-zinc-800">
+          <DialogHeader>
+            <DialogTitle>Fund Wallet {fundingWallet?.wallet_index}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Amount (ETH)</Label>
+              <Input
+                type="number"
+                step="0.001"
+                placeholder="0.1"
+                value={fundAmount}
+                onChange={(e) => setFundAmount(e.target.value)}
+                className="bg-zinc-900 border-zinc-800"
+              />
+              <p className="text-xs text-zinc-400 mt-2">
+                Your balance: {Number(connectedWalletBalance).toFixed(4)} ETH
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" onClick={() => setFundAmount("0.01")} className="bg-zinc-900 border-zinc-800">
+                0.01 ETH
+              </Button>
+              <Button variant="outline" onClick={() => setFundAmount("0.05")} className="bg-zinc-900 border-zinc-800">
+                0.05 ETH
+              </Button>
+              <Button variant="outline" onClick={() => setFundAmount("0.1")} className="bg-zinc-900 border-zinc-800">
+                0.1 ETH
+              </Button>
+            </div>
+            <Button
+              onClick={handleFundWallet}
+              disabled={isFunding || !fundAmount || Number(fundAmount) <= 0}
+              className="w-full bg-emerald-500 hover:bg-emerald-600"
+            >
+              {isFunding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <ArrowDownToLine className="h-4 w-4 mr-2" />
+                  Fund Wallet
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!withdrawingWallet} onOpenChange={() => setWithdrawingWallet(null)}>
+        <DialogContent className="bg-black/95 border-zinc-800">
+          <DialogHeader>
+            <DialogTitle>Withdraw from Wallet {withdrawingWallet?.wallet_index}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Withdraw Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={withdrawType === "eth" ? "default" : "outline"}
+                  onClick={() => setWithdrawType("eth")}
+                  className={cn(
+                    withdrawType === "eth" ? "bg-blue-500 hover:bg-blue-600" : "bg-zinc-900 border-zinc-800",
+                  )}
+                >
+                  ETH
+                </Button>
+                <Button
+                  variant={withdrawType === "token" ? "default" : "outline"}
+                  onClick={() => setWithdrawType("token")}
+                  className={cn(
+                    withdrawType === "token" ? "bg-blue-500 hover:bg-blue-600" : "bg-zinc-900 border-zinc-800",
+                  )}
+                >
+                  {tokenSymbol}
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Recipient Address</Label>
+              <Input
+                type="text"
+                placeholder="0x..."
+                value={withdrawAddress}
+                onChange={(e) => setWithdrawAddress(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 font-mono text-sm"
+              />
+            </div>
+            <Button
+              onClick={handleWithdraw}
+              disabled={isWithdrawing || !withdrawAddress}
+              className="w-full bg-blue-500 hover:bg-blue-600"
+            >
+              {isWithdrawing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Withdrawing...
+                </>
+              ) : (
+                <>
+                  <ArrowUpFromLine className="h-4 w-4 mr-2" />
+                  Withdraw All {withdrawType.toUpperCase()}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agent Configuration</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Token Selection */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">Target Token</label>
+              <div className="grid grid-cols-2 gap-3">
+                {SUPPORTED_TOKENS.map((token) => (
+                  <button
+                    key={token.address}
+                    onClick={async () => {
+                      setConfig({ ...config, token_address: token.address, token_symbol: token.symbol })
+                      try {
+                        await fetch("/api/agents/mm/config", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            agentId: config.id,
+                            token_address: token.address,
+                            token_symbol: token.symbol,
+                          }),
+                        })
+                        toast.success(`Switched to ${token.symbol}`)
+                        mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                      } catch (error) {
+                        toast.error("Failed to update token")
+                      }
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      config.token_address === token.address
+                        ? "border-emerald-500 bg-emerald-500/10"
+                        : "border-border hover:border-border/80"
+                    }`}
                   >
-                    <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
-                    Fund
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setWithdrawingWallet(wallets[0])}
-                    className="border-blue-500/30 hover:bg-blue-500/10 text-xs"
-                  >
-                    <ArrowUpFromLine className="h-3.5 w-3.5 mr-1.5" />
-                    Withdraw
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSellAll()}
-                    className="border-orange-500/30 hover:bg-orange-500/10 text-xs"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                    Sell All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleExportWallets}
-                    className="border-rose-500/30 hover:bg-rose-500/10 text-xs bg-transparent"
-                  >
-                    <Download className="h-3.5 w-3.5 mr-1.5" />
-                    Export
-                  </Button>
-                </div>
+                    <p className="font-semibold">{token.symbol}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{token.name}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Trading Settings */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Buy Amount (ETH)</label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  value={config.buy_amount_eth}
+                  onChange={(e) => setConfig({ ...config, buy_amount_eth: e.target.value })}
+                />
               </div>
 
-              <ScrollArea className="h-[50vh] sm:h-[400px]">
-                <div className="p-4 sm:p-6 space-y-3">
-                  {wallets.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                      <Wallet className="h-12 w-12 mb-3 opacity-50" />
-                      <p className="text-sm">No wallets found</p>
-                    </div>
-                  ) : (
-                    wallets.map((wallet, index) => (
-                      <Card key={wallet.wallet_address} className="bg-card/50 border-border/30 overflow-hidden">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-sm sm:text-base font-bold text-emerald-400">{index + 1}</span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs sm:text-sm font-semibold">Wallet {index + 1}</span>
-                                  {wallet.is_active && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                      Active
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1.5 mt-0.5">
-                                  <code className="text-[10px] sm:text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
-                                    {wallet.wallet_address}
-                                  </code>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-5 w-5 flex-shrink-0"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(wallet.wallet_address)
-                                      toast.success("Address copied!")
-                                    }}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="p-2 rounded bg-muted/30">
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">ETH Balance</p>
-                              <p className="text-xs sm:text-sm font-semibold mt-0.5 truncate">
-                                {(wallet.eth_balance ? Number.parseFloat(wallet.eth_balance) : 0).toFixed(6)} ETH
-                              </p>
-                            </div>
-                            <div className="p-2 rounded bg-muted/30">
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">{tokenSymbol} Balance</p>
-                              <p className="text-xs sm:text-sm font-semibold mt-0.5 truncate">
-                                {(wallet.token_balance ? Number.parseFloat(wallet.token_balance) : 0).toFixed(2)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 mb-3">
-                            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">Buys</p>
-                              <p className="text-sm sm:text-base font-bold text-emerald-400 mt-0.5">
-                                {wallet.total_buys || 0}
-                              </p>
-                            </div>
-                            <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                              <p className="text-[10px] sm:text-xs text-muted-foreground">Sells</p>
-                              <p className="text-sm sm:text-base font-bold text-rose-400 mt-0.5">
-                                {wallet.total_sells || 0}
-                              </p>
-                            </div>
-                          </div>
-
-                          <a
-                            href={`https://basescan.org/address/${wallet.wallet_address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 mb-3"
-                          >
-                            View on Basescan
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setFundingWallet(wallet)}
-                              className="border-emerald-500/30 text-xs h-8"
-                            >
-                              <ArrowDownToLine className="h-3 w-3 mr-1" />
-                              Fund
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setWithdrawingWallet(wallet)}
-                              className="border-blue-500/30 text-xs h-8"
-                            >
-                              <ArrowUpFromLine className="h-3 w-3 mr-1" />
-                              Withdraw
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSellAll(wallet)}
-                              disabled={isSellingAll}
-                              className="border-orange-500/30 text-xs h-8 col-span-2"
-                            >
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Sell All
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          </Dialog>
-
-          {/* Fund Wallet Modal */}
-          <Dialog open={!!fundingWallet} onOpenChange={() => setFundingWallet(null)}>
-            <DialogContent className="bg-black/95 border-zinc-800">
-              <DialogHeader>
-                <DialogTitle>Fund Wallet {fundingWallet?.wallet_index}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Amount (ETH)</Label>
+                  <label className="text-sm font-medium mb-2 block">Buy Interval (min)</label>
                   <Input
                     type="number"
-                    step="0.001"
-                    placeholder="0.1"
-                    value={fundAmount}
-                    onChange={(e) => setFundAmount(e.target.value)}
-                    className="bg-zinc-900 border-zinc-800"
+                    value={config.buy_interval_minutes}
+                    onChange={(e) => setConfig({ ...config, buy_interval_minutes: Number(e.target.value) })}
                   />
-                  <p className="text-xs text-zinc-400 mt-2">
-                    Your balance: {Number(connectedWalletBalance).toFixed(4)} ETH
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setFundAmount("0.01")}
-                    className="bg-zinc-900 border-zinc-800"
-                  >
-                    0.01 ETH
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setFundAmount("0.05")}
-                    className="bg-zinc-900 border-zinc-800"
-                  >
-                    0.05 ETH
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setFundAmount("0.1")}
-                    className="bg-zinc-900 border-zinc-800"
-                  >
-                    0.1 ETH
-                  </Button>
-                </div>
-                <Button
-                  onClick={handleFundWallet}
-                  disabled={isFunding || !fundAmount || Number(fundAmount) <= 0}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600"
-                >
-                  {isFunding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowDownToLine className="h-4 w-4 mr-2" />
-                      Fund Wallet
-                    </>
-                  )}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          {/* Withdraw Modal */}
-          <Dialog open={!!withdrawingWallet} onOpenChange={() => setWithdrawingWallet(null)}>
-            <DialogContent className="bg-black/95 border-zinc-800">
-              <DialogHeader>
-                <DialogTitle>Withdraw from Wallet {withdrawingWallet?.wallet_index}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Withdraw Type</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant={withdrawType === "eth" ? "default" : "outline"}
-                      onClick={() => setWithdrawType("eth")}
-                      className={cn(
-                        withdrawType === "eth" ? "bg-blue-500 hover:bg-blue-600" : "bg-zinc-900 border-zinc-800",
-                      )}
-                    >
-                      ETH
-                    </Button>
-                    <Button
-                      variant={withdrawType === "token" ? "default" : "outline"}
-                      onClick={() => setWithdrawType("token")}
-                      className={cn(
-                        withdrawType === "token" ? "bg-blue-500 hover:bg-blue-600" : "bg-zinc-900 border-zinc-800",
-                      )}
-                    >
-                      {tokenSymbol}
-                    </Button>
-                  </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Recipient Address</Label>
+                  <label className="text-sm font-medium mb-2 block">Sell Interval (min)</label>
                   <Input
-                    type="text"
-                    placeholder="0x..."
-                    value={withdrawAddress}
-                    onChange={(e) => setWithdrawAddress(e.target.value)}
-                    className="bg-zinc-900 border-zinc-800 font-mono text-sm"
+                    type="number"
+                    value={config.sell_interval_minutes}
+                    onChange={(e) => setConfig({ ...config, sell_interval_minutes: Number(e.target.value) })}
                   />
                 </div>
-                <Button
-                  onClick={handleWithdraw}
-                  disabled={isWithdrawing || !withdrawAddress}
-                  className="w-full bg-blue-500 hover:bg-blue-600"
-                >
-                  {isWithdrawing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Withdrawing...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowUpFromLine className="h-4 w-4 mr-2" />
-                      Withdraw All {withdrawType.toUpperCase()}
-                    </>
-                  )}
-                </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            </div>
 
-          {/* Config Modal */}
-          <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Agent Configuration</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {/* Token Selection */}
+            {/* Mode Toggles */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
                 <div>
-                  <label className="text-sm font-medium mb-3 block">Target Token</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {SUPPORTED_TOKENS.map((token) => (
-                      <button
-                        key={token.address}
-                        onClick={async () => {
-                          setConfig({ ...config, token_address: token.address, token_symbol: token.symbol })
-                          try {
-                            await fetch("/api/agents/mm/config", {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                agentId: config.id,
-                                token_address: token.address,
-                                token_symbol: token.symbol,
-                              }),
-                            })
-                            toast.success(`Switched to ${token.symbol}`)
-                            mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                          } catch (error) {
-                            toast.error("Failed to update token")
-                          }
-                        }}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          config.token_address === token.address
-                            ? "border-emerald-500 bg-emerald-500/10"
-                            : "border-border hover:border-border/80"
-                        }`}
-                      >
-                        <p className="font-semibold">{token.symbol}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{token.name}</p>
-                      </button>
-                    ))}
-                  </div>
+                  <p className="font-medium text-sm">Pro Mode (10x Wallets)</p>
+                  <p className="text-xs text-muted-foreground">Use 10 wallets for increased volume</p>
                 </div>
-
-                {/* Trading Settings */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Buy Amount (ETH)</label>
-                    <Input
-                      type="number"
-                      step="0.001"
-                      value={config.buy_amount_eth}
-                      onChange={(e) => setConfig({ ...config, buy_amount_eth: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Buy Interval (min)</label>
-                      <Input
-                        type="number"
-                        value={config.buy_interval_minutes}
-                        onChange={(e) => setConfig({ ...config, buy_interval_minutes: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Sell Interval (min)</label>
-                      <Input
-                        type="number"
-                        value={config.sell_interval_minutes}
-                        onChange={(e) => setConfig({ ...config, sell_interval_minutes: Number(e.target.value) })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mode Toggles */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
-                    <div>
-                      <p className="font-medium text-sm">Pro Mode (10x Wallets)</p>
-                      <p className="text-xs text-muted-foreground">Use 10 wallets for increased volume</p>
-                    </div>
-                    <Switch
-                      checked={config.pro_mode}
-                      onCheckedChange={async (checked) => {
-                        setConfig({
-                          ...config,
-                          pro_mode: checked,
-                          active_wallets: checked ? 10 : config.max_mode ? 20 : 5,
-                        })
-                        try {
-                          await fetch("/api/agents/mm/config", {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              agentId: config.id,
-                              pro_mode: checked,
-                              active_wallets: checked ? 10 : config.max_mode ? 20 : 5,
-                            }),
-                          })
-                          toast.success(checked ? "Pro Mode enabled" : "Pro Mode disabled")
-                          mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                        } catch (error) {
-                          toast.error("Failed to update mode")
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
-                    <div>
-                      <p className="font-medium text-sm">Max Mode (20x Wallets)</p>
-                      <p className="text-xs text-muted-foreground">Maximum distribution across 20 wallets</p>
-                    </div>
-                    <Switch
-                      checked={config.max_mode}
-                      onCheckedChange={async (checked) => {
-                        setConfig({
-                          ...config,
-                          max_mode: checked,
-                          active_wallets: checked ? 20 : config.pro_mode ? 10 : 5,
-                        })
-                        try {
-                          await fetch("/api/agents/mm/config", {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              agentId: config.id,
-                              max_mode: checked,
-                              active_wallets: checked ? 20 : config.pro_mode ? 10 : 5,
-                            }),
-                          })
-                          toast.success(checked ? "Max Mode enabled" : "Max Mode disabled")
-                          mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                        } catch (error) {
-                          toast.error("Failed to update mode")
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
-                    <div>
-                      <p className="font-medium text-sm">Profitable Mode</p>
-                      <p className="text-xs text-muted-foreground">Only sell when profit exceeds 10%</p>
-                    </div>
-                    <Switch
-                      checked={config.profitable_mode}
-                      onCheckedChange={async (checked) => {
-                        setConfig({ ...config, profitable_mode: checked })
-                        try {
-                          await fetch("/api/agents/mm/config", {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              agentId: config.id,
-                              profitable_mode: checked,
-                            }),
-                          })
-                          toast.success(checked ? "Profitable Mode enabled" : "Profitable Mode disabled")
-                          mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                        } catch (error) {
-                          toast.error("Failed to update mode")
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {/* Burst Mode */}
-                  <div className="p-4 rounded-lg border-2 border-orange-500/20 bg-orange-500/5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <p className="font-medium text-sm">Burst Mode</p>
-                        <p className="text-xs text-muted-foreground">Execute rapid-fire buy/sell sequences</p>
-                      </div>
-                      <Switch
-                        checked={config.burst_mode}
-                        onCheckedChange={async (checked) => {
-                          setConfig({ ...config, burst_mode: checked })
-                          try {
-                            await fetch("/api/agents/mm/config", {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                agentId: config.id,
-                                burst_mode: checked,
-                              }),
-                            })
-                            toast.success(checked ? "Burst Mode enabled" : "Burst Mode disabled")
-                            mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                          } catch (error) {
-                            toast.error("Failed to update mode")
-                          }
-                        }}
-                      />
-                    </div>
-
-                    {config.burst_mode && (
-                      <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-orange-500/10">
-                        <div>
-                          <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Trades Count</label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="20"
-                            value={config.burst_trades_count || 5}
-                            onChange={(e) => setConfig({ ...config, burst_trades_count: Number(e.target.value) })}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium mb-1.5 block text-muted-foreground">
-                            Delay (seconds)
-                          </label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="60"
-                            value={config.burst_delay_seconds || 3}
-                            onChange={(e) => setConfig({ ...config, burst_delay_seconds: Number(e.target.value) })}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-rose-500/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Brain className="h-4 w-4 text-purple-400" />
-                        <p className="font-medium text-sm">FOMO Mode</p>
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30"
-                        >
-                          Ultimate Strategy
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Psychological patterns that create buying pressure & reverse dips
-                      </p>
-                    </div>
-                    <Switch
-                      checked={config.fomo_mode}
-                      onCheckedChange={async (checked) => {
-                        setConfig({ ...config, fomo_mode: checked })
-                        try {
-                          await fetch("/api/agents/mm/config", {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              agentId: config.id,
-                              fomo_mode: checked,
-                              fomo_intensity: config.fomo_intensity || 7,
-                              fomo_pattern: config.fomo_pattern || "reversal",
-                            }),
-                          })
-                          toast.success(checked ? "FOMO Mode activated!" : "FOMO Mode disabled", {
-                            description: checked ? "Psychological trading patterns enabled" : undefined,
-                          })
-                          mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                        } catch (error) {
-                          toast.error("Failed to update mode")
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {config.fomo_mode && (
-                    <div className="space-y-4 mt-4 pt-4 border-t border-purple-500/20">
-                      {/* Pattern Selection */}
-                      <div>
-                        <label className="text-xs font-medium mb-2 block text-muted-foreground flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          FOMO Pattern
-                        </label>
-                        <Select
-                          value={config.fomo_pattern || "reversal"}
-                          onValueChange={async (value) => {
-                            setConfig({ ...config, fomo_pattern: value })
-                            try {
-                              await fetch("/api/agents/mm/config", {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  agentId: config.id,
-                                  fomo_pattern: value,
-                                }),
-                              })
-                              const pattern = FOMO_PATTERNS[value]
-                              toast.success(`Pattern: ${pattern?.name}`, {
-                                description: pattern?.psychologicalTrigger,
-                              })
-                            } catch (error) {
-                              toast.error("Failed to update pattern")
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="bg-background/50 border-purple-500/20">
-                            <SelectValue placeholder="Select pattern" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(FOMO_PATTERNS).map(([key, pattern]) => (
-                              <SelectItem key={key} value={key}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{pattern.name}</span>
-                                  <span className="text-xs text-muted-foreground">{pattern.description}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {config.fomo_pattern && FOMO_PATTERNS[config.fomo_pattern] && (
-                          <p className="text-xs text-purple-300/70 mt-2 italic">
-                            "{FOMO_PATTERNS[config.fomo_pattern].psychologicalTrigger}"
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Intensity Slider */}
-                      <div>
-                        <label className="text-xs font-medium mb-2 block text-muted-foreground flex items-center gap-1">
-                          <Flame className="h-3 w-3" />
-                          Intensity Level: {config.fomo_intensity || 7}/10
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground">Subtle</span>
-                          <Input
-                            type="range"
-                            min="1"
-                            max="10"
-                            value={config.fomo_intensity || 7}
-                            onChange={async (e) => {
-                              const value = Number(e.target.value)
-                              setConfig({ ...config, fomo_intensity: value })
-                              try {
-                                await fetch("/api/agents/mm/config", {
-                                  method: "PUT",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({
-                                    agentId: config.id,
-                                    fomo_intensity: value,
-                                  }),
-                                })
-                              } catch (error) {
-                                // Silent update
-                              }
-                            }}
-                            className="h-2 flex-1 accent-purple-500"
-                          />
-                          <span className="text-xs text-muted-foreground">Maximum</span>
-                        </div>
-                      </div>
-
-                      {/* Pattern Info Card */}
-                      {config.fomo_pattern && FOMO_PATTERNS[config.fomo_pattern] && (
-                        <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                          <div className="flex items-start gap-2">
-                            <Sparkles className="h-4 w-4 text-purple-400 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-purple-300">Expected Impact</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {FOMO_PATTERNS[config.fomo_pattern].expectedImpact}
-                              </p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-300">
-                                  {FOMO_PATTERNS[config.fomo_pattern].phases.length} Phases
-                                </Badge>
-                                <Badge variant="outline" className="text-xs border-pink-500/30 text-pink-300">
-                                  {FOMO_PATTERNS[config.fomo_pattern].phases.reduce((acc, p) => acc + p.duration, 0)}{" "}
-                                  min duration
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Execute FOMO Button */}
-                      <Button
-                        onClick={handleFOMOExecution}
-                        disabled={isExecutingFOMO || !config.is_active}
-                        className="w-full bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 hover:from-purple-500 hover:via-pink-500 hover:to-rose-500 text-white border-0"
-                      >
-                        {isExecutingFOMO ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Executing FOMO Pattern...
-                          </>
-                        ) : (
-                          <>
-                            <Rocket className="h-4 w-4 mr-2" />
-                            Execute {FOMO_PATTERNS[config.fomo_pattern || "reversal"]?.name || "FOMO Pattern"}
-                          </>
-                        )}
-                      </Button>
-
-                      {isExecutingFOMO && (
-                        <div className="space-y-1">
-                          <Progress value={fomoProgress} className="h-1.5" />
-                          <p className="text-xs text-center text-muted-foreground">
-                            Executing psychological trading pattern...
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Burst Mode Execution Button */}
-                {config.burst_mode && (
-                  <Button
-                    onClick={handleBurstMode}
-                    disabled={isBursting}
-                    variant="outline"
-                    className="w-full border-orange-500/20 hover:bg-orange-500/10 hover:border-orange-500/40 bg-transparent"
-                  >
-                    {isBursting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Executing Burst...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 mr-2 text-orange-400" />
-                        Execute Burst Mode
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                <Button
-                  onClick={async () => {
+                <Switch
+                  checked={config.pro_mode}
+                  onCheckedChange={async (checked) => {
+                    setConfig({ ...config, pro_mode: checked, active_wallets: checked ? 10 : config.max_mode ? 20 : 5 })
                     try {
                       await fetch("/api/agents/mm/config", {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                           agentId: config.id,
-                          buy_amount_eth: config.buy_amount_eth,
-                          buy_interval_minutes: config.buy_interval_minutes,
-                          sell_interval_minutes: config.sell_interval_minutes,
-                          burst_trades_count: config.burst_trades_count,
-                          burst_delay_seconds: config.burst_delay_seconds,
-                          fomo_intensity: config.fomo_intensity, // Added
-                          fomo_pattern: config.fomo_pattern, // Added
+                          pro_mode: checked,
+                          active_wallets: checked ? 10 : config.max_mode ? 20 : 5,
                         }),
                       })
-                      toast.success("Configuration saved")
+                      toast.success(checked ? "Pro Mode enabled" : "Pro Mode disabled")
                       mutate(`/api/agents/mm/config?ownerAddress=${address}`)
-                      setShowConfigModal(false)
                     } catch (error) {
-                      toast.error("Failed to save configuration")
+                      toast.error("Failed to update mode")
                     }
                   }}
-                  className="w-full"
-                >
-                  Save Configuration
-                </Button>
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </TooltipProvider>
-    )
-  }
 
-  // All dialogs are now within the 'if (config)' block, so this return is no longer needed.
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
+                <div>
+                  <p className="font-medium text-sm">Max Mode (20x Wallets)</p>
+                  <p className="text-xs text-muted-foreground">Maximum distribution across 20 wallets</p>
+                </div>
+                <Switch
+                  checked={config.max_mode}
+                  onCheckedChange={async (checked) => {
+                    setConfig({ ...config, max_mode: checked, active_wallets: checked ? 20 : config.pro_mode ? 10 : 5 })
+                    try {
+                      await fetch("/api/agents/mm/config", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          agentId: config.id,
+                          max_mode: checked,
+                          active_wallets: checked ? 20 : config.pro_mode ? 10 : 5,
+                        }),
+                      })
+                      toast.success(checked ? "Max Mode enabled" : "Max Mode disabled")
+                      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                    } catch (error) {
+                      toast.error("Failed to update mode")
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
+                <div>
+                  <p className="font-medium text-sm">Profitable Mode</p>
+                  <p className="text-xs text-muted-foreground">Only sell when profit exceeds 10%</p>
+                </div>
+                <Switch
+                  checked={config.profitable_mode}
+                  onCheckedChange={async (checked) => {
+                    setConfig({ ...config, profitable_mode: checked })
+                    try {
+                      await fetch("/api/agents/mm/config", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          agentId: config.id,
+                          profitable_mode: checked,
+                        }),
+                      })
+                      toast.success(checked ? "Profitable Mode enabled" : "Profitable Mode disabled")
+                      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                    } catch (error) {
+                      toast.error("Failed to update mode")
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Burst Mode Toggle and Configuration */}
+              <div className="p-4 rounded-lg border-2 border-orange-500/20 bg-orange-500/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-sm">Burst Mode</p>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-orange-500/10 text-orange-400 border-orange-500/20"
+                      >
+                        Advanced
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Execute rapid-fire buy/sell sequences</p>
+                  </div>
+                  <Switch
+                    checked={config.burst_mode}
+                    onCheckedChange={async (checked) => {
+                      setConfig({ ...config, burst_mode: checked })
+                      try {
+                        await fetch("/api/agents/mm/config", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            agentId: config.id,
+                            burst_mode: checked,
+                          }),
+                        })
+                        toast.success(checked ? "Burst Mode enabled" : "Burst Mode disabled")
+                        mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                      } catch (error) {
+                        toast.error("Failed to update mode")
+                      }
+                    }}
+                  />
+                </div>
+
+                {config.burst_mode && (
+                  <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-orange-500/10">
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Trades Count</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={config.burst_trades_count || 5}
+                        onChange={(e) => setConfig({ ...config, burst_trades_count: Number(e.target.value) })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block text-muted-foreground">Delay (seconds)</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={config.burst_delay_seconds || 3}
+                        onChange={(e) => setConfig({ ...config, burst_delay_seconds: Number(e.target.value) })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Burst Mode Execution Button */}
+            {config.burst_mode && (
+              <Button
+                onClick={handleBurstMode}
+                disabled={isBursting}
+                variant="outline"
+                className="w-full border-orange-500/20 hover:bg-orange-500/10 hover:border-orange-500/40 bg-transparent"
+              >
+                {isBursting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Executing Burst...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-4 w-4 mr-2 text-orange-400" />
+                    Execute Burst Mode
+                  </>
+                )}
+              </Button>
+            )}
+
+            <Button
+              onClick={async () => {
+                try {
+                  await fetch("/api/agents/mm/config", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      agentId: config.id,
+                      buy_amount_eth: config.buy_amount_eth,
+                      buy_interval_minutes: config.buy_interval_minutes,
+                      sell_interval_minutes: config.sell_interval_minutes,
+                      burst_trades_count: config.burst_trades_count,
+                      burst_delay_seconds: config.burst_delay_seconds,
+                    }),
+                  })
+                  toast.success("Configuration saved")
+                  mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                  setShowConfigModal(false)
+                } catch (error) {
+                  toast.error("Failed to save configuration")
+                }
+              }}
+              className="w-full"
+            >
+              Save Configuration
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }

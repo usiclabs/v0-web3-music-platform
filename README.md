@@ -30,9 +30,9 @@ A blockchain-powered music streaming platform with micropayments and NFT integra
 
 1. Clone the repository
 2. Install dependencies:
-   ```bash
+   \`\`\`bash
    npm install
-   ```
+   \`\`\`
 
 3. Set up environment variables (already configured in v0)
 
@@ -41,9 +41,9 @@ A blockchain-powered music streaming platform with micropayments and NFT integra
    - Or run them directly from v0
 
 5. Start the development server:
-   ```bash
+   \`\`\`bash
    npm run dev
-   ```
+   \`\`\`
 
 ## Database Setup
 

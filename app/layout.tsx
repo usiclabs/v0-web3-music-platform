@@ -58,7 +58,6 @@ export const metadata: Metadata = {
     images: ["https://myusic.xyz/og-image.png"],
   },
   other: {
-    "base:app_id": "69462b0ed19763ca26ddc64d",
     "fc:frame": "vNext",
     "fc:frame:image": "https://myusic.xyz/og-image.png",
     "fc:frame:button:1": "Open MyUSIC",

@@ -13,11 +13,11 @@ The ANTI platform now implements the full X402 protocol for micropayments on aud
 ### 2. Payment Flow (X402 Protocol)
 
 #### Step 1: Request Chunk
-```typescript
+\`\`\`typescript
 GET /api/x402/stream/{trackId}?chunk={chunkIndex}
-```
+\`\`\`
 Returns `402 Payment Required` with payment instructions:
-```json
+\`\`\`json
 {
   "scheme": "exact",
   "network": "base",
@@ -26,7 +26,7 @@ Returns `402 Payment Required` with payment instructions:
   "recipient": "0x...",
   "metadata": { ... }
 }
-```
+\`\`\`
 
 #### Step 2: Sign Payment Authorization
 User signs EIP-712 typed data for `transferWithAuthorization`:
@@ -35,15 +35,15 @@ User signs EIP-712 typed data for `transferWithAuthorization`:
 - Signature includes: from, to, value, validAfter, validBefore, nonce
 
 #### Step 3: Verify Payment
-```typescript
+\`\`\`typescript
 POST /api/x402/verify
-```
+\`\`\`
 Forwards to Coinbase X402 facilitator to verify signature validity
 
 #### Step 4: Settle Payment
-```typescript
+\`\`\`typescript
 POST /api/x402/settle
-```
+\`\`\`
 Forwards to Coinbase X402 facilitator to execute on-chain transfer and unlock chunk
 
 ### 3. Key Components
@@ -71,7 +71,7 @@ Forwards to Coinbase X402 facilitator to execute on-chain transfer and unlock ch
 
 ### 4. Configuration
 
-```typescript
+\`\`\`typescript
 // lib/web3/contracts.ts
 export const X402_CONFIG = {
   CHUNK_DURATION: 30, // seconds
@@ -83,7 +83,7 @@ export const X402_FACILITATOR = {
   VERIFY_URL: "https://api.developer.coinbase.com/x402/verify",
   SETTLE_URL: "https://api.developer.coinbase.com/x402/settle",
 }
-```
+\`\`\`
 
 ### 5. User Experience
 
