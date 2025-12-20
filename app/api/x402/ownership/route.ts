@@ -20,14 +20,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ owns: true, trackId, address, source: "session" })
     }
 
-    // Fall back to payment history check
     const supabase = await createClient()
     const { data, error } = await supabase
-      .from("x402_payments")
+      .from("streams")
       .select("id")
-      .eq("payer_address", address.toLowerCase())
+      .eq("listener_address", address.toLowerCase())
       .eq("track_id", trackId)
-      .eq("status", "settled")
       .limit(1)
 
     if (error) {
