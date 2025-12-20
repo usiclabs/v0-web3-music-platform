@@ -53,7 +53,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [coverFile, setCoverFile] = useState<File | null>(null)
   const [pricePerChunk, setPricePerChunk] = useState("0.005")
-  const [unlockType, setUnlockType] = useState<"per_chunk" | "full_song">("per_chunk")
+  const [unlockType] = useState<"full_song">("full_song")
   const [royaltySplits, setRoyaltySplits] = useState<RoyaltySplit[]>([{ address: address || "", percentage: 100 }])
 
   const [tokenizeTrack, setTokenizeTrack] = useState(false)
@@ -914,41 +914,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
           </div>
 
           <div>
-            <Label>Unlock Type</Label>
-            <div className="flex gap-4 mt-2">
-              <button
-                type="button"
-                onClick={() => setUnlockType("per_chunk")}
-                className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                  unlockType === "per_chunk"
-                    ? "border-accent bg-accent/10"
-                    : "border-border/50 bg-card/30 hover:border-border"
-                }`}
-              >
-                <div className="font-semibold mb-1">Per Segment</div>
-                <div className="text-sm text-muted-foreground">Users pay for each 30s segment</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUnlockType("full_song")}
-                className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                  unlockType === "full_song"
-                    ? "border-accent bg-accent/10"
-                    : "border-border/50 bg-card/30 hover:border-border"
-                }`}
-              >
-                <div className="font-semibold mb-1">Full {contentType === "audio" ? "Song" : "Video"}</div>
-                <div className="text-sm text-muted-foreground">One payment unlocks entire {contentType}</div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="price">
-              {unlockType === "per_chunk"
-                ? "Price per 30s Segment (USDC)"
-                : `Price to Unlock Full ${contentType === "audio" ? "Song" : "Video"} (USDC)`}
-            </Label>
+            <Label htmlFor="price">{`Price to Unlock Full ${contentType === "audio" ? "Song" : "Video"} (USDC)`}</Label>
             <Input
               id="price"
               type="number"
@@ -956,16 +922,14 @@ export function UploadForm({ prefillData }: UploadFormProps) {
               min="0"
               value={pricePerChunk}
               onChange={(e) => setPricePerChunk(e.target.value)}
-              placeholder={unlockType === "per_chunk" ? "0.005" : contentType === "video" ? "0.50" : "0.15"}
+              placeholder={contentType === "video" ? "0.50" : "0.15"}
               required
               className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono text-sm"
             />
             <p className="text-sm text-muted-foreground mt-2">
-              {unlockType === "per_chunk"
-                ? "Recommended: 0.005 USDC (0.5¢ per 30s)"
-                : contentType === "video"
-                  ? "Recommended: 0.50 USDC (50¢ for full video)"
-                  : "Recommended: 0.15 USDC (15¢ for full song)"}
+              {contentType === "video"
+                ? "Recommended: 0.50 USDC (50¢ for full video)"
+                : "Recommended: 0.15 USDC (15¢ for full song)"}
             </p>
           </div>
         </div>

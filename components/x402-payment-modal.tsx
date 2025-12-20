@@ -2,10 +2,9 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Coins, Zap, Shield, Clock, CheckCircle2, ExternalLink, Music, AlertCircle, Sparkles, Lock, Loader2 } from 'lucide-react'
+import { Coins, Clock, CheckCircle2, ExternalLink, Music, AlertCircle, Sparkles, Lock, Loader2 } from "lucide-react"
 import { useAudioPlayer } from "@/lib/audio-player-context"
 import { useState, useEffect } from "react"
-import { X402_CONFIG } from "@/lib/web3/contracts"
 import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useAccount, useReadContract } from "wagmi"
@@ -26,7 +25,7 @@ export function X402PaymentModal() {
   const { address } = useAccount()
   const [hasInsufficientBalance, setHasInsufficientBalance] = useState(false)
   const [gasSubsidyAvailable, setGasSubsidyAvailable] = useState(true)
-  
+
   const { isSmartWallet, supportsGaslessPayments } = useEIP3009()
 
   const { data: balance, refetch: refetchBalance } = useReadContract({
@@ -102,7 +101,7 @@ export function X402PaymentModal() {
   const requiredAmount = isValidPrice ? priceFloat : 0
 
   const isFullUnlock = currentTrack.unlock_type === "full_song"
-  const displayDuration = isFullUnlock ? formatDuration(currentTrack.duration) : `${X402_CONFIG.CHUNK_DURATION} seconds`
+  const displayDuration = formatDuration(currentTrack.duration)
   const isAfterFreePreview = currentChunk > 0
 
   const segmentNumber = currentChunk + 1
@@ -157,7 +156,7 @@ export function X402PaymentModal() {
 
     try {
       await payForChunk(currentChunk, (step, hash) => {
-        console.log("[v0] Payment step update:", step, hash ? `hash: ${hash}` : '')
+        console.log("[v0] Payment step update:", step, hash ? `hash: ${hash}` : "")
         setPaymentStep(step as PaymentStep)
         if (hash) setTxHash(hash)
       })
@@ -365,9 +364,7 @@ export function X402PaymentModal() {
             <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mt-3">
               <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                  Base App Payment Notice
-                </p>
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Base App Payment Notice</p>
                 <p className="text-xs text-muted-foreground">
                   Your Base App wallet will use the standard payment flow. Gas fees may apply (~$0.01).
                 </p>
@@ -398,17 +395,8 @@ export function X402PaymentModal() {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center gap-2">
-                {isFullUnlock ? (
-                  <>
-                    <Music className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Full Track Unlock</span>
-                  </>
-                ) : (
-                  <>
-                    <Coins className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Unlock Segment {segmentNumber}</span>
-                  </>
-                )}
+                <Music className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Full Track Unlock</span>
               </div>
               <span className="text-sm font-bold">{isValidPrice ? currentTrack.price_per_chunk : "0"} USDC</span>
             </div>
@@ -428,7 +416,7 @@ export function X402PaymentModal() {
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{isFullUnlock ? "Full Duration" : "Duration"}</span>
+                <span className="text-sm">Full Duration</span>
               </div>
               <span className="text-sm font-medium">{displayDuration}</span>
             </div>
