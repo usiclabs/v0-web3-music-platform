@@ -309,13 +309,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       updateSession(address, currentTrack.id, paymentChainId)
 
       paymentJustSucceededRef.current = true
-      setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
 
       if (currentTrack.unlock_type === "full_song") {
         const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
         const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
         setUnlockedChunks(allChunks)
         console.log("[v0] Full song unlocked - all", totalChunks, "chunks available")
+      } else {
+        // Per-chunk mode: only unlock the current chunk
+        setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
+        console.log("[v0] Chunk", chunkIndex, "unlocked for per-chunk payment")
       }
 
       setPaymentRequired(false)
@@ -388,21 +391,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("[v0] Smart wallet payment successful! Transaction:", result.txHash)
-      onProgress?.("complete", result.txHash)
 
       paymentJustSucceededRef.current = true
-      setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
 
       if (currentTrack.unlock_type === "full_song") {
         const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
         const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
         setUnlockedChunks(allChunks)
         console.log("[v0] Full song unlocked - all", totalChunks, "chunks available")
+      } else {
+        // Per-chunk mode: only unlock the current chunk
+        setUnlockedChunks((prev) => new Set([...prev, chunkIndex]))
+        console.log("[v0] Chunk", chunkIndex, "unlocked for per-chunk payment")
       }
 
       setPaymentRequired(false)
       setError(null)
       setShowPaymentModal(false)
+
+      onProgress?.("complete", result.txHash)
 
       if (audioRef.current && currentTrack) {
         audioRef.current.play().catch((err) => {
@@ -877,4 +884,21 @@ async function logStreamActivity(trackId: string, listenerAddress: string, chunk
     console.warn("[v0] Failed to log stream activity:", err)
     // Don't throw - logging should not block playback
   }
+}
+
+async function executePayment({
+  from,
+  to,
+  amount,
+  trackId,
+  chunkIndex,
+}: {
+  from: string
+  to: string
+  amount: bigint
+  trackId: string
+  chunkIndex: number
+}): Promise<{ success: boolean; error?: string; txHash?: string; usedFallback?: boolean }> {
+  // Placeholder for payment execution logic
+  return { success: true, txHash: "0x1234567890abcdef" }
 }
