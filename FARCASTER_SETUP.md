@@ -6,9 +6,9 @@ MyUSIC is ready for submission to Farcaster/Base App! Follow these steps to comp
 
 Run the following command to generate your account association signature:
 
-\`\`\`bash
+```bash
 npx create-onchain --manifest
-\`\`\`
+```
 
 This will prompt you to:
 - Sign with your Farcaster custody wallet (you can import it using your recovery phrase from Farcaster Settings → Advanced)
@@ -18,11 +18,11 @@ This will prompt you to:
 
 Add the generated variables to your Vercel project environment variables:
 
-\`\`\`
+```
 FARCASTER_HEADER=eyJmaWQiOjkxNTIsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgwMmVmNzkwRGQ3OTkzQTM1ZkQ4NDdDMDUzRURkQUU5NDBEMDU1NTk2In0
 FARCASTER_PAYLOAD=eyJkb21haW4iOiJhcHAuZXhhbXBsZS5jb20ifQ
 FARCASTER_SIGNATURE=MHgxMGQwZGU4ZGYwZDUwZTdmMGIxN2YxMTU2NDI1MjRmZTY0MTUyZGU4ZGU1MWU0MThiYjU4ZjVmZmQxYjRjNDBiNGVlZTRhNDcwNmVmNjhlMzQ0ZGQ5MDBkYmQyMmNlMmVlZGY5ZGQ0N2JlNWRmNzMwYzUxNjE4OWVjZDJjY2Y0MDFj
-\`\`\`
+```
 
 ## 3. Create Required Images
 
@@ -39,14 +39,14 @@ Create the following images and place them in the `public` folder:
 
 Once deployed, verify your manifest is accessible at:
 
-\`\`\`
+```
 https://myusic.xyz/.well-known/farcaster.json
-\`\`\`
+```
 
 Test with curl:
-\`\`\`bash
+```bash
 curl -sI https://myusic.xyz/.well-known/farcaster.json
-\`\`\`
+```
 
 ## 5. Test in Base App
 

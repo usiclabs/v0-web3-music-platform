@@ -7,12 +7,9 @@ import { privateKeyToAccount } from "viem/accounts"
 import {
   UNISWAP_V3_ROUTER_ABI,
   UNISWAP_V3_FACTORY_ABI,
-  UNISWAP_V3_QUOTER_ABI,
-  UNISWAP_V3_POOL_ABI,
   ERC20_ABI,
   UNISWAP_V3_ROUTER,
   UNISWAP_V3_FACTORY,
-  UNISWAP_V3_QUOTER,
 } from "@/lib/web3/contracts"
 import { getAgentWalletKeys, generateWalletsForAgent } from "./wallet-generator"
 
@@ -93,13 +90,16 @@ export interface MMAgentConfig {
   owner_address?: string
   token_address?: string
   token_symbol?: string
-  profitable_mode?: boolean // New field for profitable mode
-  burst_mode?: boolean // New field for burst mode
-  burst_trades_count?: number // New field for burst trades count
-  burst_delay_seconds?: number // New field for burst delay seconds
-  pro_mode?: boolean // Added pro_mode
-  max_mode?: boolean // Added max_mode for 20 wallets
-  volume_generated?: bigint // Changed to bigint to match Supabase type
+  profitable_mode?: boolean
+  burst_mode?: boolean
+  burst_trades_count?: number
+  burst_delay_seconds?: number
+  pro_mode?: boolean
+  max_mode?: boolean
+  volume_generated?: bigint
+  fomo_mode?: boolean
+  fomo_intensity?: number // 1-10 scale for aggressiveness
+  fomo_pattern?: "accumulation" | "breakout" | "momentum" | "reversal" | "whale_signal"
 }
 
 export interface MMAgentStats {
@@ -131,6 +131,95 @@ export class MarketMakerAgentService {
     this.walletService = getAgentWalletService()
     this.agentId = agentId
     this.ownerAddress = ownerAddress || null
+  }
+
+  async getStats(): Promise<{
+    totalBuys: number
+    totalSells: number
+    volumeGenerated: string
+    walletStats?: any[]
+  }> {
+    const supabase = await createClient()
+
+    try {
+      console.log("[v0] Getting stats for agent:", this.agentId)
+
+      // Get wallet stats - these track individual wallet buy/sell counts
+      const { data: wallets, error: walletsError } = await supabase
+        .from("mm_agent_wallets")
+        .select("*")
+        .eq("agent_id", this.agentId)
+        .order("wallet_index", { ascending: true })
+
+      console.log("[v0] Wallets fetched:", wallets?.length || 0, walletsError?.message)
+
+      // Get trades for volume calculation
+      const { data: trades, error: tradesError } = await supabase
+        .from("agent_trades")
+        .select("*")
+        .eq("agent_id", this.agentId)
+
+      console.log("[v0] Trades fetched:", trades?.length || 0, tradesError?.message)
+
+      let totalBuys = 0
+      let totalSells = 0
+      let volumeGenerated = 0n
+
+      if (wallets && wallets.length > 0) {
+        for (const wallet of wallets) {
+          // Wallets have total_buys and total_sells fields that track cumulative counts
+          const buys = wallet.total_buys || 0
+          const sells = wallet.total_sells || 0
+          totalBuys += buys
+          totalSells += sells
+
+          console.log("[v0] Wallet stats:", {
+            address: wallet.wallet_address,
+            buys,
+            sells,
+            ethBalance: wallet.eth_balance,
+          })
+        }
+      }
+
+      if (trades && trades.length > 0) {
+        for (const trade of trades) {
+          try {
+            let amount = 0n
+
+            // Use amount_out for sell trades, amount_in for buy trades
+            if (trade.trade_type === "sell" && trade.amount_out) {
+              amount = BigInt(Math.floor(Number(trade.amount_out) * 1e18))
+            } else if (trade.trade_type === "buy" && trade.amount_in) {
+              amount = BigInt(Math.floor(Number(trade.amount_in) * 1e18))
+            }
+
+            volumeGenerated += amount
+          } catch (e) {
+            console.error("[v0] Error processing trade:", e, trade)
+          }
+        }
+        console.log("[v0] Volume calculated from trades:", (Number(volumeGenerated) / 1e18).toFixed(6))
+      }
+
+      const result = {
+        totalBuys,
+        totalSells,
+        volumeGenerated: (Number(volumeGenerated) / 1e18).toFixed(6),
+        walletStats: wallets || [],
+      }
+
+      console.log("[v0] Final stats result:", result)
+      return result
+    } catch (error) {
+      console.error("[v0] Error in getStats:", error)
+      return {
+        totalBuys: 0,
+        totalSells: 0,
+        volumeGenerated: "0.000000",
+        walletStats: [],
+      }
+    }
   }
 
   private async loadWalletKeys(): Promise<void> {
@@ -197,19 +286,20 @@ export class MarketMakerAgentService {
   static async getOrCreateByWallet(walletAddress: string): Promise<MMAgentConfig> {
     const supabase = await createClient()
 
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existingRows, error: fetchError } = await supabase
       .from("mm_agents")
       .select("*")
       .eq("wallet_address", walletAddress)
-      .maybeSingle()
+      .order("created_at", { ascending: false })
+      .limit(1)
 
     if (fetchError) {
       console.error("[MM Agent] Error fetching agent:", fetchError)
       throw new Error(`Failed to fetch MM agent: ${fetchError.message}`)
     }
 
-    if (existing) {
-      return existing as MMAgentConfig
+    if (existingRows && existingRows.length > 0) {
+      return existingRows[0] as MMAgentConfig
     }
 
     // Create new agent
@@ -316,7 +406,7 @@ export class MarketMakerAgentService {
 
       console.log(`[MM Agent] Current WETH balance: ${formatUnits(wethBalance, 18)} WETH`)
 
-      const gasBuffer = parseEther("0.001") // Reserve 0.001 ETH for gas
+      const gasBuffer = parseEther("0.00015") // Reduced from 0.0003 to 0.00015 ETH - typical Base swaps cost ~0.0001 ETH
       let buyAmount: bigint
       let useWETH = false
 
@@ -325,11 +415,18 @@ export class MarketMakerAgentService {
         useWETH = true
         console.log(`[MM Agent] Using WETH for buy: ${formatUnits(buyAmount, 18)} WETH`)
       } else if (ethBalance >= configuredBuyAmount + gasBuffer) {
-        // Only need buy amount + small gas buffer
+        // Full configured amount available
         buyAmount = configuredBuyAmount
         console.log(`[MM Agent] Using ETH for buy: ${formatUnits(buyAmount, 18)} ETH`)
+      } else if (ethBalance > gasBuffer + parseEther("0.00005")) {
+        // Adaptive buy - use available balance minus gas buffer if we can't afford full amount
+        // This allows smaller trades when balance is low instead of failing completely
+        buyAmount = ethBalance - gasBuffer
+        console.log(
+          `[MM Agent] Adaptive buy - using available ETH: ${formatUnits(buyAmount, 18)} ETH (balance too low for configured amount)`,
+        )
       } else {
-        const error = `Insufficient balance. Have: ${formatUnits(ethBalance, 18)} ETH + ${formatUnits(wethBalance, 18)} WETH. Need: ${formatUnits(configuredBuyAmount + gasBuffer, 18)} ETH (or ${formatUnits(configuredBuyAmount, 18)} WETH)`
+        const error = `Insufficient balance. Have: ${formatUnits(ethBalance, 18)} ETH + ${formatUnits(wethBalance, 18)} WETH. Need at least: ${formatUnits(gasBuffer + parseEther("0.00005"), 18)} ETH`
         console.error(`[MM Agent] ${error}`)
         await this.logActivity("buy_failed", error, { wallet: wallet.address })
         return { success: false, error }
@@ -783,240 +880,115 @@ export class MarketMakerAgentService {
         }
       } catch (error: any) {
         console.log(`[MM Agent] Warning: Failed to unwrap WETH: ${error.message}`)
-        // Continue anyway, the sell was successful
       }
 
       // Record the trade
       await this.recordTrade("sell", sellAmount, minEthOutWithSlippage, sellTxHash, wallet.address)
 
-      await this.logActivity(
-        "sell_executed",
-        `Sold ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL} for ${formatUnits(minEthOutWithSlippage, 18)} ETH`,
-        {
-          wallet: wallet.address,
-          txHash: sellTxHash,
-          amountIn: formatUnits(sellAmount, 18),
-          amountOut: formatUnits(minEthOutWithSlippage, 18),
-        },
-      )
+      await this.logActivity("sell_executed", `Sold ${formatUnits(sellAmount, 18)} ${TOKEN_SYMBOL}`, {
+        wallet: wallet.address,
+        txHash: sellTxHash,
+        amountIn: formatUnits(sellAmount, 18),
+        currency: TOKEN_SYMBOL,
+        amountOut: formatUnits(minEthOutWithSlippage, 18),
+      })
 
-      // Update last sell time
       await this.updateLastSellTime()
 
       return { success: true, txHash: sellTxHash }
     } catch (error: any) {
       console.error("[MM Agent] Sell execution error:", error.message)
-      await this.logActivity("error", `Sell failed: ${error.message}`, {
-        wallet: wallet.address,
-      })
+      await this.logActivity("sell_error", error.message || "Unknown error during sell", { wallet: wallet.address })
       return { success: false, error: error.message || "Unknown error" }
     }
   }
 
-  /**
-   * Run a market making cycle (check and execute buy/sell if needed)
-   */
-  async runCycle(): Promise<MMCycleResult> {
-    console.log(`[v0] [MM Agent] ========== Starting cycle for agent ${this.agentId} ==========`)
-    console.log(`[MM Agent] Starting cycle for agent ${this.agentId}`)
-
-    const result: MMCycleResult = {
-      buyExecuted: false,
-      sellExecuted: false,
-      messages: [],
-    }
-
-    const supabase = await createClient()
-    const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
-
-    if (!agent || !agent.is_active) {
-      throw new Error("Agent not found or inactive")
-    }
-
-    console.log(`[v0] [MM Agent] Agent config:`, {
-      id: agent.id,
-      is_active: agent.is_active,
-      token_address: agent.token_address,
-      token_symbol: agent.token_symbol,
-      buy_interval: agent.buy_interval_minutes,
-      sell_interval: agent.sell_interval_minutes,
-      last_buy_at: agent.last_buy_at,
-      last_sell_at: agent.last_sell_at,
+  private async createClients(wallet: any) {
+    const rpcUrl = getRpcUrl()
+    const publicClient = createPublicClient({
+      chain: base,
+      transport: http(rpcUrl),
     })
 
-    const wallet = await this.selectRandomWallet()
-    const walletAddress = wallet.address as `0x${string}`
-    console.log(`[MM Agent] Running cycle with wallet ${walletAddress} (multi-wallet: ${agent.multi_wallet_mode})`)
-
-    const now = new Date()
-
-    // Check if we should buy
-    const shouldBuy =
-      !agent.last_buy_at ||
-      new Date(agent.last_buy_at).getTime() + agent.buy_interval_minutes * 60 * 1000 <= now.getTime()
-
-    console.log(`[v0] [MM Agent] Should buy: ${shouldBuy}`, {
-      last_buy_at: agent.last_buy_at,
-      interval_minutes: agent.buy_interval_minutes,
-      time_since_last: agent.last_buy_at ? now.getTime() - new Date(agent.last_buy_at).getTime() : "never",
+    const walletClient = createWalletClient({
+      chain: base,
+      transport: http(rpcUrl),
+      account: wallet,
     })
 
-    if (shouldBuy) {
-      try {
-        console.log(`[v0] [MM Agent] Executing buy...`)
-        await this.executeBuy(wallet)
-
-        result.buyExecuted = true
-        result.messages.push(`Buy executed successfully with wallet ${walletAddress}`)
-      } catch (error: any) {
-        console.error("[MM Agent] Buy failed:", error.message)
-        console.error("[v0] [MM Agent] Buy error stack:", error.stack)
-        await this.logActivity("error", `Buy failed: ${error.message}`, {
-          wallet: walletAddress,
-        })
-        result.messages.push(`Buy failed: ${error.message}`)
-      }
-    }
-
-    // Check if we should sell
-    const shouldSell =
-      !agent.last_sell_at ||
-      new Date(agent.last_sell_at).getTime() + agent.sell_interval_minutes * 60 * 1000 <= now.getTime()
-
-    console.log(`[v0] [MM Agent] Should sell: ${shouldSell}`, {
-      last_sell_at: agent.last_sell_at,
-      interval_minutes: agent.sell_interval_minutes,
-      time_since_last: agent.last_sell_at ? now.getTime() - new Date(agent.last_sell_at).getTime() : "never",
-    })
-
-    if (shouldSell) {
-      // Check if profitable mode is enabled
-      if (agent.profitable_mode) {
-        const isProfitable = await this.shouldSellInProfitableMode(wallet, agent)
-        if (!isProfitable) {
-          result.messages.push(`Skipping sell - not profitable yet (need >10% profit)`)
-          return result
-        }
-      }
-
-      try {
-        console.log(`[v0] [MM Agent] Executing sell...`)
-        await this.executeSell(wallet)
-
-        result.sellExecuted = true
-        result.messages.push(`Sell executed successfully with wallet ${walletAddress}`)
-      } catch (error: any) {
-        console.error("[MM Agent] Sell failed:", error.message)
-        console.error("[v0] [MM Agent] Sell error stack:", error.stack)
-        await this.logActivity("error", `Sell failed: ${error.message}`, {
-          wallet: walletAddress,
-        })
-        result.messages.push(`Sell failed: ${error.message}`)
-      }
-    }
-
-    // Check if burst mode is enabled
-    if (agent.burst_mode) {
-      try {
-        const burstResult = await this.executeBurst()
-        result.messages.push(`Burst mode executed: ${burstResult.success ? "Success" : "Failure"}`)
-      } catch (error: any) {
-        console.error("[MM Agent] Burst mode failed:", error.message)
-        console.error("[v0] [MM Agent] Burst mode error stack:", error.stack)
-        await this.logActivity("error", `Burst mode failed: ${error.message}`, {
-          wallet: walletAddress,
-        })
-        result.messages.push(`Burst mode failed: ${error.message}`)
-      }
-    }
-
-    await this.logActivity("cycle_complete", "Market making cycle completed", {
-      wallet: walletAddress,
-    })
-    result.messages.push("Cycle completed")
-
-    console.log(`[v0] [MM Agent] ========== Cycle complete for agent ${this.agentId} ==========`)
-    return result
+    return { publicClient, walletClient, rpcUrl }
   }
 
-  /**
-   * Get agent statistics
-   */
-  async getStats(): Promise<MMAgentStats> {
+  private async getQuote(tokenIn: Address, tokenOut: Address, amountIn: bigint): Promise<bigint> {
     const supabase = await createClient()
-    const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
+    const { data: quote } = await supabase.rpc("get_quote", {
+      token_in: tokenIn,
+      token_out: tokenOut,
+      amount_in: amountIn.toString(),
+    })
 
-    if (!agent) {
-      return {
-        totalBuys: 0,
-        totalSells: 0,
-        volumeGenerated: "0",
-        usiBalance: "0",
-      }
+    if (!quote) {
+      throw new Error("Failed to get quote")
     }
 
-    // Count all buy and sell activities for this agent in one query each
-    const { count: totalBuys } = await supabase
-      .from("mm_agent_activity")
-      .select("*", { count: "exact", head: true })
-      .eq("agent_id", this.agentId)
-      .in("activity_type", ["buy", "buy_executed"])
-
-    const { count: totalSells } = await supabase
-      .from("mm_agent_activity")
-      .select("*", { count: "exact", head: true })
-      .eq("agent_id", this.agentId)
-      .in("activity_type", ["sell", "sell_executed"])
-
-    console.log(`[v0] [MM Agent] getStats - Total buys: ${totalBuys || 0}`)
-    console.log(`[v0] [MM Agent] getStats - Total sells: ${totalSells || 0}`)
-
-    let walletStats = undefined
-    if (agent.multi_wallet_mode) {
-      const { data: walletsWithDetails } = await supabase
-        .from("mm_agent_wallets")
-        .select("*")
-        .eq("agent_id", this.agentId)
-        .eq("is_active", true)
-        .order("wallet_index")
-
-      if (walletsWithDetails) {
-        walletStats = await Promise.all(
-          walletsWithDetails.map(async (wallet) => {
-            const balance = await this.getTokenBalance(wallet.wallet_address as Address)
-            return {
-              address: wallet.wallet_address,
-              buys: wallet.total_buys,
-              sells: wallet.total_sells,
-              usiBalance: balance,
-            }
-          }),
-        )
-      }
-    }
-
-    const usiBalance = await this.getTokenBalance(undefined)
-
-    return {
-      totalBuys: totalBuys || 0,
-      totalSells: totalSells || 0,
-      volumeGenerated: agent.total_volume_generated?.toString() || "0",
-      usiBalance: usiBalance.toString(),
-      walletStats,
-    }
+    return BigInt(quote.amount_out)
   }
 
-  /**
-   * Helper methods
-   */
-  private async logActivity(activityType: string, description: string, metadata?: any): Promise<void> {
+  private async getBestPoolByLiquidity(publicClient: any, tokenAddress: Address, chainId: number): Promise<any> {
+    const factoryAddress = UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as Address
+
+    const pools = await publicClient.readContracts({
+      contracts: [
+        {
+          address: factoryAddress,
+          abi: UNISWAP_V3_FACTORY_ABI,
+          functionName: "getPool",
+          args: [tokenAddress, WETH_ADDRESS, 500], // 0.05% fee tier
+        },
+        {
+          address: factoryAddress,
+          abi: UNISWAP_V3_FACTORY_ABI,
+          functionName: "getPool",
+          args: [tokenAddress, WETH_ADDRESS, 3000], // 0.3% fee tier
+        },
+        {
+          address: factoryAddress,
+          abi: UNISWAP_V3_FACTORY_ABI,
+          functionName: "getPool",
+          args: [tokenAddress, WETH_ADDRESS, 10000], // 1% fee tier
+        },
+      ],
+    })
+
+    const bestPool = pools.find((pool: any) => pool.result !== null)
+    return bestPool
+  }
+
+  private async recordTrade(
+    action: "buy" | "sell",
+    amountIn: bigint,
+    amountOut: bigint,
+    txHash: string,
+    walletAddress: string,
+  ): Promise<void> {
     const supabase = await createClient()
-    await supabase.from("mm_agent_activity").insert({
+    await supabase.from("mm_agent_trades").insert({
+      agent_id: this.agentId,
+      wallet_address: walletAddress,
+      action: action,
+      amount_in: amountIn.toString(),
+      amount_out: amountOut.toString(),
+      tx_hash: txHash,
+    })
+  }
+
+  private async logActivity(activityType: string, message: string, metadata?: any): Promise<void> {
+    const supabase = await createClient()
+    await supabase.from("mm_agent_activities").insert({
       agent_id: this.agentId,
       activity_type: activityType,
-      description,
-      metadata,
-      wallet_address: metadata?.wallet || null,
+      message: message,
+      metadata: metadata || {},
     })
   }
 
@@ -1030,708 +1002,55 @@ export class MarketMakerAgentService {
     await supabase.from("mm_agents").update({ last_sell_at: new Date().toISOString() }).eq("id", this.agentId)
   }
 
-  private async getBestPoolByLiquidity(
-    publicClient: any,
-    tokenAddress: Address,
-    chainId: number,
-  ): Promise<{ poolAddress: Address; fee: number; liquidity: bigint } | null> {
+  async runCycle(
+    shouldBuy = true,
+    shouldSell = true,
+  ): Promise<{ buyExecuted: boolean; sellExecuted: boolean; messages: string[] }> {
+    const messages: string[] = []
+    let buyExecuted = false
+    let sellExecuted = false
+
     try {
-      const factoryAddress = UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as Address
-      const WETH_ADDRESS =
-        chainId === 8453
-          ? ("0x4200000000000000000000000000000000000006" as Address)
-          : ("0x4200000000000000000000000000000000000006" as Address)
+      // Get next wallet for execution
+      const wallet = await this.getNextWallet(null)
+      if (!wallet) {
+        messages.push("No available wallets for execution")
+        return { buyExecuted, sellExecuted, messages }
+      }
 
-      const [token0, token1] =
-        tokenAddress.toLowerCase() < WETH_ADDRESS.toLowerCase()
-          ? [tokenAddress, WETH_ADDRESS]
-          : [WETH_ADDRESS, tokenAddress]
-
-      // Check all fee tiers: 0.05%, 0.3%, 1%
-      const feeTiers = [500, 3000, 10000]
-      const pools: { poolAddress: Address; fee: number; liquidity: bigint }[] = []
-
-      console.log(`[MM Agent] Checking liquidity across all fee tiers...`)
-
-      for (const fee of feeTiers) {
+      // Execute buy if requested
+      if (shouldBuy) {
         try {
-          const poolAddress = (await publicClient.readContract({
-            address: factoryAddress,
-            abi: UNISWAP_V3_FACTORY_ABI,
-            functionName: "getPool",
-            args: [token0, token1, fee],
-          })) as Address
-
-          if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
-            // Query pool liquidity
-            const liquidity = (await publicClient.readContract({
-              address: poolAddress,
-              abi: UNISWAP_V3_POOL_ABI,
-              functionName: "liquidity",
-            })) as bigint
-
-            console.log(`[MM Agent] Pool ${poolAddress} (${fee / 10000}% fee): ${formatUnits(liquidity, 18)} liquidity`)
-
-            pools.push({ poolAddress, fee, liquidity })
+          const buyResult = await this.executeBuy(wallet)
+          if (buyResult.success) {
+            buyExecuted = true
+            messages.push(`Buy executed successfully: ${buyResult.txHash}`)
+          } else {
+            messages.push(`Buy failed: ${buyResult.error}`)
           }
-        } catch (error) {
-          console.log(`[MM Agent] No pool found for fee tier ${fee}`)
-          continue
+        } catch (buyError: any) {
+          messages.push(`Buy error: ${buyError.message}`)
         }
       }
 
-      if (pools.length === 0) {
-        console.error(`[MM Agent] No pools found for token ${tokenAddress}`)
-        return null
-      }
-
-      // Sort by liquidity (highest first) and select the best pool
-      pools.sort((a, b) => (a.liquidity > b.liquidity ? -1 : 1))
-      const bestPool = pools[0]
-
-      console.log(
-        `[MM Agent] Selected pool ${bestPool.poolAddress} with ${bestPool.fee / 10000}% fee and ${formatUnits(bestPool.liquidity, 18)} liquidity`,
-      )
-
-      return bestPool
-    } catch (error) {
-      console.error("[MM Agent] Error finding best pool:", error)
-      return null
-    }
-  }
-
-  private async checkPoolExists(
-    publicClient: any,
-    tokenAddress: Address,
-    chainId: number,
-  ): Promise<{ exists: boolean; fee?: number }> {
-    try {
-      const factoryAddress = UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as Address
-      const WETH_ADDRESS =
-        chainId === 8453
-          ? ("0x4200000000000000000000000000000000000006" as Address)
-          : ("0x4200000000000000000000000000000000000006" as Address)
-
-      const [token0, token1] =
-        tokenAddress.toLowerCase() < WETH_ADDRESS.toLowerCase()
-          ? [tokenAddress, WETH_ADDRESS]
-          : [WETH_ADDRESS, tokenAddress]
-
-      const feeTiers = [3000, 10000, 500]
-
-      for (const fee of feeTiers) {
+      // Execute sell if requested
+      if (shouldSell) {
         try {
-          const poolAddress = (await publicClient.readContract({
-            address: factoryAddress,
-            abi: UNISWAP_V3_FACTORY_ABI,
-            functionName: "getPool",
-            args: [token0, token1, fee],
-          })) as Address
-
-          if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
-            return { exists: true, fee }
+          const sellResult = await this.executeSell(wallet)
+          if (sellResult.success) {
+            sellExecuted = true
+            messages.push(`Sell executed successfully: ${sellResult.txHash}`)
+          } else {
+            messages.push(`Sell failed: ${sellResult.error}`)
           }
-        } catch {
-          continue
+        } catch (sellError: any) {
+          messages.push(`Sell error: ${sellError.message}`)
         }
-      }
-
-      return { exists: false }
-    } catch (error) {
-      console.error("[MM Agent] Error checking pool:", error)
-      return { exists: false }
-    }
-  }
-
-  private async getQuote(tokenIn: Address, tokenOut: Address, amountIn: bigint): Promise<bigint> {
-    try {
-      const quoterAddress = UNISWAP_V3_QUOTER[base.id as keyof typeof UNISWAP_V3_QUOTER] as Address
-
-      const feeTiers = [3000, 10000, 500]
-
-      for (const fee of feeTiers) {
-        try {
-          const rpcUrl = getRpcUrl()
-
-          const publicClient = createPublicClient({
-            chain: base,
-            transport: http(rpcUrl),
-          })
-
-          const result = await publicClient.readContract({
-            address: quoterAddress,
-            abi: UNISWAP_V3_QUOTER_ABI,
-            functionName: "quoteExactInputSingle",
-            args: [
-              {
-                tokenIn,
-                tokenOut,
-                amountIn,
-                fee,
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-          })
-
-          const amountOut = (result as [bigint, bigint, number, bigint])[0]
-
-          if (amountOut > 0n) {
-            return amountOut
-          }
-        } catch {
-          continue
-        }
-      }
-
-      throw new Error("Failed to get quote")
-    } catch (error) {
-      console.error("[MM Agent] Failed to get quote:", error)
-      throw error
-    }
-  }
-
-  private async recordTrade(
-    tradeType: "buy" | "sell",
-    amountIn: bigint,
-    amountOut: bigint,
-    txHash: string,
-    walletAddress?: string,
-  ): Promise<void> {
-    try {
-      const supabase = await createClient()
-
-      // Update volume in mm_agents table
-      const { data: agent } = await supabase
-        .from("mm_agents")
-        .select("total_volume_generated, id, token_address, token_symbol")
-        .eq("id", this.agentId)
-        .single()
-
-      if (agent) {
-        // This properly tracks the total value traded (both sides of the swap)
-        const inputEth = Number(formatUnits(amountIn, 18))
-        const outputEth = Number(formatUnits(amountOut, 18))
-
-        // For market maker volume, we want to track total value moved
-        // Buy: ETH in + token out value, Sell: token in value + ETH out
-        // Since tokens are priced in ETH, we use the ETH side as the volume
-        const volumeEth = tradeType === "buy" ? inputEth : outputEth
-
-        const newVolume = Number(agent.total_volume_generated || 0) + volumeEth
-
-        await supabase
-          .from("mm_agents")
-          .update({
-            total_volume_generated: newVolume,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", this.agentId)
-
-        console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}, volume: ${volumeEth.toFixed(6)} ETH`)
-
-        await this.updateMMPortfolio(
-          agent.id,
-          agent.token_address,
-          agent.token_symbol || "USI",
-          tradeType,
-          amountIn,
-          amountOut,
-        )
-      }
-
-      if (walletAddress) {
-        const incrementField = tradeType === "buy" ? "total_buys" : "total_sells"
-
-        // Get current count
-        const { data: walletData } = await supabase
-          .from("mm_agent_wallets")
-          .select(incrementField)
-          .eq("agent_id", this.agentId)
-          .eq("wallet_address", walletAddress)
-          .single()
-
-        if (walletData) {
-          const currentCount = walletData[incrementField] || 0
-          await supabase
-            .from("mm_agent_wallets")
-            .update({
-              [incrementField]: currentCount + 1,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("agent_id", this.agentId)
-            .eq("wallet_address", walletAddress)
-
-          console.log(`[MM Agent] Updated ${incrementField} for wallet ${walletAddress}: ${currentCount + 1}`)
-        }
-      }
-
-      console.log(`[MM Agent] Recorded ${tradeType} trade: ${txHash}`)
-    } catch (error) {
-      console.error("[MM Agent] Failed to record trade:", error)
-    }
-  }
-
-  private async updateMMPortfolio(
-    agentId: string,
-    tokenAddress: string,
-    tokenSymbol: string,
-    tradeType: "buy" | "sell",
-    amountIn: bigint,
-    amountOut: bigint,
-  ): Promise<void> {
-    try {
-      const supabase = await createClient()
-
-      // Get current portfolio entry
-      const { data: existing } = await supabase
-        .from("mm_agent_portfolio")
-        .select("*")
-        .eq("agent_id", agentId)
-        .eq("token_address", tokenAddress)
-        .maybeSingle()
-
-      if (tradeType === "buy") {
-        const tokenAmount = Number(formatUnits(amountOut, 18))
-        const ethSpent = Number(formatUnits(amountIn, 18))
-
-        if (existing) {
-          // Update existing position
-          const newAmount = Number.parseFloat(existing.amount || "0") + tokenAmount
-          const newTotalInvested = Number.parseFloat(existing.total_invested || "0") + ethSpent
-          const newAvgPrice = newTotalInvested / newAmount
-
-          // Get current token balance to calculate current_value
-          const currentBalance = await this.getTokenBalance(tokenAddress as Address)
-          const currentPrice = ethSpent / tokenAmount // Current price from this trade
-          const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
-          const unrealizedPnl = currentValue - newTotalInvested // Calculate PnL based on current value
-
-          await supabase
-            .from("mm_agent_portfolio")
-            .update({
-              amount: newAmount,
-              total_invested: newTotalInvested,
-              avg_buy_price: newAvgPrice,
-              current_value: currentValue,
-              unrealized_pnl: unrealizedPnl,
-              last_updated_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id)
-
-          console.log("[MM Agent] Updated portfolio:", {
-            amount: newAmount,
-            invested: newTotalInvested,
-            currentValue,
-            unrealizedPnl,
-          })
-        } else {
-          // Create new position
-          const avgPrice = ethSpent / tokenAmount
-          const currentValue = tokenAmount * avgPrice
-
-          await supabase.from("mm_agent_portfolio").insert({
-            agent_id: agentId,
-            token_address: tokenAddress,
-            token_symbol: tokenSymbol,
-            token_name: tokenSymbol,
-            amount: tokenAmount,
-            avg_buy_price: avgPrice,
-            total_invested: ethSpent,
-            current_value: currentValue,
-            unrealized_pnl: 0,
-            first_buy_at: new Date().toISOString(),
-            last_updated_at: new Date().toISOString(),
-          })
-
-          console.log("[MM Agent] Created portfolio position:", {
-            amount: tokenAmount,
-            invested: ethSpent,
-          })
-        }
-      } else if (tradeType === "sell" && existing) {
-        // Sell: reduce position
-        const tokensSold = Number(formatUnits(amountIn, 18))
-        const ethReceived = Number(formatUnits(amountOut, 18))
-        const newAmount = Number.parseFloat(existing.amount || "0") - tokensSold
-        const costBasis = tokensSold * Number.parseFloat(existing.avg_buy_price || "0")
-        const realizedPnl = ethReceived - costBasis
-        const currentTotalInvested = Number.parseFloat(existing.total_invested || "0")
-        const newTotalInvested = currentTotalInvested - costBasis // Reduce invested capital by the cost basis of sold tokens
-
-        if (newAmount <= 0.0001) {
-          // Position fully closed - but keep record with zero amount
-          const currentRealizedPnl = Number.parseFloat(existing.realized_pnl || "0")
-          await supabase
-            .from("mm_agent_portfolio")
-            .update({
-              amount: 0,
-              current_value: 0,
-              total_invested: 0, // Reset invested capital
-              realized_pnl: currentRealizedPnl + realizedPnl,
-              unrealized_pnl: 0,
-              last_updated_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id)
-
-          console.log("[MM Agent] Closed portfolio position, realized P&L:", realizedPnl)
-        } else {
-          // Get current balance and estimate current value
-          const currentBalance = await this.getTokenBalance(tokenAddress as Address)
-          const currentPrice = ethReceived / tokensSold // Price from this sell
-          const currentValue = Number(formatUnits(currentBalance, 18)) * currentPrice
-          const currentRealizedPnl = Number.parseFloat(existing.realized_pnl || "0")
-          const unrealizedPnl = currentValue - newTotalInvested // Calculate new unrealized PnL
-
-          await supabase
-            .from("mm_agent_portfolio")
-            .update({
-              amount: newAmount,
-              total_invested: newTotalInvested,
-              current_value: currentValue,
-              realized_pnl: currentRealizedPnl + realizedPnl,
-              unrealized_pnl: unrealizedPnl,
-              last_updated_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id)
-
-          console.log("[MM Agent] Reduced portfolio position:", {
-            newAmount,
-            currentValue,
-            realizedPnl,
-            unrealizedPnl,
-          })
-        }
-      }
-    } catch (error) {
-      console.error("[MM Agent] Failed to update portfolio:", error)
-    }
-  }
-
-  private async getTokenBalance(address?: Address): Promise<string> {
-    if (!address) {
-      // Get combined balance from all wallets
-      const supabase = await createClient()
-      const { data: wallets } = await supabase
-        .from("mm_agent_wallets")
-        .select("wallet_address")
-        .eq("agent_id", this.agentId)
-        .eq("is_active", true)
-
-      if (!wallets || wallets.length === 0) return "0"
-
-      const rpcUrl = "https://mainnet.base.org"
-      const publicClient = createPublicClient({
-        chain: base,
-        transport: http(rpcUrl),
-      })
-
-      let totalBalance = 0n
-      for (const wallet of wallets) {
-        // FIX: USI_TOKEN_ADDRESS was undeclared. It's defined in the agent config.
-        const agent = await supabase.from("mm_agents").select("token_address").eq("id", this.agentId).single()
-        const USI_TOKEN_ADDRESS = agent.data.token_address as Address
-
-        const balance = await publicClient.readContract({
-          address: USI_TOKEN_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: "balanceOf",
-          args: [wallet.wallet_address as Address],
-        })
-        totalBalance += balance as bigint
-      }
-
-      return formatUnits(totalBalance, 18)
-    }
-
-    const rpcUrl = getRpcUrl()
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(rpcUrl),
-    })
-
-    // FIX: USI_TOKEN_ADDRESS was undeclared. It's defined in the agent config.
-    const agent = await createClient().from("mm_agents").select("token_address").eq("id", this.agentId).single()
-    const USI_TOKEN_ADDRESS = agent.data.token_address as Address
-
-    const balance = await publicClient.readContract({
-      address: USI_TOKEN_ADDRESS,
-      abi: ERC20_ABI,
-      functionName: "balanceOf",
-      args: [address],
-    })
-
-    return formatUnits(balance as bigint, 18)
-  }
-
-  /**
-   * Get or create MM agent for a user
-   */
-  static async getOrCreateByOwner(ownerAddress: string): Promise<MMAgentConfig> {
-    const supabase = await createClient()
-
-    const { data: agent, error } = await supabase
-      .from("mm_agents")
-      .select("*")
-      .eq("owner_address", ownerAddress)
-      .maybeSingle()
-
-    if (error) {
-      throw new Error(`Failed to fetch MM agent: ${error.message}`)
-    }
-
-    if (agent) {
-      return agent as MMAgentConfig
-    }
-
-    // Agent doesn't exist - user needs to create one via /api/agents/mm/create
-    throw new Error("MM agent not found. Please create one first.")
-  }
-
-  private async createClients(wallet: any) {
-    const rpcUrl = getRpcUrl()
-
-    const publicClient = createPublicClient({
-      chain: base,
-      transport: http(rpcUrl, {
-        batch: {
-          wait: 50, // Batch requests within 50ms
-        },
-        retryCount: 3,
-        retryDelay: 1000,
-      }),
-      cacheTime: 4000, // Cache for 4 seconds
-    })
-
-    const walletClient = createWalletClient({
-      chain: base,
-      transport: http(rpcUrl, {
-        batch: {
-          wait: 50,
-        },
-        retryCount: 3,
-        retryDelay: 1000,
-      }),
-      account: wallet,
-    })
-
-    return { publicClient, walletClient, rpcUrl }
-  }
-
-  private async initializeAgent(ownerAddress: Address, tokenAddress: Address, tokenSymbol: string) {
-    const supabase = await createClient()
-
-    const { data: existingWallet } = await supabase
-      .from("server_wallets")
-      .select("*")
-      .eq("owner_address", ownerAddress)
-      .single()
-
-    let walletAddress: string
-
-    if (existingWallet) {
-      walletAddress = existingWallet.wallet_address
-    } else {
-      const newWallet = this.walletService.generateWallet()
-      walletAddress = newWallet.address
-
-      await supabase.from("server_wallets").insert({
-        owner_address: ownerAddress,
-        wallet_address: walletAddress,
-        encrypted_private_key: this.walletService.encryptPrivateKey(newWallet.privateKey),
-      })
-    }
-
-    const defaultBuyAmountEth = "0.0001"
-
-    await supabase.from("mm_agents").insert({
-      owner_address: ownerAddress,
-      token_address: tokenAddress,
-      token_symbol: tokenSymbol,
-      wallet_address: walletAddress,
-      is_active: false,
-      buy_amount_eth: defaultBuyAmountEth,
-      buy_interval_minutes: 5,
-      sell_interval_minutes: 10,
-      profitable_mode: false, // Default profitable mode to false
-      burst_mode: false, // Default burst mode to false
-      burst_trades_count: 5, // Default burst trades count
-      burst_delay_seconds: 3, // Default burst delay seconds
-      pro_mode: false, // Default pro mode to false
-      max_mode: false, // Default max mode to false
-      volume_generated: BigInt(0), // Initialize volume_generated as BigInt
-    })
-  }
-
-  private async selectRandomWallet(): Promise<any> {
-    await this.loadWalletKeys()
-    const walletKeys = Array.from(this._walletKeys.keys())
-    const randomIndex = Math.floor(Math.random() * walletKeys.length)
-    return this.getWallet(walletKeys[randomIndex])
-  }
-
-  private async shouldSellInProfitableMode(wallet: any, agent: MMAgentConfig): Promise<boolean> {
-    try {
-      const { publicClient } = await this.createClients(wallet)
-
-      // Get current USI balance
-      const USI_TOKEN_ADDRESS = agent.token_address as Address
-      const usiBalance = await publicClient.readContract({
-        address: USI_TOKEN_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: "balanceOf",
-        args: [wallet.address],
-      })
-
-      if (usiBalance === 0n) {
-        console.log("[MM Agent] No USI tokens to check profit on")
-        return false
-      }
-
-      // Get wallet's last buy price from database
-      const supabase = await createClient()
-      const { data: walletData } = await supabase
-        .from("mm_agent_wallets")
-        .select("last_buy_price, last_buy_amount")
-        .eq("agent_id", this.agentId)
-        .eq("wallet_address", wallet.address)
-        .single()
-
-      if (!walletData || !walletData.last_buy_price || walletData.last_buy_price === 0) {
-        console.log("[MM Agent] No buy price recorded yet, skipping sell")
-        return false
-      }
-
-      const lastBuyPrice = Number(walletData.last_buy_price)
-
-      // Get current price by simulating a sell quote
-      const sellAmount = usiBalance / 2n // Check price for 50% of balance
-      const currentEthForOneToken = await this.getQuote(USI_TOKEN_ADDRESS, WETH_ADDRESS, sellAmount)
-
-      // Calculate current price in ETH per USI
-      const currentPrice = Number(formatUnits(currentEthForOneToken, 18)) / Number(formatUnits(sellAmount, 18))
-
-      // Calculate profit percentage
-      const profitPercent = ((currentPrice - lastBuyPrice) / lastBuyPrice) * 100
-
-      console.log(`[MM Agent] Profitable mode check:`)
-      console.log(`  Last buy price: ${lastBuyPrice.toFixed(8)} ETH per USI`)
-      console.log(`  Current price: ${currentPrice.toFixed(8)} ETH per USI`)
-      console.log(`  Profit: ${profitPercent.toFixed(2)}%`)
-
-      if (profitPercent > 10) {
-        console.log(`[MM Agent] ✅ Profit > 10%, allowing sell`)
-        return true
-      } else {
-        console.log(`[MM Agent] ❌ Profit < 10% (${profitPercent.toFixed(2)}%), skipping sell`)
-        return false
       }
     } catch (error: any) {
-      console.error("[MM Agent] Error checking profitable mode:", error.message)
-      return false
-    }
-  }
-
-  /**
-   * Execute a burst trading sequence - rapid fire buys and sells
-   */
-  async executeBurst(): Promise<{ success: boolean; results: any[]; error?: string }> {
-    console.log(`[v0] Starting burst mode...`)
-
-    const supabase = await createClient()
-    const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
-
-    if (!agent) {
-      throw new Error("Agent not found")
+      messages.push(`Cycle error: ${error.message}`)
     }
 
-    const burstCount = agent.burst_trades_count || 5
-    const burstDelay = (agent.burst_delay_seconds || 3) * 1000 // Convert to ms
-
-    const results: any[] = []
-
-    console.log(`[v0] Executing ${burstCount} rapid trades with ${burstDelay}ms delay...`)
-
-    for (let i = 0; i < burstCount; i++) {
-      const wallet = await this.getNextWallet(agent)
-      console.log(`[v0] Burst ${i + 1}/${burstCount} - Using wallet ${wallet.address}`)
-
-      const isBuy = i % 2 === 0
-      console.log(`[v0] Trade type for iteration ${i}: ${isBuy ? "BUY" : "SELL"}`)
-
-      try {
-        if (isBuy) {
-          console.log(`[v0] Executing BUY for wallet ${wallet.address}`)
-          const buyResult = await this.executeBuy(wallet)
-          console.log(`[v0] Buy result:`, buyResult)
-          results.push({
-            trade: i + 1,
-            type: "buy",
-            wallet: wallet.address,
-            ...buyResult,
-          })
-        } else {
-          console.log(`[v0] Executing SELL for wallet ${wallet.address}`)
-          const sellResult = await this.executeSell(wallet)
-          console.log(`[v0] Sell result:`, sellResult)
-          results.push({
-            trade: i + 1,
-            type: "sell",
-            wallet: wallet.address,
-            ...sellResult,
-          })
-        }
-
-        // Wait before next trade (except on last iteration)
-        if (i < burstCount - 1) {
-          await new Promise((resolve) => setTimeout(resolve, burstDelay))
-        }
-      } catch (error: any) {
-        console.error(`[v0] Burst trade ${i + 1} failed:`, error.message)
-        console.error(`[v0] Burst trade ${i + 1} error stack:`, error.stack)
-        results.push({
-          trade: i + 1,
-          type: isBuy ? "buy" : "sell",
-          wallet: wallet.address,
-          success: false,
-          error: error.message,
-        })
-      }
-    }
-
-    const successCount = results.filter((r) => r.success).length
-    const buyCount = results.filter((r) => r.type === "buy").length
-    const sellCount = results.filter((r) => r.type === "sell").length
-    const successfulBuys = results.filter((r) => r.type === "buy" && r.success).length
-    const successfulSells = results.filter((r) => r.type === "sell" && r.success).length
-
-    console.log(`[v0] Burst complete: ${successCount}/${burstCount} trades successful`)
-    console.log(`[v0] Breakdown: ${successfulBuys}/${buyCount} buys, ${successfulSells}/${sellCount} sells`)
-
-    await this.logActivity(
-      "burst_complete",
-      `Burst mode completed: ${successCount}/${burstCount} successful (${successfulBuys} buys, ${successfulSells} sells)`,
-      {
-        burstCount,
-        successCount,
-        buyCount,
-        sellCount,
-        successfulBuys,
-        successfulSells,
-        results,
-      },
-    )
-
-    return {
-      success: successCount > 0,
-      results,
-    }
+    return { buyExecuted, sellExecuted, messages }
   }
 }
-
-interface MMCycleResult {
-  buyExecuted: boolean
-  sellExecuted: boolean
-  messages: string[]
-}
-
-const SELL_PERCENTAGE = 0.5 // Sell 50% of balance

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Owner address required" }, { status: 400 })
     }
 
-    const config = await MarketMakerAgentService.getOrCreateByOwner(ownerAddress)
+    const config = await MarketMakerAgentService.getOrCreateByWallet(ownerAddress)
 
     return NextResponse.json({ config })
   } catch (error: any) {

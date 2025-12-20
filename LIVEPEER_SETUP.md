@@ -49,10 +49,10 @@ Add both keys to your Vercel project:
 1. Go to the **Vars** section in the v0 in-chat sidebar
 2. Add the following environment variables:
 
-\`\`\`
+```
 NEXT_PUBLIC_LIVEPEER_[KEY]=your_public_key_here
 LIVEPEER_API_KEY=your_private_key_here
-\`\`\`
+```
 
 **Important Security Notes:**
 - ✅ `NEXT_PUBLIC_LIVEPEER_[KEY]` is SAFE to expose (read-only permissions)

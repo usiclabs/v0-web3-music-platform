@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/mm-agent",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/stream-to-earn-dispersal",
+      "schedule": "0 2 * * *"
     }
   ]
 }

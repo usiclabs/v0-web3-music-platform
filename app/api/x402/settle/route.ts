@@ -5,6 +5,7 @@ import { base, baseSepolia } from "viem/chains"
 import { monad } from "@/lib/web3/config"
 import { privateKeyToAccount } from "viem/accounts"
 import { USDC_ADDRESS, USDC_TRANSFER_WITH_AUTHORIZATION_ABI } from "@/lib/web3/contracts"
+import { createStreamToEarnReward } from "@/lib/stream-to-earn/rewards-engine"
 
 // X402 payment settlement endpoint
 // This endpoint executes the on-chain transfer and records the payment
@@ -350,6 +351,23 @@ export async function POST(request: NextRequest) {
         }
 
         console.log("[v0] Transfer confirmed in block:", receipt.blockNumber)
+
+        const rewardResult = await createStreamToEarnReward({
+          trackId,
+          artistAddress: track.artist_id,
+          listenerAddress,
+          chunkIndex,
+          amount: Number(value),
+          txHash,
+          chainId,
+          timestamp: new Date().toISOString(),
+        })
+
+        if (rewardResult.success) {
+          console.log("[v0] Stream-to-earn reward created:", rewardResult.rewardId)
+        } else {
+          console.warn("[v0] Failed to create stream-to-earn reward:", rewardResult.error)
+        }
 
         if (hasRoyaltySplits && isRelayerValid && track.royalty_splits.length > 0) {
           console.log("[v0] Distributing payment to", track.royalty_splits.length, "royalty split recipients")

@@ -32,10 +32,11 @@ export function NotificationCenter() {
   const { address } = useWallet()
   const router = useRouter()
   const supabase = createClient()
+  const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   // Load notifications
   useEffect(() => {
-    if (!address) return
+    if (!address || !isSupabaseConfigured) return
 
     const loadNotifications = async () => {
       console.log("[v0] Loading notifications for address:", address)
@@ -106,7 +107,7 @@ export function NotificationCenter() {
       console.log("[v0] Unsubscribing from notifications")
       supabase.removeChannel(channel)
     }
-  }, [address, supabase])
+  }, [address, supabase, isSupabaseConfigured])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -175,7 +176,7 @@ export function NotificationCenter() {
     setUnreadCount(0)
   }
 
-  if (!address) return null
+  if (!address || !isSupabaseConfigured) return null
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
