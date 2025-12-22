@@ -7,16 +7,31 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { agentId, walletIndex, ownerAddress } = body
 
-    if (!agentId || !walletIndex || !ownerAddress) {
+    console.log("[v0] Export key request:", { agentId, walletIndex, ownerAddress })
+
+    if (!agentId || walletIndex === undefined || !ownerAddress) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     const supabase = createAdminClient()
 
     // Verify ownership
-    const { data: agent } = await supabase.from("mm_agents").select("owner_address").eq("id", agentId).single()
+    const { data: agent, error: agentError } = await supabase
+      .from("mm_agents")
+      .select("owner_address")
+      .eq("id", agentId)
+      .single()
 
-    if (!agent || agent.owner_address.toLowerCase() !== ownerAddress.toLowerCase()) {
+    if (agentError || !agent) {
+      console.error("[v0] Agent not found:", agentError)
+      return NextResponse.json({ error: "Agent not found" }, { status: 404 })
+    }
+
+    if (agent.owner_address.toLowerCase() !== ownerAddress.toLowerCase()) {
+      console.error("[v0] Unauthorized - address mismatch", {
+        agentOwner: agent.owner_address,
+        requestOwner: ownerAddress,
+      })
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
@@ -25,12 +40,15 @@ export async function POST(req: NextRequest) {
     const privateKey = keyMap.get(walletIndex)
 
     if (!privateKey) {
+      console.error("[v0] Wallet not found for index:", walletIndex)
+      console.error("[v0] Available wallet indices:", Array.from(keyMap.keys()))
       return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
     }
 
+    console.log("[v0] Successfully exported key for wallet index:", walletIndex)
     return NextResponse.json({ privateKey })
   } catch (error: any) {
-    console.error("[API] Export key failed:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[v0] Export key failed:", error)
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })
   }
 }

@@ -39,10 +39,32 @@ import { createClient } from "@/lib/supabase/client"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { toast } from "sonner"
 import { useWalletClient, usePublicClient, useAccount } from "wagmi"
-import { parseEther, formatEther } from "viem"
+import { parseEther, formatEther, formatUnits, parseUnits } from "viem"
 import confetti from "canvas-confetti"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+
+// Mock ABI and Address for ERC20 interactions
+const ERC20_ABI = [
+  {
+    constant: true,
+    inputs: [{ name: "_owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "balance", type: "uint256" }],
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: "_to", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+] as const
+const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07" // Example USI token address
 
 // Helper component for Connect Wallet Button
 function ConnectWalletButton() {
@@ -226,7 +248,7 @@ function ActivityItem({ activity }: { activity: MMActivity }) {
 }
 
 export default function MarketMakerAgentPage() {
-  const { address, isConnected, connect } = useWallet()
+  const { connect, isConnected, address } = useWallet()
   const { address: wagmiAddress } = useAccount()
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
@@ -241,6 +263,8 @@ export default function MarketMakerAgentPage() {
 
   const [fundingWallet, setFundingWallet] = useState<any>(null)
   const [fundAmount, setFundAmount] = useState("")
+  const [fundingTokenType, setFundingTokenType] = useState<"eth" | "usi">("eth")
+  const [usiBalance, setUsiBalance] = useState("0")
   const [connectedWalletBalance, setConnectedWalletBalance] = useState("0")
   const [isFunding, setIsFunding] = useState(false)
   const [isBursting, setIsBursting] = useState(false)
@@ -252,6 +276,11 @@ export default function MarketMakerAgentPage() {
   const [sellingWallet, setSellingWallet] = useState<any>(null)
   const [isSelling, setIsSelling] = useState(false)
   const [isSellingAll, setIsSellingAll] = useState(false) // Added for selling all specific wallet
+
+  const [useCustomToken, setUseCustomToken] = useState(false)
+  const [customTokenAddress, setCustomTokenAddress] = useState("")
+  const [userUSIBalance, setUserUSIBalance] = useState(0n)
+  const [exportingWalletIndex, setExportingWalletIndex] = useState<number | null>(null)
 
   const isMobile = useIsMobile()
 
@@ -269,6 +298,14 @@ export default function MarketMakerAgentPage() {
   useEffect(() => {
     if (configData?.config) {
       setConfig(configData.config)
+      // Initialize custom token state based on fetched config
+      if (configData.config.token_address && configData.config.token_address !== USI_TOKEN_ADDRESS) {
+        setUseCustomToken(true)
+        setCustomTokenAddress(configData.config.token_address)
+      } else {
+        setUseCustomToken(false)
+        setCustomTokenAddress("")
+      }
     }
   }, [configData])
 
@@ -327,6 +364,45 @@ export default function MarketMakerAgentPage() {
       })
     }
   }, [fundingWallet, wagmiAddress, publicClient])
+
+  useEffect(() => {
+    if (wagmiAddress && publicClient) {
+      // Fetch USI token balance
+      publicClient
+        .readContract({
+          address: USI_TOKEN_ADDRESS as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [wagmiAddress as `0x${string}`],
+        })
+        .then((balance) => {
+          setUsiBalance(formatUnits(balance as bigint, 18))
+        })
+        .catch((error) => {
+          console.error("Failed to fetch USI balance:", error)
+        })
+    }
+  }, [wagmiAddress, publicClient])
+
+  useEffect(() => {
+    const checkUSIBalance = async () => {
+      if (!address || !publicClient) return
+      try {
+        const balance = await publicClient.readContract({
+          address: USI_TOKEN_ADDRESS as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "balanceOf",
+          args: [address as `0x${string}`],
+        })
+        setUserUSIBalance(balance)
+      } catch (error) {
+        console.error("[v0] Failed to check USI balance:", error)
+      }
+    }
+    checkUSIBalance()
+  }, [address, publicClient])
+
+  const canUseCustomToken = true // Allow all users to use custom token targets regardless of USI holdings
 
   const createAgent = async () => {
     if (!address) return
@@ -420,17 +496,35 @@ export default function MarketMakerAgentPage() {
 
     setIsFunding(true)
     try {
-      const hash = await walletClient.sendTransaction({
-        to: fundingWallet.wallet_address as `0x${string}`,
-        value: parseEther(fundAmount),
-      })
+      let hash: `0x${string}`
 
-      toast.success("Transfer Sent!", {
-        description: `Funding ${fundingWallet.wallet_index} with ${fundAmount} ETH`,
-      })
+      if (fundingTokenType === "eth") {
+        hash = await walletClient.sendTransaction({
+          to: fundingWallet.wallet_address as `0x${string}`,
+          value: parseEther(fundAmount),
+        })
+
+        toast.success("ETH Transfer Sent!", {
+          description: `Funding wallet ${fundingWallet.wallet_index} with ${fundAmount} ETH`,
+        })
+      } else {
+        const usiAmount = parseUnits(fundAmount, 18)
+
+        hash = await walletClient.writeContract({
+          address: USI_TOKEN_ADDRESS as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: "transfer",
+          args: [fundingWallet.wallet_address as `0x${string}`, usiAmount],
+        })
+
+        toast.success("USI Transfer Sent!", {
+          description: `Funding wallet ${fundingWallet.wallet_index} with ${fundAmount} USI`,
+        })
+      }
 
       setFundingWallet(null)
       setFundAmount("")
+      setFundingTokenType("eth")
 
       // Refresh wallets after short delay
       setTimeout(() => {
@@ -445,7 +539,7 @@ export default function MarketMakerAgentPage() {
     } catch (error: any) {
       console.error("Funding error:", error)
       toast.error("Transfer Failed", {
-        description: error.message || "Failed to send ETH",
+        description: error.message || `Failed to send ${fundingTokenType.toUpperCase()}`,
       })
     } finally {
       setIsFunding(false)
@@ -619,6 +713,75 @@ export default function MarketMakerAgentPage() {
     toast.success("Wallets Exported!", {
       description: "CSV file downloaded successfully",
     })
+  }
+
+  const handleCustomTokenUpdate = async (tokenAddress: string) => {
+    if (!tokenAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      toast.error("Invalid token address format")
+      return
+    }
+
+    setCustomTokenAddress(tokenAddress)
+    try {
+      await fetch("/api/agents/mm/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          token_address: tokenAddress,
+          token_symbol: "CUSTOM",
+        }),
+      })
+      toast.success("Custom token configured")
+      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+    } catch (error) {
+      toast.error("Failed to update custom token")
+    }
+  }
+
+  const handleExportPrivateKey = async (walletIndex: number, walletAddress: string) => {
+    if (!address) {
+      toast.error("Please connect wallet first")
+      return
+    }
+
+    if (!config?.id) {
+      toast.error("Agent configuration not loaded")
+      return
+    }
+
+    try {
+      setExportingWalletIndex(walletIndex)
+      console.log("[v0] Exporting private key for wallet index:", walletIndex, "agentId:", config.id)
+
+      const response = await fetch("/api/agents/mm/wallets/export-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: config.id,
+          walletIndex,
+          ownerAddress: address,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error("[v0] Export key failed with status:", response.status, "error:", data.error)
+        throw new Error(data.error || "Failed to export key")
+      }
+
+      const { privateKey } = data
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(privateKey)
+      toast.success(`Private key copied to clipboard for ${walletAddress.slice(0, 6)}...`)
+    } catch (error: any) {
+      console.error("[v0] Failed to export private key:", error.message)
+      toast.error(error.message || "Failed to export private key")
+    } finally {
+      setExportingWalletIndex(null)
+    }
   }
 
   if (isLoadingConfig) {
@@ -837,7 +1000,7 @@ export default function MarketMakerAgentPage() {
     )
   }
 
-  const tokenAddress = config?.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
+  const tokenAddress = config?.token_address || USI_TOKEN_ADDRESS
   const tokenSymbol = config?.token_symbol || "USI"
 
   const stats = statsData?.stats || {
@@ -997,11 +1160,11 @@ export default function MarketMakerAgentPage() {
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <p className="text-xs text-muted-foreground font-medium">Buys</p>
+                <p className="text-xs text-muted-foreground">Buys</p>
                 <p className="text-base sm:text-lg font-bold text-emerald-400 mt-1">{aggregateWalletStats.totalBuys}</p>
               </div>
               <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                <p className="text-xs text-muted-foreground font-medium">Sells</p>
+                <p className="text-xs text-muted-foreground">Sells</p>
                 <p className="text-base sm:text-lg font-bold text-rose-400 mt-1">{aggregateWalletStats.totalSells}</p>
               </div>
             </div>
@@ -1160,6 +1323,26 @@ export default function MarketMakerAgentPage() {
                           <RefreshCw className="h-3 w-3 mr-1" />
                           Sell All
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleExportPrivateKey(index, wallet.wallet_address)}
+                          disabled={exportingWalletIndex === index}
+                          className="text-xs"
+                          title="Export private key for wallet recovery"
+                        >
+                          {exportingWalletIndex === index ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Exporting...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-3 w-3 mr-1" />
+                              Export Key
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -1170,6 +1353,7 @@ export default function MarketMakerAgentPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Updated fund wallet dialog with token type selection */}
       <Dialog open={!!fundingWallet} onOpenChange={() => setFundingWallet(null)}>
         <DialogContent className="bg-black/95 border-zinc-800">
           <DialogHeader>
@@ -1177,46 +1361,99 @@ export default function MarketMakerAgentPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-sm font-medium mb-2 block">Amount (ETH)</Label>
+              <Label className="text-sm font-medium mb-2 block">Token Type</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={fundingTokenType === "eth" ? "default" : "outline"}
+                  onClick={() => {
+                    setFundingTokenType("eth")
+                    setFundAmount("")
+                  }}
+                  className={fundingTokenType === "eth" ? "" : "bg-zinc-900 border-zinc-800"}
+                >
+                  ETH
+                </Button>
+                <Button
+                  variant={fundingTokenType === "usi" ? "default" : "outline"}
+                  onClick={() => {
+                    setFundingTokenType("usi")
+                    setFundAmount("")
+                  }}
+                  className={fundingTokenType === "usi" ? "" : "bg-zinc-900 border-zinc-800"}
+                >
+                  USI
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Amount ({fundingTokenType.toUpperCase()})</Label>
               <Input
                 type="number"
-                step="0.001"
-                placeholder="0.1"
+                step={fundingTokenType === "usi" ? "0.01" : "0.001"}
+                placeholder={fundingTokenType === "usi" ? "100" : "0.1"}
                 value={fundAmount}
                 onChange={(e) => setFundAmount(e.target.value)}
                 className="bg-zinc-900 border-zinc-800"
               />
               <p className="text-xs text-zinc-400 mt-2">
-                Your balance: {Number(connectedWalletBalance).toFixed(4)} ETH
+                Your balance:{" "}
+                {fundingTokenType === "eth"
+                  ? `${Number(connectedWalletBalance).toFixed(4)} ETH`
+                  : `${Number(usiBalance).toFixed(2)} USI`}
               </p>
             </div>
+
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" onClick={() => setFundAmount("0.01")} className="bg-zinc-900 border-zinc-800">
-                0.01 ETH
-              </Button>
-              <Button variant="outline" onClick={() => setFundAmount("0.05")} className="bg-zinc-900 border-zinc-800">
-                0.05 ETH
-              </Button>
-              <Button variant="outline" onClick={() => setFundAmount("0.1")} className="bg-zinc-900 border-zinc-800">
-                0.1 ETH
-              </Button>
-            </div>
-            <Button
-              onClick={handleFundWallet}
-              disabled={isFunding || !fundAmount || Number(fundAmount) <= 0}
-              className="w-full bg-emerald-500 hover:bg-emerald-600"
-            >
-              {isFunding ? (
+              {fundingTokenType === "eth" ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending...
+                  <Button
+                    variant="outline"
+                    onClick={() => setFundAmount("0.01")}
+                    className="bg-zinc-900 border-zinc-800"
+                  >
+                    0.01 ETH
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setFundAmount("0.05")}
+                    className="bg-zinc-900 border-zinc-800"
+                  >
+                    0.05 ETH
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setFundAmount("0.1")}
+                    className="bg-zinc-900 border-zinc-800"
+                  >
+                    0.1 ETH
+                  </Button>
                 </>
               ) : (
                 <>
-                  <ArrowDownToLine className="h-4 w-4 mr-2" />
-                  Fund Wallet
+                  <Button variant="outline" onClick={() => setFundAmount("50")} className="bg-zinc-900 border-zinc-800">
+                    50 USI
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setFundAmount("100")}
+                    className="bg-zinc-900 border-zinc-800"
+                  >
+                    100 USI
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setFundAmount("500")}
+                    className="bg-zinc-900 border-zinc-800"
+                  >
+                    500 USI
+                  </Button>
                 </>
               )}
+            </div>
+
+            <Button onClick={handleFundWallet} disabled={isFunding || !fundAmount} className="w-full">
+              {isFunding ? "Sending..." : `Transfer ${fundingTokenType.toUpperCase()}`}
             </Button>
           </div>
         </DialogContent>
@@ -1291,11 +1528,12 @@ export default function MarketMakerAgentPage() {
             {/* Token Selection */}
             <div>
               <label className="text-sm font-medium mb-3 block">Target Token</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 {SUPPORTED_TOKENS.map((token) => (
                   <button
                     key={token.address}
                     onClick={async () => {
+                      setUseCustomToken(false)
                       setConfig({ ...config, token_address: token.address, token_symbol: token.symbol })
                       try {
                         await fetch("/api/agents/mm/config", {
@@ -1314,7 +1552,7 @@ export default function MarketMakerAgentPage() {
                       }
                     }}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      config.token_address === token.address
+                      !useCustomToken && config.token_address === token.address
                         ? "border-emerald-500 bg-emerald-500/10"
                         : "border-border hover:border-border/80"
                     }`}
@@ -1324,6 +1562,37 @@ export default function MarketMakerAgentPage() {
                   </button>
                 ))}
               </div>
+
+              {canUseCustomToken && (
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Custom Token</p>
+                      <p className="text-xs text-muted-foreground mt-1">Enter any ERC20 token address</p>
+                    </div>
+                    <Switch checked={useCustomToken} onCheckedChange={setUseCustomToken} />
+                  </div>
+
+                  {useCustomToken && (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="0x..."
+                        value={customTokenAddress}
+                        onChange={(e) => setCustomTokenAddress(e.target.value)}
+                        className="font-mono text-xs"
+                      />
+                      <Button
+                        onClick={() => handleCustomTokenUpdate(customTokenAddress)}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        size="sm"
+                      >
+                        <Sparkles className="h-3 w-3 mr-2" />
+                        Configure Custom Token
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Trading Settings */}
@@ -1544,6 +1813,8 @@ export default function MarketMakerAgentPage() {
                       sell_interval_minutes: config.sell_interval_minutes,
                       burst_trades_count: config.burst_trades_count,
                       burst_delay_seconds: config.burst_delay_seconds,
+                      token_address: config.token_address, // Ensure token address is saved
+                      token_symbol: config.token_symbol, // Ensure token symbol is saved
                     }),
                   })
                   toast.success("Configuration saved")
