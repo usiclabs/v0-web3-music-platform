@@ -36,17 +36,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the wallet's private key
-    const keyMap = await getAgentWalletKeys(agentId, ownerAddress)
-    const privateKey = keyMap.get(walletIndex)
+    try {
+      const keyMap = await getAgentWalletKeys(agentId, ownerAddress)
 
-    if (!privateKey) {
-      console.error("[v0] Wallet not found for index:", walletIndex)
-      console.error("[v0] Available wallet indices:", Array.from(keyMap.keys()))
-      return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
+      console.log("[v0] Retrieved keyMap for agent:", agentId)
+      console.log("[v0] KeyMap size:", keyMap.size)
+      console.log("[v0] Available wallet indices:", Array.from(keyMap.keys()))
+      console.log("[v0] Looking for wallet index:", walletIndex)
+
+      const privateKey = keyMap.get(walletIndex)
+
+      if (!privateKey) {
+        console.error("[v0] Wallet not found for index:", walletIndex)
+        console.error("[v0] Available wallet indices:", Array.from(keyMap.keys()))
+        return NextResponse.json(
+          { error: `Wallet index ${walletIndex} not found. Available: ${Array.from(keyMap.keys()).join(", ")}` },
+          { status: 404 },
+        )
+      }
+
+      console.log("[v0] Successfully exported key for wallet index:", walletIndex)
+      return NextResponse.json({ privateKey })
+    } catch (walletError: any) {
+      console.error("[v0] Error retrieving wallet keys:", walletError.message)
+      return NextResponse.json({ error: `Failed to retrieve wallet keys: ${walletError.message}` }, { status: 500 })
     }
-
-    console.log("[v0] Successfully exported key for wallet index:", walletIndex)
-    return NextResponse.json({ privateKey })
   } catch (error: any) {
     console.error("[v0] Export key failed:", error)
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 })

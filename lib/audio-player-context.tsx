@@ -68,15 +68,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (currentTrack && address) {
-      checkTrackOwnership(address, currentTrack.id).then((owns) => {
-        if (owns) {
-          console.log("[v0] User already owns this track - unlocking all chunks")
-          const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
-          const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
-          setUnlockedChunks(allChunks)
-          // Removed toast on track load - user already knows they own it
-        }
-      })
+      console.log("[v0] Checking track ownership for track:", currentTrack.id, "address:", address)
+      checkTrackOwnership(address, currentTrack.id)
+        .then((owns) => {
+          console.log("[v0] Ownership check result:", owns, "for track:", currentTrack.id)
+          if (owns) {
+            console.log("[v0] User already owns this track - unlocking all chunks")
+            const totalChunks = Math.ceil(currentTrack.duration / X402_CONFIG.CHUNK_DURATION)
+            const allChunks = new Set(Array.from({ length: totalChunks }, (_, i) => i))
+            setUnlockedChunks(allChunks)
+          } else {
+            console.log("[v0] User does not own track - only chunk 0 available for preview")
+            setUnlockedChunks(new Set([0]))
+          }
+        })
+        .catch((error) => {
+          console.error("[v0] Error checking track ownership:", error)
+          // On error, assume user doesn't own it - fallback to preview only
+          setUnlockedChunks(new Set([0]))
+        })
     }
   }, [currentTrack, address])
 
@@ -94,14 +104,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }) {
 
       const newChunkIndex = Math.floor(newTime / X402_CONFIG.CHUNK_DURATION)
       if (newChunkIndex !== currentChunk) {
+        console.log(
+          "[v0] Chunk changed from",
+          currentChunk,
+          "to",
+          newChunkIndex,
+          "- Unlocked chunks:",
+          Array.from(unlockedChunks),
+        )
         setCurrentChunk(newChunkIndex)
 
         if (!unlockedChunks.has(newChunkIndex)) {
+          console.log("[v0] Chunk", newChunkIndex, "is NOT unlocked - triggering payment modal")
           audio.pause()
           setIsPlaying(false)
           setPaymentRequired(true)
           setError(`Payment required for chunk ${newChunkIndex + 1}. Please pay to continue listening.`)
           setShowPaymentModal(true)
+        } else {
+          console.log("[v0] Chunk", newChunkIndex, "is unlocked - continuing playback")
         }
       }
     }
