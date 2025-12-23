@@ -31,17 +31,17 @@ const ERC20_ABI = [
 function normalizePrivateKey(key: string): `0x${string}` {
   // Remove any whitespace
   key = key.trim()
-  
+
   // If it doesn't start with 0x, add it
   if (!key.startsWith("0x")) {
     key = `0x${key}`
   }
-  
+
   // Validate it's a valid hex string of 64 characters (32 bytes) plus 0x prefix
   if (!/^0x[0-9a-fA-F]{64}$/.test(key)) {
     throw new Error(`Invalid private key format. Expected 64 hex characters, got ${key.length - 2}`)
   }
-  
+
   return key as `0x${string}`
 }
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       transport: http(
         process.env.ALCHEMY_API_KEY
           ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-          : "https://mainnet.base.org"
+          : "https://mainnet.base.org",
       ),
     })
 
@@ -94,30 +94,48 @@ export async function POST(request: Request) {
       transport: http(
         process.env.ALCHEMY_API_KEY
           ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-          : "https://mainnet.base.org"
+          : "https://mainnet.base.org",
       ),
     })
 
     console.log("[v0] Relayer address:", relayerAccount.address)
 
     const usdcAddress = USDC_ADDRESS[base.id]
-    
-    // Check allowance
-    const allowance = await publicClient.readContract({
-      address: usdcAddress,
-      abi: ERC20_ABI,
-      functionName: "allowance",
-      args: [from as Address, relayerAccount.address],
-    })
 
-    console.log("[v0] Allowance from user to relayer:", allowance.toString())
+    let allowance = 0n
+    let retries = 0
+    const maxRetries = 5
+    const retryDelayMs = 1000
+
+    while (retries < maxRetries) {
+      allowance = await publicClient.readContract({
+        address: usdcAddress,
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [from as Address, relayerAccount.address],
+      })
+
+      console.log(`[v0] Allowance check (attempt ${retries + 1}/${maxRetries}):`, allowance.toString())
+
+      if (allowance >= BigInt(amount)) {
+        console.log("[v0] Sufficient allowance confirmed!")
+        break
+      }
+
+      if (retries < maxRetries - 1) {
+        console.log(`[v0] Insufficient allowance, retrying in ${retryDelayMs}ms...`)
+        await new Promise((resolve) => setTimeout(resolve, retryDelayMs))
+      }
+
+      retries++
+    }
 
     if (allowance < BigInt(amount)) {
       return NextResponse.json(
         {
-          error: `Insufficient allowance. User has approved ${allowance.toString()} but ${amount} is needed. Please approve first.`,
+          error: `Insufficient allowance. User has approved ${Number(allowance) / 1e6} USDC but ${Number(BigInt(amount)) / 1e6} USDC is needed. Please approve in your wallet and try again.`,
         },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -142,20 +160,17 @@ export async function POST(request: Request) {
 
     // Record payment in database
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/x402/record-payment`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            trackId,
-            userId: from,
-            chunkIndex,
-            txHash,
-            amount,
-          }),
-        }
-      )
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/x402/record-payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          trackId,
+          userId: from,
+          chunkIndex,
+          txHash,
+          amount,
+        }),
+      })
     } catch (err) {
       console.warn("[v0] Failed to record payment:", err)
       // Don't fail the whole transaction if recording fails
@@ -172,7 +187,7 @@ export async function POST(request: Request) {
       {
         error: error instanceof Error ? error.message : "Transfer failed",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
