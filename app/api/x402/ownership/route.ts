@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       .select("id")
       .eq("listener_address", address.toLowerCase())
       .eq("track_id", trackId)
+      .gt("total_paid", 0) // Only return streams where the user has actually paid (total_paid > 0)
       .limit(1)
 
     if (error) {
