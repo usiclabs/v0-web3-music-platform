@@ -829,8 +829,15 @@ export class MarketMakerAgentService {
     const supabase = await createClient()
     const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
 
-    if (!agent || !agent.is_active) {
-      throw new Error("Agent not found or inactive")
+    if (!agent) {
+      const error = `Agent ${this.agentId} not found in database`
+      console.error(`[v0] [MM Agent] ${error}`)
+      throw new Error(error)
+    }
+
+    if (!agent.is_active) {
+      console.log(`[v0] [MM Agent] Agent ${this.agentId} is inactive (is_active: false). Skipping cycle.`)
+      throw new Error("Agent is inactive")
     }
 
     console.log(`[v0] [MM Agent] Agent config:`, {
@@ -845,8 +852,39 @@ export class MarketMakerAgentService {
     })
 
     const wallet = await this.selectRandomWallet()
+    if (!wallet) {
+      const error = `No wallets available for agent ${this.agentId}`
+      console.error(`[v0] [MM Agent] ${error}`)
+      await this.logActivity("error", error)
+      throw new Error(error)
+    }
+
     const walletAddress = wallet.address as `0x${string}`
     console.log(`[MM Agent] Running cycle with wallet ${walletAddress} (multi-wallet: ${agent.multi_wallet_mode})`)
+
+    const { publicClient } = await this.createClients(wallet)
+    const ethBalance = await publicClient.getBalance({ address: walletAddress })
+    const wethBalance = (await publicClient.readContract({
+      address: WETH_ADDRESS,
+      abi: WETH_ABI,
+      functionName: "balanceOf",
+      args: [walletAddress],
+    })) as bigint
+
+    const minRequiredETH = parseEther("0.002") // Minimum 0.002 ETH for gas
+    const hasEnoughBalance = ethBalance >= minRequiredETH || wethBalance > 0n
+
+    console.log(
+      `[v0] [MM Agent] Wallet balance check: ETH=${formatUnits(ethBalance, 18)}, WETH=${formatUnits(wethBalance, 18)}`,
+    )
+
+    if (!hasEnoughBalance) {
+      const msg = `Insufficient wallet balance. ETH: ${formatUnits(ethBalance, 18)}, WETH: ${formatUnits(wethBalance, 18)}. Minimum required: 0.002 ETH for gas.`
+      console.warn(`[v0] [MM Agent] ${msg}`)
+      await this.logActivity("cycle_skipped", msg, { wallet: walletAddress })
+      result.messages.push(msg)
+      return result
+    }
 
     const now = new Date()
 
@@ -864,10 +902,15 @@ export class MarketMakerAgentService {
     if (shouldBuy) {
       try {
         console.log(`[v0] [MM Agent] Executing buy...`)
-        await this.executeBuy(wallet)
+        const buyResult = await this.executeBuy(wallet)
 
-        result.buyExecuted = true
-        result.messages.push(`Buy executed successfully with wallet ${walletAddress}`)
+        if (buyResult.success) {
+          result.buyExecuted = true
+          result.messages.push(`Buy executed successfully with wallet ${walletAddress}. TX: ${buyResult.txHash}`)
+        } else {
+          result.messages.push(`Buy failed: ${buyResult.error}`)
+          await this.logActivity("buy_failed", buyResult.error || "Unknown error", { wallet: walletAddress })
+        }
       } catch (error: any) {
         console.error("[MM Agent] Buy failed:", error.message)
         console.error("[v0] [MM Agent] Buy error stack:", error.stack)
@@ -901,10 +944,15 @@ export class MarketMakerAgentService {
 
       try {
         console.log(`[v0] [MM Agent] Executing sell...`)
-        await this.executeSell(wallet)
+        const sellResult = await this.executeSell(wallet)
 
-        result.sellExecuted = true
-        result.messages.push(`Sell executed successfully with wallet ${walletAddress}`)
+        if (sellResult.success) {
+          result.sellExecuted = true
+          result.messages.push(`Sell executed successfully with wallet ${walletAddress}. TX: ${sellResult.txHash}`)
+        } else {
+          result.messages.push(`Sell failed: ${sellResult.error}`)
+          await this.logActivity("sell_failed", sellResult.error || "Unknown error", { wallet: walletAddress })
+        }
       } catch (error: any) {
         console.error("[MM Agent] Sell failed:", error.message)
         console.error("[v0] [MM Agent] Sell error stack:", error.stack)
@@ -1566,6 +1614,10 @@ export class MarketMakerAgentService {
     await this.loadWalletKeys()
     const walletKeys = Array.from(this._walletKeys.keys())
     const randomIndex = Math.floor(Math.random() * walletKeys.length)
+    // Make sure there are wallets loaded before trying to get one
+    if (walletKeys.length === 0) {
+      return null
+    }
     return this.getWallet(walletKeys[randomIndex])
   }
 

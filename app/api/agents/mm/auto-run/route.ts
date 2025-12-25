@@ -54,10 +54,38 @@ export async function POST(request: NextRequest) {
         const shouldBuy = !lastBuy || now.getTime() - lastBuy.getTime() >= buyIntervalMs
         const shouldSell = !lastSell || now.getTime() - lastSell.getTime() >= sellIntervalMs
 
+        let walletBalances = null
+        try {
+          const { data: wallets } = await supabase
+            .from("mm_agent_wallets")
+            .select("wallet_address, eth_balance, token_balance, total_buys, total_sells")
+            .eq("agent_id", agent.id)
+
+          if (wallets && wallets.length > 0) {
+            walletBalances = {
+              walletCount: wallets.length,
+              totalEth: wallets.reduce((sum, w) => sum + Number.parseFloat(w.eth_balance || "0"), 0),
+              totalTokens: wallets.reduce((sum, w) => sum + Number.parseFloat(w.token_balance || "0"), 0),
+              totalBuys: wallets.reduce((sum, w) => sum + (w.total_buys || 0), 0),
+              totalSells: wallets.reduce((sum, w) => sum + (w.total_sells || 0), 0),
+            }
+          }
+        } catch (walletError) {
+          console.error(`[v0] [MM Auto-Run] Failed to get wallet balances for agent ${agent.id}:`, walletError)
+        }
+
         if (shouldBuy || shouldSell) {
           console.log(`[v0] [MM Auto-Run] ✓ Running cycle for agent ${agent.id}`)
           console.log(`[v0]   Token: ${agent.token_symbol || "USI"} (${agent.token_address || "default"})`)
           console.log(`[v0]   Should buy: ${shouldBuy}, Should sell: ${shouldSell}`)
+          if (walletBalances) {
+            console.log(
+              `[v0]   Wallet Balances: ${walletBalances.totalEth.toFixed(4)} ETH, ${walletBalances.totalTokens.toFixed(2)} ${agent.token_symbol || "USI"}`,
+            )
+            console.log(
+              `[v0]   Total Transactions: ${walletBalances.totalBuys} buys, ${walletBalances.totalSells} sells`,
+            )
+          }
 
           console.log(`[MM Auto-Run] Running cycle for agent ${agent.id} (buy: ${shouldBuy}, sell: ${shouldSell})`)
 
@@ -68,18 +96,25 @@ export async function POST(request: NextRequest) {
             agentId: agent.id,
             owner: agent.owner_address,
             executed: true,
+            walletBalances,
             ...result,
           })
         } else {
           console.log(`[v0] [MM Auto-Run] ✗ Skipping agent ${agent.id} - intervals not met`)
           console.log(`[v0]   Last buy: ${agent.last_buy_at}, interval: ${agent.buy_interval_minutes}m`)
           console.log(`[v0]   Last sell: ${agent.last_sell_at}, interval: ${agent.sell_interval_minutes}m`)
+          if (walletBalances) {
+            console.log(
+              `[v0]   Wallet Balances: ${walletBalances.totalEth.toFixed(4)} ETH, ${walletBalances.totalTokens.toFixed(2)} ${agent.token_symbol || "USI"}`,
+            )
+          }
 
           console.log(`[MM Auto-Run] Skipping agent ${agent.id} - intervals not met`)
           results.push({
             agentId: agent.id,
             owner: agent.owner_address,
             executed: false,
+            walletBalances,
             message: "Intervals not met",
           })
         }
@@ -89,6 +124,7 @@ export async function POST(request: NextRequest) {
 
         results.push({
           agentId: agent.id,
+          owner: agent.owner_address,
           executed: false,
           error: error.message,
         })
