@@ -86,6 +86,11 @@ export async function GET(req: NextRequest) {
             address: wallet.wallet_address as `0x${string}`,
           })
 
+          console.log(`[v0] Raw ETH balance for ${wallet.wallet_address}: ${ethBalance} wei`)
+
+          const ethBalanceFormatted = Number.parseFloat(formatEther(ethBalance))
+          console.log(`[v0] Formatted ETH balance: ${ethBalanceFormatted} ETH`)
+
           // Fetch $USI token balance
           const tokenBalance = await publicClient.readContract({
             address: USI_TOKEN as `0x${string}`,
@@ -112,7 +117,7 @@ export async function GET(req: NextRequest) {
 
           return {
             ...wallet,
-            eth_balance: Number.parseFloat(formatEther(ethBalance)),
+            eth_balance: ethBalanceFormatted,
             token_balance: Number.parseFloat(formatEther(tokenBalance as bigint)),
             total_buys: buyCount || 0,
             total_sells: sellCount || 0,

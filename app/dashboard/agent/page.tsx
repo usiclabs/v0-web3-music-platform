@@ -206,6 +206,11 @@ export default function AgentDashboardPage() {
   const { data: activityData } = useSWR(
     agentData?.agent?.id ? `/api/agents/activity?agentId=${agentData.agent.id}` : null,
     fetcher,
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: 5000, // Poll every 5 seconds for real-time activity
+    },
   )
 
   useEffect(() => {

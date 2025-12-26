@@ -800,7 +800,6 @@ export class MarketMakerAgentService {
         },
       )
 
-      // Update last sell time
       await this.updateLastSellTime()
 
       return { success: true, txHash: sellTxHash }
@@ -907,6 +906,7 @@ export class MarketMakerAgentService {
         if (buyResult.success) {
           result.buyExecuted = true
           result.messages.push(`Buy executed successfully with wallet ${walletAddress}. TX: ${buyResult.txHash}`)
+          await this.updateLastBuyTime()
         } else {
           result.messages.push(`Buy failed: ${buyResult.error}`)
           await this.logActivity("buy_failed", buyResult.error || "Unknown error", { wallet: walletAddress })
@@ -949,6 +949,7 @@ export class MarketMakerAgentService {
         if (sellResult.success) {
           result.sellExecuted = true
           result.messages.push(`Sell executed successfully with wallet ${walletAddress}. TX: ${sellResult.txHash}`)
+          await this.updateLastSellTime()
         } else {
           result.messages.push(`Sell failed: ${sellResult.error}`)
           await this.logActivity("sell_failed", sellResult.error || "Unknown error", { wallet: walletAddress })

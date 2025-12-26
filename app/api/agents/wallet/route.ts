@@ -28,10 +28,11 @@ export async function GET(request: NextRequest) {
 
     // Get or create wallet
     const wallet = await createOrGetInvestmentWallet(agentId)
+    console.log("[v0] Fetched wallet for agent:", agentId, "balance:", wallet.ethBalance)
 
     return NextResponse.json(wallet)
   } catch (error: any) {
-    console.error("Error fetching wallet:", error)
+    console.error("[v0] Error fetching wallet:", error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

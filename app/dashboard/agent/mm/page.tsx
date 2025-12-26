@@ -346,14 +346,25 @@ export default function MarketMakerAgentPage() {
 
   useEffect(() => {
     if (showWalletsModal && config?.id) {
-      fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.wallets) {
-            setWallets(data.wallets)
-          }
-        })
-        .catch((error) => console.error("Failed to load wallets:", error))
+      const fetchWallets = () => {
+        console.log("[v0] Fetching agent wallets:", config.id)
+        fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("[v0] Wallets data received:", data.wallets)
+            if (data.wallets) {
+              setWallets(data.wallets)
+            }
+          })
+          .catch((error) => console.error("Failed to load wallets:", error))
+      }
+
+      // Initial fetch
+      fetchWallets()
+
+      const interval = setInterval(fetchWallets, 5000)
+
+      return () => clearInterval(interval)
     }
   }, [showWalletsModal, config?.id])
 

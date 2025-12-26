@@ -1,6 +1,8 @@
 import { privateKeyToAccount } from "viem/accounts"
 import { createClient } from "@supabase/supabase-js"
 import crypto from "crypto"
+import { formatEther } from "viem"
+import { publicClient } from "@/lib/viem/client"
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -42,10 +44,16 @@ export async function createOrGetInvestmentWallet(agentId: string) {
     .maybeSingle()
 
   if (existingWallet) {
+    const ethBalance = await publicClient.getBalance({
+      address: existingWallet.wallet_address as `0x${string}`,
+    })
+
+    const usdcBalance = existingWallet.usdc_balance // USDC stays from database for now
+
     return {
       address: existingWallet.wallet_address,
-      usdcBalance: existingWallet.usdc_balance,
-      ethBalance: existingWallet.eth_balance,
+      usdcBalance,
+      ethBalance: Number.parseFloat(formatEther(ethBalance)),
     }
   }
 
