@@ -83,6 +83,18 @@ export default function ExplorePage() {
         .select("track_id, chunks_played, total_paid")
         .in("track_id", trackIds)
 
+      console.log("[v0] Fetched streams for", trackIds.length, "tracks:", streams?.length || 0, "streams found")
+      if (streams && streams.length > 0) {
+        console.log(
+          "[v0] Sample stream data:",
+          streams.slice(0, 3).map((s) => ({
+            track_id: s.track_id,
+            total_paid: s.total_paid,
+            type: typeof s.total_paid,
+          })),
+        )
+      }
+
       // Get like counts
       const { data: likes } = await supabase.from("likes").select("track_id").in("track_id", trackIds)
 
@@ -95,8 +107,14 @@ export default function ExplorePage() {
 
       streams?.forEach((stream) => {
         const stats = statsMap.get(stream.track_id)!
-        stats.total_earned += Number(stream.total_paid)
-        stats.play_count += stream.chunks_played
+        const paidAmount =
+          typeof stream.total_paid === "string"
+            ? Number.parseFloat(stream.total_paid)
+            : typeof stream.total_paid === "number"
+              ? stream.total_paid
+              : 0
+        stats.total_earned += isNaN(paidAmount) ? 0 : paidAmount
+        stats.play_count += stream.chunks_played || 0
       })
 
       likes?.forEach((like) => {
@@ -104,11 +122,34 @@ export default function ExplorePage() {
         stats.like_count += 1
       })
 
+      const tracksWithEarnings = Array.from(statsMap.entries()).filter(([_, stats]) => stats.total_earned > 0)
+      if (tracksWithEarnings.length > 0) {
+        console.log(
+          "[v0] Tracks with earnings:",
+          tracksWithEarnings.slice(0, 5).map(([id, stats]) => ({
+            id: id.slice(0, 8),
+            total_earned: stats.total_earned,
+          })),
+        )
+        console.log(
+          "[v0] All tracks with earnings count:",
+          tracksWithEarnings.length,
+          "out of",
+          trackIds.length,
+          "total tracks",
+        )
+      }
+
       // Merge stats with tracks
-      const tracksWithStats: TrackWithStats[] = tracksData.map((track) => ({
-        ...track,
-        ...statsMap.get(track.id),
-      }))
+      const tracksWithStats: TrackWithStats[] = tracksData.map((track) => {
+        const stats = statsMap.get(track.id)
+        return {
+          ...track,
+          total_earned: stats?.total_earned || 0,
+          play_count: stats?.play_count || 0,
+          like_count: stats?.like_count || 0,
+        }
+      })
 
       // Apply client-side sorting for aggregated fields
       if (sortBy === "most_played") {

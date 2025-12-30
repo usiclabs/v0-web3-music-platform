@@ -78,13 +78,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const walletsWithLiveData = await Promise.all(
-      (wallets || []).map(async (wallet) => {
+    const fetchBalanceWithRetry = async (wallet: any, retries = 3, delay = 1000) => {
+      for (let attempt = 0; attempt < retries; attempt++) {
         try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
           // Fetch ETH balance
           const ethBalance = await publicClient.getBalance({
             address: wallet.wallet_address as `0x${string}`,
           })
+
+          clearTimeout(timeoutId)
 
           console.log(`[v0] Raw ETH balance for ${wallet.wallet_address}: ${ethBalance} wei`)
 
@@ -122,8 +127,15 @@ export async function GET(req: NextRequest) {
             total_buys: buyCount || 0,
             total_sells: sellCount || 0,
           }
-        } catch (balanceError) {
-          console.error(`[API] Error fetching balance for wallet ${wallet.wallet_address}:`, balanceError)
+        } catch (err: any) {
+          if (err.message?.includes("Too Many Requests") && attempt < retries - 1) {
+            console.warn(`[v0] Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`)
+            await new Promise((resolve) => setTimeout(resolve, delay))
+            delay *= 2 // Exponential backoff
+            continue
+          }
+
+          console.error(`[API] Error fetching balance for wallet ${wallet.wallet_address}:`, err.message)
           return {
             ...wallet,
             eth_balance: 0,
@@ -132,8 +144,10 @@ export async function GET(req: NextRequest) {
             total_sells: 0,
           }
         }
-      }),
-    )
+      }
+    }
+
+    const walletsWithLiveData = await Promise.all((wallets || []).map((wallet) => fetchBalanceWithRetry(wallet)))
 
     console.log("[v0] Returning wallets with live data")
     return NextResponse.json({ wallets: walletsWithLiveData })

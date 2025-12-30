@@ -90,24 +90,39 @@ export async function generateWalletsForAgent(
 export async function getAgentWalletKeys(agentId: string, ownerAddress: string): Promise<Map<number, string>> {
   const supabase = createAdminClient()
 
+  console.log("[v0] getAgentWalletKeys called with agentId:", agentId)
+
   const { data: wallets, error } = await supabase
     .from("mm_agent_wallets")
-    .select("wallet_index, private_key_encrypted")
+    .select("wallet_index, private_key_encrypted, is_active")
     .eq("agent_id", agentId)
     .eq("is_active", true)
     .order("wallet_index")
 
+  console.log("[v0] Wallet query result:", { count: wallets?.length, error, agentId })
+
   if (error) {
+    console.error("[v0] Failed to retrieve wallet keys error:", error)
     throw new Error(`Failed to retrieve wallet keys: ${error.message}`)
+  }
+
+  if (!wallets || wallets.length === 0) {
+    console.warn("[v0] No active wallets found for agent:", agentId)
   }
 
   const keyMap = new Map<number, string>()
 
   for (const wallet of wallets || []) {
-    const decrypted = decryptPrivateKey(wallet.private_key_encrypted, ownerAddress)
-    keyMap.set(wallet.wallet_index, decrypted)
+    try {
+      const decrypted = decryptPrivateKey(wallet.private_key_encrypted, ownerAddress)
+      keyMap.set(wallet.wallet_index, decrypted)
+      console.log("[v0] Successfully decrypted key for wallet index:", wallet.wallet_index)
+    } catch (decryptError: any) {
+      console.error("[v0] Failed to decrypt private key for wallet index:", wallet.wallet_index, decryptError.message)
+    }
   }
 
+  console.log("[v0] Final keyMap size:", keyMap.size, "indices:", Array.from(keyMap.keys()))
   return keyMap
 }
 

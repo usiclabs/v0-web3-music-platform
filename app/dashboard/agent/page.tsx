@@ -35,6 +35,7 @@ import type { AgentTokenGateStatus } from "@/lib/w eb3/agent-token-gate"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { transferUsdcToAgent, getUsdcBalance, getEthBalance } from "@/lib/web3/usdc-transfer"
 
 interface AgentConfig {
   id: string
@@ -225,23 +226,40 @@ export default function AgentDashboardPage() {
     setIsFunding(true)
 
     try {
-      const response = await fetch("/api/agents/wallet/fund", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId: agentData.agent.id,
-          ownerAddress: address,
-          amount: Number.parseFloat(fundAmount),
-          txHash: `0x${Date.now().toString(16)}`, // Placeholder - would be real tx hash
-        }),
-      })
+      const amount = Number.parseFloat(fundAmount)
 
-      if (response.ok) {
-        mutate(`/api/agents/wallet?agentId=${agentData.agent.id}&ownerAddress=${address}`)
-        setFundAmount("")
+      // Execute real USDC transfer from user wallet to agent wallet
+      const transferResult = await transferUsdcToAgent(
+        address as `0x${string}`,
+        agentWallet.address as `0x${string}`,
+        amount,
+      )
+
+      if (transferResult.success && transferResult.txHash) {
+        // Now update backend to record the transfer
+        const response = await fetch("/api/agents/wallet/fund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            agentId: agentData.agent.id,
+            ownerAddress: address,
+            amount,
+            txHash: transferResult.txHash,
+          }),
+        })
+
+        if (response.ok) {
+          mutate(`/api/agents/wallet?agentId=${agentData.agent.id}&ownerAddress=${address}`)
+          setFundAmount("")
+        } else {
+          const error = await response.json()
+          console.error("Failed to record funding:", error)
+        }
+      } else {
+        console.error("Transfer failed:", transferResult.error)
       }
     } catch (error) {
-      console.error("Failed to fund wallet:", error)
+      console.error("[v0] Fund wallet error:", error)
     } finally {
       setIsFunding(false)
     }
@@ -252,6 +270,35 @@ export default function AgentDashboardPage() {
       setAgentWallet(walletData)
     }
   }, [walletData])
+
+  useEffect(() => {
+    const fetchLiveBalances = async () => {
+      if (!agentWallet?.address) return
+
+      console.log("[v0] Fetching live balances for agent wallet:", agentWallet.address)
+
+      const [usdcBalance, ethBalance] = await Promise.all([
+        getUsdcBalance(agentWallet.address as `0x${string}`),
+        getEthBalance(agentWallet.address as `0x${string}`),
+      ])
+
+      setAgentWallet((prev) =>
+        prev
+          ? {
+              ...prev,
+              usdcBalance,
+              ethBalance,
+            }
+          : null,
+      )
+    }
+
+    // Fetch immediately and every 30 seconds
+    fetchLiveBalances()
+    const interval = setInterval(fetchLiveBalances, 30000)
+
+    return () => clearInterval(interval)
+  }, [agentWallet?.address])
 
   useEffect(() => {
     if (!config.is_active || !agentData?.agent?.id) return

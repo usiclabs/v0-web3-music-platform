@@ -362,7 +362,7 @@ export default function MarketMakerAgentPage() {
       // Initial fetch
       fetchWallets()
 
-      const interval = setInterval(fetchWallets, 5000)
+      const interval = setInterval(fetchWallets, 30000)
 
       return () => clearInterval(interval)
     }
@@ -784,9 +784,18 @@ export default function MarketMakerAgentPage() {
 
       const { privateKey } = data
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(privateKey)
-      toast.success(`Private key copied to clipboard for ${walletAddress.slice(0, 6)}...`)
+      const fileContent = `PRIVATE KEY FOR WALLET ${walletIndex}\nAddress: ${walletAddress}\nPrivate Key: ${privateKey}\n\nIMPORTANT: Keep this private key secure and never share it with anyone!`
+      const blob = new Blob([fileContent], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `wallet-${walletIndex}-${walletAddress.slice(0, 6)}-private-key.txt`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success(`Private key downloaded for wallet ${walletIndex} (${walletAddress.slice(0, 6)}...)`)
     } catch (error: any) {
       console.error("[v0] Failed to export private key:", error.message)
       toast.error(error.message || "Failed to export private key")
@@ -1337,12 +1346,12 @@ export default function MarketMakerAgentPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleExportPrivateKey(index, wallet.wallet_address)}
-                          disabled={exportingWalletIndex === index}
+                          onClick={() => handleExportPrivateKey(wallet.wallet_index, wallet.wallet_address)}
+                          disabled={exportingWalletIndex === wallet.wallet_index}
                           className="text-xs"
                           title="Export private key for wallet recovery"
                         >
-                          {exportingWalletIndex === index ? (
+                          {exportingWalletIndex === wallet.wallet_index ? (
                             <>
                               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                               Exporting...

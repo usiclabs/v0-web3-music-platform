@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { agentId, walletIndex, recipientAddress, ownerAddress, withdrawType } = body
 
-    if (!agentId || !walletIndex || !recipientAddress || !ownerAddress || !withdrawType) {
+    const walletIndexNum = typeof walletIndex === "string" ? Number.parseInt(walletIndex, 10) : walletIndex
+
+    if (!agentId || walletIndexNum === undefined || !recipientAddress || !ownerAddress || !withdrawType) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -28,13 +30,15 @@ export async function POST(req: NextRequest) {
 
     // Get the wallet's private key
     const keyMap = await getAgentWalletKeys(agentId, ownerAddress)
-    const privateKey = keyMap.get(walletIndex)
+    const privateKey = keyMap.get(walletIndexNum)
 
     if (!privateKey) {
+      console.error("[v0] Wallet not found for index:", walletIndexNum, "available:", Array.from(keyMap.keys()))
       return NextResponse.json({ error: "Wallet not found" }, { status: 404 })
     }
 
-    const account = privateKeyToAccount(privateKey as `0x${string}`)
+    const formattedKey = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`
+    const account = privateKeyToAccount(formattedKey as `0x${string}`)
 
     const publicClient = createPublicClient({
       chain: base,
@@ -69,8 +73,8 @@ export async function POST(req: NextRequest) {
         value: amountToSend,
       })
 
-      console.log(`[API] Withdrew ${formatEther(amountToSend)} ETH from wallet ${walletIndex}. TX: ${txHash}`)
-    } else if (withdrawType === "usi") {
+      console.log(`[API] Withdrew ${formatEther(amountToSend)} ETH from wallet ${walletIndexNum}. TX: ${txHash}`)
+    } else if (withdrawType === "token") {
       // Get USI balance
       const balance = (await publicClient.readContract({
         address: USI_TOKEN as `0x${string}`,
@@ -80,18 +84,18 @@ export async function POST(req: NextRequest) {
       })) as bigint
 
       if (balance <= 0n) {
-        return NextResponse.json({ error: "No USI balance to withdraw" }, { status: 400 })
+        return NextResponse.json({ error: "No token balance to withdraw" }, { status: 400 })
       }
 
-      // Transfer all USI
+      // Transfer all tokens
       txHash = await walletClient.writeContract({
         address: USI_TOKEN as `0x${string}`,
         abi: ERC20_ABI,
         functionName: "transfer",
-        args: [recipientAddress, balance],
+        args: [recipientAddress as `0x${string}`, balance],
       })
 
-      console.log(`[API] Withdrew ${formatEther(balance)} USI from wallet ${walletIndex}. TX: ${txHash}`)
+      console.log(`[API] Withdrew ${formatEther(balance)} tokens from wallet ${walletIndexNum}. TX: ${txHash}`)
     } else {
       return NextResponse.json({ error: "Invalid withdraw type" }, { status: 400 })
     }
