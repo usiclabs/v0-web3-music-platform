@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { neon } from "@neondatabase/serverless"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +11,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] Smart wallet generation transfer request:", { from, nonce })
-
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get Supabase client for database operations
     const cookieStore = cookies()
@@ -28,41 +25,16 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Check if user has sufficient balance
-    const balanceResult = await sql(`SELECT balance FROM wallet_balances WHERE address = $1 AND token = 'USDC'`, [
-      from.toLowerCase(),
-    ])
-
-    const balance = balanceResult.length > 0 ? BigInt(balanceResult[0].balance) : 0n
-    const GENERATION_PRICE = 1_000_000n // $1 USDC with 6 decimals
-
-    if (balance < GENERATION_PRICE) {
-      console.log("[v0] Insufficient balance for generation:", {
-        balance: balance.toString(),
-        required: GENERATION_PRICE.toString(),
-      })
-      return NextResponse.json(
-        { error: `Insufficient USDC balance. You have ${Number(balance) / 1e6} USDC but need 1.00 USDC` },
-        { status: 402 },
-      )
-    }
-
-    // Deduct from wallet balance (server handles the actual transfer)
-    const relayerAddress = process.env.NEXT_PUBLIC_RELAYER_ADDRESS || "0x" + "0".repeat(40)
-
-    // Record the transaction in x402_payments
+    // Record the transaction in generation_payments
     const { data: paymentRecord, error: paymentError } = await supabase
-      .from("x402_payments")
+      .from("generation_payments")
       .insert({
-        payer_address: from.toLowerCase(),
-        recipient_address: relayerAddress.toLowerCase(),
-        amount: "1.0",
-        currency: "USDC",
-        network: "base",
-        status: "settled",
-        transaction_hash: `gen-${nonce || Date.now()}`,
-        purpose: "generation",
-        settlement_timestamp: new Date().toISOString(),
+        wallet_address: from.toLowerCase(),
+        tx_hash: `gen-${nonce || Date.now()}`,
+        amount_usdc: 1.0,
+        nonce,
+        status: "completed",
+        created_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -76,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      txHash: paymentRecord.transaction_hash,
+      txHash: paymentRecord.tx_hash,
       amount: "1.0",
       currency: "USDC",
     })
