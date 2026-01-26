@@ -45,6 +45,7 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { MMV4PoolDetector } from "@/components/mm-v4-pool-detector"
 import { MMV4SwapPanel } from "@/components/mm-v4-swap-panel"
+import { MMV4SwapHistory } from "@/components/mm-v4-swap-history"
 
 // Mock ABI and Address for ERC20 interactions
 const ERC20_ABI = [
@@ -1147,6 +1148,13 @@ export default function MarketMakerAgentPage() {
               />
             )}
           </div>
+
+          {/* V4 Swap History */}
+          {config?.id && (
+            <div className="mt-4">
+              <MMV4SwapHistory agentId={config.id} />
+            </div>
+          )}
         </div>
 
         {/* Activity Feed */}
