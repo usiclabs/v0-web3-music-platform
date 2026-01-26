@@ -14,8 +14,15 @@ export async function POST(request: NextRequest) {
     const result = await detectionService.detectAllPools(tokenAddress)
     const recommendation = detectionService.recommendPoolVersion(result)
 
+    // Convert BigInt values to strings for JSON serialization
+    const serializedResult = {
+      ...result,
+      v4Liquidity: result.v4Liquidity ? result.v4Liquidity.toString() : undefined,
+      v3Liquidity: result.v3Liquidity ? result.v3Liquidity.toString() : undefined,
+    }
+
     return NextResponse.json({
-      detection: result,
+      detection: serializedResult,
       recommendation,
       message: `Token has ${result.hasV4Pool ? "V4" : result.hasV3Pool ? "V3" : "no"} pool. Recommended: ${recommendation}`,
     })
