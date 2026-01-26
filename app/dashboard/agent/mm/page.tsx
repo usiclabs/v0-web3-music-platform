@@ -43,6 +43,8 @@ import { parseEther, formatEther, formatUnits, parseUnits } from "viem"
 import confetti from "canvas-confetti"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { MMV4PoolDetector } from "@/components/mm-v4-pool-detector"
+import { MMV4SwapPanel } from "@/components/mm-v4-swap-panel"
 
 // Mock ABI and Address for ERC20 interactions
 const ERC20_ABI = [
@@ -1124,6 +1126,27 @@ export default function MarketMakerAgentPage() {
             icon={ArrowRightLeft}
             trend="neutral"
           />
+        </div>
+
+        {/* Uniswap V4 Pool Support Section */}
+        <div className="border-t border-border/50 pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-blue-400" />
+            <h2 className="text-lg font-semibold">Uniswap V4 Pool Support</h2>
+            <Badge className="bg-blue-500/20 text-blue-300">Beta</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <MMV4PoolDetector />
+            {config?.token_address && (
+              <MMV4SwapPanel
+                agentId={config.id}
+                ownerAddress={config.owner_address || address || ""}
+                tokenAddress={config.token_address}
+                walletIndex={1}
+              />
+            )}
+          </div>
         </div>
 
         {/* Activity Feed */}
