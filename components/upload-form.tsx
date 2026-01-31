@@ -85,9 +85,10 @@ export function UploadForm({ prefillData }: UploadFormProps) {
     },
   })
 
-  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_TOKEN_BALANCE : false
+  // No token requirement for tokenization - all users can tokenize
+  const hasRequiredUSI = true
   const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
-  const requiredBalanceFormatted = formatTokenBalance(REQUIRED_TOKEN_BALANCE)
+  const requiredBalanceFormatted = "0"
 
   const { sendTransaction } = useSendTransaction()
   const { data: transactionReceipt, isFetching: isCoinCreating } = useWaitForTransactionReceipt({
@@ -945,17 +946,11 @@ export function UploadForm({ prefillData }: UploadFormProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!hasRequiredUSI && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                <span>Requires 0.1% $USI</span>
-              </div>
-            )}
-            <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} disabled={!hasRequiredUSI} />
+            <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} />
           </div>
         </div>
 
-        {!hasRequiredUSI && (
+        {false && (
           <div className="bg-muted/30 border border-border/50 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
               <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
