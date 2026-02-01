@@ -266,7 +266,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
         },
         body: JSON.stringify({
           name: coinName || title,
-          symbol: coinSymbol || title.slice(0, 5).toUpperCase(),
+          symbol: (coinSymbol || title.slice(0, 5).toUpperCase()).slice(0, 5),
           deployerAddress: address,
           trackId,
           coverImageUrl,
@@ -1106,11 +1106,11 @@ export function UploadForm({ prefillData }: UploadFormProps) {
                 value={coinSymbol}
                 onChange={(e) => setCoinSymbol(e.target.value.toUpperCase())}
                 placeholder="e.g., TRACK"
-                maxLength={5}
+                maxLength={10}
                 required={tokenizeTrack}
                 className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono uppercase"
               />
-              <p className="text-xs text-muted-foreground mt-1">2-5 characters (auto-generated from title)</p>
+              <p className="text-xs text-muted-foreground mt-1">2-10 characters (auto-generated from title)</p>
             </div>
 
             <div className="bg-muted/30 rounded-lg p-4 space-y-2">
