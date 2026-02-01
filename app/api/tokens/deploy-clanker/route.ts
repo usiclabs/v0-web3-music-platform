@@ -28,12 +28,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields: name, symbol, deployerAddress" }, { status: 400 })
     }
 
-    // Enforce Clanker's 2-5 character symbol requirement
+    // Auto-truncate to Clanker's 2-5 character requirement
     const cleanedSymbol = symbol.slice(0, 5).toUpperCase()
-    if (cleanedSymbol.length < 2) {
-      console.error("[v0] [Clanker Token Deploy] Symbol too short:", cleanedSymbol)
-      return NextResponse.json({ error: "Token symbol must be 2-5 characters" }, { status: 400 })
-    }
 
     const parsedTotalSupply = typeof totalSupply === "string" ? Number.parseInt(totalSupply) : totalSupply || 1000000000
 

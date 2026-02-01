@@ -1105,12 +1105,11 @@ export function UploadForm({ prefillData }: UploadFormProps) {
                 id="coinSymbol"
                 value={coinSymbol}
                 onChange={(e) => setCoinSymbol(e.target.value.toUpperCase())}
-                placeholder="e.g., TRACK"
-                maxLength={10}
+                placeholder="e.g., MYTRACK"
                 required={tokenizeTrack}
                 className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono uppercase"
               />
-              <p className="text-xs text-muted-foreground mt-1">2-10 characters (auto-generated from title)</p>
+              <p className="text-xs text-muted-foreground mt-1">Token symbol (auto-generated from title)</p>
             </div>
 
             <div className="bg-muted/30 rounded-lg p-4 space-y-2">
