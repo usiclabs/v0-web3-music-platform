@@ -995,7 +995,13 @@ export function UploadForm({ prefillData }: UploadFormProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} />
+            <Switch 
+              checked={tokenizeTrack} 
+              onCheckedChange={(checked) => {
+                console.log("[v0] Tokenize toggle clicked, new value:", checked)
+                setTokenizeTrack(checked)
+              }} 
+            />
           </div>
         </div>
 
