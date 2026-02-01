@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       ai_generated,
       has_ai_style: !!ai_style,
       has_ai_prompt: !!ai_prompt,
+      is_tokenized,
     })
 
     let supabase
@@ -83,7 +84,6 @@ export async function POST(request: Request) {
         ai_generated: ai_generated || false,
         ai_style: ai_style || null,
         ai_prompt: ai_prompt || null,
-        is_tokenized: is_tokenized || false,
       })
       .select()
       .single()
