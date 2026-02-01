@@ -140,6 +140,31 @@ export function UploadForm({ prefillData }: UploadFormProps) {
             console.log("[v0] Track updated with coin address:", coinAddress)
           }
 
+          // Update tokenization status
+          setUploadProgress("Marking track as tokenized...")
+          console.log("[v0] Updating track tokenization status:", {
+            trackId: createdTrackId,
+            isTokenized: true,
+            coinAddress,
+          })
+
+          const tokenizationResponse = await fetch(`/api/tracks/${createdTrackId}/tokenize`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              is_tokenized: true,
+              coin_address: coinAddress,
+            }),
+          })
+
+          if (!tokenizationResponse.ok) {
+            const error = await tokenizationResponse.json()
+            console.error("[v0] Failed to update tokenization status:", error)
+            // Don't throw - coin was created successfully, just log the error
+          } else {
+            console.log("[v0] Track tokenization status updated successfully")
+          }
+
           confetti({
             particleCount: 150,
             spread: 80,
@@ -278,7 +303,30 @@ export function UploadForm({ prefillData }: UploadFormProps) {
         throw new Error("Failed to save token address")
       }
 
-      console.log("[v0] Track updated with token address:", tokenAddress)
+      setUploadProgress("Marking track as tokenized...")
+
+      console.log("[v0] Updating track tokenization status:", {
+        trackId,
+        isTokenized: true,
+        coinAddress: tokenAddress,
+      })
+
+      const tokenizationResponse = await fetch(`/api/tracks/${trackId}/tokenize`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          is_tokenized: true,
+          coin_address: tokenAddress,
+        }),
+      })
+
+      if (!tokenizationResponse.ok) {
+        const error = await tokenizationResponse.json()
+        console.error("[v0] Failed to update tokenization status:", error)
+        // Don't throw - token was created successfully, just log the error
+      } else {
+        console.log("[v0] Track tokenization status updated successfully")
+      }
 
       confetti({
         particleCount: 150,
@@ -663,6 +711,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
           ai_generated: prefillData?.isAiGenerated || false,
           ai_style: prefillData?.style || null,
           ai_prompt: prefillData?.prompt || null,
+          is_tokenized: tokenizeTrack,
           royalty_splits: royaltySplits.map((split) => ({
             address: split.address,
             percentage: split.percentage,

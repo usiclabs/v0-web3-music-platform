@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       ai_generated,
       ai_style,
       ai_prompt,
+      is_tokenized,
     } = body
 
     if (!title || !artist_id || !content_type) {
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
         ai_generated: ai_generated || false,
         ai_style: ai_style || null,
         ai_prompt: ai_prompt || null,
+        is_tokenized: is_tokenized || false,
       })
       .select()
       .single()
