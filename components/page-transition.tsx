@@ -21,7 +21,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [pathname, children])
+  }, [pathname])
 
   return (
     <div
