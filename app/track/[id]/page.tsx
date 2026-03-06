@@ -10,11 +10,12 @@ function isValidUUID(str: string): boolean {
 export default async function TrackPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
+  // Check for special routes FIRST before UUID validation
+  if (id === "trending") {
+    redirect("/trending")
+  }
+
   if (!isValidUUID(id)) {
-    // If someone navigates to /track/trending, redirect to /trending
-    if (id === "trending") {
-      redirect("/trending")
-    }
     // For other invalid IDs, show 404
     notFound()
   }

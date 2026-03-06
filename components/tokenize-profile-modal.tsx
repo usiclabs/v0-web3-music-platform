@@ -42,10 +42,10 @@ export function TokenizeProfileModal({ open, onOpenChange, onSuccess, artistName
 
       if (!status.canTokenize) {
         const reasons = []
-        if (!status.hasEnoughUSI) reasons.push("Need 10,000,000 $USI tokens")
-        if (!status.hasEnoughTracks) reasons.push("Need at least 5 uploaded tracks")
         if (status.alreadyTokenized) reasons.push("Profile already tokenized")
-        setError(reasons.join(". "))
+        if (reasons.length > 0) {
+          setError(reasons.join(". "))
+        }
       }
     } catch (err) {
       setError("Failed to check requirements")
@@ -117,9 +117,8 @@ export function TokenizeProfileModal({ open, onOpenChange, onSuccess, artistName
               <AlertDescription>
                 <strong>Requirements:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                  <li>Hold 10,000,000 $USI tokens</li>
-                  <li>Have uploaded at least 5 tracks</li>
                   <li>Can only be done once per profile</li>
+                  <li>Creates a unique token tied to your profile</li>
                 </ul>
               </AlertDescription>
             </Alert>
@@ -127,15 +126,9 @@ export function TokenizeProfileModal({ open, onOpenChange, onSuccess, artistName
             {gateStatus && (
               <div className="space-y-2 p-4 bg-muted rounded-lg">
                 <div className="flex items-center justify-between text-sm">
-                  <span>$USI Balance:</span>
-                  <span className={gateStatus.hasEnoughUSI ? "text-green-500" : "text-red-500"}>
-                    {formatUSIBalance(gateStatus.usiBalance)} / 10,000,000
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span>Tracks Uploaded:</span>
-                  <span className={gateStatus.hasEnoughTracks ? "text-green-500" : "text-red-500"}>
-                    {gateStatus.trackCount} / 5
+                  <span>Profile Status:</span>
+                  <span className={gateStatus.alreadyTokenized ? "text-orange-500" : "text-green-500"}>
+                    {gateStatus.alreadyTokenized ? "Already Tokenized" : "Ready to Tokenize"}
                   </span>
                 </div>
               </div>

@@ -15,7 +15,42 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Shield, Users, Music, DollarSign, TrendingUp, Activity, CheckCircle, Clock, Zap, Database, Search, Download, RefreshCw, Eye, Play, Heart, Ban, Trash2, Star, Radio, Settings, Power, MoreVertical, AlertTriangle, List, Grid, Coins, Plus, Sparkles, ArrowRight, Flag, X, XCircle, ImageIcon } from 'lucide-react'
+import {
+  Shield,
+  Users,
+  Music,
+  DollarSign,
+  TrendingUp,
+  Activity,
+  CheckCircle,
+  Clock,
+  Zap,
+  Database,
+  Search,
+  Download,
+  RefreshCw,
+  Eye,
+  Play,
+  Heart,
+  Ban,
+  Trash2,
+  Star,
+  Radio,
+  Settings,
+  Power,
+  MoreVertical,
+  AlertTriangle,
+  List,
+  Grid,
+  Coins,
+  Plus,
+  Sparkles,
+  ArrowRight,
+  Flag,
+  X,
+  XCircle,
+  ImageIcon,
+} from "lucide-react"
 import { useAccount } from "wagmi"
 import { useEffect, useState, useMemo } from "react"
 import { createBrowserClient } from "@/lib/supabase/client"
@@ -28,6 +63,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import ThumbnailUploadDialog from "@/components/thumbnail-upload-dialog" // Added for thumbnail editing
+import { AirdropExportPanel } from "@/app/admin/airdrop-export" // Added for airdrop export
 
 // Admin wallet address - only this address can access the admin panel
 const ADMIN_ADDRESS = "0x7D1a4B4941200FB2907638202782E9248b9b9887"
@@ -1207,6 +1243,14 @@ export default function AdminPage() {
                 <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 System
               </TabsTrigger>
+              {/* CHANGE: Added Airdrop Tab */}
+              <TabsTrigger
+                value="airdrop"
+                className="rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary text-xs sm:text-sm whitespace-nowrap"
+              >
+                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                Airdrop
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -2158,6 +2202,11 @@ export default function AdminPage() {
               </div>
             </Card>
           </TabsContent>
+
+          {/* CHANGE: Adding airdrop export tab */}
+          <TabsContent value="airdrop" className="p-6 space-y-6">
+            <AirdropExportPanel />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={showUserDialog} onOpenChange={setShowUserDialog}>
@@ -2206,7 +2255,7 @@ export default function AdminPage() {
                             "Content-Type": "application/json",
                             "x-wallet-address": address || "",
                           },
-                          body: JSON.stringify({ verified: !selectedUser.verified }),
+                          body: JSON.JSON.stringify({ verified: !selectedUser.verified }),
                         })
 
                         if (!response.ok) {

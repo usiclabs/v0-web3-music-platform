@@ -85,9 +85,10 @@ export function UploadForm({ prefillData }: UploadFormProps) {
     },
   })
 
-  const hasRequiredUSI = usiBalance ? (usiBalance as bigint) >= REQUIRED_TOKEN_BALANCE : false
+  // No token requirement for tokenization - all users can tokenize
+  const hasRequiredUSI = true
   const usiBalanceFormatted = usiBalance ? formatUnits(usiBalance as bigint, 18) : "0"
-  const requiredBalanceFormatted = formatTokenBalance(REQUIRED_TOKEN_BALANCE)
+  const requiredBalanceFormatted = "0"
 
   const { sendTransaction } = useSendTransaction()
   const { data: transactionReceipt, isFetching: isCoinCreating } = useWaitForTransactionReceipt({
@@ -240,7 +241,7 @@ export function UploadForm({ prefillData }: UploadFormProps) {
         },
         body: JSON.stringify({
           name: coinName || title,
-          symbol: coinSymbol || title.slice(0, 5).toUpperCase(),
+          symbol: (coinSymbol || title.slice(0, 5).toUpperCase()).slice(0, 5),
           deployerAddress: address,
           trackId,
           coverImageUrl,
@@ -276,8 +277,6 @@ export function UploadForm({ prefillData }: UploadFormProps) {
         console.error("[v0] Failed to update track with token address:", updateError)
         throw new Error("Failed to save token address")
       }
-
-      console.log("[v0] Track updated with token address:", tokenAddress)
 
       confetti({
         particleCount: 150,
@@ -945,17 +944,17 @@ export function UploadForm({ prefillData }: UploadFormProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!hasRequiredUSI && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                <span>Requires 0.1% $USI</span>
-              </div>
-            )}
-            <Switch checked={tokenizeTrack} onCheckedChange={setTokenizeTrack} disabled={!hasRequiredUSI} />
+            <Switch 
+              checked={tokenizeTrack} 
+              onCheckedChange={(checked) => {
+                console.log("[v0] Tokenize toggle clicked, new value:", checked)
+                setTokenizeTrack(checked)
+              }} 
+            />
           </div>
         </div>
 
-        {!hasRequiredUSI && (
+        {false && (
           <div className="bg-muted/30 border border-border/50 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
               <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -1055,12 +1054,11 @@ export function UploadForm({ prefillData }: UploadFormProps) {
                 id="coinSymbol"
                 value={coinSymbol}
                 onChange={(e) => setCoinSymbol(e.target.value.toUpperCase())}
-                placeholder="e.g., TRACK"
-                maxLength={5}
+                placeholder="e.g., MYTRACK"
                 required={tokenizeTrack}
                 className="bg-card/50 backdrop-blur-xl border border-border/50 font-mono uppercase"
               />
-              <p className="text-xs text-muted-foreground mt-1">2-5 characters (auto-generated from title)</p>
+              <p className="text-xs text-muted-foreground mt-1">Token symbol (auto-generated from title)</p>
             </div>
 
             <div className="bg-muted/30 rounded-lg p-4 space-y-2">

@@ -17,18 +17,18 @@ export async function POST(request: NextRequest) {
 
     if (!gateStatus.canTokenize) {
       const reasons = []
-      if (!gateStatus.hasEnoughUSI) reasons.push("Insufficient $USI balance (need 10,000,000)")
-      if (!gateStatus.hasEnoughTracks) reasons.push("Need at least 5 uploaded tracks")
       if (gateStatus.alreadyTokenized) reasons.push("Profile already tokenized")
 
-      return NextResponse.json(
-        {
-          error: "Cannot tokenize profile",
-          reasons,
-          status: gateStatus,
-        },
-        { status: 403 },
-      )
+      if (reasons.length > 0) {
+        return NextResponse.json(
+          {
+            error: "Cannot tokenize profile",
+            reasons,
+            status: gateStatus,
+          },
+          { status: 403 },
+        )
+      }
     }
 
     // Check if profile already has a token
