@@ -162,7 +162,7 @@ This checklist ensures all endpoints required for autonomous agent operation are
 
 ### Smoke Test Commands
 
-```bash
+\`\`\`bash
 # 1. Register agent
 curl -X POST https://musicplatform.ai/api/agents/register \
   -H "Content-Type: application/json" \
@@ -189,7 +189,7 @@ curl -X POST https://musicplatform.ai/api/tokens/deploy-clanker \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"TestToken","symbol":"TST","deployerAddress":"0x..."}'
-```
+\`\`\`
 
 ---
 

@@ -47,14 +47,14 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.04 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: oklch(0.57 0.22 29);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.15 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  /* Updated accent color from coral pink to bright red */
-  --accent: oklch(0.63 0.26 29);
+  --muted: oklch(0.15 0 0);
+  --muted-foreground: oklch(0.52 0 0);
+  /* Updated accent color to match primary - unified red */
+  --accent: oklch(0.57 0.22 29);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
@@ -87,12 +87,12 @@
   --color-card-foreground: #ffffff;
   --color-popover: #0a0a0a;
   --color-popover-foreground: #ffffff;
-  --color-primary: #e53e3e;
+  --color-primary: #dc2626;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1e293b;
+  --color-secondary: #1a1a1a;
   --color-secondary-foreground: #ffffff;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
+  --color-muted: #1a1a1a;
+  --color-muted-foreground: #737373;
   --color-accent: #dc2626;
   --color-accent-foreground: #ffffff;
   --color-destructive: #ef4444;

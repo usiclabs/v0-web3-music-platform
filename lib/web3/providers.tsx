@@ -8,13 +8,26 @@ import type { ReactNode } from "react"
 import { useState } from "react"
 
 export function Web3Provider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        staleTime: Infinity,
+      },
+    },
+  }))
 
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <WalletProvider>{children}</WalletProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  )
+  try {
+    return (
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <WalletProvider>{children}</WalletProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    )
+  } catch (error) {
+    console.error("[v0] Web3Provider initialization error:", error)
+    // Fallback: render children without Web3 providers
+    return children
+  }
 }
