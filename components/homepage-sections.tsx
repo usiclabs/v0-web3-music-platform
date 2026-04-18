@@ -63,12 +63,14 @@ export function HomepageSections() {
           sectionRefs.current["how-it-works"] = el
         }}
         className="py-32 border-t border-border/40 relative overflow-hidden px-4 sm:px-6"
+        style={{ contain: "layout style" }}
       >
         <div className="container relative">
           <div
-            className={`mx-auto max-w-3xl text-center mb-20 transition-all duration-700 ${
+            className={`mx-auto max-w-3xl text-center mb-20 duration-700 ${
               isVisible("how-it-works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
+            style={{ transition: "opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)", willChange: isVisible("how-it-works") ? "auto" : "opacity, transform" }}
           >
             <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">
               How It Works
@@ -154,13 +156,15 @@ export function HomepageSections() {
           sectionRefs.current["for-artists"] = el
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
+        style={{ contain: "layout style" }}
       >
         <div className="container relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div
-              className={`transition-all duration-700 ${
+              className={`duration-700 ${
                 isVisible("for-artists") ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
+              style={{ transition: "opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)", willChange: isVisible("for-artists") ? "auto" : "opacity, transform" }}
             >
               <h2 className="text-5xl md:text-7xl font-bold mb-8 text-balance leading-tight">
                 Keep 100% of your earnings.
@@ -249,6 +253,7 @@ export function HomepageSections() {
           sectionRefs.current["for-fans"] = el
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6"
+        style={{ contain: "layout style" }}
       >
         <div className="container">
           <div
@@ -289,10 +294,10 @@ export function HomepageSections() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-border/50 shadow-xl p-10 rounded-3xl hover:scale-105 hover:shadow-2xl hover:shadow-${feature.color}/10 transition-all duration-500 ${
+                className={`bg-card/30 backdrop-blur-xl border border-border/50 shadow-xl p-10 rounded-3xl hover:scale-[1.03] hover:shadow-2xl hover:shadow-${feature.color}/10 transition-[transform,box-shadow,opacity] duration-500 ${
                   isVisible("for-fans") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
-                style={{ transitionDelay: feature.delay }}
+                style={{ transitionDelay: feature.delay, willChange: isVisible("for-fans") ? "auto" : "transform, opacity" }}
               >
                 <div
                   className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-${feature.color}/10 border border-${feature.color}/30 mb-8`}
@@ -331,6 +336,7 @@ export function HomepageSections() {
           sectionRefs.current["trust"] = el
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6"
+        style={{ contain: "layout style" }}
       >
         <div className="container">
           <div
@@ -352,10 +358,10 @@ export function HomepageSections() {
             ].map((badge, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-8 text-center hover:scale-105 hover:shadow-xl hover:shadow-${badge.color}/10 transition-all duration-500 ${
+                className={`bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-8 text-center hover:scale-[1.03] hover:shadow-xl hover:shadow-${badge.color}/10 transition-[transform,box-shadow,opacity] duration-500 ${
                   isVisible("trust") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
-                style={{ transitionDelay: badge.delay }}
+                style={{ transitionDelay: badge.delay, willChange: isVisible("trust") ? "auto" : "transform, opacity" }}
               >
                 <badge.icon className={`h-10 w-10 text-${badge.color} mx-auto mb-4`} />
                 <p className="font-semibold text-sm">{badge.label}</p>
@@ -386,6 +392,7 @@ export function HomepageSections() {
           sectionRefs.current["community"] = el
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
+        style={{ contain: "layout style" }}
       >
         <div className="container relative">
           <div

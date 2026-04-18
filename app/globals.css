@@ -188,6 +188,13 @@
   }
 }
 
+/* Easing tokens — use these for all transitions */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Custom Animations */
 @keyframes slide-up {
   from {
@@ -510,7 +517,8 @@
 }
 
 .animate-slide-up {
-  animation: slide-up 0.6s ease-out;
+  animation: slide-up 0.5s var(--ease-out) both;
+  will-change: transform, opacity;
 }
 
 .animate-scale-in {
@@ -726,6 +734,7 @@
 
 .animate-scroll-left {
   animation: scroll-left 30s linear infinite;
+  will-change: transform;
 }
 
 .animate-scroll-left:hover {
