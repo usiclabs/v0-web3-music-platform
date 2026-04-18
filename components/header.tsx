@@ -13,11 +13,21 @@ import { useConnect } from "wagmi"
 import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
 import { NotificationCenter } from "@/components/notification-center"
 import { ChainSwitcher } from "@/components/web3/chain-switcher"
+import { useEffect, useState } from "react"
 
 export function Header() {
   const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
   const pathname = usePathname()
   const { connectAsync, connectors } = useConnect()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 12)
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -56,7 +66,12 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/80">
+      <header
+        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ease-out ${
+          scrolled ? "border-border/40 bg-background/95 backdrop-blur-2xl shadow-lg" : "border-transparent bg-transparent"
+        }`}
+        style={{ willChange: scrolled ? "auto" : "background-color, border-color, box-shadow" }}
+      >
         <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2 group p-1 sm:p-2">
             <div className="relative h-10 w-10 sm:h-12 sm:w-12 transition-all group-hover:scale-110">

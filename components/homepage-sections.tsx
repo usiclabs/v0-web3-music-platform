@@ -38,7 +38,11 @@ export function HomepageSections() {
           }
         })
       },
-      { threshold: 0.1 },
+      {
+        // Trigger when 5% of the section enters the viewport, 80px before it arrives
+        threshold: 0.05,
+        rootMargin: "0px 0px -80px 0px",
+      },
     )
 
     Object.values(sectionRefs.current).forEach((ref) => {

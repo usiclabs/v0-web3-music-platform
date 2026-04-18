@@ -151,14 +151,40 @@
     background-color: #0a0a0a;
     color-scheme: dark;
     scroll-behavior: smooth;
+    /* Prevent elastic/rubber-band overscroll on the root */
+    overscroll-behavior: none;
+    /* Smooth font rendering on all platforms */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     background-color: #0a0a0a;
+    /* Prevent bounce-scroll on iOS while keeping content scrollable */
+    overscroll-behavior-y: none;
+    /* GPU-composite the body layer */
+    transform: translateZ(0);
+    /* Remove 300ms tap delay on mobile */
+    touch-action: manipulation;
+  }
+
+  /* Respect reduced-motion preference globally */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -662,23 +688,30 @@
   box-shadow: 0 0 20px rgba(229, 62, 62, 0.4);
 }
 
-/* Scrollbar Styling */
+/* Scrollbar Styling — thin, unobtrusive */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  /* Updated scrollbar hover to red */
   background: #e53e3e;
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 /* Adding scrolling ticker animation */

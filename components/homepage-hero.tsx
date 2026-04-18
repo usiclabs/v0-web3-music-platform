@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Play, Music, Sparkles, ArrowDown, Zap } from "lucide-react"
@@ -11,6 +11,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 export function HomepageHero() {
   const [isVisible, setIsVisible] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const rafRef = useRef<number | null>(null)
   const [animatedStats, setAnimatedStats] = useState({
     tracks: 0,
     artists: 0,
@@ -26,11 +27,18 @@ export function HomepageHero() {
     setIsVisible(true)
 
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
+      if (rafRef.current !== null) return
+      rafRef.current = requestAnimationFrame(() => {
+        setMousePosition({ x: e.clientX, y: e.clientY })
+        rafRef.current = null
+      })
     }
 
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mousemove", handleMouseMove, { passive: true })
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -79,9 +87,10 @@ export function HomepageHero() {
     <section className="relative overflow-hidden min-h-screen flex items-center px-4 sm:px-6">
       <div className="absolute inset-0">
         <div
-          className="absolute inset-0 opacity-30 transition-all duration-300"
+          className="absolute inset-0 opacity-30 transition-[background] duration-150 ease-out"
           style={{
             background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(229, 62, 62, 0.15), transparent 50%)`,
+            willChange: "background",
           }}
         />
       </div>
