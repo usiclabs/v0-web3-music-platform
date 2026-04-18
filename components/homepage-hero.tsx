@@ -100,7 +100,7 @@ export function HomepageHero() {
             }`}
           >
             <Sparkles className="h-4 w-4 text-accent animate-pulse" />
-            <span className="font-medium bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <span className="font-medium text-foreground/80">
               Built on Base • Powered by X402 • $USI Ecosystem
             </span>
             <Zap className="h-4 w-4 text-accent animate-pulse" style={{ animationDelay: "0.5s" }} />
@@ -112,7 +112,7 @@ export function HomepageHero() {
             }`}
           >
             Music that{" "}
-            <span className="bg-gradient-to-r from-accent via-primary to-accent bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(229,62,62,0.3)]">
+            <span className="text-accent">
               pays artists
             </span>
           </h1>

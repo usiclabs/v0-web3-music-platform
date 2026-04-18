@@ -66,7 +66,7 @@ export function HomepageSections() {
               isVisible("how-it-works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">
               How It Works
             </h2>
             <p className="text-xl text-foreground/70">Simple streaming. Instant payments.</p>
@@ -134,7 +134,7 @@ export function HomepageSections() {
               isVisible("how-it-works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <p className="text-2xl font-semibold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent mb-6">
+            <p className="text-2xl font-semibold text-accent mb-6">
               Every stream is a payment. Every payment is instant.
             </p>
           </div>
@@ -211,7 +211,7 @@ export function HomepageSections() {
                 className="mt-10 gap-2 rounded-full px-8 py-6 h-auto text-lg shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-transparent text-[rgba(255,255,255,1)] group relative overflow-hidden"
               >
                 <Link href="/dashboard">
-                  <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <Music className="h-5 w-5 relative z-10 group-hover:rotate-12 transition-transform" />
                   <span className="relative z-10">Become a USIC Artist</span>
                 </Link>
