@@ -1589,10 +1589,7 @@ export default function CreatePage() {
                       id="instruments"
                       label="Primary Instrument"
                       value={selectedInstruments[0] || ""}
-                      onValueChange={(value) => {
-                        console.log("[v0] Instrument selected:", value)
-                        setSelectedInstruments([value])
-                      }}
+                      onValueChange={(value) => setSelectedInstruments([value])}
                       placeholder="Select instrument"
                       options={INSTRUMENTS}
                       icon={AudioWaveform}
