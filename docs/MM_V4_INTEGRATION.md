@@ -92,10 +92,10 @@ The V4 extension:
 ## Setup Instructions
 
 1. **Execute Migration Script**
-   ```sql
+   \`\`\`sql
    -- Run: scripts/03-create-mm-v4-tables.sql
    -- Creates V4 pool tracking tables with RLS policies
-   ```
+   \`\`\`
 
 2. **Deploy V4 Components**
    - Pool detector automatically enabled

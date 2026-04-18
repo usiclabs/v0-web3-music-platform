@@ -289,7 +289,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 export function useWallet() {
   const context = useContext(WalletContext)
   if (context === undefined) {
-    throw new Error("useWallet must be used within a WalletProvider")
+    // Return a safe default context instead of throwing
+    console.warn("[v0] WalletProvider not initialized, returning default context")
+    return {
+      address: null,
+      isConnected: false,
+      chainId: null,
+      connect: async () => console.warn("[v0] Wallet not available"),
+      disconnect: () => console.warn("[v0] Wallet not available"),
+      switchChain: async () => console.warn("[v0] Wallet not available"),
+      signTypedData: async () => {
+        throw new Error("Wallet not available")
+      },
+      showMobileWalletModal: false,
+      setShowMobileWalletModal: () => {},
+      isConnecting: false,
+      isCoinbaseSmartWallet: false,
+    }
   }
   return context
 }

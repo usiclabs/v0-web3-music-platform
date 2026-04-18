@@ -10,10 +10,13 @@ export function RealtimeNotifications() {
   const { toast } = useToast()
   const router = useRouter()
   const { address } = useWallet()
-  const supabase = createClient()
   const hasShownErrorToast = useRef(false)
 
   useEffect(() => {
+    // Only initialize Supabase client inside effect to avoid browser restrictions
+    const supabase = createClient()
+    if (!supabase) return
+
     console.log("[v0] RealtimeNotifications component mounted")
     console.log("[v0] Current wallet address:", address)
 
@@ -267,7 +270,7 @@ export function RealtimeNotifications() {
       supabase.removeChannel(swapChannel)
       hasShownErrorToast.current = false
     }
-  }, [address, toast, router, supabase])
+  }, [address, toast, router])
 
   return null
 }
