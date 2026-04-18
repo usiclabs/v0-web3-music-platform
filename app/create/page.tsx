@@ -991,8 +991,9 @@ export default function CreatePage() {
       }
     }
 
-    // Show payment modal instead of generating directly
-    setShowPaymentModal(true)
+    console.log("[v0] Generation request initiated")
+    // Proceed directly with generation - payment is optional
+    await executeGeneration()
   }
 
   const getToolName = (tool: MusicTool) => {
@@ -1588,7 +1589,10 @@ export default function CreatePage() {
                       id="instruments"
                       label="Primary Instrument"
                       value={selectedInstruments[0] || ""}
-                      onValueChange={(value) => setSelectedInstruments([value])}
+                      onValueChange={(value) => {
+                        console.log("[v0] Instrument selected:", value)
+                        setSelectedInstruments([value])
+                      }}
                       placeholder="Select instrument"
                       options={INSTRUMENTS}
                       icon={AudioWaveform}

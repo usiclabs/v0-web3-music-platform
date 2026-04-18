@@ -74,7 +74,7 @@ export function ChainSwitcher() {
           className="gap-2 bg-background/50 backdrop-blur-sm border-border/50"
           disabled={isPending}
         >
-          <span>{currentChain.icon}</span>
+          <span suppressHydrationWarning>{currentChain.icon}</span>
           <span className="hidden sm:inline">{currentChain.chain.name}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
