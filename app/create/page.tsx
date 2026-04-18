@@ -510,7 +510,7 @@ interface GeneratedTrack {
   lyrics?: string
 }
 
-type AIModel = "V5"
+type AIModel = "V5.5"
 
 // Define interface for platform stats
 interface PlatformStats {
@@ -551,7 +551,7 @@ export default function CreatePage() {
   const [lyrics, setLyrics] = useState("")
   const [instrumental, setInstrumental] = useState(false)
   const [customMode, setCustomMode] = useState(false)
-  const model: AIModel = "V5"
+  const model: AIModel = "V5.5"
   const [negativeTags, setNegativeTags] = useState("")
   const [vocalGender, setVocalGender] = useState<"m" | "f" | "any">("any")
   const [styleWeight, setStyleWeight] = useState(0.65)
