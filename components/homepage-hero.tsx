@@ -79,32 +79,17 @@ export function HomepageHero() {
     <section className="relative overflow-hidden min-h-screen flex items-center px-4 sm:px-6">
       <div className="absolute inset-0">
         <div
-          className="absolute inset-0 opacity-40 transition-all duration-300"
+          className="absolute inset-0 opacity-30 transition-all duration-300"
           style={{
-            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(229, 62, 62, 0.2), transparent 50%)`,
+            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(229, 62, 62, 0.15), transparent 50%)`,
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-primary/10 animate-gradient" />
       </div>
 
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(229,62,62,0.1),transparent_50%)] animate-pulse-slow" />
-      </div>
-
-      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] animate-pulse-slow" />
-
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/8 rounded-full blur-3xl animate-float" />
       <div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float"
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float"
         style={{ animationDelay: "2s", animationDuration: "8s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/2 w-64 h-64 bg-chart-3/10 rounded-full blur-3xl animate-float"
-        style={{ animationDelay: "4s", animationDuration: "10s" }}
-      />
-      <div
-        className="absolute top-1/3 right-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl animate-float"
-        style={{ animationDelay: "1s", animationDuration: "12s" }}
       />
 
       <div className="container relative py-24 md:py-32 z-10">
@@ -193,13 +178,13 @@ export function HomepageHero() {
               {
                 value: isLoading ? "..." : formatStat(animatedStats.artists, "artists"),
                 label: "Artists",
-                color: "primary",
+                color: "accent",
                 icon: Sparkles,
               },
               {
                 value: isLoading ? "..." : formatStat(animatedStats.paidOut, "paidOut"),
                 label: "Paid Out",
-                color: "chart-3",
+                color: "accent",
                 icon: Zap,
               },
             ].map((stat, index) => (

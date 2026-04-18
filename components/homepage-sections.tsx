@@ -60,9 +60,6 @@ export function HomepageSections() {
         }}
         className="py-32 border-t border-border/40 relative overflow-hidden px-4 sm:px-6"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent animate-pulse-slow" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(229,62,62,0.05),transparent_70%)]" />
-
         <div className="container relative">
           <div
             className={`mx-auto max-w-3xl text-center mb-20 transition-all duration-700 ${
@@ -90,7 +87,7 @@ export function HomepageSections() {
                 number: "2",
                 title: "Pay",
                 description: "Micropayment sent instantly to the artist.",
-                color: "primary",
+                color: "accent",
                 delay: "200ms",
               },
               {
@@ -98,7 +95,7 @@ export function HomepageSections() {
                 number: "3",
                 title: "Done",
                 description: "Artist gets paid. You keep listening.",
-                color: "chart-3",
+                color: "accent",
                 delay: "300ms",
               },
             ].map((step, index) => (
@@ -144,116 +141,7 @@ export function HomepageSections() {
         </div>
       </section>
 
-      {/* AI Curator Section powered by ERC-8004 */}
-      <section
-        id="ai-curator"
-        ref={(el) => {
-          sectionRefs.current["ai-curator"] = el
-        }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-fuchsia-500/5 to-violet-500/5" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent" />
-
-        <div className="container relative">
-          <div
-            className={`max-w-4xl mx-auto text-center mb-16 transition-all duration-700 ${
-              isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 mb-6">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <span className="text-sm font-medium text-violet-400">Powered by ERC-8004 Trustless Agents</span>
-            </div>
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
-              AI Playlist Curator
-            </h2>
-            <p className="text-xl text-foreground/70 mb-4">
-              Meet your autonomous music curator with verified on-chain identity
-            </p>
-            <p className="text-lg text-foreground/60">
-              Get personalized playlists created by an AI agent that has transparent reputation, validated actions, and
-              builds trust through community feedback.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
-            {[
-              {
-                icon: CheckCircle2,
-                title: "Verified Identity",
-                description:
-                  "Built on ERC-8004 standard with on-chain identity registry, ensuring transparency and accountability.",
-                color: "emerald",
-                delay: "100ms",
-              },
-              {
-                icon: BarChart3,
-                title: "Reputation System",
-                description:
-                  "Community-driven feedback builds agent reputation on-chain, creating trust through transparency.",
-                color: "violet",
-                delay: "200ms",
-              },
-              {
-                icon: Shield,
-                title: "Validated Actions",
-                description:
-                  "Independent validators verify agent behavior, ensuring quality playlists that match your preferences.",
-                color: "blue",
-                delay: "300ms",
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-${feature.color}-500/20 shadow-xl p-8 rounded-3xl hover:scale-105 hover:shadow-xl hover:shadow-${feature.color}-500/10 transition-all duration-500 group ${
-                  isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                }`}
-                style={{ transitionDelay: feature.delay }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-${feature.color}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
-                <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-${feature.color}-500/10 border border-${feature.color}-500/30 mb-6 group-hover:scale-110 transition-transform relative`}
-                >
-                  <feature.icon className={`h-7 w-7 text-${feature.color}-400`} />
-                </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-foreground/70 leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-
-          <div
-            className={`text-center transition-all duration-700 delay-400 ${
-              isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                asChild
-                className="gap-2 rounded-full px-10 py-7 h-auto text-lg shadow-2xl shadow-violet-500/20 hover:shadow-violet-500/40 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
-              >
-                <Link href="/ai-curator">
-                  <Sparkles className="h-5 w-5" />
-                  Try AI Curator
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="gap-2 rounded-full px-10 py-7 h-auto text-lg hover:scale-105 transition-all duration-300 border-violet-500/30 hover:border-violet-500/50 backdrop-blur-xl bg-transparent"
-              >
-                <Link href="/agents">
-                  Learn About ERC-8004
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* AI Curator Section - Removed */}
 
       {/* Artist Value Proposition */}
       <section
@@ -263,8 +151,6 @@ export function HomepageSections() {
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5" />
-
         <div className="container relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div
@@ -288,13 +174,13 @@ export function HomepageSections() {
                     icon: BarChart3,
                     title: "Split royalties on-chain",
                     description: "Transparent splits. Every collaborator sees their share.",
-                    color: "primary",
+                    color: "accent",
                   },
                   {
                     icon: Wallet,
                     title: "Your wallet, your business",
                     description: "No label. No middlemen. Just you and your fans.",
-                    color: "chart-3",
+                    color: "accent",
                   },
                   {
                     icon: TrendingUp,
@@ -379,7 +265,7 @@ export function HomepageSections() {
                 icon: Coins,
                 title: "Pay as you listen",
                 description: "Stream for fractions of a cent. Only pay for what you play.",
-                color: "primary",
+                color: "accent",
                 delay: "100ms",
               },
               {
@@ -393,7 +279,7 @@ export function HomepageSections() {
                 icon: Award,
                 title: "Own music as NFTs",
                 description: "Collect limited editions. Unlock perks. Resell for value.",
-                color: "chart-3",
+                color: "accent",
                 delay: "300ms",
               },
             ].map((feature, index) => (
@@ -455,10 +341,10 @@ export function HomepageSections() {
           {/* Trust Badges */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: CheckCircle2, label: "Instant USDC Payments", color: "primary", delay: "100ms" },
+              { icon: CheckCircle2, label: "Instant USDC Payments", color: "accent", delay: "100ms" },
               { icon: Shield, label: "Smart Contract Verified", color: "accent", delay: "200ms" },
-              { icon: Lock, label: "No Custody of Funds", color: "chart-3", delay: "300ms" },
-              { icon: Globe, label: "Global & Permissionless", color: "primary", delay: "400ms" },
+              { icon: Lock, label: "No Custody of Funds", color: "accent", delay: "300ms" },
+              { icon: Globe, label: "Global & Permissionless", color: "accent", delay: "400ms" },
             ].map((badge, index) => (
               <div
                 key={index}
@@ -497,8 +383,6 @@ export function HomepageSections() {
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-
         <div className="container relative">
           <div
             className={`max-w-4xl mx-auto text-center transition-all duration-700 ${
