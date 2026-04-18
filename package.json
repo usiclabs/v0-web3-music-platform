@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@coinbase/coinbase-sdk": "0.25.0",
-    "@coinbase/wallet-sdk": "4.3.0",
+    "@coinbase/wallet-sdk": "4.3.7",
     "@expo/dom-webview": "latest",
     "@expo/metro-runtime": "latest",
     "@farcaster/miniapp-sdk": "0.2.1",

@@ -1,3 +1,5 @@
+"use client"
+
 import type { Address, Hex } from "viem"
 import type { SignedAuthorization } from "./use-eip3009"
 import { writeContract, waitForTransactionReceipt } from "@wagmi/core"

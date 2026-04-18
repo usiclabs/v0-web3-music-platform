@@ -3,9 +3,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     unoptimized: true,
   },
@@ -16,13 +13,13 @@ const nextConfig = {
   },
   serverExternalPackages: [
     'pino',
-    'thread-stream', 
+    'thread-stream',
     'pino-pretty',
+    '@coinbase/wallet-sdk',
     '@walletconnect/universal-provider',
     '@walletconnect/ethereum-provider',
     '@walletconnect/logger',
   ],
-  output: 'standalone',
 }
 
 export default nextConfig

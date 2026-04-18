@@ -1,3 +1,5 @@
+"use client"
+
 import { http, createConfig } from "wagmi"
 import { base, baseSepolia, mainnet, arbitrum } from "wagmi/chains"
 import { walletConnect, injected, coinbaseWallet } from "wagmi/connectors"
