@@ -22,7 +22,7 @@ export function BlockchainTicker() {
     const fetchUSIData = async () => {
       try {
         const response = await fetch(
-          "https://api.dexscreener.com/latest/dex/tokens/0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+          "https://api.dexscreener.com/latest/dex/tokens/0xECE5d962d17901ef200Da050C7c74AB45C96Db07",
         )
 
         if (!response.ok) {
@@ -70,7 +70,7 @@ export function BlockchainTicker() {
           change: formatChange(pair.priceChange?.h24 || 0),
           volume: formatVolume(pair.volume?.h24 || "0"),
           marketCap: formatMarketCap(pair.fdv || pair.marketCap || "0"),
-          contractAddress: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+          contractAddress: "0xECE5d962d17901ef200Da050C7c74AB45C96Db07",
         }
 
         setData(updatedUSIData)

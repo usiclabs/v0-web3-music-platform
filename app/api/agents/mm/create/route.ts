@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       .insert({
         owner_address: ownerAddress,
         wallet_address: ownerAddress, // Legacy field
-        token_address: tokenAddress || "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+        token_address: tokenAddress || "0xECE5d962d17901ef200Da050C7c74AB45C96Db07",
         token_symbol: tokenSymbol || "USI",
         buy_amount_eth: buyAmountEth || "0.0001",
         buy_interval_minutes: buyInterval || 5,

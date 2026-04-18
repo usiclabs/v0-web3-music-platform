@@ -829,27 +829,21 @@
   animation: icon-pulse 2s ease-in-out infinite;
 }
 
-/* Smooth page transition utilities */
+/* Page transition — triggered by key-based remount on route change */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .page-transition-enter {
-  opacity: 0;
-  transform: scale(0.98) translateY(10px);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-  transition: opacity 300ms ease-out, transform 300ms ease-out;
-}
-
-.page-transition-exit {
-  opacity: 1;
-  transform: scale(1) translateY(0);
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transform: scale(0.98) translateY(-10px);
-  transition: opacity 200ms ease-in, transform 200ms ease-in;
+  animation: page-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: opacity, transform;
 }
 
 /* Smooth video transitions */

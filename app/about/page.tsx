@@ -358,7 +358,7 @@ export default function AboutPage() {
                   <p className="text-sm text-muted-foreground">
                     Contract Address:{" "}
                     <code className="text-xs bg-black/30 px-2 py-1 rounded">
-                      0x987603A52d8B966E10FBD29DcB1A574049E25B07
+                      0xECE5d962d17901ef200Da050C7c74AB45C96Db07
                     </code>
                   </p>
                 </div>
