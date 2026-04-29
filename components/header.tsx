@@ -19,14 +19,9 @@ export function Header() {
   const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
   const pathname = usePathname()
   const { connectAsync, connectors } = useConnect()
-  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 12)
-    }
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
+    // This useEffect can be removed - header should always be visible
   }, [])
 
   const formatAddress = (addr: string) => {
