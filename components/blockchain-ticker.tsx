@@ -89,7 +89,7 @@ export function BlockchainTicker() {
 
   if (isLoading || !data) {
     return (
-      <div className="sticky top-14 sm:top-16 z-40 w-full border-b border-border/40 bg-muted/30 backdrop-blur-xl">
+      <div className="fixed top-16 sm:top-18 z-40 w-full border-b border-border/40 bg-muted/30 backdrop-blur-xl">
         <div className="h-8 flex items-center justify-center">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Activity className="h-3 w-3 animate-pulse" />
@@ -105,7 +105,7 @@ export function BlockchainTicker() {
   return (
     <>
       <div
-        className="sticky top-14 sm:top-16 z-40 w-full border-b border-border/40 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 backdrop-blur-xl overflow-hidden cursor-pointer hover:from-primary/10 hover:via-accent/10 hover:to-primary/10 transition-all duration-300"
+        className="fixed top-16 sm:top-18 z-40 w-full border-b border-border/40 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 backdrop-blur-xl overflow-hidden cursor-pointer hover:from-primary/10 hover:via-accent/10 hover:to-primary/10 transition-all duration-300"
         onClick={() => setModalOpen(true)}
         role="button"
         tabIndex={0}
