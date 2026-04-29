@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ address: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { address: string } }) {
   try {
-    const { address } = await params
+    const { address } = params
 
     if (!address) {
       return NextResponse.json({ error: "Token address is required" }, { status: 400 })

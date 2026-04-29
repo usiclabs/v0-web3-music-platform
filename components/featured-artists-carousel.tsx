@@ -83,7 +83,7 @@ export function FeaturedArtistsCarousel() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+          <div className="p-2 rounded-xl bg-accent">
             <Users className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -112,7 +112,7 @@ export function FeaturedArtistsCarousel() {
                   isCenter ? "md:scale-110 z-10" : "md:scale-95 opacity-60"
                 }`}
               >
-                <Card className="p-4 hover:bg-accent/50 transition-all duration-300 hover:shadow-lg">
+                <Card className="p-4 transition-all duration-300 hover:shadow-lg">
                   <div className="flex flex-col items-center text-center space-y-3">
                     {/* Avatar */}
                     <Avatar className="h-20 w-20 ring-2 ring-primary/20 group-hover:ring-primary/50 transition-all">
@@ -143,8 +143,10 @@ export function FeaturedArtistsCarousel() {
                     </div>
 
                     {/* Earnings */}
-                    <div className="mt-2 text-sm font-semibold text-emerald-500">
-                      {artist.totalEarnings.toFixed(4)} USDC earned
+                    <div className="mt-2 text-sm font-semibold px-3 py-1 rounded-lg bg-emerald-500/10">
+                      <span className="bg-gradient-to-r from-emerald-500 via-emerald-300 to-emerald-500 bg-[length:200%_100%] animate-shimmer bg-clip-text text-transparent">
+                        {artist.totalEarnings.toFixed(4)} USDC earned
+                      </span>
                     </div>
                   </div>
                 </Card>

@@ -28,16 +28,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields: name, symbol, deployerAddress" }, { status: 400 })
     }
 
-    // Auto-truncate to Clanker's 2-5 character requirement
-    const cleanedSymbol = symbol.slice(0, 5).toUpperCase()
-
     const parsedTotalSupply = typeof totalSupply === "string" ? Number.parseInt(totalSupply) : totalSupply || 1000000000
 
     console.log("[v0] [Clanker Token Deploy] Parsed total supply:", parsedTotalSupply)
 
     const result = await deployClankerERC20({
       name,
-      symbol: cleanedSymbol,
+      symbol,
       totalSupply: parsedTotalSupply,
       decimals: 18, // Standard ERC20 decimals
       deployerAddress,

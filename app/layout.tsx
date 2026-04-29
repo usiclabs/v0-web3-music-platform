@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark bg-black">
+    <html lang="en" className="dark">
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
@@ -86,7 +86,7 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
       </head>
-      <body className={`${geistSans.className} antialiased pb-16 md:pb-0`}>
+      <body className={`${geistSans.className} antialiased`}>
         <ErrorBoundary>
           <FarcasterProvider>
             <Web3Provider>
@@ -94,9 +94,7 @@ export default function RootLayout({
                 <Header />
                 <BlockchainTicker />
                 <FarcasterBadge />
-                <main className="pt-24 sm:pt-26">
-                  <PageTransition>{children}</PageTransition>
-                </main>
+                <PageTransition>{children}</PageTransition>
                 <AudioPlayer />
                 <X402PaymentModal />
                 <MobileBottomNav />

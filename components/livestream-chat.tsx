@@ -33,16 +33,9 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   const [refreshing, setRefreshing] = useState(false)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("disconnected")
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
-
-  useEffect(() => {
-    // Initialize Supabase client on mount to avoid browser restrictions
-    const client = createClient()
-    setSupabase(client)
-  }, [])
+  const supabase = createClient()
 
   async function refreshComments() {
-    if (!supabase) return
     setRefreshing(true)
     try {
       const { data, error } = await supabase
@@ -68,8 +61,6 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   }, [streamId, address])
 
   useEffect(() => {
-    if (!supabase) return
-
     async function loadComments() {
       console.log("[v0] Loading comments for stream:", streamId)
       try {
@@ -103,10 +94,8 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
   }, [streamId, supabase])
 
   useEffect(() => {
-    if (!supabase || !streamId) {
-      if (!streamId) {
-        console.warn("[v0] Cannot subscribe to comments without streamId")
-      }
+    if (!streamId) {
+      console.warn("[v0] Cannot subscribe to comments without streamId")
       return
     }
 
@@ -166,7 +155,7 @@ export function LivestreamChat({ streamId }: LivestreamChatProps) {
 
   async function handleSendComment(e: React.FormEvent) {
     e.preventDefault()
-    if (!newComment.trim() || !address || sending || !supabase) return
+    if (!newComment.trim() || !address || sending) return
 
     console.log("[v0] Sending comment:", { streamId, address, content: newComment.trim() })
     setSending(true)

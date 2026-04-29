@@ -210,16 +210,16 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
 
                   {artist.bio && (
                     <p
-                      className="text-base md:text-xl text-white/90 leading-relaxed max-w-3xl text-balance"
-                      style={{ animation: "fade-in-up 0.6s ease-out", animationDelay: "0.1s", animationFillMode: "both" }}
+                      className="text-base md:text-xl text-white/90 leading-relaxed max-w-3xl text-balance animate-fade-in-up"
+                      style={{ animationDelay: "100ms" }}
                     >
                       {artist.bio}
                     </p>
                   )}
 
                   <div
-                    className="grid grid-cols-3 gap-3 md:gap-6 max-w-2xl"
-                    style={{ animation: "fade-in-up 0.6s ease-out", animationDelay: "0.2s", animationFillMode: "both" }}
+                    className="grid grid-cols-3 gap-3 md:gap-6 max-w-2xl animate-fade-in-up"
+                    style={{ animationDelay: "200ms" }}
                   >
                     <div className="flex flex-col items-center text-center p-4 md:p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:scale-110 transition-all duration-300 group">
                       <div className="flex items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-full bg-primary/20 mb-2 md:mb-3 group-hover:scale-110 transition-transform relative">

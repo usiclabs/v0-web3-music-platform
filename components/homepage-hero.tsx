@@ -1,52 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Play, Music, Sparkles, ArrowDown, Zap } from "lucide-react"
 import useSWR from "swr"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-// Particle component for the animated background
-function Particle({ delay, x, y }: { delay: number; x: number; y: number }) {
-  return (
-    <div
-      className="absolute w-1 h-1 rounded-full bg-[#FF2A2A] opacity-0"
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        animation: `particle-drift 12s ease-in-out infinite`,
-        animationDelay: `${delay}s`,
-        ["--drift-x" as string]: `${(Math.random() - 0.5) * 200}px`,
-        ["--drift-y" as string]: `${-Math.random() * 300}px`,
-      }}
-    />
-  )
-}
-
-// Waveform visualization component
-function WaveformVisualizer() {
-  return (
-    <div className="flex items-end justify-center gap-1 h-16 opacity-40">
-      {Array.from({ length: 24 }).map((_, i) => (
-        <div
-          key={i}
-          className="w-1 bg-gradient-to-t from-[#FF2A2A]/30 to-[#FF2A2A] rounded-full"
-          style={{
-            height: `${20 + Math.random() * 80}%`,
-            animation: `waveform-pulse ${0.8 + Math.random() * 0.4}s ease-in-out infinite`,
-            animationDelay: `${i * 0.05}s`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
 export function HomepageHero() {
   const [isVisible, setIsVisible] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const rafRef = useRef<number | null>(null)
   const [animatedStats, setAnimatedStats] = useState({
     tracks: 0,
     artists: 0,
@@ -62,18 +26,11 @@ export function HomepageHero() {
     setIsVisible(true)
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (rafRef.current !== null) return
-      rafRef.current = requestAnimationFrame(() => {
-        setMousePosition({ x: e.clientX, y: e.clientY })
-        rafRef.current = null
-      })
+      setMousePosition({ x: e.clientX, y: e.clientY })
     }
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true })
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove)
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-    }
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
   useEffect(() => {
@@ -118,119 +75,98 @@ export function HomepageHero() {
     return `${value}+`
   }
 
-  // Generate particles
-  const particles = Array.from({ length: 30 }).map((_, i) => ({
-    delay: Math.random() * 10,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-  }))
-
   return (
-    <section className="relative overflow-hidden min-h-screen flex items-center justify-center bg-black">
-      {/* Background Layers */}
+    <section className="relative overflow-hidden min-h-screen flex items-center px-4 sm:px-6">
       <div className="absolute inset-0">
-        {/* Radial gradient backdrop */}
-        <div className="absolute inset-0 bg-radial-gradient opacity-60" />
-        
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-        
-        {/* Mouse-following glow */}
         <div
-          className="absolute inset-0 opacity-40 transition-all duration-300 ease-out pointer-events-none"
+          className="absolute inset-0 opacity-30 transition-all duration-300"
           style={{
-            background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(255, 42, 42, 0.15), transparent 50%)`,
+            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(220, 38, 38, 0.15), transparent 50%)`,
           }}
         />
-
-        {/* Particle field */}
-        <div className="particle-field">
-          {particles.map((p, i) => (
-            <Particle key={i} {...p} />
-          ))}
-        </div>
-
-        {/* Bottom waveform accent */}
-        <div className="absolute bottom-0 left-0 right-0 h-32">
-          <WaveformVisualizer />
-        </div>
       </div>
 
-      {/* Central Energy Core - Refined and subtle */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-        {/* Single subtle rotating ring */}
-        <div className="absolute -inset-32 md:-inset-48">
-          <div className="w-full h-full rounded-full border border-[#FF2A2A]/10 ring-rotate" />
-        </div>
-        
-        {/* Core glow - subtle */}
-        <div className="w-32 h-32 md:w-48 md:h-48 rounded-full bg-[#FF2A2A]/5 blur-3xl" />
-      </div>
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02] animate-pulse-slow" />
 
-      {/* Main Content */}
-      <div className="container relative z-10 px-4 sm:px-6">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float" />
+      <div
+        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float"
+        style={{ animationDelay: "2s", animationDuration: "8s" }}
+      />
+
+      <div className="container relative py-24 md:py-32 z-10">
         <div className="mx-auto max-w-5xl text-center">
-          {/* Badge - Minimal */}
           <div
-            className={`mb-10 inline-flex items-center gap-2 transition-all duration-700 ${
+            className={`mb-8 inline-flex items-center gap-2 rounded-full bg-card/20 backdrop-blur-md border border-accent/40 px-6 py-3 text-sm shadow-lg shadow-accent/20 transition-all duration-700 hover:shadow-accent/40 hover:scale-105 hover:border-accent/60 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <span className="text-xs font-medium tracking-[0.2em] text-white/40 uppercase">
-              AI-Powered Music Platform
+            <Sparkles className="h-4 w-4 text-accent animate-pulse" />
+            <span className="font-medium text-foreground">
+              Built on Base • Powered by X402 • $USI Ecosystem
             </span>
+            <Zap className="h-4 w-4 text-accent animate-pulse" style={{ animationDelay: "0.5s" }} />
           </div>
 
-          {/* Main Headline */}
           <h1
-            className={`text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] font-bold mb-6 tracking-[-0.04em] leading-[0.85] transition-all duration-700 delay-100 ${
+            className={`md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 text-5xl ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <span className="block text-white">CREATE.</span>
-            <span className="block text-[#FF2A2A]">OWN.</span>
-            <span className="block text-white">EARN.</span>
+            Music that{" "}
+            <span className="text-accent drop-shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+              pays artists
+            </span>
           </h1>
 
-          {/* Subtext - Single line, minimal */}
           <p
-            className={`text-lg sm:text-xl text-white/50 mb-12 max-w-md mx-auto transition-all duration-700 delay-200 font-light ${
+            className={`text-2xl md:text-3xl text-foreground/90 mb-6 text-pretty leading-relaxed max-w-3xl mx-auto transition-all duration-700 delay-200 font-medium ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            The new music economy starts here.
+            Micropayments that move at the speed of sound.
           </p>
 
-          {/* CTA Buttons - Clean and minimal */}
+          <p
+            className={`text-lg md:text-xl text-foreground/70 mb-12 text-pretty leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-300 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            No subscriptions. No platform fees. Artists get 100% of what you pay.
+          </p>
+
           <div
-            className={`flex flex-col sm:flex-row gap-4 justify-center mb-20 transition-all duration-700 delay-300 ${
+            className={`flex flex-col sm:flex-row gap-4 justify-center mb-16 transition-all duration-700 delay-400 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             <Button
               size="lg"
               asChild
-              className="h-12 px-8 text-base font-medium"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 hover:scale-105 transition-all duration-300 group relative overflow-hidden text-white shadow-2xl shadow-white/10"
             >
-              <Link href="/create">
-                Start Creating
+              <Link href="/explore">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-none stroke-2" />
+                <span className="relative z-10 font-semibold">Listen Now</span>
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               asChild
-              className="h-12 px-8 text-base font-medium"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-card/20 hover:bg-card/40 backdrop-blur-2xl border-2 border-border hover:scale-105 hover:border-accent/50 transition-all duration-300 group relative overflow-hidden"
             >
-              <Link href="/explore">
-                Explore
+              <Link href="/dashboard">
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Music className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10" />
+                <span className="relative z-10">Upload Your Music</span>
               </Link>
             </Button>
           </div>
 
-          {/* Stats - Clean grid */}
           <div
-            className={`grid grid-cols-3 gap-8 max-w-2xl mx-auto transition-all duration-700 delay-400 ${
+            className={`grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto transition-all duration-700 delay-500 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -238,35 +174,48 @@ export function HomepageHero() {
               {
                 value: isLoading ? "..." : formatStat(animatedStats.tracks, "tracks"),
                 label: "Tracks",
+                color: "accent",
+                icon: Music,
               },
               {
                 value: isLoading ? "..." : formatStat(animatedStats.artists, "artists"),
                 label: "Artists",
+                color: "accent",
+                icon: Sparkles,
               },
               {
                 value: isLoading ? "..." : formatStat(animatedStats.paidOut, "paidOut"),
                 label: "Paid Out",
+                color: "accent",
+                icon: Zap,
               },
             ].map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">
+              <div
+                key={index}
+                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
+              >
+                <stat.icon
+                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
+                />
+                <div
+                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
+                    isLoading ? "animate-pulse" : ""
+                  }`}
+                >
                   {stat.value}
                 </div>
-                <div className="text-xs text-white/40 tracking-wide uppercase">
-                  {stat.label}
-                </div>
+                <div className="text-xs sm:text-sm text-foreground/60 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div className="flex flex-col items-center gap-2 opacity-40 hover:opacity-60 transition-opacity cursor-pointer">
-          <span className="text-xs tracking-widest text-white/60">SCROLL</span>
-          <div className="w-px h-12 bg-gradient-to-b from-[#FF2A2A] to-transparent" />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer group">
+        <div className="w-6 h-10 rounded-full border-2 border-foreground/20 flex items-start justify-center p-2 group-hover:border-accent/50 transition-colors">
+          <div className="w-1 h-2 bg-accent/60 rounded-full animate-pulse" />
         </div>
+        <ArrowDown className="h-4 w-4 text-foreground/40 group-hover:text-accent/60 mx-auto mt-2 transition-colors" />
       </div>
     </section>
   )

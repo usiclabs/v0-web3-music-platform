@@ -2,7 +2,7 @@
 
 -- Update mm_agents to link to user and support custom token
 ALTER TABLE mm_agents ADD COLUMN IF NOT EXISTS owner_address TEXT;
-ALTER TABLE mm_agents ADD COLUMN IF NOT EXISTS token_address TEXT DEFAULT '0xECE5d962d17901ef200Da050C7c74AB45C96Db07';
+ALTER TABLE mm_agents ADD COLUMN IF NOT EXISTS token_address TEXT DEFAULT '0x987603A52d8B966E10FBD29DcB1A574049E25B07';
 ALTER TABLE mm_agents ADD COLUMN IF NOT EXISTS token_symbol TEXT DEFAULT 'USI';
 
 -- Update mm_agent_wallets to store encrypted private keys per user agent

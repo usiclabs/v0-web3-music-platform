@@ -331,8 +331,8 @@ export function TrendingFeed({ tracks }: TrendingFeedProps) {
                 </div>
 
                 <div
-                  className="flex items-center gap-4 md:gap-5"
-                  style={{ animation: "fade-in-up 0.6s ease-out", animationDelay: "0.2s", animationFillMode: "both" }}
+                  className="flex items-center gap-4 md:gap-5 animate-fade-in-up"
+                  style={{ animationDelay: "200ms" }}
                 >
                   {/* Play/Pause button with pulsing glow */}
                   <Button

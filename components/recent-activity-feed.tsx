@@ -30,17 +30,9 @@ interface RecentActivityFeedProps {
 
 export function RecentActivityFeed({ activity: initialActivity }: RecentActivityFeedProps) {
   const [activity, setActivity] = useState(initialActivity)
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
-
-  // Initialize Supabase client on mount
-  useEffect(() => {
-    const client = createClient()
-    setSupabase(client)
-  }, [])
+  const supabase = createClient()
 
   useEffect(() => {
-    if (!supabase) return
-
     const streamsChannel = supabase
       .channel("activity-feed-streams")
       .on(
