@@ -67,7 +67,7 @@ const ERC20_ABI = [
     type: "function",
   },
 ] as const
-const USI_TOKEN_ADDRESS = "0x987603A52d8B966E10FBD29DcB1A574049E25B07" // Example USI token address
+const USI_TOKEN_ADDRESS = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07" // Example USI token address
 
 // Helper component for Connect Wallet Button
 function ConnectWalletButton() {
@@ -96,7 +96,7 @@ function ConnectWalletButton() {
 
 const SUPPORTED_TOKENS = [
   {
-    address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07",
+    address: "0xECE5d962d17901ef200Da050C7c74AB45C96Db07",
     symbol: "USI",
     name: "Universal Sound Index",
   },

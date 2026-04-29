@@ -282,7 +282,7 @@ export class MarketMakerAgentService {
         throw new Error("Agent not found")
       }
 
-      const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
+      const TOKEN_ADDRESS = (agent.token_address || "0xECE5d962d17901ef200Da050C7c74AB45C96Db07") as Address
       const TOKEN_SYMBOL = agent.token_symbol || "USI"
       console.log(`[v0] [MM Agent] Token config - Address: ${TOKEN_ADDRESS}, Symbol: ${TOKEN_SYMBOL}`)
       console.log(
@@ -549,7 +549,7 @@ export class MarketMakerAgentService {
         throw new Error("Agent not found")
       }
 
-      const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
+      const TOKEN_ADDRESS = (agent.token_address || "0xECE5d962d17901ef200Da050C7c74AB45C96Db07") as Address
       const TOKEN_SYMBOL = agent.token_symbol || "USI"
       console.log(`[v0] [MM Agent] Token config - Address: ${TOKEN_ADDRESS}, Symbol: ${TOKEN_SYMBOL}`)
       console.log(

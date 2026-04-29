@@ -17,13 +17,13 @@ export function WalletConnectPrompt({ title, description, icon }: WalletConnectP
   const { connect } = useWallet()
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 py-12">
-      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-border/50 p-8 md:p-12 text-center max-w-2xl mx-auto animate-scale-in">
+    <div className="flex items-center justify-center px-4 py-12 min-h-[50vh]">
+      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-border/50 p-6 md:p-12 text-center max-w-2xl w-full animate-scale-in">
         {/* Floating background elements */}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" style={{ animation: "float 3s ease-in-out infinite" }} />
         <div
-          className="absolute bottom-0 right-0 w-40 h-40 bg-accent/10 rounded-full blur-3xl animate-float"
-          style={{ animationDelay: "1s" }}
+          className="absolute bottom-0 right-0 w-40 h-40 bg-accent/10 rounded-full blur-3xl"
+          style={{ animation: "float 3s ease-in-out infinite", animationDelay: "1s" }}
         />
 
         {/* Icon with glow effect */}
@@ -35,34 +35,34 @@ export function WalletConnectPrompt({ title, description, icon }: WalletConnectP
         </div>
 
         {/* Title with gradient */}
-        <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-slide-up">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent" style={{ animation: "slide-up 0.6s ease-out" }}>
           {title}
         </h2>
 
         {/* Description */}
-        <p className="text-muted-foreground text-lg mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <p className="text-muted-foreground text-lg mb-8" style={{ animation: "slide-up 0.6s ease-out", animationDelay: "0.1s", animationFillMode: "both" }}>
           {description}
         </p>
 
         {/* Features */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <div
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50 animate-slide-up"
-            style={{ animationDelay: "0.2s" }}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50"
+            style={{ animation: "slide-up 0.6s ease-out", animationDelay: "0.2s", animationFillMode: "both" }}
           >
             <Zap className="h-6 w-6 text-primary" />
             <span className="text-sm font-medium">Instant Access</span>
           </div>
           <div
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50 animate-slide-up"
-            style={{ animationDelay: "0.3s" }}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50"
+            style={{ animation: "slide-up 0.6s ease-out", animationDelay: "0.3s", animationFillMode: "both" }}
           >
             <Shield className="h-6 w-6 text-accent" />
             <span className="text-sm font-medium">Secure & Private</span>
           </div>
           <div
-            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50 animate-slide-up"
-            style={{ animationDelay: "0.4s" }}
+            className="flex flex-col items-center gap-2 p-4 rounded-lg bg-background/50 border border-border/50"
+            style={{ animation: "slide-up 0.6s ease-out", animationDelay: "0.4s", animationFillMode: "both" }}
           >
             <TrendingUp className="h-6 w-6 text-chart-3" />
             <span className="text-sm font-medium">Track Earnings</span>
@@ -73,8 +73,8 @@ export function WalletConnectPrompt({ title, description, icon }: WalletConnectP
         <Button
           size="lg"
           onClick={connect}
-          className="animate-slide-up hover:scale-105 transition-transform"
-          style={{ animationDelay: "0.5s" }}
+          className="hover:scale-105 transition-transform"
+          style={{ animation: "slide-up 0.6s ease-out", animationDelay: "0.5s", animationFillMode: "both" }}
         >
           <Wallet className="h-5 w-5 mr-2" />
           Connect Wallet

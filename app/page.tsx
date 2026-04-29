@@ -11,7 +11,7 @@ export default function HomePage() {
   const { isConnected } = useWallet()
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black" style={{ scrollSnapType: "y proximity" }}>
       <HomepageHero />
 
       <div className="container max-w-7xl mx-auto px-4 py-12 space-y-8">

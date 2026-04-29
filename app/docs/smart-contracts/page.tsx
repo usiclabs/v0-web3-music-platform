@@ -28,7 +28,7 @@ export default function SmartContractsPage() {
             <div className="space-y-4">
               <ContractCard
                 name="USI Token"
-                address="0x987603A52d8B966E10FBD29DcB1A574049E25B07"
+                address="0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
                 description="ERC-20 token contract for the $USI platform token"
               />
 
@@ -185,7 +185,7 @@ const trackData = await client.readContract({
               <div className="bg-muted/10 rounded-lg p-4 overflow-x-auto">
                 <pre className="text-sm font-mono">
                   {`const balance = await client.readContract({
-  address: '0x987603A52d8B966E10FBD29DcB1A574049E25B07',
+  address: '0xECE5d962d17901ef200Da050C7c74AB45C96Db07',
   abi: erc20Abi,
   functionName: 'balanceOf',
   args: [userAddress]

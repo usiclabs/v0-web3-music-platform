@@ -15,21 +15,36 @@ interface AnalyticsChartProps {
 
 export function AnalyticsChart({ data, type }: AnalyticsChartProps) {
   const chartData = useMemo(() => {
+    console.log("[v0] Raw data received in AnalyticsChart:", data.length, "items")
+    console.log("[v0] Data date range:", data.length > 0 ? [data[0].started_at, data[data.length - 1].started_at] : "No data")
     // Group data by date
     const grouped = data.reduce(
       (acc, item) => {
-        const date = new Date(item.started_at).toLocaleDateString()
-        if (!acc[date]) {
-          acc[date] = { date, plays: 0, earnings: 0 }
+        const d = new Date(item.started_at)
+        // Format as YYYY-MM-DD for proper sorting and display
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, "0")
+        const day = String(d.getDate()).padStart(2, "0")
+        const dateKey = `${year}-${month}-${day}`
+        const displayDate = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+
+        if (!acc[dateKey]) {
+          acc[dateKey] = { dateKey, date: displayDate, plays: 0, earnings: 0 }
         }
-        acc[date].plays += item.chunks_played
-        acc[date].earnings += Number(item.total_paid)
+        acc[dateKey].plays += item.chunks_played
+        acc[dateKey].earnings += Number(item.total_paid)
         return acc
       },
-      {} as Record<string, { date: string; plays: number; earnings: number }>,
+      {} as Record<string, { dateKey: string; date: string; plays: number; earnings: number }>,
     )
 
-    return Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const result = Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    console.log("[v0] Grouped chart data:", result.length, "dates. Last 3:", result.slice(-3).map(r => r.date))
+    return result
   }, [data])
 
   const chartConfig = {

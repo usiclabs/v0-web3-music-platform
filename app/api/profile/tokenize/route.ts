@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
       totalSupply: 1000000000, // 1 billion tokens
       deployerAddress: address,
       description: `Profile token for ${tokenName}`,
-      targetMarketCapEth: 0.1, // Start with 0.1 ETH market cap
     })
 
     if (!deploymentResult.success || !deploymentResult.tokenAddress) {

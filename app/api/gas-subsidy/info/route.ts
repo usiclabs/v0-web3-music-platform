@@ -3,12 +3,11 @@ import { createClient } from "@supabase/supabase-js"
 import { createPublicClient, http, formatUnits, isAddress } from "viem"
 import { base } from "viem/chains"
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-
 // Relayer wallet address - should have ETH for gas
 const RELAYER_ADDRESS = process.env.NEXT_PUBLIC_RELAYER_ADDRESS
 
 export async function GET() {
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   try {
     if (!RELAYER_ADDRESS || !isAddress(RELAYER_ADDRESS)) {
       console.warn("[v0] Relayer address not configured or invalid:", RELAYER_ADDRESS)

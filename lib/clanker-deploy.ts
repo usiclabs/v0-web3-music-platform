@@ -71,13 +71,19 @@ export async function deployClankerToken(params: ClankerDeployParams): Promise<C
       wallet: walletClient,
     })
 
+    // Verify SDK initialized properly
+    if (!clanker || typeof clanker.deploy !== "function") {
+      throw new Error("Clanker SDK failed to initialize or deploy method unavailable")
+    }
+
     const deployConfig: any = {
       name: params.name,
       symbol: params.symbol,
       tokenAdmin: params.deployerAddress as Address,
+      totalSupply: params.totalSupply.toString(),
     }
 
-    console.log("[v0] [Clanker] Calling deploy() with minimal config:", deployConfig)
+    console.log("[v0] [Clanker] Calling deploy() with config:", { ...deployConfig, totalSupply: "..." })
 
     const result = await clanker.deploy(deployConfig)
 

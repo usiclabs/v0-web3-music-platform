@@ -10,7 +10,7 @@ const publicClient = createPublicClient({
   transport: http(`https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`),
 })
 
-const USI_TOKEN = "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
+const USI_TOKEN = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
 
 export async function GET(req: NextRequest) {
   try {
