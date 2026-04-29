@@ -262,7 +262,7 @@ export function HomepageSections() {
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/5" />
 
         <div className="container relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -378,7 +378,7 @@ export function HomepageSections() {
                 icon: Coins,
                 title: "Pay as you listen",
                 description: "Stream for fractions of a cent. Only pay for what you play.",
-                color: "primary",
+                color: "accent",
                 delay: "100ms",
               },
               {
@@ -392,7 +392,7 @@ export function HomepageSections() {
                 icon: Award,
                 title: "Own music as NFTs",
                 description: "Collect limited editions. Unlock perks. Resell for value.",
-                color: "chart-3",
+                color: "accent",
                 delay: "300ms",
               },
             ].map((feature, index) => (
@@ -454,10 +454,10 @@ export function HomepageSections() {
           {/* Trust Badges */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: CheckCircle2, label: "Instant USDC Payments", color: "primary", delay: "100ms" },
+              { icon: CheckCircle2, label: "Instant USDC Payments", color: "accent", delay: "100ms" },
               { icon: Shield, label: "Smart Contract Verified", color: "accent", delay: "200ms" },
-              { icon: Lock, label: "No Custody of Funds", color: "chart-3", delay: "300ms" },
-              { icon: Globe, label: "Global & Permissionless", color: "primary", delay: "400ms" },
+              { icon: Lock, label: "No Custody of Funds", color: "accent", delay: "300ms" },
+              { icon: Globe, label: "Global & Permissionless", color: "accent", delay: "400ms" },
             ].map((badge, index) => (
               <div
                 key={index}
@@ -496,7 +496,7 @@ export function HomepageSections() {
         }}
         className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent/10 via-transparent to-transparent" />
 
         <div className="container relative">
           <div
@@ -519,7 +519,7 @@ export function HomepageSections() {
                   size="lg"
                   variant="outline"
                   asChild
-                  className="gap-2 rounded-full bg-transparent hover:bg-card/50 backdrop-blur-xl border-2 hover:border-primary/50 hover:scale-105 transition-all duration-300 group"
+                  className="gap-2 rounded-full bg-transparent hover:bg-card/50 backdrop-blur-xl border-2 hover:border-accent/50 hover:scale-105 transition-all duration-300 group"
                 >
                   <a href={social.href} target="_blank" rel="noopener noreferrer">
                     <social.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -530,13 +530,13 @@ export function HomepageSections() {
             </div>
 
             <div className="max-w-md mx-auto">
-              <div className="bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-6 shadow-2xl hover:shadow-primary/10 transition-shadow duration-500">
+              <div className="bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-6 shadow-2xl hover:shadow-accent/10 transition-shadow duration-500">
                 <h3 className="text-xl font-semibold mb-4">Get Early Access</h3>
                 <div className="flex gap-2">
                   <input
                     type="email"
                     placeholder="your@email.com"
-                    className="flex-1 px-4 py-3 rounded-xl bg-background/50 border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl bg-background/50 border border-border focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
                   />
                   <Button className="gap-2 rounded-xl hover:scale-105 transition-transform">
                     <Mail className="h-4 w-4" />
