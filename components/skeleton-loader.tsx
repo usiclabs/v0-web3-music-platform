@@ -17,8 +17,8 @@ export function SkeletonCard() {
         <div className="flex items-center justify-between mt-4">
           <div className="h-4 skeleton rounded w-20 relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
-              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.4s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
+              style={{ animationDelay: "0.4s" }}
             />
           </div>
           <div className="h-8 w-8 skeleton rounded-full relative overflow-hidden">

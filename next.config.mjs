@@ -11,6 +11,9 @@ const nextConfig = {
       bodySizeLimit: '50mb',
     },
   },
+  turbopack: {
+    root: '.',
+  },
   serverExternalPackages: [
     'pino',
     'thread-stream',
