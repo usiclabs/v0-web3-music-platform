@@ -39,73 +39,84 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* Updated dark theme to use pure black background (#0a0a0a / oklch(0.04 0 0)) */
+/* FUTURISTIC DARK THEME - Premium Black/Red System */
 .dark {
-  --background: oklch(0.04 0 0);
+  /* Deep matte black backgrounds */
+  --background: oklch(0 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.04 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.04 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.57 0.22 29);
+  /* Primary red accent #FF2A2A */
+  --primary: oklch(0.62 0.25 25);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.15 0 0);
+  /* Secondary surfaces */
+  --secondary: oklch(0.08 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.15 0 0);
-  --muted-foreground: oklch(0.52 0 0);
-  /* Updated accent color to match primary - unified red */
-  --accent: oklch(0.57 0.22 29);
+  --muted: oklch(0.12 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  /* Accent = Primary red for unified system */
+  --accent: oklch(0.62 0.25 25);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
+  /* Highlight red glow #FF3B3B */
+  --destructive: oklch(0.65 0.26 25);
+  --destructive-foreground: oklch(0.985 0 0);
+  /* Subtle borders */
+  --border: oklch(0.18 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.62 0.25 25);
+  /* Chart colors - red spectrum */
+  --chart-1: oklch(0.62 0.25 25);
+  --chart-2: oklch(0.55 0.22 25);
+  --chart-3: oklch(0.50 0.20 25);
+  --chart-4: oklch(0.45 0.18 25);
+  --chart-5: oklch(0.40 0.15 25);
+  /* Sidebar */
+  --sidebar: oklch(0.04 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.62 0.25 25);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.12 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-border: oklch(0.18 0 0);
+  --sidebar-ring: oklch(0.62 0.25 25);
 }
 
 @theme inline {
   --font-sans: "Geist", "Geist Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
 
-  /* Updated design tokens from coral/salmon pink to bright red theme */
+  /* FUTURISTIC DESIGN TOKENS - Black/Red System */
   --color-background: #000000;
   --color-foreground: #ffffff;
-  --color-card: #0a0a0a;
+  --color-card: #0A0A0A;
   --color-card-foreground: #ffffff;
-  --color-popover: #0a0a0a;
+  --color-popover: #0A0A0A;
   --color-popover-foreground: #ffffff;
-  --color-primary: #dc2626;
+  /* Primary red #FF2A2A */
+  --color-primary: #FF2A2A;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1a1a1a;
+  --color-secondary: #0A0A0A;
   --color-secondary-foreground: #ffffff;
-  --color-muted: #1a1a1a;
-  --color-muted-foreground: #737373;
-  --color-accent: #dc2626;
+  --color-muted: #141414;
+  --color-muted-foreground: #666666;
+  /* Accent = Primary for unified system */
+  --color-accent: #FF2A2A;
   --color-accent-foreground: #ffffff;
-  --color-destructive: #ef4444;
+  /* Highlight glow #FF3B3B */
+  --color-destructive: #FF3B3B;
   --color-destructive-foreground: #ffffff;
-  --color-border: #1e293b;
-  --color-input: #1e293b;
-  --color-ring: #e53e3e;
-  --color-chart-1: #e53e3e;
-  --color-chart-2: #dc2626;
-  --color-chart-3: #10b981;
-  --color-chart-4: #f59e0b;
-  --color-chart-5: #ef4444;
-  --radius: 0.75rem;
+  --color-border: #1a1a1a;
+  --color-input: #141414;
+  --color-ring: #FF2A2A;
+  /* Chart colors - red spectrum for data viz */
+  --color-chart-1: #FF2A2A;
+  --color-chart-2: #FF3B3B;
+  --color-chart-3: #cc2222;
+  --color-chart-4: #991a1a;
+  --color-chart-5: #661111;
+  --radius: 1rem;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -193,6 +204,132 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.87, 0, 0.13, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Futuristic color tokens */
+  --glow-red: #FF2A2A;
+  --glow-red-bright: #FF3B3B;
+  --surface-dark: #0A0A0A;
+  --surface-elevated: #111111;
+}
+
+/* ============================================
+   FUTURISTIC DESIGN SYSTEM - Autonomous AI Music Platform
+   ============================================ */
+
+/* Circular energy core pulse animation */
+@keyframes energy-core-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 0 40px rgba(255, 42, 42, 0.4),
+      0 0 80px rgba(255, 42, 42, 0.2),
+      0 0 120px rgba(255, 42, 42, 0.1),
+      inset 0 0 40px rgba(255, 42, 42, 0.1);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 
+      0 0 60px rgba(255, 59, 59, 0.5),
+      0 0 100px rgba(255, 59, 59, 0.3),
+      0 0 140px rgba(255, 59, 59, 0.15),
+      inset 0 0 60px rgba(255, 59, 59, 0.15);
+  }
+}
+
+/* Rotating ring animation for circular UI */
+@keyframes ring-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ring-rotate-reverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Waveform animation */
+@keyframes waveform-pulse {
+  0%, 100% { 
+    height: 20%;
+    opacity: 0.3;
+  }
+  50% { 
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+/* Particle drift animation */
+@keyframes particle-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--drift-x, 100px), var(--drift-y, -100px)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Node connection pulse */
+@keyframes node-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(255, 42, 42, 0);
+  }
+}
+
+/* Scanning line effect */
+@keyframes scan-line {
+  0% {
+    top: 0%;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.3;
+  }
+}
+
+/* Radial reveal animation */
+@keyframes radial-reveal {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    opacity: 0;
+  }
+  100% {
+    clip-path: circle(100% at 50% 50%);
+    opacity: 1;
+  }
+}
+
+/* Data stream animation */
+@keyframes data-stream {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+/* Glow breathing effect */
+@keyframes glow-breathe {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(255, 42, 42, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(255, 42, 42, 0.6));
+  }
 }
 
 /* Custom Animations */
@@ -878,4 +1015,691 @@ video {
   background: rgba(10, 10, 10, 0.4);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* ============================================
+   FUTURISTIC UI COMPONENTS
+   ============================================ */
+
+/* Energy Core - Glowing circular element */
+.energy-core {
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 59, 59, 0.2), rgba(255, 42, 42, 0.1) 50%, transparent 70%);
+  animation: energy-core-pulse 4s ease-in-out infinite;
+}
+
+.energy-core::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 42, 42, 0.5), transparent 30%);
+  animation: ring-rotate 8s linear infinite;
+}
+
+.energy-core::after {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 42, 42, 0.3), transparent 60%);
+}
+
+/* Rotating Ring */
+.ring-rotate {
+  animation: ring-rotate 20s linear infinite;
+}
+
+.ring-rotate-reverse {
+  animation: ring-rotate-reverse 15s linear infinite;
+}
+
+/* Futuristic Panel */
+.futuristic-panel {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.9), rgba(17, 17, 17, 0.8));
+  border: 1px solid rgba(255, 42, 42, 0.1);
+  border-radius: 1rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.futuristic-panel:hover {
+  border-color: rgba(255, 42, 42, 0.3);
+  box-shadow: 
+    0 0 0 1px rgba(255, 42, 42, 0.1),
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 42, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Neon Border Glow */
+.neon-border {
+  position: relative;
+}
+
+.neon-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 42, 42, 0.5), transparent 50%, rgba(255, 42, 42, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Waveform Bars */
+.waveform-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+}
+
+.waveform-bar {
+  width: 3px;
+  background: linear-gradient(to top, rgba(255, 42, 42, 0.3), #FF2A2A);
+  border-radius: 2px;
+  animation: waveform-pulse 1s ease-in-out infinite;
+}
+
+.waveform-bar:nth-child(1) { animation-delay: 0s; }
+.waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+.waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+.waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+.waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+.waveform-bar:nth-child(6) { animation-delay: 0.5s; }
+.waveform-bar:nth-child(7) { animation-delay: 0.6s; }
+.waveform-bar:nth-child(8) { animation-delay: 0.7s; }
+
+/* Node Connection Point */
+.node-point {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #FF2A2A;
+  animation: node-pulse 2s ease-in-out infinite;
+}
+
+/* Scanning Effect */
+.scan-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-effect::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #FF2A2A, transparent);
+  animation: scan-line 3s ease-in-out infinite;
+}
+
+/* Radial Reveal Animation */
+.animate-radial-reveal {
+  animation: radial-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Data Stream Background */
+.data-stream-bg {
+  background: 
+    linear-gradient(180deg, 
+      transparent 0%,
+      rgba(255, 42, 42, 0.03) 50%,
+      transparent 100%
+    );
+  background-size: 100% 200%;
+  animation: data-stream 3s linear infinite;
+}
+
+/* Glow Breathing Effect */
+.glow-breathe {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+
+/* Futuristic Button */
+.btn-futuristic {
+  position: relative;
+  background: linear-gradient(135deg, #FF2A2A, #cc2222);
+  border: none;
+  border-radius: 9999px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-futuristic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-futuristic:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 10px 40px rgba(255, 42, 42, 0.4),
+    0 0 60px rgba(255, 42, 42, 0.2);
+}
+
+.btn-futuristic:hover::before {
+  opacity: 1;
+}
+
+.btn-futuristic:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Secondary Button Outline */
+.btn-outline-glow {
+  position: relative;
+  background: transparent;
+  border: 2px solid rgba(255, 42, 42, 0.5);
+  border-radius: 9999px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-outline-glow:hover {
+  background: rgba(255, 42, 42, 0.1);
+  border-color: #FF2A2A;
+  box-shadow: 
+    0 0 30px rgba(255, 42, 42, 0.3),
+    inset 0 0 20px rgba(255, 42, 42, 0.1);
+}
+
+/* Card Glow Effect */
+.card-glow {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-glow:hover {
+  border-color: rgba(255, 42, 42, 0.4);
+  box-shadow: 
+    0 0 0 1px rgba(255, 42, 42, 0.2),
+    0 20px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 60px -20px rgba(255, 42, 42, 0.3);
+}
+
+/* Circular Progress Ring */
+.progress-ring {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(
+    #FF2A2A var(--progress, 0%),
+    rgba(255, 42, 42, 0.1) var(--progress, 0%)
+  );
+}
+
+.progress-ring::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #0A0A0A;
+}
+
+/* Particle System Container */
+.particle-field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #FF2A2A;
+  border-radius: 50%;
+  animation: particle-drift 10s ease-in-out infinite;
+  opacity: 0;
+}
+
+/* Typography - Futuristic Headlines */
+.headline-futuristic {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.headline-glow {
+  text-shadow: 
+    0 0 40px rgba(255, 42, 42, 0.3),
+    0 0 80px rgba(255, 42, 42, 0.1);
+}
+
+/* Metric Card */
+.metric-card {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.8), rgba(17, 17, 17, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(255, 42, 42, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FF2A2A;
+  text-shadow: 0 0 20px rgba(255, 42, 42, 0.3);
+}
+
+/* Input Focus Glow */
+.input-glow:focus {
+  outline: none;
+  border-color: #FF2A2A;
+  box-shadow: 
+    0 0 0 3px rgba(255, 42, 42, 0.1),
+    0 0 20px rgba(255, 42, 42, 0.2);
+}
+
+/* Background Patterns */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 42, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 42, 42, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.bg-radial-gradient {
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 42, 42, 0.15) 0%, transparent 60%);
+}
+
+.bg-noise {
+  position: relative;
+}
+
+.bg-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+/* ============================================
+   GENERATING / LOADING STATES
+   ============================================ */
+
+/* Circular loading spinner */
+@keyframes spinner-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner-futuristic {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 42, 42, 0.1);
+  border-top-color: #FF2A2A;
+  animation: spinner-rotate 1s linear infinite;
+  box-shadow: 0 0 20px rgba(255, 42, 42, 0.2);
+}
+
+/* Generating pulse */
+@keyframes generating-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+}
+
+.generating-state {
+  animation: generating-pulse 1.5s ease-in-out infinite;
+}
+
+/* Audio waveform generating */
+@keyframes wave-generate {
+  0%, 100% { 
+    scaleY: 0.3;
+  }
+  50% { 
+    scaleY: 1;
+  }
+}
+
+.wave-bar-generating {
+  transform-origin: bottom;
+  animation: wave-generate 0.8s ease-in-out infinite;
+}
+
+/* ============================================
+   DASHBOARD CARDS & METRICS
+   ============================================ */
+
+/* Dashboard metric card */
+.dashboard-card {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.95), rgba(15, 15, 15, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(20px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 42, 42, 0.03), transparent 60%);
+  pointer-events: none;
+}
+
+.dashboard-card:hover {
+  border-color: rgba(255, 42, 42, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 60px -20px rgba(255, 42, 42, 0.2);
+}
+
+/* Chart styling */
+.chart-container {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.8), rgba(0, 0, 0, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+}
+
+/* Red line charts */
+.chart-line-red {
+  stroke: #FF2A2A;
+  filter: drop-shadow(0 0 8px rgba(255, 42, 42, 0.5));
+}
+
+.chart-dot-red {
+  fill: #FF2A2A;
+  filter: drop-shadow(0 0 6px rgba(255, 42, 42, 0.8));
+}
+
+/* ============================================
+   FORM ELEMENTS - Futuristic Inputs
+   ============================================ */
+
+.input-futuristic {
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.input-futuristic::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.input-futuristic:focus {
+  outline: none;
+  border-color: #FF2A2A;
+  background: rgba(10, 10, 10, 0.95);
+  box-shadow: 
+    0 0 0 3px rgba(255, 42, 42, 0.1),
+    0 0 30px rgba(255, 42, 42, 0.15),
+    inset 0 0 20px rgba(255, 42, 42, 0.03);
+}
+
+/* Select / Dropdown futuristic */
+.select-futuristic {
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.select-futuristic:hover {
+  border-color: rgba(255, 42, 42, 0.3);
+  background: rgba(15, 15, 15, 0.9);
+}
+
+.select-futuristic:focus {
+  border-color: #FF2A2A;
+  box-shadow: 0 0 0 3px rgba(255, 42, 42, 0.1);
+}
+
+/* Textarea futuristic */
+.textarea-futuristic {
+  background: rgba(10, 10, 10, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  color: white;
+  resize: none;
+  transition: all 0.3s ease;
+}
+
+.textarea-futuristic:focus {
+  outline: none;
+  border-color: #FF2A2A;
+  box-shadow: 
+    0 0 0 3px rgba(255, 42, 42, 0.1),
+    0 0 30px rgba(255, 42, 42, 0.1);
+}
+
+/* ============================================
+   BADGES & TAGS
+   ============================================ */
+
+.badge-futuristic {
+  background: rgba(255, 42, 42, 0.1);
+  border: 1px solid rgba(255, 42, 42, 0.3);
+  color: #FF2A2A;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-futuristic-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+}
+
+/* ============================================
+   MUSIC PLAYER ELEMENTS
+   ============================================ */
+
+/* Waveform visualizer for player */
+.player-waveform {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+}
+
+.player-waveform-bar {
+  width: 2px;
+  background: linear-gradient(to top, rgba(255, 42, 42, 0.4), #FF2A2A);
+  border-radius: 2px;
+  transition: height 0.1s ease;
+}
+
+/* Progress bar */
+.progress-bar-futuristic {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  overflow: hidden;
+  height: 4px;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, #FF2A2A, #FF3B3B);
+  height: 100%;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(255, 42, 42, 0.5);
+  transition: width 0.1s linear;
+}
+
+/* ============================================
+   TABLE / LIST ELEMENTS
+   ============================================ */
+
+.table-row-futuristic {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.table-row-futuristic:hover {
+  background: rgba(255, 42, 42, 0.03);
+  border-bottom-color: rgba(255, 42, 42, 0.1);
+}
+
+/* ============================================
+   MODAL / DIALOG
+   ============================================ */
+
+.modal-futuristic {
+  background: linear-gradient(135deg, rgba(10, 10, 10, 0.98), rgba(15, 15, 15, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(40px);
+  box-shadow: 
+    0 40px 80px -20px rgba(0, 0, 0, 0.8),
+    0 0 100px -40px rgba(255, 42, 42, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================
+   TOOLTIP
+   ============================================ */
+
+.tooltip-futuristic {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 42, 42, 0.2);
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   AVATAR / USER ELEMENTS  
+   ============================================ */
+
+.avatar-glow {
+  position: relative;
+}
+
+.avatar-glow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #FF2A2A, #FF3B3B, #FF2A2A);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.avatar-glow:hover::after {
+  opacity: 1;
+}
+
+/* Online indicator */
+.status-online {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid #0A0A0A;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+/* ============================================
+   TABS - Futuristic
+   ============================================ */
+
+.tabs-futuristic {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(10, 10, 10, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+}
+
+.tab-futuristic {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tab-futuristic:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-futuristic.active {
+  color: white;
+  background: rgba(255, 42, 42, 0.15);
+  border: 1px solid rgba(255, 42, 42, 0.3);
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .energy-core {
+    box-shadow: 
+      0 0 20px rgba(255, 42, 42, 0.3),
+      0 0 40px rgba(255, 42, 42, 0.1);
+  }
+  
+  .btn-futuristic:hover {
+    transform: none;
+    box-shadow: 0 5px 20px rgba(255, 42, 42, 0.3);
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
 }

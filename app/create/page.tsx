@@ -1378,56 +1378,22 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent/8 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        {/* Floating orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
-
-      <div className="container mx-auto px-4 py-12 max-w-6xl relative z-10">
-        <div className="text-center mb-12 animate-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center gap-3 bg-card/50 backdrop-blur-2xl border border-accent/20 rounded-full px-6 py-3 mb-6 shadow-xl shadow-accent/5">
-            <div className="relative">
-              <Sparkles className="h-5 w-5 text-accent animate-pulse" />
-              <div className="absolute inset-0 bg-accent/50 blur-lg animate-ping" />
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-4 py-12 max-w-5xl relative z-10">
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-sm text-white/40 mb-1">AI Studio</p>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Create Music</h1>
             </div>
-            <span className="text-sm font-medium">AI Studio</span>
-            <span className="w-px h-4 bg-border" />
-            <span className="text-sm font-bold text-accent">Pro</span>
             {credits !== null && (
-              <>
-                <span className="w-px h-4 bg-border" />
-                <span className="text-sm text-muted-foreground">{credits} credits</span>
-              </>
+              <div className="text-sm text-white/40">
+                {credits} credits
+              </div>
             )}
           </div>
-
-          {/* Animated waveform decoration */}
-          <div className="flex items-center justify-center gap-1 mb-6">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="w-1 bg-accent/30 rounded-full animate-pulse"
-                style={{
-                  height: `${Math.random() * 24 + 8}px`,
-                  animationDelay: `${i * 100}ms`,
-                  animationDuration: `${800 + Math.random() * 400}ms`,
-                }}
-              />
-            ))}
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-foreground via-foreground to-accent bg-clip-text text-transparent">
-              Create Music
-            </span>
-            <span className="block mt-2 text-accent">with AI</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Describe your vision and watch AI compose original music and videos
+          <p className="text-base text-white/40 max-w-lg">
+            Describe your vision and let AI compose original music.
           </p>
         </div>
 
@@ -1709,7 +1675,7 @@ export default function CreatePage() {
                   />
 
                   {customMode && (
-                    <div className="space-y-6 p-6 bg-card/30 rounded-xl border border-accent/20 animate-in slide-in-from-top-4 duration-300">
+                    <div className="space-y-6 p-6 futuristic-panel rounded-2xl animate-in slide-in-from-top-4 duration-300">
                       <PremiumInput
                         id="negative-tags"
                         label="Negative Tags"

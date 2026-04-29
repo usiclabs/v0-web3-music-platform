@@ -36,12 +36,13 @@ async function getPlatformMetrics() {
   const { data: listenersData } = await supabase.from("streams").select("listener_address")
   const uniqueListeners = new Set(listenersData?.map((s) => s.listener_address) || []).size
 
-  // Get streams over time for charts
+  // Get streams over time for charts - fetch last 180 days of data
+  const ninetyDaysAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString()
   const { data: streamHistory } = await supabase
     .from("streams")
     .select("started_at, chunks_played, total_paid")
+    .gte("started_at", ninetyDaysAgo)
     .order("started_at", { ascending: true })
-    .limit(1000)
 
   // Get top tracks by streams
   const { data: topTracks } = await supabase
