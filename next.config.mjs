@@ -23,11 +23,6 @@ const nextConfig = {
     '@walletconnect/logger',
   ],
   output: 'standalone',
-  turbopack: {
-    resolveAlias: {
-      '@coinbase/wallet-sdk': false,
-    },
-  },
 }
 
 export default nextConfig
