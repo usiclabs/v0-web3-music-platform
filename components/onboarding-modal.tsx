@@ -95,7 +95,7 @@ export function OnboardingModal() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogPortal>
         <DialogOverlay className="bg-black/90 backdrop-blur-md" />
-        <DialogContent className="max-w-2xl border-0 bg-transparent p-0 shadow-none max-h-[90vh] overflow-y-auto" showCloseButton={false}>
+        <DialogContent className="max-w-2xl border-0 bg-transparent p-0 shadow-none" showCloseButton={false}>
           {/* Glassmorphic Container */}
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/80 backdrop-blur-xl w-full">
             {/* Animated Background Gradient */}
