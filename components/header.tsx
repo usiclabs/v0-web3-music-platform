@@ -144,9 +144,6 @@ export function Header() {
         </div>
       </header>
 
-      {/* Spacer to account for fixed header only */}
-      <div className="h-16 sm:h-18" />
-
       <MobileWalletModal
         open={showMobileWalletModal}
         onOpenChange={setShowMobileWalletModal}

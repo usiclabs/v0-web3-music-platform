@@ -93,10 +93,10 @@ export default function RootLayout({
               <AudioPlayerProvider>
                 <Header />
                 <BlockchainTicker />
-                {/* Spacer for fixed ticker */}
-                <div className="h-8" />
                 <FarcasterBadge />
-                <PageTransition>{children}</PageTransition>
+                <main className="mt-24 sm:mt-26">
+                  <PageTransition>{children}</PageTransition>
+                </main>
                 <AudioPlayer />
                 <X402PaymentModal />
                 <MobileBottomNav />
