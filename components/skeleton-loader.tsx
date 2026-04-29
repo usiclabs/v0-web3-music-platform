@@ -10,8 +10,8 @@ export function SkeletonCard() {
         </div>
         <div className="h-4 skeleton rounded w-1/2 relative overflow-hidden">
           <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-            style={{ animationDelay: "0.2s" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+            style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.2s" }}
           />
         </div>
         <div className="flex items-center justify-between mt-4">
@@ -23,8 +23,8 @@ export function SkeletonCard() {
           </div>
           <div className="h-8 w-8 skeleton rounded-full relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-              style={{ animationDelay: "0.6s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.6s" }}
             />
           </div>
         </div>
@@ -43,14 +43,14 @@ export function SkeletonStats() {
         <div className="flex-1 space-y-2">
           <div className="h-4 skeleton rounded w-24 relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-              style={{ animationDelay: "0.2s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.2s" }}
             />
           </div>
           <div className="h-8 skeleton rounded w-16 relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-              style={{ animationDelay: "0.4s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.4s" }}
             />
           </div>
         </div>
@@ -68,21 +68,21 @@ export function SkeletonTrackRow() {
       <div className="flex-1 space-y-2">
         <div className="h-4 skeleton rounded w-48 relative overflow-hidden">
           <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-            style={{ animationDelay: "0.1s" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+            style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.1s" }}
           />
         </div>
         <div className="h-3 skeleton rounded w-32 relative overflow-hidden">
           <div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-            style={{ animationDelay: "0.2s" }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+            style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.2s" }}
           />
         </div>
       </div>
       <div className="h-8 w-20 skeleton rounded relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-          style={{ animationDelay: "0.3s" }}
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+          style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.3s" }}
         />
       </div>
     </div>
@@ -103,27 +103,27 @@ export function SkeletonHero() {
           </div>
           <div className="h-16 skeleton rounded w-full max-w-lg relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-              style={{ animationDelay: "0.2s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.2s" }}
             />
           </div>
           <div className="h-6 skeleton rounded w-48 relative overflow-hidden">
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-              style={{ animationDelay: "0.4s" }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+              style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.4s" }}
             />
           </div>
           <div className="flex gap-4">
             <div className="h-14 w-32 skeleton rounded-full relative overflow-hidden">
               <div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-                style={{ animationDelay: "0.6s" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.6s" }}
               />
             </div>
             <div className="h-14 w-32 skeleton rounded-full relative overflow-hidden">
               <div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"
-                style={{ animationDelay: "0.8s" }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                style={{ animation: "shimmer 1.5s infinite", animationDelay: "0.8s" }}
               />
             </div>
           </div>
