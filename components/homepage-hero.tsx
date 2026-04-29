@@ -81,7 +81,7 @@ export function HomepageHero() {
         <div
           className="absolute inset-0 opacity-30 transition-all duration-300"
           style={{
-            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(220, 38, 38, 0.15), transparent 50%)`,
+            background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(16, 185, 129, 0.12), transparent 50%)`,
           }}
         />
       </div>
@@ -109,12 +109,12 @@ export function HomepageHero() {
           </div>
 
           <h1
-            className={`md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 text-5xl ${
+            className={`md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 text-5xl font-serif tracking-tight ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
             Music that{" "}
-            <span className="text-accent drop-shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+            <span className="text-accent drop-shadow-[0_0_20px_rgba(16,185,129,0.3)]">
               pays artists
             </span>
           </h1>
@@ -143,23 +143,23 @@ export function HomepageHero() {
             <Button
               size="lg"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 hover:scale-105 transition-all duration-300 group relative overflow-hidden text-white shadow-2xl shadow-white/10"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-accent/10 backdrop-blur-md border border-accent/30 hover:bg-accent/20 hover:border-accent/50 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300 group relative overflow-hidden text-accent font-semibold"
             >
               <Link href="/explore">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-none stroke-2" />
-                <span className="relative z-10 font-semibold">Listen Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-accent stroke-accent" />
+                <span className="relative z-10">Listen Now</span>
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-card/20 hover:bg-card/40 backdrop-blur-2xl border-2 border-border hover:scale-105 hover:border-accent/50 transition-all duration-300 group relative overflow-hidden"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-accent/5 hover:bg-accent/15 backdrop-blur-2xl border-2 border-accent/40 hover:border-accent/60 transition-all duration-300 group relative overflow-hidden text-foreground"
             >
               <Link href="/dashboard">
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Music className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10" />
+                <Music className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10 text-accent" />
                 <span className="relative z-10">Upload Your Music</span>
               </Link>
             </Button>
@@ -192,19 +192,19 @@ export function HomepageHero() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
+                className="text-center group cursor-default bg-card/30 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-accent/20 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/15 hover:bg-card/40 transition-all duration-300 hover:scale-105"
               >
                 <stat.icon
-                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
+                  className={`h-5 w-5 sm:h-6 sm:w-6 text-accent mx-auto mb-3 sm:mb-4 group-hover:scale-125 transition-transform`}
                 />
                 <div
-                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
+                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-accent mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300 truncate font-serif ${
                     isLoading ? "animate-pulse" : ""
                   }`}
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-foreground/60 font-medium">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-foreground/60 font-medium tracking-wide">{stat.label}</div>
               </div>
             ))}
           </div>
