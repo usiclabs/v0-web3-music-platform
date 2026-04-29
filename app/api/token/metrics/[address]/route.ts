@@ -52,9 +52,9 @@ interface DexScreenerResponse {
   pairs: DexScreenerPair[] | null
 }
 
-export async function GET(request: Request, { params }: { params: { address: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ address: string }> }) {
   try {
-    const { address } = params
+    const { address } = await params
 
     if (!address) {
       return NextResponse.json({ error: "Token address is required" }, { status: 400 })
