@@ -143,13 +143,8 @@ export function FeaturedArtistsCarousel() {
                     </div>
 
                     {/* Earnings */}
-                    <div className="mt-2 text-sm font-semibold px-3 py-1 rounded-lg bg-emerald-500/10">
-                      <span className="relative inline-block">
-                        <span className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-emerald-300 to-emerald-500 blur-sm animate-pulse opacity-75" />
-                        <span className="relative bg-gradient-to-r from-emerald-400 to-emerald-500 bg-clip-text text-transparent font-bold drop-shadow-lg">
-                          {artist.totalEarnings.toFixed(4)} USDC earned
-                        </span>
-                      </span>
+                    <div className="mt-2 text-sm font-semibold px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400">
+                      {artist.totalEarnings.toFixed(4)} USDC earned
                     </div>
                   </div>
                 </Card>

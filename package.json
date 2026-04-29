@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@babel/core": "latest",
     "@coinbase/coinbase-sdk": "0.25.0",
     "@coinbase/wallet-sdk": "^4.0.0",
     "@expo/dom-webview": "latest",
@@ -45,6 +46,7 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@react-native/jest-preset": "latest",
+    "@react-native/metro-config": "latest",
     "@react-three/drei": "10.7.7",
     "@react-three/fiber": "9.4.0",
     "@supabase/auth-helpers-nextjs": "0.10.0",
