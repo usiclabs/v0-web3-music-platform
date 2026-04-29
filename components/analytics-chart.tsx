@@ -15,6 +15,8 @@ interface AnalyticsChartProps {
 
 export function AnalyticsChart({ data, type }: AnalyticsChartProps) {
   const chartData = useMemo(() => {
+    console.log("[v0] Raw data received in AnalyticsChart:", data.length, "items")
+    console.log("[v0] Data date range:", data.length > 0 ? [data[0].started_at, data[data.length - 1].started_at] : "No data")
     // Group data by date
     const grouped = data.reduce(
       (acc, item) => {
@@ -40,7 +42,9 @@ export function AnalyticsChart({ data, type }: AnalyticsChartProps) {
       {} as Record<string, { dateKey: string; date: string; plays: number; earnings: number }>,
     )
 
-    return Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const result = Object.values(grouped).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    console.log("[v0] Grouped chart data:", result.length, "dates. Last 3:", result.slice(-3).map(r => r.date))
+    return result
   }, [data])
 
   const chartConfig = {

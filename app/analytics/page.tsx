@@ -38,11 +38,13 @@ async function getPlatformMetrics() {
 
   // Get streams over time for charts - fetch last 180 days of data
   const ninetyDaysAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString()
+  console.log("[v0] Fetching streams from:", ninetyDaysAgo)
   const { data: streamHistory } = await supabase
     .from("streams")
     .select("started_at, chunks_played, total_paid")
     .gte("started_at", ninetyDaysAgo)
     .order("started_at", { ascending: true })
+  console.log("[v0] Stream history count:", streamHistory?.length, "Sample dates:", streamHistory?.slice(-5).map(s => s.started_at))
 
   // Get top tracks by streams
   const { data: topTracks } = await supabase
