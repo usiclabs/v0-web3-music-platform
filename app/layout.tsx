@@ -94,7 +94,7 @@ export default function RootLayout({
                 <Header />
                 <BlockchainTicker />
                 <FarcasterBadge />
-                <main className="mt-24 sm:mt-26">
+                <main>
                   <PageTransition>{children}</PageTransition>
                 </main>
                 <AudioPlayer />
