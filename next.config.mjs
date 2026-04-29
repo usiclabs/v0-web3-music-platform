@@ -23,15 +23,10 @@ const nextConfig = {
     '@walletconnect/logger',
   ],
   output: 'standalone',
-  webpack: (config, { isServer }) => {
-    // Skip loading coinbaseWallet connector from wagmi which requires @coinbase/wallet-sdk
-    if (!isServer) {
-      config.externals = {
-        ...config.externals,
-        '@coinbase/wallet-sdk': 'empty',
-      }
-    }
-    return config
+  turbopack: {
+    resolveAlias: {
+      '@coinbase/wallet-sdk': false,
+    },
   },
 }
 
