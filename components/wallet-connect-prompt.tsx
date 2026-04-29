@@ -17,8 +17,8 @@ export function WalletConnectPrompt({ title, description, icon }: WalletConnectP
   const { connect } = useWallet()
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4 py-12">
-      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-border/50 p-8 md:p-12 text-center max-w-2xl mx-auto animate-scale-in">
+    <div className="flex items-center justify-center px-4 py-12 min-h-[50vh]">
+      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-xl border border-border/50 p-6 md:p-12 text-center max-w-2xl w-full animate-scale-in">
         {/* Floating background elements */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-float" />
         <div
