@@ -86,13 +86,15 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
       </head>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${geistSans.className} antialiased pb-16 md:pb-0`}>
         <ErrorBoundary>
           <FarcasterProvider>
             <Web3Provider>
               <AudioPlayerProvider>
                 <Header />
                 <BlockchainTicker />
+                {/* Spacer for fixed ticker */}
+                <div className="h-8" />
                 <FarcasterBadge />
                 <PageTransition>{children}</PageTransition>
                 <AudioPlayer />
