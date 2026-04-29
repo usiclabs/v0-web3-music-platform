@@ -1,5 +1,3 @@
-"use client"
-
 import { http, createConfig } from "wagmi"
 import { base, baseSepolia, mainnet, arbitrum } from "wagmi/chains"
 import { walletConnect, injected, coinbaseWallet } from "wagmi/connectors"
@@ -11,49 +9,28 @@ if (!projectId) {
   console.warn("NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set. WalletConnect will not work.")
 }
 
-// Safe window access
-const getOrigin = () => {
-  try {
-    return typeof window !== "undefined" ? window.location.origin : "https://myusic.xyz"
-  } catch {
-    return "https://myusic.xyz"
-  }
-}
-
-const getEthereumProvider = () => {
-  try {
-    return typeof window !== "undefined" ? (window as any).ethereum : undefined
-  } catch {
-    return undefined
-  }
-}
-
 if (typeof window !== "undefined") {
-  try {
-    const originalFetch = window.fetch
-    window.fetch = async (...args) => {
-      try {
-        // Suppress analytics errors from WalletConnect/Reown
-        if (args[0]?.toString().includes("pulse.walletconnect.org")) {
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          })
-        }
-        return await originalFetch(...args)
-      } catch (error) {
-        // Silently fail for analytics endpoints
-        if (args[0]?.toString().includes("pulse.walletconnect.org")) {
-          return new Response(JSON.stringify({ success: false }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          })
-        }
-        throw error
+  const originalFetch = window.fetch
+  window.fetch = async (...args) => {
+    try {
+      // Suppress analytics errors from WalletConnect/Reown
+      if (args[0]?.toString().includes("pulse.walletconnect.org")) {
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
       }
+      return await originalFetch(...args)
+    } catch (error) {
+      // Silently fail for analytics endpoints
+      if (args[0]?.toString().includes("pulse.walletconnect.org")) {
+        return new Response(JSON.stringify({ success: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw error
     }
-  } catch (error) {
-    console.warn("[v0] Could not wrap fetch:", error)
   }
 }
 
@@ -142,21 +119,21 @@ export const config = createConfig({
         return {
           id: "injected",
           name: "Injected Wallet",
-          provider: getEthereumProvider(),
+          provider: typeof window !== "undefined" ? window.ethereum : undefined,
         }
       },
     }),
     coinbaseWallet({
       appName: "USI",
-      appLogoUrl: `${getOrigin()}/images/logo.png`,
+      appLogoUrl: typeof window !== "undefined" ? `${window.location.origin}/images/logo.png` : undefined,
     }),
     walletConnect({
       projectId,
       metadata: {
         name: "USI",
         description: "Web3 Music Streaming Platform",
-        url: getOrigin(),
-        icons: [`${getOrigin()}/images/logo.png`],
+        url: typeof window !== "undefined" ? window.location.origin : "https://usi.app",
+        icons: [typeof window !== "undefined" ? `${window.location.origin}/images/logo.png` : ""],
       },
       showQrModal: true,
     }),

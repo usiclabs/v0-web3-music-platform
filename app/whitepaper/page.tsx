@@ -477,7 +477,7 @@ export default function WhitepaperPage() {
                   <div className="min-w-0 flex-1">
                     <h3 className="text-xl font-bold sm:text-2xl">$USI Token</h3>
                     <p className="break-all text-xs text-muted-foreground sm:text-sm">
-                      Contract: 0xECE5d962d17901ef200Da050C7c74AB45C96Db07
+                      Contract: 0x987603A52d8B966E10FBD29DcB1A574049E25B07
                     </p>
                   </div>
                 </div>

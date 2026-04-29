@@ -29,19 +29,13 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
-  const [supabase, setSupabase] = useState<ReturnType<typeof createClient> | null>(null)
   const { address } = useWallet()
   const router = useRouter()
-
-  // Initialize Supabase client on mount
-  useEffect(() => {
-    const client = createClient()
-    setSupabase(client)
-  }, [])
+  const supabase = createClient()
 
   // Load notifications
   useEffect(() => {
-    if (!address || !supabase) return
+    if (!address) return
 
     const loadNotifications = async () => {
       console.log("[v0] Loading notifications for address:", address)
@@ -148,8 +142,6 @@ export function NotificationCenter() {
   }
 
   const handleNotificationClick = async (notif: Notification) => {
-    if (!supabase) return
-
     // Mark as read
     if (!notif.is_read) {
       await supabase.from("notifications").update({ is_read: true }).eq("id", notif.id)
@@ -169,7 +161,7 @@ export function NotificationCenter() {
   }
 
   const markAllAsRead = async () => {
-    if (unreadCount === 0 || !supabase || !address) return
+    if (unreadCount === 0) return
 
     await supabase.from("notifications").update({ is_read: true }).eq("recipient_address", address).eq("is_read", false)
 
@@ -178,7 +170,6 @@ export function NotificationCenter() {
   }
 
   const clearNotifications = async () => {
-    if (!supabase || !address) return
     await supabase.from("notifications").delete().eq("recipient_address", address)
     setNotifications([])
     setUnreadCount(0)

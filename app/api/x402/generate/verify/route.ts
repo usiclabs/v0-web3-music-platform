@@ -5,6 +5,8 @@ import { USDC_ADDRESS } from "@/lib/web3/contracts"
 import { createClient } from "@supabase/supabase-js"
 import { getPlatformWalletAddress } from "@/lib/x402/platform-wallet"
 
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
 const GENERATION_PRICE_USDC = 1_000_000 // $1 USDC (6 decimals)
 
 const ERC20_ABI = [
@@ -28,7 +30,6 @@ const ERC20_ABI = [
 ] as const
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   try {
     const body = await request.json()
     const { walletAddress, txHash, nonce } = body

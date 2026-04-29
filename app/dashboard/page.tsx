@@ -257,70 +257,111 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen pb-32 bg-black">
       <main className="container py-12 px-4 sm:px-6">
-        <div className="mb-12">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
-              <p className="text-sm text-white/40 mb-2">Dashboard</p>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                {profile?.artist_name || "Welcome Back"}
-              </h1>
-            </div>
-            <div className="flex gap-3">
-              <Button size="sm" asChild>
-                <Link href="/dashboard/upload">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload
-                </Link>
-              </Button>
-              <Button size="sm" variant="outline" asChild>
-                <Link href="/dashboard/analytics">
-                  Analytics
-                </Link>
-              </Button>
+        <div className="relative mb-12 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-chart-3/20 border border-primary/20 p-8 md:p-12 animate-slide-up">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">Artist Dashboard</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                  {profile?.artist_name || "Welcome Back"}
+                </h1>
+                <p className="text-muted-foreground text-lg">Track your performance and manage your music</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button size="lg" asChild className="bg-primary hover:bg-primary/90">
+                  <Link href="/dashboard/upload">
+                    <Upload className="h-5 w-5 mr-2" />
+                    Upload Track
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/dashboard/analytics">
+                    <BarChart3 className="h-5 w-5 mr-2" />
+                    Analytics
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-12">
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
-                <Music className="h-4 w-4 text-[#FF2A2A]" />
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <Card
+            className="relative overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-xl border border-primary/20 shadow-lg p-6 hover-lift animate-slide-up group"
+            style={{ animationDelay: "0.1s" }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 border border-primary/30">
+                  <Music className="h-6 w-6 text-primary" />
+                </div>
+                {growthStats.tracksGrowth !== 0 && (
+                  <div
+                    className={`flex items-center gap-1 text-sm font-medium ${growthStats.tracksGrowth > 0 ? "text-green-500" : "text-red-500"}`}
+                  >
+                    {growthStats.tracksGrowth > 0 ? (
+                      <ArrowUpRight className="h-4 w-4" />
+                    ) : (
+                      <ArrowDownRight className="h-4 w-4" />
+                    )}
+                    {Math.abs(growthStats.tracksGrowth)}%
+                  </div>
+                )}
               </div>
-              {growthStats.tracksGrowth !== 0 && (
-                <span className={`text-xs ${growthStats.tracksGrowth > 0 ? "text-green-500" : "text-red-500"}`}>
-                  {growthStats.tracksGrowth > 0 ? "+" : ""}{growthStats.tracksGrowth}%
-                </span>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Total Tracks</p>
+              <p className="text-4xl font-bold">{stats.trackCount}</p>
             </div>
-            <p className="text-xs text-white/40 mb-1">Tracks</p>
-            <p className="text-2xl font-bold">{stats.trackCount}</p>
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-[#FF2A2A]" />
+          <Card
+            className="relative overflow-hidden bg-gradient-to-br from-accent/10 to-accent/5 backdrop-blur-xl border border-accent/20 shadow-lg p-6 hover-lift animate-slide-up group"
+            style={{ animationDelay: "0.2s" }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20 border border-accent/30">
+                  <TrendingUp className="h-6 w-6 text-accent" />
+                </div>
+                {growthStats.playsGrowth > 0 && (
+                  <div className="flex items-center gap-1 text-sm font-medium text-green-500">
+                    <ArrowUpRight className="h-4 w-4" />
+                    {growthStats.playsGrowth}%
+                  </div>
+                )}
               </div>
-              {growthStats.playsGrowth > 0 && (
-                <span className="text-xs text-green-500">+{growthStats.playsGrowth}%</span>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Total Plays</p>
+              <p className="text-4xl font-bold">{stats.totalPlays.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-2">Last 7 days</p>
             </div>
-            <p className="text-xs text-white/40 mb-1">Plays</p>
-            <p className="text-2xl font-bold">{stats.totalPlays.toLocaleString()}</p>
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-[#FF2A2A]" />
+          <Card
+            className="relative overflow-hidden bg-gradient-to-br from-chart-3/10 to-chart-3/5 backdrop-blur-xl border border-chart-3/20 shadow-lg p-6 hover-lift animate-slide-up group"
+            style={{ animationDelay: "0.3s" }}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-chart-3/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-chart-3/20 border border-chart-3/30">
+                  <DollarSign className="h-6 w-6 text-chart-3" />
+                </div>
+                {growthStats.earningsGrowth > 0 && (
+                  <div className="flex items-center gap-1 text-sm font-medium text-green-500">
+                    <ArrowUpRight className="h-4 w-4" />
+                    {growthStats.earningsGrowth}%
+                  </div>
+                )}
               </div>
-              {growthStats.earningsGrowth > 0 && (
-                <span className="text-xs text-green-500">+{growthStats.earningsGrowth}%</span>
-              )}
+              <p className="text-sm text-muted-foreground mb-1">Total Earnings</p>
+              <p className="text-4xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground mt-2">USDC</p>
             </div>
-            <p className="text-xs text-white/40 mb-1">Earnings</p>
-            <p className="text-2xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
           </Card>
 
           {profile?.profile_token_address ? (

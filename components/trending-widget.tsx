@@ -63,7 +63,7 @@ export function TrendingWidget() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-accent">
-            <Flame className="h-5 w-5 text-accent-foreground" />
+            <Flame className="h-5 w-5 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold">Trending Now</h2>
@@ -87,7 +87,7 @@ export function TrendingWidget() {
             onClick={() => setTimeFilter(filter.value)}
             className={
               timeFilter === filter.value
-                ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20"
+                ? "bg-accent shadow-lg shadow-accent/30 text-white"
                 : ""
             }
           >
@@ -116,11 +116,11 @@ export function TrendingWidget() {
               <div
                 className={`absolute -top-2 -left-2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                   index === 0
-                    ? "bg-accent text-accent-foreground shadow-lg"
+                    ? "bg-gradient-to-br from-yellow-500 to-orange-500 text-white"
                     : index === 1
-                      ? "bg-muted text-muted-foreground"
+                      ? "bg-gradient-to-br from-gray-400 to-gray-500 text-white"
                       : index === 2
-                        ? "bg-muted text-muted-foreground"
+                        ? "bg-gradient-to-br from-orange-600 to-amber-700 text-white"
                         : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -129,7 +129,7 @@ export function TrendingWidget() {
 
               {/* Earnings Badge */}
               {track.total_earnings > 0 && (
-                <div className="absolute -top-2 -right-2 z-10 px-2 py-1 rounded-full bg-accent text-accent-foreground text-xs font-semibold flex items-center gap-0.5 shadow-lg">
+                <div className="absolute -top-2 -right-2 z-10 px-2 py-1 rounded-full bg-emerald-500/90 text-white text-xs font-semibold flex items-center gap-0.5 shadow-lg">
                   {track.total_earnings.toFixed(4)} USDC
                 </div>
               )}

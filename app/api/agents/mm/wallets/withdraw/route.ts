@@ -6,7 +6,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { base } from "viem/chains"
 import { ERC20_ABI } from "@/lib/web3/contracts"
 
-const USI_TOKEN = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
+const USI_TOKEN = "0x987603A52d8B966E10FBD29DcB1A574049E25B07"
 
 export async function POST(req: NextRequest) {
   try {

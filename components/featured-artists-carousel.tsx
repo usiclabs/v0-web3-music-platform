@@ -83,7 +83,7 @@ export function FeaturedArtistsCarousel() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+          <div className="p-2 rounded-xl bg-accent">
             <Users className="h-5 w-5 text-white" />
           </div>
           <div>

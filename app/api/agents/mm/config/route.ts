@@ -33,7 +33,7 @@ export async function PUT(request: Request) {
 
     if (updates.token_address) {
       const SUPPORTED_TOKENS = [
-        { address: "0xECE5d962d17901ef200Da050C7c74AB45C96Db07", symbol: "USI", name: "Universal Sound Index" },
+        { address: "0x987603A52d8B966E10FBD29DcB1A574049E25B07", symbol: "USI", name: "Universal Sound Index" },
         { address: "0x73582df1cad3187cD0746b7A473d65c06386837e", symbol: "DEUS", name: "Deus" },
       ]
 

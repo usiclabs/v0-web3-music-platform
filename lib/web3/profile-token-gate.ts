@@ -3,9 +3,9 @@ import { base, baseSepolia } from "viem/chains"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "./contracts"
 import { createBrowserClient } from "@/lib/supabase/client"
 
-// No USI tokens required for profile tokenization
-export const PROFILE_TOKEN_REQUIRED_USI = BigInt("0")
-export const PROFILE_TOKEN_REQUIRED_TRACKS = 0
+// 10,000,000 $USI tokens required (18 decimals)
+export const PROFILE_TOKEN_REQUIRED_USI = BigInt("10000000000000000000000000")
+export const PROFILE_TOKEN_REQUIRED_TRACKS = 5
 
 export interface ProfileTokenGateStatus {
   hasEnoughUSI: boolean
@@ -24,16 +24,16 @@ export async function checkProfileTokenGate(address: string, chainId: number): P
     if (!tokenAddress) {
       console.error("[Profile Token Gate] Token address not found for chain:", chainId)
       return {
-        hasEnoughUSI: true,
-        hasEnoughTracks: true,
-        canTokenize: true,
+        hasEnoughUSI: false,
+        hasEnoughTracks: false,
+        canTokenize: false,
         usiBalance: BigInt(0),
         trackCount: 0,
         alreadyTokenized: false,
       }
     }
 
-    // Check $USI balance (informational only, not required)
+    // Check $USI balance
     const client = createPublicClient({
       chain,
       transport: http(),
@@ -46,18 +46,16 @@ export async function checkProfileTokenGate(address: string, chainId: number): P
       args: [address as `0x${string}`],
     })) as bigint
 
-    // No USI requirement - always true
-    const hasEnoughUSI = true
+    const hasEnoughUSI = usiBalance >= PROFILE_TOKEN_REQUIRED_USI
 
-    // Check track count (no minimum required now)
+    // Check track count
     const supabase = createBrowserClient()
     const { count: trackCount } = await supabase
       .from("tracks")
       .select("*", { count: "exact", head: true })
       .eq("artist_id", address.toLowerCase())
 
-    // No track requirement - always true
-    const hasEnoughTracks = true
+    const hasEnoughTracks = (trackCount || 0) >= PROFILE_TOKEN_REQUIRED_TRACKS
 
     // Check if already tokenized
     const { data: profile } = await supabase
@@ -89,9 +87,9 @@ export async function checkProfileTokenGate(address: string, chainId: number): P
   } catch (error) {
     console.error("[Profile Token Gate] Error checking gate:", error)
     return {
-      hasEnoughUSI: true,
-      hasEnoughTracks: true,
-      canTokenize: true,
+      hasEnoughUSI: false,
+      hasEnoughTracks: false,
+      canTokenize: false,
       usiBalance: BigInt(0),
       trackCount: 0,
       alreadyTokenized: false,

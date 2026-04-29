@@ -13,16 +13,11 @@ import { useConnect } from "wagmi"
 import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
 import { NotificationCenter } from "@/components/notification-center"
 import { ChainSwitcher } from "@/components/web3/chain-switcher"
-import { useEffect, useState } from "react"
 
 export function Header() {
   const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
   const pathname = usePathname()
   const { connectAsync, connectors } = useConnect()
-
-  useEffect(() => {
-    // This useEffect can be removed - header should always be visible
-  }, [])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -34,7 +29,7 @@ export function Header() {
     try {
       await connectViaWalletConnect(connectors, connectAsync)
     } catch (error) {
-      console.error("Failed to connect via WalletConnect:", error)
+      console.error("[v0] Failed to connect via WalletConnect:", error)
     }
   }
 
@@ -42,60 +37,114 @@ export function Header() {
     const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
     const hasInjectedWallet = typeof window !== "undefined" && window.ethereum
 
+    // On desktop with browser wallet, connect directly via injected provider
     if (!isMobile && hasInjectedWallet) {
+      console.log("[v0] Desktop with injected wallet detected, connecting directly...")
       const injectedConnector = connectors.find((c) => c.type === "injected")
       if (injectedConnector) {
         connectAsync({ connector: injectedConnector, chainId: 8453 }).catch((error) => {
-          console.error("Failed to connect:", error)
+          console.error("[v0] Failed to connect:", error)
         })
       }
     } else {
+      // On mobile or no injected wallet, show the modal
       setShowMobileWalletModal(true)
     }
   }
 
   const displayName = address ? formatAddress(address) : ""
 
-  const navItems = [
-    { href: "/explore", label: "Explore" },
-    { href: "/artists", label: "Artists" },
-    { href: "/swap", label: "Swap" },
-    { href: "/live", label: "Live" },
-    { href: "/analytics", label: "Activity" },
-    { href: "/dashboard", label: "Dashboard" },
-  ]
-
   return (
     <>
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out bg-black/70 backdrop-blur-2xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.3)]`}
-      >
-        <div className="container flex h-16 sm:h-18 items-center justify-between px-4 sm:px-6">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="relative h-9 w-9 sm:h-10 sm:w-10">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/80">
+        <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2 group p-1 sm:p-2">
+            <div className="relative h-10 w-10 sm:h-12 sm:w-12 transition-all group-hover:scale-110">
               <Image src="/images/usic-logo.png" alt="USIC Logo" fill className="object-contain" priority />
             </div>
           </Link>
 
-          {/* Navigation - Desktop */}
-          <nav className="hidden md:flex items-center gap-6">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm transition-colors duration-200 ${
-                  isActive(item.href)
-                    ? "text-white"
-                    : "text-white/40 hover:text-white/80"
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+            <Link
+              href="/explore"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/explore") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Explore
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/explore") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+              />
+            </Link>
+            <Link
+              href="/artists"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/artists") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Artists
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/artists") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
+              href="/swap"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/swap") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Swap
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/swap") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
+              href="/live"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/live") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Live
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/live") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
+              href="/analytics"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/analytics") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Activity
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/analytics") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
+              href="/dashboard"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/dashboard") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Dashboard
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/dashboard") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
           </nav>
 
-          {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             <NotificationCenter />
 
@@ -105,25 +154,25 @@ export function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    className="gap-2 h-9 px-4"
+                    className="gap-1.5 sm:gap-2 bg-primary/10 border-primary/20 hover:bg-primary/20 hover:scale-105 transition-all text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#FF2A2A]" />
-                    <span className="font-mono text-sm">{displayName}</span>
+                    <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                    <span className="font-mono">{displayName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="bg-[#0A0A0A] border border-white/10 rounded-xl"
+                  className="bg-card/95 backdrop-blur-2xl border border-border/70 animate-scale-in"
                 >
-                  <DropdownMenuItem asChild className="cursor-pointer hover:bg-white/5">
+                  <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/profile">Profile</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer hover:bg-white/5">
+                  <DropdownMenuItem asChild className="cursor-pointer">
                     <Link href="/dashboard">Dashboard</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-[#FF2A2A] hover:bg-[#FF2A2A]/10">
+                  <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-destructive">
                     Disconnect
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -131,11 +180,12 @@ export function Header() {
             ) : (
               <Button
                 size="sm"
-                className="h-9 px-4"
+                className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
                 onClick={handleConnectClick}
               >
-                <Wallet className="h-4 w-4 mr-2" />
-                Connect
+                <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden xs:inline">Connect</span>
+                <span className="xs:hidden">Connect</span>
               </Button>
             )}
 
@@ -143,9 +193,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-      {/* Spacer to account for fixed header + ticker */}
-      <div className="h-24 sm:h-26" />
 
       <MobileWalletModal
         open={showMobileWalletModal}

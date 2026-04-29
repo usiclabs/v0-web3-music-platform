@@ -83,7 +83,7 @@ export function AudioPlayer() {
   }
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-card/80 backdrop-blur-2xl animate-slide-up" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-card/80 backdrop-blur-2xl animate-slide-up">
       <div className="container py-4">
         <Button
           variant="ghost"

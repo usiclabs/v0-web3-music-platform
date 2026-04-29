@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useAccount, useSwitchChain } from "wagmi"
 import { base, baseSepolia, mainnet, arbitrum } from "wagmi/chains"
 import { monad, unichain } from "@/lib/web3/config"
@@ -61,11 +61,6 @@ export function ChainSwitcher() {
   const { chain } = useAccount()
   const { switchChain, isPending } = useSwitchChain()
   const [isOpen, setIsOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const allChains = [...MAINNET_CHAINS, ...TESTNET_CHAINS]
   const currentChain = allChains.find((c) => c.chain.id === chain?.id) || MAINNET_CHAINS[0]
@@ -77,7 +72,7 @@ export function ChainSwitcher() {
           variant="outline"
           size="sm"
           className="gap-2 bg-background/50 backdrop-blur-sm border-border/50"
-          disabled={isPending || !mounted}
+          disabled={isPending}
         >
           <span>{currentChain.icon}</span>
           <span className="hidden sm:inline">{currentChain.chain.name}</span>

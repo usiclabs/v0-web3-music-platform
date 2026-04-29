@@ -73,7 +73,10 @@ export async function deployDirectERC20(params: TokenDeploymentParams): Promise<
  * Deploy a token using Clanker SDK with automatic pool creation
  */
 export async function deployClankerERC20(
-  params: TokenDeploymentParams,
+  params: TokenDeploymentParams & {
+    targetMarketCapEth?: number
+    feeTier?: number
+  },
 ): Promise<DeploymentResult> {
   try {
     console.log("[ERC20 Deploy] Clanker deployment requested:", params)
@@ -84,6 +87,8 @@ export async function deployClankerERC20(
       totalSupply: params.totalSupply,
       decimals: params.decimals,
       deployerAddress: params.deployerAddress,
+      targetMarketCapEth: params.targetMarketCapEth,
+      feeTier: params.feeTier,
       imageUrl: params.imageUrl,
       description: params.description,
     })
