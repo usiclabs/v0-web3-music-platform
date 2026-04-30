@@ -70,10 +70,10 @@ function HeroSection() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(255,59,48,0.08)] border border-[#ff3b30]/30 backdrop-blur-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(255,59,48,0.1)] border border-[#ff3b30]/40 backdrop-blur-sm"
             >
-              <motion.span className="w-2 h-2 bg-[#22c55e] rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} />
-              <span className="text-xs text-[#9ca3af] font-semibold">Trusted by 5000+ artists • $2.4M+ distributed</span>
+              <motion.span className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
+              <span className="text-xs text-white font-bold">🔥 Early Access • 5000+ Artists • $2.4M Revenue Paid Out</span>
             </motion.div>
 
             {/* Main Headline */}
@@ -83,10 +83,10 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.2 }}
               className="text-5xl md:text-6xl lg:text-7xl font-bold text-white text-balance leading-[1.1]"
             >
-              Own your music.
+              The record label is dead.
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3b30] via-[#ff5544] to-[#ef2b24]">
-                Own your future.
+                You run the show now.
               </span>
             </motion.h1>
 
@@ -97,7 +97,7 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.3 }}
               className="text-lg md:text-xl text-[#9ca3af] max-w-xl leading-relaxed"
             >
-              MyUSIC powered by OpenClaw agents automates your entire music business. Distribution, monetization, fan engagement, and growth—handled by AI while you create.
+              MyUSIC gives you the infrastructure only major labels had access to. Autonomous agents handle distribution, licensing, fan monetization, and marketing—while you keep 100% of your master recordings.
             </motion.p>
 
             {/* Value Props */}
@@ -111,19 +111,19 @@ function HeroSection() {
                 <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
                 </div>
-                <span>100% artist ownership—we never take your music</span>
+                <span>100% Master Ownership—we never take your recordings</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
                 </div>
-                <span>Deploy to 100+ platforms in minutes, not months</span>
+                <span>From upload to 150+ global platforms in under 5 minutes</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
                 </div>
-                <span>Earn from every stream, license, and fan interaction</span>
+                <span>Keep 100% of all revenue—streaming, sync, licenses, everything</span>
               </div>
             </motion.div>
 
@@ -669,6 +669,195 @@ function CTASection() {
   )
 }
 
+// How It Works Section
+function HowItWorksSection() {
+  const steps = [
+    {
+      number: '01',
+      title: 'Upload Your Music',
+      description: 'Drop your stems, artwork, and metadata. Agents analyze and prepare for global distribution instantly.',
+      icon: '🎵'
+    },
+    {
+      number: '02',
+      title: 'Agents Deploy',
+      description: 'OpenClaw agents submit to 150+ platforms—DSPs, DSRPs, sync libraries, TikTok, YouTube. All simultaneously.',
+      icon: '🚀'
+    },
+    {
+      number: '03',
+      title: 'Earn From Everything',
+      description: 'Streams, licenses, fan tips, NFTs, merch—every touchpoint monetizes. Real-time settlement to your wallet.',
+      icon: '💰'
+    },
+    {
+      number: '04',
+      title: 'AI Optimizes',
+      description: 'Agents continuously analyze performance, optimize pricing, suggest collabs, and scale what works.',
+      icon: '🧠'
+    },
+  ]
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-20"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            From upload to global in hours
+          </h2>
+          <p className="text-lg text-[#9ca3af] max-w-3xl mx-auto leading-relaxed">
+            Your music business, fully automated. No gatekeepers. No waiting. No negotiation.
+          </p>
+        </motion.div>
+
+        {/* Steps Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-16">
+          {steps.map((step, index) => (
+            <motion.div
+              key={step.number}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.12 }}
+              viewport={{ once: true }}
+              className="relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300"
+            >
+              {/* Step number - large background */}
+              <div className="absolute top-4 right-4 text-7xl font-bold text-[rgba(255,59,48,0.08)] leading-none">
+                {step.number}
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10">
+                <div className="text-4xl mb-4">{step.icon}</div>
+                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                <p className="text-sm text-[#9ca3af] leading-relaxed">{step.description}</p>
+              </div>
+
+              {/* Arrow connector for desktop */}
+              {index < steps.length - 1 && (
+                <motion.div
+                  className="hidden lg:block absolute -right-4 top-1/2 transform -translate-y-1/2 z-20"
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <ArrowRight className="w-8 h-8 text-[#ff3b30]/30" />
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Timeline visual */}
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          whileInView={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="h-1 bg-gradient-to-r from-transparent via-[#ff3b30]/50 to-transparent rounded-full mb-12"
+        />
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="text-center"
+        >
+          <p className="text-sm text-[#9ca3af] mb-4">Ready to launch your music empire?</p>
+          <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95 mx-auto">
+            Get Started in 2 Minutes
+            <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
+          </button>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+// Comparison Section
+function ComparisonSection() {
+  const comparison = [
+    { label: 'Artist Ownership', myusic: '100%', distrokid: '0%', spotify: '0%', labels: '0%' },
+    { label: 'Platform Fee', myusic: '0%', distrokid: '9-15%', spotify: 'n/a', labels: '15-50%' },
+    { label: 'Distribution', myusic: '150+ platforms', distrokid: '100+', spotify: '1', labels: 'Limited' },
+    { label: 'Autonomous AI', myusic: '✓ Full', distrokid: '✗ None', spotify: '✗ None', labels: '✗ None' },
+    { label: 'Sync Licensing', myusic: '✓ Automated', distrokid: 'Manual', spotify: 'n/a', labels: 'Manual' },
+    { label: 'Community Control', myusic: '✓ Full', distrokid: '✗', spotify: '✗', labels: '✗' },
+  ]
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Why MyUSIC is in a different league
+          </h2>
+          <p className="text-lg text-[#9ca3af]">
+            The honest comparison
+          </p>
+        </motion.div>
+
+        {/* Comparison Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="overflow-x-auto rounded-2xl border border-[rgba(255,255,255,0.08)]"
+        >
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]">
+                <th className="px-6 py-4 text-left text-white font-bold">Feature</th>
+                <th className="px-6 py-4 text-center text-[#ff3b30] font-bold">MyUSIC</th>
+                <th className="px-6 py-4 text-center text-[#9ca3af]">DistroKid</th>
+                <th className="px-6 py-4 text-center text-[#9ca3af]">Spotify Direct</th>
+                <th className="px-6 py-4 text-center text-[#9ca3af]">Labels</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.map((row, i) => (
+                <tr key={i} className="border-b border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.02)] transition-colors">
+                  <td className="px-6 py-4 text-white font-semibold text-sm">{row.label}</td>
+                  <td className="px-6 py-4 text-center text-[#ff3b30] font-bold text-sm">{row.myusic}</td>
+                  <td className="px-6 py-4 text-center text-[#9ca3af] text-sm">{row.distrokid}</td>
+                  <td className="px-6 py-4 text-center text-[#9ca3af] text-sm">{row.spotify}</td>
+                  <td className="px-6 py-4 text-center text-[#9ca3af] text-sm">{row.labels}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="text-center text-xs text-[#9ca3af] mt-6"
+        >
+          Features current as of April 2026. Label fees vary by deal structure.
+        </motion.p>
+      </div>
+    </section>
+  )
+}
+
 // Footer
 function Footer() {
   const footerLinks = {
@@ -782,6 +971,8 @@ export default function BestLandingPage() {
     <div className="min-h-screen w-full bg-[#0a0a0a] text-white overflow-hidden">
       <HeroSection />
       <FeaturesSection />
+      <HowItWorksSection />
+      <ComparisonSection />
       <TestimonialsSection />
       <CTASection />
       <Footer />
