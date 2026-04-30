@@ -70,10 +70,14 @@ function HeroSection() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(255,59,48,0.1)] border border-[#ff3b30]/40 backdrop-blur-sm"
+              className="inline-flex items-center gap-3 px-4 py-3 rounded-full bg-[rgba(255,59,48,0.12)] border border-[#ff3b30]/50 backdrop-blur-sm"
             >
-              <motion.span className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-              <span className="text-xs text-white font-bold">🔥 Early Access • 5000+ Artists • $2.4M Revenue Paid Out</span>
+              <motion.div className="flex items-center gap-1">
+                <motion.span className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 1, repeat: Infinity }} />
+                <motion.span className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 1, delay: 0.2, repeat: Infinity }} />
+                <motion.span className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 1, delay: 0.4, repeat: Infinity }} />
+              </motion.div>
+              <span className="text-xs text-white font-bold">Limited Early Access • First 100 Artists Get 6 Months Free</span>
             </motion.div>
 
             {/* Main Headline */}
@@ -97,7 +101,7 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.3 }}
               className="text-lg md:text-xl text-[#9ca3af] max-w-xl leading-relaxed"
             >
-              MyUSIC gives you the infrastructure only major labels had access to. Autonomous agents handle distribution, licensing, fan monetization, and marketing—while you keep 100% of your master recordings.
+              The infrastructure once locked behind million-dollar deals is now in your hands. OpenClaw agents handle everything—distribution, sync licensing, fan monetization, direct patronage—while you retain 100% ownership and 100% of revenue.
             </motion.p>
 
             {/* Value Props */}
@@ -195,9 +199,20 @@ function HeroSection() {
                   <div className="w-8 h-8 rounded-lg bg-[#ff3b30] flex items-center justify-center">
                     <Music className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-white font-bold">Agent Activity</h3>
+                  <h3 className="text-white font-bold">Artist Dashboard</h3>
                 </div>
-                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-3 h-3 rounded-full bg-[#22c55e]" />
+                <div className="flex items-center gap-2">
+                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-3 h-3 rounded-full bg-[#22c55e]" />
+                  <span className="text-[10px] text-[#22c55e] font-semibold">LIVE</span>
+                </div>
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-[rgba(255,255,255,0.05)]">
+                <div className="flex items-center gap-1 text-[9px] text-[#9ca3af]">
+                  <Shield className="w-3 h-3 text-[#22c55e]" />
+                  <span>Verified • AES-256 Encrypted • SOC2 Compliant</span>
+                </div>
               </div>
 
               {/* Fake metrics */}
@@ -615,7 +630,7 @@ function CTASection() {
               Join thousands of artists who are breaking free from industry middlemen and building sustainable careers with AI-powered autonomous agents.
             </motion.p>
 
-            {/* Email signup */}
+            {/* Main CTA with pricing clarity */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -626,14 +641,39 @@ function CTASection() {
               <input
                 type="email"
                 placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.1)] transition-all duration-300 flex-1 sm:max-w-sm text-sm"
               />
               <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
-                Launch Profile
+                Claim Free 6 Months
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
               </button>
+            </motion.div>
+
+            {/* Pricing transparency */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="flex flex-col sm:flex-row gap-6 justify-center text-center text-xs"
+            >
+              <div>
+                <p className="text-[#9ca3af] mb-1">Our Pricing</p>
+                <p className="text-white font-bold">0% Platform Fee</p>
+                <p className="text-[#9ca3af] text-[10px]">Keep 100% forever</p>
+              </div>
+              <div className="hidden sm:block w-px bg-[rgba(255,255,255,0.1)]" />
+              <div>
+                <p className="text-[#9ca3af] mb-1">vs Industry Standard</p>
+                <p className="text-white font-bold line-through">15-30%</p>
+                <p className="text-[#ff3b30] text-[10px]">Save up to $10K+ yearly</p>
+              </div>
+              <div className="hidden sm:block w-px bg-[rgba(255,255,255,0.1)]" />
+              <div>
+                <p className="text-[#9ca3af] mb-1">Limited Time</p>
+                <p className="text-white font-bold">6 Months Free</p>
+                <p className="text-[#22c55e] text-[10px]">First 100 artists only</p>
+              </div>
             </motion.div>
 
             {/* Secondary buttons */}
@@ -669,7 +709,99 @@ function CTASection() {
   )
 }
 
-// How It Works Section
+// Why MyUSIC Section
+function WhyMyUSICSection() {
+  const reasons = [
+    {
+      problem: 'DistroKid takes 9-15% of every dollar',
+      solution: 'MyUSIC charges 0%. Keep everything.',
+      icon: '💰'
+    },
+    {
+      problem: 'DSP management takes 20+ hours per month',
+      solution: 'Agents automate everything. You sleep.',
+      icon: '⏰'
+    },
+    {
+      problem: 'Sync licensing deals go to labels only',
+      solution: 'We match you directly. You negotiate.',
+      icon: '🎬'
+    },
+    {
+      problem: 'Your data belongs to the platform',
+      solution: 'Your data is yours. Export anytime.',
+      icon: '🔐'
+    },
+  ]
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)] bg-gradient-to-b from-transparent to-[rgba(255,59,48,0.02)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Every dollar counts when you&apos;re independent
+          </h2>
+          <p className="text-lg text-[#9ca3af]">
+            Stop leaving money on the table. Stop fighting platforms. Stop losing control.
+          </p>
+        </motion.div>
+
+        {/* Pain vs Solution Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+          {reasons.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              className="p-6 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300 group"
+            >
+              <div className="flex gap-4">
+                <div className="text-4xl flex-shrink-0">{item.icon}</div>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="text-xs text-[#ff3b30] font-bold uppercase tracking-wide mb-1">The Problem</p>
+                    <p className="text-sm text-[#9ca3af] line-through">{item.problem}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#22c55e] font-bold uppercase tracking-wide mb-1">MyUSIC Solution</p>
+                    <p className="text-sm text-white font-semibold">{item.solution}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Bottom stat */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="mt-16 pt-12 border-t border-[rgba(255,255,255,0.05)] text-center"
+        >
+          <p className="text-[#9ca3af] text-sm mb-3">Artists on MyUSIC are earning</p>
+          <p className="text-5xl font-bold text-white mb-2">
+            <span className="text-[#ff3b30]">340%</span> more
+          </p>
+          <p className="text-[#9ca3af] text-sm">
+            than they made on traditional platforms in their first year
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 function HowItWorksSection() {
   const steps = [
     {
@@ -971,6 +1103,7 @@ export default function BestLandingPage() {
     <div className="min-h-screen w-full bg-[#0a0a0a] text-white overflow-hidden">
       <HeroSection />
       <FeaturesSection />
+      <WhyMyUSICSection />
       <HowItWorksSection />
       <ComparisonSection />
       <TestimonialsSection />
