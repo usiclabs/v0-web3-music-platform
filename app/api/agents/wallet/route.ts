@@ -2,10 +2,22 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { createOrGetInvestmentWallet } from "@/lib/agents/investment-wallet-service"
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+let supabase: ReturnType<typeof createClient> | null = null
+
+function getSupabaseClient() {
+  if (!supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+  }
+  return supabase
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const sb = getSupabaseClient()
+    if (!sb) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 })
+    }
+
     const { searchParams } = new URL(request.url)
     const agentId = searchParams.get("agentId")
     const ownerAddress = searchParams.get("ownerAddress")
@@ -15,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify ownership
-    const { data: agent } = await supabase
+    const { data: agent } = await sb
       .from("investment_agents")
       .select("*")
       .eq("id", agentId)
