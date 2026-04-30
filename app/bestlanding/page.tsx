@@ -768,6 +768,7 @@ function TestimonialsSection() {
 // CTA Section
 function CTASection() {
   const [email, setEmail] = useState('')
+  const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 34 })
 
   return (
     <section className="py-24 md:py-40 border-t border-[rgba(255,255,255,0.05)]">
@@ -801,6 +802,18 @@ function CTASection() {
           />
 
           <div className="relative z-10 max-w-3xl mx-auto text-center">
+            {/* Urgency Banner */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,59,48,0.15)] border border-[#ff3b30]/50 mb-8"
+            >
+              <motion.div className="w-2 h-2 bg-[#ff3b30] rounded-full" animate={{ scale: [1, 1.5, 1] }} transition={{ duration: 1, repeat: Infinity }} />
+              <span className="text-xs text-white font-bold">Offer Expires: 12h 34m • 67 Spots Left</span>
+            </motion.div>
+
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -808,7 +821,7 @@ function CTASection() {
               viewport={{ once: true }}
               className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 text-balance"
             >
-              Ready to take control of your music?
+              Get 6 Months Free. No Strings.
             </motion.h2>
 
             <motion.p
@@ -818,10 +831,10 @@ function CTASection() {
               viewport={{ once: true }}
               className="text-lg text-[#9ca3af] mb-10 leading-relaxed"
             >
-              Join thousands of artists who are breaking free from industry middlemen and building sustainable careers with AI-powered autonomous agents.
+              First 100 artists lock in $0 platform fee for 6 months. That&apos;s $0 fees on unlimited releases. Your music makes money from day one.
             </motion.p>
 
-            {/* Main CTA with pricing clarity */}
+            {/* Email signup */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -832,6 +845,8 @@ function CTASection() {
               <input
                 type="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.1)] transition-all duration-300 flex-1 sm:max-w-sm text-sm"
               />
               <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
@@ -851,19 +866,19 @@ function CTASection() {
               <div>
                 <p className="text-[#9ca3af] mb-1">Our Pricing</p>
                 <p className="text-white font-bold">0% Platform Fee</p>
-                <p className="text-[#9ca3af] text-[10px]">Keep 100% forever</p>
+                <p className="text-[#9ca3af] text-[10px]">Forever (after free period)</p>
               </div>
               <div className="hidden sm:block w-px bg-[rgba(255,255,255,0.1)]" />
               <div>
                 <p className="text-[#9ca3af] mb-1">vs Industry Standard</p>
                 <p className="text-white font-bold line-through">15-30%</p>
-                <p className="text-[#ff3b30] text-[10px]">Save up to $10K+ yearly</p>
+                <p className="text-[#ff3b30] text-[10px]">Save up to $120K/year</p>
               </div>
               <div className="hidden sm:block w-px bg-[rgba(255,255,255,0.1)]" />
               <div>
-                <p className="text-[#9ca3af] mb-1">Limited Time</p>
+                <p className="text-[#9ca3af] mb-1">Limited Time Only</p>
                 <p className="text-white font-bold">6 Months Free</p>
-                <p className="text-[#22c55e] text-[10px]">First 100 artists only</p>
+                <p className="text-[#22c55e] text-[10px]">Next 67 artists only</p>
               </div>
             </motion.div>
 
@@ -879,31 +894,15 @@ function CTASection() {
               <p>Artist data is encrypted end-to-end and never sold or shared. Your catalog is yours forever, even if MyUSIC ceases operations.</p>
             </motion.div>
 
-            {/* Secondary buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300">
-                See Live Dashboard
-              </button>
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300">
-                Read Artist Guide
-              </button>
-            </motion.div>
-
             {/* Social proof */}
             <motion.p
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.5 }}
+              transition={{ duration: 0.7, delay: 0.6 }}
               viewport={{ once: true }}
               className="text-xs text-[#9ca3af] mt-8"
             >
-              No credit card required. Free setup. Cancel anytime.
+              No credit card required. Verified payment with confirmed artists.
             </motion.p>
           </div>
         </motion.div>
@@ -1095,6 +1094,100 @@ function AgentsSection() {
             </motion.div>
           ))}
         </div>
+      </div>
+    </section>
+  )
+}
+
+// Why Different Section
+function WhyDifferentSection() {
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)] bg-gradient-to-b from-transparent via-[rgba(255,59,48,0.02)] to-transparent">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-8 text-balance">
+            The fundamental difference
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Old Model */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-2xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)]"
+            >
+              <h3 className="text-xl font-bold text-[#ff3b30] mb-6">The Old Way</h3>
+              <ul className="space-y-3 text-left">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#ff3b30] font-bold">✗</span>
+                  <span className="text-[#9ca3af]">Platform profits when <strong className="text-white">you struggle</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#ff3b30] font-bold">✗</span>
+                  <span className="text-[#9ca3af]">They own your data and <strong className="text-white">relationships</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#ff3b30] font-bold">✗</span>
+                  <span className="text-[#9ca3af]">Hidden fees and <strong className="text-white">opaque accounting</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#ff3b30] font-bold">✗</span>
+                  <span className="text-[#9ca3af]">Months to get paid for <strong className="text-white">your work</strong></span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* New Model */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-2xl bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)]"
+            >
+              <h3 className="text-xl font-bold text-[#22c55e] mb-6">The MyUSIC Way</h3>
+              <ul className="space-y-3 text-left">
+                <li className="flex items-start gap-3">
+                  <span className="text-[#22c55e] font-bold">✓</span>
+                  <span className="text-[#9ca3af]">We profit when <strong className="text-white">you win</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#22c55e] font-bold">✓</span>
+                  <span className="text-[#9ca3af]">You own everything—<strong className="text-white">forever</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#22c55e] font-bold">✓</span>
+                  <span className="text-[#9ca3af]">0% fee + <strong className="text-white">complete transparency</strong></span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-[#22c55e] font-bold">✓</span>
+                  <span className="text-[#9ca3af]">Paid in 24 hours <strong className="text-white">automatically</strong></span>
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+
+          {/* Bottom statement */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            viewport={{ once: true }}
+            className="mt-12 pt-12 border-t border-[rgba(255,255,255,0.05)]"
+          >
+            <p className="text-lg text-[#9ca3af] leading-relaxed">
+              This isn&apos;t just better distribution. It&apos;s a <span className="text-white font-bold">complete inversion</span> of economics. We only make money when artists make money. That&apos;s not a catchphrase—it&apos;s our entire business model.
+            </p>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   )
@@ -1506,6 +1599,7 @@ export default function BestLandingPage() {
       <WhyMyUSICSection />
       <AgentsSection />
       <Web3FeaturesSection />
+      <WhyDifferentSection />
       <HowItWorksSection />
       <ComparisonSection />
       <MarketOpportunitySection />
