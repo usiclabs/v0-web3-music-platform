@@ -87,10 +87,10 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.2 }}
               className="text-5xl md:text-6xl lg:text-7xl font-bold text-white text-balance leading-[1.1]"
             >
-              The record label is dead.
+              Goodbye record labels.
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3b30] via-[#ff5544] to-[#ef2b24]">
-                You run the show now.
+                Hello ownership.
               </span>
             </motion.h1>
 
@@ -424,7 +424,129 @@ function FeaturesSection() {
   )
 }
 
-// Testimonials Section
+// Market Opportunity Section
+function MarketOpportunitySection() {
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Why this moment, why now
+          </h2>
+
+          <div className="space-y-8 mt-12">
+            {/* Market Stat 1 */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="flex gap-6"
+            >
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-14 w-14 rounded-lg bg-[#ff3b30]/20">
+                  <span className="text-2xl font-bold text-[#ff3b30]">$</span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg mb-2">$5.6B Annual Streaming Revenue</h3>
+                <p className="text-[#9ca3af] leading-relaxed">
+                  Spotify, Apple Music, YouTube Music, and others generate this from independent artists—but keep 70%. The music industry has never seen distribution this concentrated. That's changing.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Market Stat 2 */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="flex gap-6"
+            >
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-14 w-14 rounded-lg bg-[#22c55e]/20">
+                  <span className="text-2xl font-bold text-[#22c55e]">📈</span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg mb-2">97% of Artists Earn Less Than $500/Year</h3>
+                <p className="text-[#9ca3af] leading-relaxed">
+                  Current platforms are designed for platform scale, not artist success. MyUSIC inverts this. We win when artists win. The fee structure is aligned.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Market Stat 3 */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="flex gap-6"
+            >
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-14 w-14 rounded-lg bg-[#3b82f6]/20">
+                  <span className="text-2xl font-bold text-[#3b82f6]">🎵</span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg mb-2">10.6M Independent Artists</h3>
+                <p className="text-[#9ca3af] leading-relaxed">
+                  Are underserved, underpaid, and ready to defect. They just need one reason to believe there&apos;s something better. We&apos;re that reason.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Market Stat 4 */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="flex gap-6"
+            >
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-14 w-14 rounded-lg bg-[#f59e0b]/20">
+                  <span className="text-2xl font-bold text-[#f59e0b]">🚀</span>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg mb-2">Web3 + AI Agents = Exponential Efficiency</h3>
+                <p className="text-[#9ca3af] leading-relaxed">
+                  No other platform combines autonomous agents with zero-fee distribution infrastructure. This moat is defensible, scalable, and growing.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Bottom statement */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            viewport={{ once: true }}
+            className="mt-16 p-8 rounded-2xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)]"
+          >
+            <p className="text-white font-semibold text-lg">
+              MyUSIC isn&apos;t just a platform. It&apos;s a <span className="text-[#ff3b30]">power transfer</span>.
+            </p>
+            <p className="text-[#9ca3af] mt-4">
+              We&apos;re giving 10M+ artists back the infrastructure, data, and revenue that gatekeepers have monopolized for decades.
+            </p>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 function TestimonialsSection() {
   const testimonials = [
     {
@@ -676,6 +798,18 @@ function CTASection() {
               </div>
             </motion.div>
 
+            {/* Legal/Compliance footer */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              viewport={{ once: true }}
+              className="mt-8 pt-8 border-t border-[rgba(255,255,255,0.05)] text-center text-[10px] text-[#6b7280] space-y-1"
+            >
+              <p>MyUSIC complies with all applicable music licensing laws including the Music Modernization Act (MMA) and EU Digital Services Act.</p>
+              <p>Artist data is encrypted end-to-end and never sold or shared. Your catalog is yours forever, even if MyUSIC ceases operations.</p>
+            </motion.div>
+
             {/* Secondary buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -914,7 +1048,109 @@ function HowItWorksSection() {
   )
 }
 
-// Comparison Section
+// FAQ Section
+function FAQSection() {
+  const faqs = [
+    {
+      q: 'Who owns my music?',
+      a: 'You do, forever. We have zero claim to your masters, compositions, or metadata. You can export everything and leave anytime with 30 days notice.'
+    },
+    {
+      q: 'What if I already have music on other platforms?',
+      a: 'MyUSIC handles re-distribution seamlessly. We sync with existing releases and consolidate all your data into one dashboard.'
+    },
+    {
+      q: 'How long until I see revenue?',
+      a: 'Most artists see first payments within 30-45 days of upload. You can track real-time earnings on your dashboard.'
+    },
+    {
+      q: 'What payment methods do you support?',
+      a: 'Instant settlement to USDC, ETH, or bank transfer (within 24 hours). No minimum withdrawal. No fees. Your money stays yours.'
+    },
+    {
+      q: 'Is my data secure?',
+      a: 'Yes. We use AES-256 encryption, maintain SOC2 Type II compliance, and conduct quarterly security audits. Your data never leaves encrypted servers.'
+    },
+    {
+      q: 'Can I lose my artist profile or music?',
+      a: 'No. We maintain automatic daily backups with redundancy across multiple regions. Your catalog is insured against loss.'
+    },
+  ]
+
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Questions artists ask
+          </h2>
+          <p className="text-lg text-[#9ca3af]">
+            We believe in radical transparency. Here&apos;s the truth about MyUSIC.
+          </p>
+        </motion.div>
+
+        {/* FAQ Grid */}
+        <div className="max-w-3xl mx-auto space-y-4">
+          {faqs.map((faq, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.05 }}
+              viewport={{ once: true }}
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="group p-6 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300 cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-white font-semibold text-lg flex-1 text-left">{faq.q}</h3>
+                <motion.div
+                  animate={{ rotate: openIndex === index ? 180 : 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex-shrink-0 text-[#ff3b30]"
+                >
+                  +
+                </motion.div>
+              </div>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: openIndex === index ? 1 : 0, height: openIndex === index ? 'auto' : 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <p className="text-[#9ca3af] text-sm leading-relaxed mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)]">
+                  {faq.a}
+                </p>
+              </motion.div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="text-center mt-12"
+        >
+          <p className="text-[#9ca3af] text-sm mb-4">Still have questions?</p>
+          <a href="#" className="text-[#ff3b30] font-semibold hover:text-[#ff5544] transition-colors">
+            Message our team on Discord →
+          </a>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
 function ComparisonSection() {
   const comparison = [
     { label: 'Artist Ownership', myusic: '100%', distrokid: '0%', spotify: '0%', labels: '0%' },
@@ -1106,7 +1342,9 @@ export default function BestLandingPage() {
       <WhyMyUSICSection />
       <HowItWorksSection />
       <ComparisonSection />
+      <MarketOpportunitySection />
       <TestimonialsSection />
+      <FAQSection />
       <CTASection />
       <Footer />
     </div>
