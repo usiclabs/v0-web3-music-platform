@@ -97,8 +97,8 @@ function LivePulse({ active }: { active: boolean }) {
   if (!active) return null
   return (
     <span className="relative flex h-2 w-2">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
     </span>
   )
 }
@@ -433,7 +433,7 @@ export default function AgentDashboardPage() {
           {Array.from({ length: 48 }).map((_, i) => (
             <div
               key={i}
-              className="w-2 bg-gradient-to-t from-red-500 to-red-500/50 rounded-t"
+              className="w-2 bg-gradient-to-t from-cyan-500 to-cyan-500/50 rounded-t"
               style={{
                 height: `${Math.random() * 100 + 20}%`,
                 animation: `pulse ${0.5 + Math.random() * 1}s ease-in-out infinite`,
@@ -446,7 +446,7 @@ export default function AgentDashboardPage() {
         {/* Floating vinyl records */}
         <div className="fixed top-20 left-10 w-32 h-32 opacity-10 animate-spin" style={{ animationDuration: "20s" }}>
           <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-red-500/30" />
+            <div className="w-8 h-8 rounded-full bg-cyan-500/30" />
           </div>
         </div>
         <div
@@ -454,32 +454,32 @@ export default function AgentDashboardPage() {
           style={{ animationDuration: "15s", animationDirection: "reverse" }}
         >
           <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-red-500/30" />
+            <div className="w-6 h-6 rounded-full bg-cyan-500/30" />
           </div>
         </div>
 
-        {/* Red glow orbs */}
-        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
+        {/* Teal glow orbs */}
+        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
         <div
-          className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse"
+          className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
 
         <div className="relative max-w-2xl w-full z-10">
           {/* Ambient glow effect */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-red-600/30 to-red-500/20 rounded-3xl blur-2xl opacity-50" />
+          <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-emerald-600/30 to-cyan-500/20 rounded-3xl blur-2xl opacity-50" />
 
           <Card className="relative border-0 bg-card/90 backdrop-blur-2xl shadow-2xl overflow-hidden">
             {/* Top gradient border */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
             <CardContent className="pt-16 pb-12 px-8 md:px-12 text-center">
               {/* Animated icon with vinyl/music theme */}
               <div className="relative w-28 h-28 mx-auto mb-8">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/30 to-red-600/30 blur-xl animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/30 to-emerald-600/30 blur-xl animate-pulse" />
                 {/* Spinning vinyl disc */}
                 <div
-                  className="relative w-28 h-28 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-red-500/30 shadow-lg animate-spin"
+                  className="relative w-28 h-28 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-cyan-500/30 shadow-lg animate-spin"
                   style={{ animationDuration: "8s" }}
                 >
                   {/* Vinyl grooves */}
@@ -487,13 +487,13 @@ export default function AgentDashboardPage() {
                   <div className="absolute inset-4 rounded-full border border-zinc-700/30" />
                   <div className="absolute inset-6 rounded-full border border-zinc-700/20" />
                   {/* Center label */}
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center">
                     <Bot className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 {/* Pulsing status dot */}
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 animate-ping" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-500 animate-ping" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
                   <Zap className="w-3 h-3 text-white" />
                 </span>
               </div>
@@ -508,25 +508,25 @@ export default function AgentDashboardPage() {
 
               {/* Feature grid with music theme */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Headphones className="w-6 h-6 text-red-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Headphones className="w-6 h-6 text-cyan-500" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Always Listening</h3>
                   <p className="text-sm text-muted-foreground">24/7 market monitoring for artist tokens</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-600/10 to-red-600/5 border border-red-600/10 hover:border-red-600/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Shield className="w-6 h-6 text-red-400" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-600/10 to-emerald-600/5 border border-emerald-600/10 hover:border-emerald-600/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Shield className="w-6 h-6 text-emerald-400" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Protected Drops</h3>
                   <p className="text-sm text-muted-foreground">Built-in stop-loss & risk management</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-6 h-6 text-red-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <TrendingUp className="w-6 h-6 text-cyan-500" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Hit Detector</h3>
                   <p className="text-sm text-muted-foreground">Multi-signal analysis for rising artists</p>
@@ -537,7 +537,7 @@ export default function AgentDashboardPage() {
               <div className="flex items-center justify-center gap-6 md:gap-8 mb-10 py-4 border-y border-border/50">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Music className="w-4 h-4 text-red-500" />
+                    <Music className="w-4 h-4 text-cyan-500" />
                     <p className="text-2xl font-bold font-mono text-foreground">4</p>
                   </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Strategies</p>
@@ -611,9 +611,9 @@ export default function AgentDashboardPage() {
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">{config.name || "Beat Scout Agent"}</h1>
                   {config.is_active && (
-                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">
-                      <Radio className="w-3 h-3 mr-1" />
-                      On Air
+                    <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+                      <Radio className="w-3 h-3 mr-1 text-cyan-500" />
+                      Scouting...
                     </Badge>
                   )}
                 </div>
@@ -626,27 +626,27 @@ export default function AgentDashboardPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleRunCycle}
-                disabled={isRunning || !config.is_active}
-                className="gap-2 bg-transparent border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30"
+                disabled={isRunning}
+                className="gap-2 bg-transparent border-cyan-500/20 hover:bg-cyan-500/10 hover:border-cyan-500/30"
               >
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
                 Drop Scout
               </Button>
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-red-500/10 shadow-sm">
+                <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-cyan-500/10 shadow-sm">
                 <span className="text-sm font-medium text-muted-foreground">Agent</span>
                 <Switch
                   checked={config.is_active}
                   onCheckedChange={toggleAgent}
-                  className="data-[state=checked]:bg-red-500"
+                  disabled={isSaving}
+                  className="data-[state=checked]:bg-cyan-500"
                 />
                 <div
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config.is_active ? "bg-red-500/10 text-red-400" : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${config.is_active ? "bg-cyan-500/10 text-cyan-400" : "bg-muted text-muted-foreground"}`}
                 >
-                  {config.is_active ? "Live" : "Off Air"}
+                  {config.is_active ? "Active" : "Paused"}
                 </div>
+              </div>
               </div>
             </div>
           </div>
