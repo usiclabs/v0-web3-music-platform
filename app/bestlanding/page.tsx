@@ -571,18 +571,27 @@ function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="relative rounded-3xl p-12 md:p-20 bg-gradient-to-r from-[#ff3b30]/15 via-[#ff3b30]/5 to-transparent border border-[rgba(255,59,48,0.25)] overflow-hidden"
+          className="relative rounded-3xl p-12 md:p-20 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,59,48,0.2)] overflow-hidden"
         >
-          {/* Animated background elements */}
+          {/* Subtle glowing accent - top right */}
           <motion.div
-            className="absolute top-0 right-0 w-96 h-96 bg-[#ff3b30]/8 rounded-full blur-3xl -z-10"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 8, repeat: Infinity }}
+            className="absolute -top-40 -right-40 w-80 h-80 bg-[#ff3b30]/12 rounded-full blur-3xl pointer-events-none"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 6, repeat: Infinity }}
           />
+
+          {/* Subtle glowing accent - bottom left */}
           <motion.div
-            className="absolute bottom-0 left-0 w-72 h-72 bg-[#3b82f6]/5 rounded-full blur-3xl -z-10"
-            animate={{ scale: [1.2, 1, 1.2] }}
-            transition={{ duration: 10, repeat: Infinity, delay: 1 }}
+            className="absolute -bottom-40 -left-40 w-96 h-96 bg-[#ff3b30]/8 rounded-full blur-3xl pointer-events-none"
+            animate={{ opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 8, repeat: Infinity, delay: 1 }}
+          />
+
+          {/* Thin accent line */}
+          <motion.div
+            className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#ff3b30]/40 to-transparent"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity }}
           />
 
           <div className="relative z-10 max-w-3xl mx-auto text-center">
@@ -619,7 +628,7 @@ function CTASection() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.12)] transition-all duration-300 flex-1 sm:max-w-sm"
+                className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.1)] transition-all duration-300 flex-1 sm:max-w-sm text-sm"
               />
               <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
                 Launch Profile
@@ -627,7 +636,7 @@ function CTASection() {
               </button>
             </motion.div>
 
-            {/* Buttons */}
+            {/* Secondary buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -635,10 +644,10 @@ function CTASection() {
               viewport={{ once: true }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+              <button className="px-8 py-4 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300">
                 See Live Dashboard
               </button>
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+              <button className="px-8 py-4 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] transition-all duration-300">
                 Read Artist Guide
               </button>
             </motion.div>
