@@ -901,17 +901,12 @@ export default function AgentActivityPage() {
       {/* ================================================================== */}
       {/* ACTIVE AGENTS GRID */}
       {/* ================================================================== */}
-      <section className="py-8 md:py-10 border-t border-[rgba(255,255,255,0.05)]">
+      <section className="py-8">
         <div className="container mx-auto px-4">
-          <motion.h3
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-sm font-bold text-white mb-5 flex items-center gap-2"
-          >
+          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
             <Bot className="w-4 h-4 text-[#ff3b30]" />
             Active Agents
-          </motion.h3>
+          </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {agents.map((agent, index) => (
@@ -924,19 +919,14 @@ export default function AgentActivityPage() {
       {/* ================================================================== */}
       {/* ECOSYSTEM FLOW */}
       {/* ================================================================== */}
-      <section className="py-12 md:py-16 border-t border-[rgba(255,255,255,0.05)]">
+      <section className="py-8 border-t border-[rgba(255,255,255,0.05)]">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-center mb-8"
-          >
+          <div className="text-center mb-6">
             <h3 className="text-sm font-bold text-white mb-1">Ecosystem Flow</h3>
             <p className="text-xs text-[#9ca3af]">
               Music transforming into value movement
             </p>
-          </motion.div>
+          </div>
 
           <EcosystemFlow />
         </div>
