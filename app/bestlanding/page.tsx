@@ -101,7 +101,7 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.3 }}
               className="text-lg md:text-xl text-[#9ca3af] max-w-xl leading-relaxed"
             >
-              The infrastructure once locked behind million-dollar deals is now in your hands. OpenClaw agents handle everything—distribution, sync licensing, fan monetization, direct patronage—while you retain 100% ownership and 100% of revenue.
+              Distribution, tokenization, autonomous agents, DeFi integration, and fan engagement—all built for independent artists. Your complete Web3 music ecosystem with zero middlemen.
             </motion.p>
 
             {/* Value Props */}
@@ -419,6 +419,75 @@ function FeaturesSection() {
             ))}
           </div>
         </motion.div>
+      </div>
+    </section>
+  )
+}
+
+// Web3 & Tokenization Section
+function Web3FeaturesSection() {
+  const features = [
+    {
+      title: 'Profile Tokenization',
+      description: 'Turn your artist profile into a tradeable token. Fans buy your token and benefit from your success.',
+      icon: '🪙'
+    },
+    {
+      title: '$USI Token & Staking',
+      description: 'Stake platform tokens to earn governance rights and platform revenue share. Passive income built-in.',
+      icon: '💎'
+    },
+    {
+      title: 'NFT Marketplace',
+      description: 'Mint, list, and sell exclusive music NFTs, art, and collectibles directly to your community.',
+      icon: '🖼️'
+    },
+    {
+      title: 'Instant Settlement',
+      description: 'Get paid in USDC, ETH, or bank transfer within 24 hours. No more 30-90 day delays.',
+      icon: '⚡'
+    },
+  ]
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-20"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,59,48,0.1)] border border-[#ff3b30]/30 mb-6">
+            <span className="text-xs text-white font-bold">Web3 Native</span>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Your Music Belongs on Blockchain
+          </h2>
+          <p className="text-lg text-[#9ca3af] max-w-3xl mx-auto leading-relaxed">
+            Tokenize your catalog, create fan tokens, and participate in the decentralized music economy.
+          </p>
+        </motion.div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.12 }}
+              viewport={{ once: true }}
+              className="group relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300"
+            >
+              <div className="text-5xl mb-4">{feature.icon}</div>
+              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+              <p className="text-sm text-[#9ca3af] leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -936,6 +1005,101 @@ function WhyMyUSICSection() {
   )
 }
 
+// Autonomous Agents Section
+function AgentsSection() {
+  const agents = [
+    {
+      name: 'Beat Scout',
+      subtitle: 'Investment Agent',
+      description: 'Autonomously discover and invest in promising music drops. Let AI find the next hit while you earn.',
+      icon: '📈',
+      features: ['Auto-invest', 'Signal Detection', 'Portfolio Tracking']
+    },
+    {
+      name: 'Market Maker',
+      subtitle: 'Liquidity Agent',
+      description: 'Provide liquidity to $USI pools and earn trading fees. Automated optimization across multiple chains.',
+      icon: '⚡',
+      features: ['Liquidity Pools', 'Fee Optimization', 'Multi-chain']
+    },
+    {
+      name: 'Auto Stream',
+      subtitle: 'Revenue Agent',
+      description: 'Earn passive income 24/7 by streaming music. Automate your music consumption and monetize it.',
+      icon: '📻',
+      features: ['24/7 Streaming', 'Earnings Tracking', 'Real-time Analytics']
+    },
+    {
+      name: 'Autonomous Artist',
+      subtitle: 'Creator Agent',
+      description: 'AI generates unique music autonomously and lists it on the platform. Your AI music producer.',
+      icon: '🎵',
+      features: ['AI Generation', 'Auto-Upload', 'Style Control']
+    },
+  ]
+
+  return (
+    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)] bg-gradient-to-b from-transparent to-[rgba(255,59,48,0.03)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-20"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,59,48,0.1)] border border-[#ff3b30]/30 mb-6">
+            <span className="text-xs text-white font-bold">Powered by OpenClaw Agents</span>
+          </div>
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Autonomous Agents Do the Work
+          </h2>
+          <p className="text-lg text-[#9ca3af] max-w-3xl mx-auto leading-relaxed">
+            Deploy AI agents to handle distribution, monetization, investment, and creation. Work while you sleep.
+          </p>
+        </motion.div>
+
+        {/* Agents Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {agents.map((agent, index) => (
+            <motion.div
+              key={agent.name}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.12 }}
+              viewport={{ once: true }}
+              className="group relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,59,48,0.3)] transition-all duration-300 overflow-hidden"
+            >
+              {/* Accent on hover */}
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
+                style={{ backgroundColor: 'rgba(255,59,48,0.08)' }}
+              />
+
+              <div className="relative z-10">
+                <div className="text-5xl mb-4">{agent.icon}</div>
+                <h3 className="text-2xl font-bold text-white mb-1">{agent.name}</h3>
+                <p className="text-xs text-[#ff3b30] font-bold uppercase tracking-wide mb-3">{agent.subtitle}</p>
+                <p className="text-sm text-[#9ca3af] leading-relaxed mb-6">{agent.description}</p>
+                
+                {/* Features */}
+                <div className="flex flex-wrap gap-2">
+                  {agent.features.map((feature) => (
+                    <span key={feature} className="text-xs px-3 py-1 rounded-full bg-[rgba(255,59,48,0.15)] text-[#ff3b30] font-semibold">
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function HowItWorksSection() {
   const steps = [
     {
@@ -1340,6 +1504,8 @@ export default function BestLandingPage() {
       <HeroSection />
       <FeaturesSection />
       <WhyMyUSICSection />
+      <AgentsSection />
+      <Web3FeaturesSection />
       <HowItWorksSection />
       <ComparisonSection />
       <MarketOpportunitySection />
