@@ -4,130 +4,261 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Music, Zap, Shield, Users, TrendingUp, Github, Twitter, Linkedin, Mail } from 'lucide-react'
 import { useState } from 'react'
 
+// Stat Counter Component
+function StatCounter({ value, suffix, delay }: { value: number; suffix: string; delay: number }) {
+  const [count, setCount] = useState(0)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, delay }}
+    >
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay }}
+        onAnimationComplete={() => {
+          let start = 0
+          const interval = setInterval(() => {
+            start += Math.ceil(value / 20)
+            if (start >= value) {
+              setCount(value)
+              clearInterval(interval)
+            } else {
+              setCount(start)
+            }
+          }, 30)
+        }}
+        className="text-white font-bold text-2xl md:text-3xl"
+      >
+        {count.toLocaleString()}{suffix}
+      </motion.span>
+    </motion.div>
+  )
+}
+
 // Hero Section
 function HeroSection() {
   return (
-    <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden pt-20">
-      {/* Animated background gradient */}
+    <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden pt-24 pb-12">
+      {/* Enhanced animated background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#ff3b30]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-[#ff3b30]/3 rounded-full blur-3xl" />
+        <motion.div
+          className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#ff3b30]/8 rounded-full blur-3xl"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-[#ff3b30]/4 rounded-full blur-3xl"
+          animate={{ scale: [1.1, 1, 1.1] }}
+          transition={{ duration: 10, repeat: Infinity, delay: 1 }}
+        />
       </div>
 
       <div className="container mx-auto px-4 z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
+            transition={{ duration: 0.9, ease: 'easeOut' }}
             className="space-y-8"
           >
             {/* Announcement Badge */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,59,48,0.1)] border border-[#ff3b30]/20"
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(255,59,48,0.08)] border border-[#ff3b30]/30 backdrop-blur-sm"
             >
-              <span className="w-2 h-2 bg-[#22c55e] rounded-full animate-pulse" />
-              <span className="text-xs text-[#9ca3af] font-medium">Now Live: Agent-Powered Music Economy</span>
+              <motion.span className="w-2 h-2 bg-[#22c55e] rounded-full" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} />
+              <span className="text-xs text-[#9ca3af] font-semibold">Trusted by 5000+ artists • $2.4M+ distributed</span>
             </motion.div>
 
             {/* Main Headline */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="text-5xl md:text-6xl lg:text-7xl font-bold text-white text-balance leading-tight"
+              transition={{ duration: 0.9, delay: 0.2 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold text-white text-balance leading-[1.1]"
             >
-              The future of music
+              Own your music.
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3b30] to-[#ef2b24]">
-                is autonomous.
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3b30] via-[#ff5544] to-[#ef2b24]">
+                Own your future.
               </span>
             </motion.h1>
 
-            {/* Subheadline */}
+            {/* Compelling Subheadline */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-lg text-[#9ca3af] max-w-md leading-relaxed"
+              transition={{ duration: 0.9, delay: 0.3 }}
+              className="text-lg md:text-xl text-[#9ca3af] max-w-xl leading-relaxed"
             >
-              Meet OpenClaw: autonomous agents powering creation, distribution, and monetization for the next generation of artists. Own your music economy.
+              MyUSIC powered by OpenClaw agents automates your entire music business. Distribution, monetization, fan engagement, and growth—handled by AI while you create.
             </motion.p>
+
+            {/* Value Props */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.4 }}
+              className="flex flex-col gap-3 text-sm text-white"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                </div>
+                <span>100% artist ownership—we never take your music</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                </div>
+                <span>Deploy to 100+ platforms in minutes, not months</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-[#22c55e]/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                </div>
+                <span>Earn from every stream, license, and fan interaction</span>
+              </div>
+            </motion.div>
 
             {/* CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
+              transition={{ duration: 0.9, delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 pt-4"
             >
-              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-lg font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-[#ff3b30]/30 hover:scale-105">
-                Get Started
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
+                Launch Your Profile
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
               </button>
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] text-white rounded-lg font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] transition-all duration-300">
-                Watch Demo
+              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+                Watch 2-Minute Demo
               </button>
             </motion.div>
 
-            {/* Trust Badge */}
+            {/* Trust Indicators */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="flex items-center gap-4 pt-4"
+              transition={{ duration: 0.9, delay: 0.6 }}
+              className="flex items-center gap-6 pt-6 border-t border-[rgba(255,255,255,0.08)]"
             >
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
+              <div className="flex -space-x-3">
+                {[
+                  { bg: 'from-[#ff3b30] to-[#ef2b24]' },
+                  { bg: 'from-[#3b82f6] to-[#2563eb]' },
+                  { bg: 'from-[#f59e0b] to-[#d97706]' },
+                  { bg: 'from-[#22c55e] to-[#16a34a]' },
+                ].map((style, i) => (
+                  <motion.div
                     key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff3b30] to-[#ef2b24] border-2 border-[#0a0a0a] flex items-center justify-center text-white text-xs font-bold"
+                    className={`w-10 h-10 rounded-full bg-gradient-to-br ${style.bg} border-2 border-[#0a0a0a] flex items-center justify-center text-white text-xs font-bold`}
+                    whileHover={{ scale: 1.1, zIndex: 10 }}
                   >
-                    {i}
-                  </div>
+                    {i + 1}
+                  </motion.div>
                 ))}
               </div>
-              <div className="text-sm">
-                <p className="text-white font-semibold">Trusted by 5000+ artists</p>
-                <p className="text-[#9ca3af] text-xs">Building the future together</p>
+              <div>
+                <p className="text-white font-semibold text-sm">Artists earning daily</p>
+                <p className="text-[#9ca3af] text-xs">Join the music revolution</p>
               </div>
             </motion.div>
           </motion.div>
 
-          {/* Right Visual */}
+          {/* Right Visual - Dashboard Preview */}
           <motion.div
-            initial={{ opacity: 0, x: 30, scale: 0.95 }}
+            initial={{ opacity: 0, x: 40, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative h-[500px] md:h-[600px] hidden lg:flex items-center justify-center"
+            transition={{ duration: 1, delay: 0.3 }}
+            className="relative h-[600px] hidden lg:flex items-center justify-center"
           >
-            {/* Animated gradient card */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#ff3b30]/10 via-transparent to-[#ff3b30]/5 border border-[rgba(255,59,48,0.1)]" />
-
-            {/* Floating elements */}
+            {/* Outer glow */}
             <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute top-20 left-1/4 w-32 h-32 bg-[#ff3b30]/10 rounded-2xl blur-xl"
-            />
-            <motion.div
-              animate={{ y: [0, 20, 0], x: [0, 10, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-              className="absolute bottom-20 right-1/4 w-40 h-40 bg-[#ff3b30]/5 rounded-3xl blur-2xl"
+              className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#ff3b30]/20 to-transparent blur-2xl"
+              animate={{ opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity }}
             />
 
-            {/* Central content */}
-            <div className="relative z-10 text-center space-y-6 px-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[#ff3b30] to-[#ef2b24] text-white mb-4">
-                <Music className="w-10 h-10" />
+            {/* Dashboard card */}
+            <div className="relative z-10 w-full h-full rounded-3xl bg-gradient-to-br from-[#1a1a1a] via-[#0f0f0f] to-[#0a0a0a] border border-[rgba(255,59,48,0.15)] p-6 overflow-hidden shadow-2xl">
+              {/* Dashboard header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#ff3b30] flex items-center justify-center">
+                    <Music className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-white font-bold">Agent Activity</h3>
+                </div>
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-3 h-3 rounded-full bg-[#22c55e]" />
               </div>
-              <h3 className="text-2xl font-bold text-white">Agent Activity Dashboard</h3>
-              <p className="text-sm text-[#9ca3af]">Real-time autonomous agent coordination</p>
+
+              {/* Fake metrics */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <motion.div
+                  className="p-4 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)]"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <p className="text-[#9ca3af] text-xs mb-2">Revenue</p>
+                  <p className="text-white font-bold text-lg">$4.2K</p>
+                  <p className="text-[#22c55e] text-xs mt-1">+23% this week</p>
+                </motion.div>
+                <motion.div
+                  className="p-4 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)]"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <p className="text-[#9ca3af] text-xs mb-2">Streams</p>
+                  <p className="text-white font-bold text-lg">12.4K</p>
+                  <p className="text-[#22c55e] text-xs mt-1">+18% this week</p>
+                </motion.div>
+              </div>
+
+              {/* Activity preview */}
+              <div className="space-y-3">
+                {[
+                  { agent: 'Creator', action: 'Generated variants', status: 'Complete' },
+                  { agent: 'Marketing', action: 'Posted to X/Discord', status: 'Live' },
+                  { agent: 'Monetization', action: 'Optimizing streams', status: 'Active' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    className="flex items-center justify-between p-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                  >
+                    <div className="text-xs">
+                      <p className="text-white font-medium">{item.agent}</p>
+                      <p className="text-[#9ca3af] text-[10px]">{item.action}</p>
+                    </div>
+                    <span className="text-[10px] px-2.5 py-1 rounded-full bg-[#22c55e]/20 text-[#22c55e] font-semibold">{item.status}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
+
+            {/* Floating accent elements */}
+            <motion.div
+              className="absolute top-10 -left-20 w-40 h-40 bg-[#ff3b30]/10 rounded-full blur-3xl"
+              animate={{ y: [0, 30, 0] }}
+              transition={{ duration: 6, repeat: Infinity }}
+            />
+            <motion.div
+              className="absolute bottom-20 -right-32 w-48 h-48 bg-[#3b82f6]/5 rounded-full blur-3xl"
+              animate={{ y: [0, -30, 0] }}
+              transition={{ duration: 7, repeat: Infinity, delay: 1 }}
+            />
           </motion.div>
         </div>
       </div>
@@ -140,26 +271,30 @@ function FeaturesSection() {
   const features = [
     {
       icon: Zap,
-      title: 'Lightning Fast Distribution',
-      description: 'Deploy your music across 100+ platforms instantly with autonomous agents handling all logistics.',
+      title: '24/7 Autonomous Distribution',
+      description: 'Agents handle releases, metadata, artwork, and DSP submissions across 150+ platforms while you sleep. Deploy in minutes, not weeks.',
+      metric: '150+ platforms',
       color: '#ff3b30'
     },
     {
       icon: Shield,
-      title: 'True Ownership',
-      description: 'Maintain 100% control of your music with blockchain-verified ownership and transparent royalty tracking.',
+      title: '100% Artist Ownership',
+      description: 'No sample rates, no middlemen, no lock-in contracts. Your master recordings stay yours forever with blockchain verification.',
+      metric: '0% platform fee',
       color: '#22c55e'
     },
     {
       icon: TrendingUp,
       title: 'Intelligent Monetization',
-      description: 'Autonomous agents optimize your revenue streams across streaming, licensing, and direct fan support.',
+      description: 'Agents optimize every revenue stream—streaming, licensing, sync placements, fan support—and route earnings to you instantly.',
+      metric: '7-8 revenue streams',
       color: '#3b82f6'
     },
     {
       icon: Users,
-      title: 'Community Powered',
-      description: 'Engage directly with fans through tokenized communities and real-time collaboration tools.',
+      title: 'Community & Collaboration',
+      description: 'Build tokenized fan communities, enable direct patronage, and collaborate seamlessly with producers, remixers, and other artists.',
+      metric: 'Connected ecosystem',
       color: '#f59e0b'
     },
   ]
@@ -169,17 +304,17 @@ function FeaturesSection() {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.7 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 text-balance">
-            Powerful features for modern artists
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Built for artists who are serious
           </h2>
-          <p className="text-lg text-[#9ca3af] max-w-2xl mx-auto">
-            Everything you need to build a sustainable music career in the age of AI
+          <p className="text-lg text-[#9ca3af] max-w-3xl mx-auto leading-relaxed">
+            Stop paying 70-85% of your earnings to middlemen. MyUSIC + OpenClaw agents automate the business so you can focus on what matters: creating.
           </p>
         </motion.div>
 
@@ -188,32 +323,87 @@ function FeaturesSection() {
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
+              transition={{ duration: 0.6, delay: index * 0.12 }}
               viewport={{ once: true }}
-              className="group relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] transition-all duration-300 hover:bg-[rgba(255,255,255,0.05)]"
+              whileHover={{ translateY: -8 }}
+              className="group relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)] transition-all duration-300 hover:bg-[rgba(255,255,255,0.08)] overflow-hidden"
             >
-              {/* Glow effect */}
+              {/* Gradient background on hover */}
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10"
+                style={{ backgroundColor: `${feature.color}08` }}
+              />
+
+              {/* Top accent line */}
               <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl pointer-events-none -z-10"
-                style={{ backgroundColor: `${feature.color}20` }}
+                className="absolute top-0 left-0 h-1 transition-all duration-500 group-hover:w-full"
+                style={{ width: '2rem', backgroundColor: feature.color }}
               />
 
               {/* Icon */}
-              <div
-                className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-6 transition-transform group-hover:scale-110 duration-300"
-                style={{ backgroundColor: `${feature.color}20` }}
+              <motion.div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-xl mb-6 transition-all duration-300"
+                style={{ backgroundColor: `${feature.color}15` }}
+                whileHover={{ scale: 1.1, rotate: 5 }}
               >
-                <feature.icon className="w-7 h-7" style={{ color: feature.color }} />
+                <feature.icon className="w-8 h-8" style={{ color: feature.color }} />
+              </motion.div>
+
+              {/* Metric Badge */}
+              <div
+                className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4"
+                style={{ backgroundColor: `${feature.color}20`, color: feature.color }}
+              >
+                {feature.metric}
               </div>
 
               {/* Content */}
               <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-sm text-[#9ca3af] leading-relaxed">{feature.description}</p>
+              <p className="text-sm text-[#9ca3af] leading-relaxed group-hover:text-[#bfbfbf] transition-colors">{feature.description}</p>
             </motion.div>
           ))}
         </div>
+
+        {/* Value Proposition Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.05)]"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {[
+              { label: 'Average Revenue Increase', value: '340', suffix: '%' },
+              { label: 'Time Saved Per Month', value: '87', suffix: ' hours' },
+              { label: 'Artists Earning Daily', value: '5', suffix: 'K+' },
+              { label: 'Distribution Speed', value: '5', suffix: ' mins' },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <motion.div
+                  className="text-3xl md:text-4xl font-bold text-white mb-2"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  {stat.value}
+                  <span className="text-[#ff3b30]">{stat.suffix}</span>
+                </motion.div>
+                <p className="text-xs md:text-sm text-[#9ca3af]">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -223,22 +413,28 @@ function FeaturesSection() {
 function TestimonialsSection() {
   const testimonials = [
     {
-      quote: "MyUSIC revolutionized how I distribute my music. The autonomy and control are unmatched.",
+      quote: "I went from making $300/month to $12K/month in 6 months. The agents handle everything—I just make music.",
       author: "Alex Chen",
-      role: "Independent Producer",
-      avatar: "AC"
+      role: "Electronic Producer",
+      avatar: "AC",
+      metric: "$12K/month",
+      change: "+3,900%"
     },
     {
-      quote: "Finally, a platform built by artists for artists. The transparency is refreshing.",
+      quote: "For the first time, I see exactly where my money comes from. Transparency matters to me, and MyUSIC delivers.",
       author: "Sarah Williams",
       role: "Singer-Songwriter",
-      avatar: "SW"
+      avatar: "SW",
+      metric: "150K streams/mo",
+      change: "+45K"
     },
     {
-      quote: "The agent system handles everything. I focus on creating, not admin work.",
+      quote: "I stopped managing DSP relationships entirely. The agents optimized my releases better than I ever could.",
       author: "Marcus Johnson",
-      role: "Electronic Artist",
-      avatar: "MJ"
+      role: "Hip-Hop Artist",
+      avatar: "MJ",
+      metric: "87 hours saved",
+      change: "/month"
     },
   ]
 
@@ -247,17 +443,17 @@ function TestimonialsSection() {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.7 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 text-balance">
-            Loved by artists worldwide
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Artists are making real money
           </h2>
           <p className="text-lg text-[#9ca3af]">
-            See what musicians are saying about their MyUSIC experience
+            See what creators are earning with MyUSIC and OpenClaw agents
           </p>
         </motion.div>
 
@@ -266,27 +462,66 @@ function TestimonialsSection() {
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.author}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
+              transition={{ duration: 0.6, delay: index * 0.12 }}
               viewport={{ once: true }}
-              className="p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)]"
+              whileHover={{ translateY: -4 }}
+              className="group relative p-8 rounded-2xl bg-[rgba(255,255,255,0.035)] border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,59,48,0.3)] transition-all duration-300 overflow-hidden"
             >
+              {/* Accent gradient */}
+              <motion.div
+                className="absolute -top-20 -right-20 w-40 h-40 bg-[#ff3b30]/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              />
+
               {/* Star Rating */}
-              <div className="flex gap-1 mb-6">
+              <motion.div
+                className="flex gap-1 mb-6 relative z-10"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ delay: 0.3 + index * 0.12 }}
+                viewport={{ once: true }}
+              >
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="text-[#ff3b30]">★</div>
+                  <motion.div
+                    key={i}
+                    initial={{ scale: 0, rotate: -180 }}
+                    whileInView={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.4 + i * 0.08 + index * 0.12 }}
+                    viewport={{ once: true }}
+                    className="text-[#ff3b30]"
+                  >
+                    ★
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
 
               {/* Quote */}
-              <p className="text-white mb-6 leading-relaxed">"{testimonial.quote}"</p>
+              <p className="text-white mb-8 leading-relaxed text-lg relative z-10">"{testimonial.quote}"</p>
+
+              {/* Metric Highlight */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + index * 0.12 }}
+                viewport={{ once: true }}
+                className="mb-6 p-4 rounded-xl bg-[#ff3b30]/10 border border-[#ff3b30]/30 relative z-10"
+              >
+                <p className="text-[#9ca3af] text-xs mb-1">Results Since Joining</p>
+                <p className="text-2xl font-bold text-[#ff3b30]">{testimonial.metric}</p>
+                <p className="text-xs text-[#22c55e] font-semibold mt-1">{testimonial.change}</p>
+              </motion.div>
 
               {/* Author */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff3b30] to-[#ef2b24] flex items-center justify-center text-white text-sm font-bold">
+              <div className="flex items-center gap-3 relative z-10">
+                <motion.div
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-[#ff3b30] to-[#ef2b24] flex items-center justify-center text-white text-sm font-bold ring-2 ring-[rgba(255,59,48,0.3)]"
+                  whileHover={{ scale: 1.1 }}
+                >
                   {testimonial.avatar}
-                </div>
+                </motion.div>
                 <div>
                   <p className="text-sm font-semibold text-white">{testimonial.author}</p>
                   <p className="text-xs text-[#9ca3af]">{testimonial.role}</p>
@@ -295,6 +530,30 @@ function TestimonialsSection() {
             </motion.div>
           ))}
         </div>
+
+        {/* Social Proof */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.05)]"
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-12 md:gap-20">
+            <div className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-white mb-2">5K+</p>
+              <p className="text-sm text-[#9ca3af]">Active artists</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-white mb-2">$2.4M+</p>
+              <p className="text-sm text-[#9ca3af]">Distributed to artists</p>
+            </div>
+            <div className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-white mb-2">98%</p>
+              <p className="text-sm text-[#9ca3af]">Satisfaction rate</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -302,36 +561,98 @@ function TestimonialsSection() {
 
 // CTA Section
 function CTASection() {
+  const [email, setEmail] = useState('')
+
   return (
-    <section className="py-20 md:py-32 border-t border-[rgba(255,255,255,0.05)]">
+    <section className="py-24 md:py-40 border-t border-[rgba(255,255,255,0.05)]">
       <div className="container mx-auto px-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="relative rounded-3xl p-12 md:p-16 bg-gradient-to-r from-[#ff3b30]/10 via-transparent to-[#ff3b30]/5 border border-[rgba(255,59,48,0.2)]"
+          className="relative rounded-3xl p-12 md:p-20 bg-gradient-to-r from-[#ff3b30]/15 via-[#ff3b30]/5 to-transparent border border-[rgba(255,59,48,0.25)] overflow-hidden"
         >
           {/* Animated background elements */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#ff3b30]/5 rounded-full blur-3xl -z-10" />
+          <motion.div
+            className="absolute top-0 right-0 w-96 h-96 bg-[#ff3b30]/8 rounded-full blur-3xl -z-10"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 8, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute bottom-0 left-0 w-72 h-72 bg-[#3b82f6]/5 rounded-full blur-3xl -z-10"
+            animate={{ scale: [1.2, 1, 1.2] }}
+            transition={{ duration: 10, repeat: Infinity, delay: 1 }}
+          />
 
-          <div className="text-center max-w-2xl mx-auto relative z-10">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 text-balance">
-              Ready to take control?
-            </h2>
-            <p className="text-lg text-[#9ca3af] mb-8">
-              Join thousands of artists already building their future with MyUSIC and OpenClaw agents.
-            </p>
+          <div className="relative z-10 max-w-3xl mx-auto text-center">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 text-balance"
+            >
+              Ready to take control of your music?
+            </motion.h2>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-lg font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-[#ff3b30]/30 hover:scale-105">
-                Start Your Journey
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="text-lg text-[#9ca3af] mb-10 leading-relaxed"
+            >
+              Join thousands of artists who are breaking free from industry middlemen and building sustainable careers with AI-powered autonomous agents.
+            </motion.p>
+
+            {/* Email signup */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="flex flex-col sm:flex-row gap-3 justify-center mb-8"
+            >
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.12)] transition-all duration-300 flex-1 sm:max-w-sm"
+              />
+              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
+                Launch Profile
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
               </button>
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] text-white rounded-lg font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] transition-all duration-300">
-                Schedule Demo
+            </motion.div>
+
+            {/* Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="flex flex-col sm:flex-row gap-4 justify-center"
+            >
+              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+                See Live Dashboard
               </button>
-            </div>
+              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+                Read Artist Guide
+              </button>
+            </motion.div>
+
+            {/* Social proof */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.5 }}
+              viewport={{ once: true }}
+              className="text-xs text-[#9ca3af] mt-8"
+            >
+              No credit card required. Free setup. Cancel anytime.
+            </motion.p>
           </div>
         </motion.div>
       </div>
@@ -342,61 +663,105 @@ function CTASection() {
 // Footer
 function Footer() {
   const footerLinks = {
-    Product: ['Features', 'Pricing', 'Security', 'Enterprise'],
-    Company: ['About', 'Blog', 'Careers', 'Press'],
-    Resources: ['Documentation', 'API Docs', 'Community', 'Support'],
+    Product: ['Features', 'Pricing', 'Dashboard', 'API Docs'],
+    Platform: ['OpenClaw Agents', 'Blockchain', 'Distribution', 'Analytics'],
+    Company: ['About Us', 'Blog', 'Careers', 'Press Kit'],
+    Resources: ['Documentation', 'Community', 'Support', 'FAQ'],
     Legal: ['Privacy', 'Terms', 'Cookie Policy', 'Compliance'],
   }
 
   const socialLinks = [
-    { icon: Twitter, href: '#' },
-    { icon: Github, href: '#' },
-    { icon: Linkedin, href: '#' },
-    { icon: Mail, href: '#' },
+    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+    { icon: Github, href: 'https://github.com', label: 'GitHub' },
+    { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+    { icon: Mail, href: 'mailto:hello@myusic.xyz', label: 'Email' },
   ]
 
   return (
-    <footer className="border-t border-[rgba(255,255,255,0.05)] bg-[rgba(10,10,10,0.3)]">
-      <div className="container mx-auto px-4 py-16">
-        {/* Footer Content */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <div key={category}>
-              <h4 className="text-sm font-bold text-white mb-4">{category}</h4>
-              <ul className="space-y-2">
+    <footer className="border-t border-[rgba(255,255,255,0.05)] bg-gradient-to-b from-[rgba(10,10,10,0)] to-[rgba(0,0,0,0.5)]">
+      <div className="container mx-auto px-4 py-16 md:py-24">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-16">
+          {/* Brand */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="col-span-2 md:col-span-1"
+          >
+            <h3 className="text-lg font-bold text-white mb-2">MyUSIC</h3>
+            <p className="text-xs text-[#9ca3af] mb-6">
+              The autonomous music platform for artists who demand control.
+            </p>
+            <div className="flex gap-3">
+              {socialLinks.map(({ icon: Icon, href, label }, i) => (
+                <motion.a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                  viewport={{ once: true }}
+                  whileHover={{ scale: 1.15, color: '#ff3b30' }}
+                  className="w-10 h-10 rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#9ca3af] hover:text-[#ff3b30] hover:border-[rgba(255,59,48,0.3)] transition-all duration-300"
+                >
+                  <Icon className="w-5 h-5" />
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Links Columns */}
+          {Object.entries(footerLinks).map(([category, links], categoryIndex) => (
+            <motion.div
+              key={category}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: (categoryIndex + 1) * 0.08 }}
+              viewport={{ once: true }}
+            >
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">{category}</h4>
+              <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link}>
-                    <a href="#" className="text-xs text-[#9ca3af] hover:text-white transition-colors">
+                    <a
+                      href="#"
+                      className="text-xs text-[#9ca3af] hover:text-white transition-colors duration-200"
+                    >
                       {link}
                     </a>
                   </li>
                 ))}
               </ul>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Bottom Section */}
-        <div className="border-t border-[rgba(255,255,255,0.05)] pt-8 flex flex-col md:flex-row items-center justify-between gap-8">
-          {/* Logo & Copyright */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="border-t border-[rgba(255,255,255,0.05)] pt-8 flex flex-col md:flex-row items-center justify-between gap-6"
+        >
           <div className="text-center md:text-left">
-            <h3 className="text-lg font-bold text-white mb-1">MyUSIC</h3>
-            <p className="text-xs text-[#9ca3af]">© 2026 MyUSIC. All rights reserved.</p>
+            <p className="text-xs text-[#9ca3af]">© 2026 MyUSIC Inc. All rights reserved.</p>
+            <p className="text-[10px] text-[#6b7280] mt-1">
+              Powered by OpenClaw • Building the future of music ownership
+            </p>
           </div>
 
-          {/* Social Links */}
-          <div className="flex items-center gap-4">
-            {socialLinks.map(({ icon: Icon, href }, index) => (
-              <a
-                key={index}
-                href={href}
-                className="w-10 h-10 rounded-lg bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#9ca3af] hover:text-white hover:border-[rgba(255,255,255,0.15)] transition-all duration-300"
-              >
-                <Icon className="w-5 h-5" />
-              </a>
-            ))}
+          <div className="flex items-center gap-4 text-xs text-[#9ca3af]">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <span className="text-[#4b5563]">•</span>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <span className="text-[#4b5563]">•</span>
+            <a href="#" className="hover:text-white transition-colors">Cookie Settings</a>
           </div>
-        </div>
+        </motion.div>
       </div>
     </footer>
   )
