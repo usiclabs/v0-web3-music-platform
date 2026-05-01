@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, Music, Zap, Shield, Users, TrendingUp, Github, Twitter, Linkedin, Mail } from 'lucide-react'
 import { useState } from 'react'
@@ -140,13 +141,13 @@ function HeroSection() {
               transition={{ duration: 0.9, delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 pt-4"
             >
-              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
+              <Link href="/dashboard" className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
                 Launch Your Profile
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
-              </button>
-              <button className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
+              </Link>
+              <Link href="#" className="px-8 py-4 bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-white rounded-xl font-semibold text-base hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] transition-all duration-300">
                 Watch 2-Minute Demo
-              </button>
+              </Link>
             </motion.div>
 
             {/* Trust Indicators */}
@@ -851,10 +852,10 @@ function CTASection() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="px-6 py-4 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-white placeholder-[#9ca3af] focus:outline-none focus:border-[#ff3b30] focus:bg-[rgba(255,255,255,0.1)] transition-all duration-300 flex-1 sm:max-w-sm text-sm"
               />
-              <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
+              <Link href="/dashboard" className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95">
                 Claim Free 6 Months
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
-              </button>
+              </Link>
             </motion.div>
 
             {/* Pricing transparency */}
@@ -1297,10 +1298,10 @@ function HowItWorksSection() {
           className="text-center"
         >
           <p className="text-sm text-[#9ca3af] mb-4">Ready to launch your music empire?</p>
-          <button className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95 mx-auto">
+          <Link href="/dashboard" className="group px-8 py-4 bg-[#ff3b30] text-white rounded-xl font-semibold text-base flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:shadow-[#ff3b30]/40 hover:scale-105 active:scale-95 mx-auto">
             Get Started in 2 Minutes
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" />
-          </button>
+          </Link>
         </motion.div>
       </div>
     </section>
@@ -1448,9 +1449,9 @@ function FAQSection() {
           className="text-center mt-12"
         >
           <p className="text-[#9ca3af] text-sm mb-4">Still have questions?</p>
-          <a href="#" className="text-[#ff3b30] font-semibold hover:text-[#ff5544] transition-colors">
+          <Link href="/about" className="text-[#ff3b30] font-semibold hover:text-[#ff5544] transition-colors">
             Message our team on Discord →
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>
@@ -1597,12 +1598,12 @@ function Footer() {
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link}>
-                    <a
-                      href="#"
+                    <Link
+                      href="/"
                       className="text-xs text-[#9ca3af] hover:text-white transition-colors duration-200"
                     >
                       {link}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -1626,11 +1627,11 @@ function Footer() {
           </div>
 
           <div className="flex items-center gap-4 text-xs text-[#9ca3af]">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <Link href="/" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span className="text-[#4b5563]">•</span>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link href="/" className="hover:text-white transition-colors">Terms of Service</Link>
             <span className="text-[#4b5563]">•</span>
-            <a href="#" className="hover:text-white transition-colors">Cookie Settings</a>
+            <Link href="/" className="hover:text-white transition-colors">Cookie Settings</Link>
           </div>
         </motion.div>
       </div>

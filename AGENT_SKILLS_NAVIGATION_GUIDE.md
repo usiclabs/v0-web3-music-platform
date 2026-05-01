@@ -4,7 +4,7 @@
 
 ### 🎯 Journey 1: Artist/Trader Discovers Agent Capabilities
 
-```
+\`\`\`
 Entry Point: /agents (Agent Hub)
     ↓
     "Interested in what agents can do?"
@@ -26,11 +26,11 @@ Click "Explore All Skills" → /agents/skills
 └─────────────────────────────────────────┘
     ↓
 Ready to deploy? → /dashboard/agent
-```
+\`\`\`
 
 ### 💻 Journey 2: Developer Implements Custom Skill
 
-```
+\`\`\`
 Entry Point: /agents (Agent Hub)
     ↓
     "I want to build custom workflows"
@@ -48,11 +48,11 @@ Click "View Specifications" → /agents/documentation
 └──────────────────────────────────────────────────┘
     ↓
 Implementation Complete → Monitor on /agents/skills
-```
+\`\`\`
 
 ### 🤖 Journey 3: Agent Autonomously Executes
 
-```
+\`\`\`
 Skill Execution Flow
     ↓
 ┌─────────────────────────────────┐
@@ -77,13 +77,13 @@ Skill Execution Flow
 └─────────────────────────────────┘
     ↓
 Visible on /agents/skills live feed
-```
+\`\`\`
 
 ---
 
 ## Site Structure & Navigation
 
-```
+\`\`\`
 /agents (HUB)
 ├── Purpose: Central overview & navigation
 ├── Content:
@@ -125,7 +125,7 @@ Visible on /agents/skills live feed
        ├── Multiple language examples
        ├── Full API docs
        └── Developer CTA
-```
+\`\`\`
 
 ---
 
@@ -148,7 +148,7 @@ Visible on /agents/skills live feed
 
 ## Skill Registry Integration
 
-```typescript
+\`\`\`typescript
 // Core Types (skill-registry.ts)
 AgentSkill
 ├── id: string
@@ -171,13 +171,13 @@ AgentSkill
 - /agents/skills (display & filter)
 - /agents/documentation (examples)
 - /api/agents/skills (validation)
-```
+\`\`\`
 
 ---
 
 ## Live Activity Feed Examples
 
-```
+\`\`\`
 ┌─────────────────────────────────────────────────────┐
 │ Artist Discovery Engine: discovered SoundWave...    │ 2s ago
 ├─────────────────────────────────────────────────────┤
@@ -195,13 +195,13 @@ AgentSkill
 └─────────────────────────────────────────────────────┘
 
 Real-time updates showing agents working 24/7
-```
+\`\`\`
 
 ---
 
 ## API Endpoints
 
-```
+\`\`\`
 GET /api/agents/skills
   └─ Returns: Array of all AgentSkill objects
   
@@ -214,14 +214,14 @@ POST /api/agents/skills/[skillId]/execute
 
 [Future] GET /api/agents/skills/[skillId]/metrics
   └─ Returns: Performance metrics for skill
-```
+\`\`\`
 
 ---
 
 ## Conversion Funnels
 
 ### Funnel 1: User → Agent Deployment
-```
+\`\`\`
 Visit /agents (100%)
     ↓
 Browse agents (85%)
@@ -237,10 +237,10 @@ View metrics & activity (40%)
 Click "Try Demo" (25%)
     ↓
 Deploy agent (15%)
-```
+\`\`\`
 
 ### Funnel 2: Developer → Integration
-```
+\`\`\`
 Visit /agents/documentation (100%)
     ↓
 Read concepts (90%)
@@ -252,7 +252,7 @@ Implement locally (40%)
 Deploy to production (15%)
     ↓
 Monitor on /agents/skills (10%)
-```
+\`\`\`
 
 ---
 

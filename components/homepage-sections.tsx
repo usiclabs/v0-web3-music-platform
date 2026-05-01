@@ -58,24 +58,24 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["how-it-works"] = el
         }}
-        className="py-32 border-t border-border/40 relative overflow-hidden px-4 sm:px-6"
+        className="py-12 md:py-20 border-t border-border/40 relative overflow-hidden px-4 sm:px-6"
       >
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent animate-pulse-slow" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(229,62,62,0.05),transparent_70%)]" />
 
         <div className="container relative">
           <div
-            className={`mx-auto max-w-3xl text-center mb-20 transition-all duration-700 ${
+            className={`mx-auto max-w-3xl text-center mb-16 md:mb-20 transition-all duration-700 ${
               isVisible("how-it-works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">
               How It Works
             </h2>
-            <p className="text-xl text-foreground/70">Simple streaming. Instant payments.</p>
+            <p className="text-lg md:text-xl text-foreground/70 font-medium">Simple streaming. Instant payments.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12 max-w-6xl mx-auto">
             {[
               {
                 icon: Play,
@@ -111,22 +111,16 @@ export function HomepageSections() {
               >
                 <div className="relative mb-8">
                   <div
-                    className={`w-28 h-28 mx-auto rounded-full bg-card/30 backdrop-blur-2xl border-2 border-${step.color}/50 flex items-center justify-center shadow-2xl shadow-${step.color}/20 group-hover:scale-110 group-hover:shadow-${step.color}/40 group-hover:border-${step.color} transition-all duration-300 relative overflow-hidden`}
+                    className={`w-28 h-28 mx-auto rounded-full bg-background border-2 border-accent/40 flex items-center justify-center shadow-xl shadow-accent/15 group-hover:scale-110 group-hover:shadow-accent/30 group-hover:border-accent/70 transition-all duration-300 relative overflow-hidden`}
                   >
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br from-${step.color}/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-                    />
-                    <step.icon
-                      className={`h-12 w-12 text-${step.color} group-hover:scale-110 transition-transform relative z-10`}
-                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <step.icon className="h-12 w-12 text-accent group-hover:scale-110 transition-transform relative z-10" />
                   </div>
-                  <div
-                    className={`absolute -top-3 -right-3 w-10 h-10 rounded-full bg-${step.color} text-background flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform`}
-                  >
+                  <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-accent text-background flex items-center justify-center font-bold text-lg shadow-lg group-hover:scale-110 transition-transform">
                     {step.number}
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold mb-4 group-hover:text-accent transition-colors">{step.title}</h3>
+                <h3 className="font-display text-2xl font-bold mb-4 group-hover:text-accent transition-colors uppercase tracking-wide">{step.title}</h3>
                 <p className="text-foreground/70 leading-relaxed text-lg">{step.description}</p>
               </div>
             ))}
@@ -150,27 +144,27 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["ai-curator"] = el
         }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
+        className="py-12 md:py-20 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/5" />
 
         <div className="container relative">
           <div
-            className={`max-w-4xl mx-auto text-center mb-16 transition-all duration-700 ${
+            className={`max-w-4xl mx-auto text-center mb-16 md:mb-20 transition-all duration-700 ${
               isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 mb-8">
               <Sparkles className="w-4 h-4 text-accent" />
               <span className="text-sm font-medium text-accent">Powered by ERC-8004 Trustless Agents</span>
             </div>
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-8 text-balance uppercase tracking-wider">
               AI Playlist Curator
             </h2>
-            <p className="text-xl text-foreground/70 mb-4">
+            <p className="text-lg md:text-xl text-foreground/70 mb-4 font-medium">
               Meet your autonomous music curator with verified on-chain identity
             </p>
-            <p className="text-lg text-foreground/60">
+            <p className="text-base md:text-lg text-foreground/60 leading-relaxed">
               Get personalized playlists created by an AI agent that has transparent reputation, validated actions, and
               builds trust through community feedback.
             </p>
@@ -205,18 +199,18 @@ export function HomepageSections() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-${feature.color}-500/20 shadow-xl p-8 rounded-3xl hover:scale-105 hover:shadow-xl hover:shadow-${feature.color}-500/10 transition-all duration-500 group ${
+                className={`bg-background border border-accent/20 shadow-xl p-8 rounded-3xl hover:scale-105 hover:shadow-xl hover:shadow-accent/20 hover:border-accent/40 transition-all duration-300 group ${
                   isVisible("ai-curator") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: feature.delay }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-${feature.color}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl" />
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-${feature.color}-500/10 border border-${feature.color}-500/30 mb-6 group-hover:scale-110 transition-transform relative`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 border border-accent/30 mb-6 group-hover:scale-110 transition-transform relative`}
                 >
-                  <feature.icon className={`h-7 w-7 text-${feature.color}-400`} />
+                  <feature.icon className={`h-7 w-7 text-accent`} />
                 </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+                <h3 className="text-xl font-bold mb-3 font-display uppercase tracking-wide">{feature.title}</h3>
                 <p className="text-foreground/70 leading-relaxed">{feature.description}</p>
               </div>
             ))}
@@ -260,19 +254,19 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["for-artists"] = el
         }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
+        className="py-12 md:py-20 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/5" />
 
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-center">
             <div
               className={`transition-all duration-700 ${
                 isVisible("for-artists") ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
             >
-              <h2 className="text-5xl md:text-7xl font-bold mb-8 text-balance leading-tight">
-                Keep 100% of your earnings.
+              <h2 className="font-display text-5xl md:text-6xl font-bold mb-8 text-balance leading-tight uppercase tracking-wider">
+                Keep 100% of your earnings
               </h2>
 
               <div className="space-y-8">
@@ -304,12 +298,12 @@ export function HomepageSections() {
                 ].map((feature, index) => (
                   <div key={index} className="flex gap-6 group">
                     <div
-                      className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-card/30 backdrop-blur-xl border border-${feature.color}/30 flex items-center justify-center group-hover:scale-110 group-hover:border-${feature.color}/50 group-hover:shadow-lg group-hover:shadow-${feature.color}/20 transition-all duration-300`}
+                      className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-background border border-accent/30 flex items-center justify-center group-hover:scale-110 group-hover:border-accent/50 group-hover:shadow-lg group-hover:shadow-accent/20 transition-all duration-300`}
                     >
-                      <feature.icon className={`h-7 w-7 text-${feature.color}`} />
+                      <feature.icon className={`h-7 w-7 text-accent`} />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
+                      <h3 className="text-xl font-bold mb-2 font-display uppercase tracking-wide group-hover:text-accent transition-colors">
                         {feature.title}
                       </h3>
                       <p className="text-foreground/70 leading-relaxed">{feature.description}</p>
@@ -357,17 +351,17 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["for-fans"] = el
         }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6"
+        className="py-12 md:py-20 border-t border-border/40 px-4 sm:px-6"
       >
         <div className="container">
           <div
-            className={`mx-auto max-w-3xl text-center mb-20 transition-all duration-700 ${
+            className={`mx-auto max-w-3xl text-center mb-16 md:mb-20 transition-all duration-700 ${
               isVisible("for-fans") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Stream music. Pay artists.</h2>
-            <p className="text-2xl text-foreground/80 mb-4">Pennies per play. 100% to creators.</p>
-            <p className="text-lg text-foreground/60">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">Stream Music. Pay Artists.</h2>
+            <p className="text-xl md:text-2xl text-foreground/80 mb-4 font-medium">Pennies per play. 100% to creators.</p>
+            <p className="text-base md:text-lg text-foreground/60 leading-relaxed">
               No subscriptions. No ads. Just direct support for the music you love.
             </p>
           </div>
@@ -398,17 +392,17 @@ export function HomepageSections() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-border/50 shadow-xl p-10 rounded-3xl hover:scale-105 hover:shadow-2xl hover:shadow-${feature.color}/10 transition-all duration-500 ${
+                className={`bg-background border border-accent/20 shadow-xl p-10 rounded-3xl hover:scale-105 hover:shadow-2xl hover:shadow-accent/20 hover:border-accent/40 transition-all duration-300 ${
                   isVisible("for-fans") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: feature.delay }}
               >
                 <div
-                  className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-${feature.color}/10 border border-${feature.color}/30 mb-8`}
+                  className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 border border-accent/30 mb-8`}
                 >
-                  <feature.icon className={`h-8 w-8 text-${feature.color}`} />
+                  <feature.icon className={`h-8 w-8 text-accent`} />
                 </div>
-                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                <h3 className="text-2xl font-bold mb-4 font-display uppercase tracking-wide">{feature.title}</h3>
                 <p className="text-foreground/70 leading-relaxed text-lg">{feature.description}</p>
               </div>
             ))}
@@ -439,20 +433,20 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["trust"] = el
         }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6"
+        className="py-12 md:py-20 border-t border-border/40 px-4 sm:px-6"
       >
         <div className="container">
           <div
-            className={`mx-auto max-w-3xl text-center mb-20 transition-all duration-700 ${
+            className={`mx-auto max-w-3xl text-center mb-16 md:mb-20 transition-all duration-700 ${
               isVisible("trust") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Built for the Open Internet</h2>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">Built for the Open Internet</h2>
             <p className="text-2xl text-foreground/70 italic">"Where every creator can earn instantly and globally."</p>
           </div>
 
           {/* Trust Badges */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 max-w-5xl mx-auto">
             {[
               { icon: CheckCircle2, label: "Instant USDC Payments", color: "accent", delay: "100ms" },
               { icon: Shield, label: "Smart Contract Verified", color: "accent", delay: "200ms" },
@@ -461,7 +455,7 @@ export function HomepageSections() {
             ].map((badge, index) => (
               <div
                 key={index}
-                className={`bg-card/30 backdrop-blur-xl border border-border/50 rounded-2xl p-8 text-center hover:scale-105 hover:shadow-xl hover:shadow-${badge.color}/10 transition-all duration-500 ${
+                className={`bg-background border border-accent/20 rounded-2xl p-8 text-center hover:scale-105 hover:shadow-xl hover:shadow-accent/20 hover:border-accent/40 transition-all duration-300 ${
                   isVisible("trust") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: badge.delay }}
@@ -474,11 +468,11 @@ export function HomepageSections() {
 
           {/* Partner Logos */}
           <div
-            className={`text-center mt-20 transition-all duration-700 delay-500 ${
+            className={`text-center mt-16 md:mt-20 transition-all duration-700 delay-500 ${
               isVisible("trust") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <p className="text-sm text-foreground/50 mb-8 uppercase tracking-wider">Powered by</p>
+            <p className="text-xs md:text-sm text-foreground/50 mb-8 uppercase tracking-wider font-display font-bold">Powered by</p>
             <div className="flex flex-wrap justify-center gap-12 items-center opacity-60">
               <div className="text-3xl font-bold">Base</div>
               <div className="text-3xl font-bold">Coinbase</div>
@@ -494,7 +488,7 @@ export function HomepageSections() {
         ref={(el) => {
           sectionRefs.current["community"] = el
         }}
-        className="py-32 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
+        className="py-12 md:py-20 border-t border-border/40 px-4 sm:px-6 relative overflow-hidden"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-accent/10 via-transparent to-transparent" />
 
@@ -504,7 +498,7 @@ export function HomepageSections() {
               isVisible("community") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Become Part of the Movement</h2>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">Become Part of the Movement</h2>
             <p className="text-xl text-foreground/70 mb-4">Join the rebellion against outdated streaming economics.</p>
             <p className="text-lg text-foreground/60 mb-12">Be part of the first on-chain music revolution.</p>
 
