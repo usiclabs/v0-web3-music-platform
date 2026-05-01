@@ -62,13 +62,19 @@ export function ChainSwitcher() {
   const { switchChain, isPending } = useSwitchChain()
   const [isOpen, setIsOpen] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [selectedChainId, setSelectedChainId] = useState<number | null>(null)
 
   useEffect(() => {
     setIsHydrated(true)
-  }, [])
+    if (chain?.id) {
+      setSelectedChainId(chain.id)
+    }
+  }, [chain?.id])
 
   const allChains = [...MAINNET_CHAINS, ...TESTNET_CHAINS]
-  const currentChain = allChains.find((c) => c.chain.id === chain?.id) || MAINNET_CHAINS[0]
+  const currentChain = selectedChainId 
+    ? allChains.find((c) => c.chain.id === selectedChainId) || MAINNET_CHAINS[0]
+    : MAINNET_CHAINS[0]
 
   return (
     <DropdownMenu open={isOpen && isHydrated} onOpenChange={setIsOpen}>
@@ -79,8 +85,8 @@ export function ChainSwitcher() {
           className="gap-2 bg-background/50 backdrop-blur-sm border-border/50"
           disabled={isPending || !isHydrated}
         >
-          <span>{isHydrated ? currentChain.icon : "..."}</span>
-          <span className="hidden sm:inline">{isHydrated ? currentChain.chain.name : ""}</span>
+          <span>{currentChain.icon}</span>
+          <span className="hidden sm:inline">{currentChain.chain.name}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
@@ -92,6 +98,7 @@ export function ChainSwitcher() {
               key={c.id}
               onClick={() => {
                 switchChain?.({ chainId: c.id })
+                setSelectedChainId(c.id)
                 setIsOpen(false)
               }}
               className="flex items-center justify-between cursor-pointer"
@@ -106,7 +113,7 @@ export function ChainSwitcher() {
                   </span>
                 </div>
               </div>
-              {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
+              {selectedChainId === c.id && <Check className={`h-4 w-4 ${color}`} />}
             </DropdownMenuItem>
           ))}
 
@@ -117,6 +124,7 @@ export function ChainSwitcher() {
               key={c.id}
               onClick={() => {
                 switchChain?.({ chainId: c.id })
+                setSelectedChainId(c.id)
                 setIsOpen(false)
               }}
               className="flex items-center justify-between cursor-pointer"
@@ -128,7 +136,7 @@ export function ChainSwitcher() {
                   <span className="text-xs text-muted-foreground">{description}</span>
                 </div>
               </div>
-              {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
+              {selectedChainId === c.id && <Check className={`h-4 w-4 ${color}`} />}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
