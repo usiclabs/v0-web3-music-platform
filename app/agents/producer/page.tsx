@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Music, Sparkles, Zap, Radio, Waveform2, Code2, BookOpen, BarChart3, ArrowRight, Lightbulb, Layers } from 'lucide-react'
+import { Music, Sparkles, Zap, Radio, Waves, Code2, BookOpen, BarChart3, ArrowRight, Lightbulb, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAccount } from 'wagmi'
 
@@ -10,7 +10,7 @@ export default function ProducerAgentPage() {
 
   const benefits = [
     {
-      icon: <Waveform2 className="h-8 w-8" />,
+      icon: <Waves className="h-8 w-8" />,
       title: "Trend-to-Beat Translation",
       description: "Receives research from trend, audience, and platform agents, then converts it into genre, tempo, mood, structure, and production direction."
     },
