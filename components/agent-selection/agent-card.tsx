@@ -24,7 +24,7 @@ export function AgentCard({ agent, isSelected, onClick, rotation, scale, isMobil
   return (
     <motion.div
       onClick={onClick}
-      className={`relative cursor-pointer ${isMobile ? "h-96" : "h-96"}`}
+      className={`relative cursor-pointer ${isMobile ? "h-96" : "h-[26rem]"}`}
       style={{
         perspective: "1000px",
       }}
@@ -117,9 +117,9 @@ export function AgentCard({ agent, isSelected, onClick, rotation, scale, isMobil
         </div>
 
         {/* Stats Section */}
-        <div className="p-4 md:p-6 space-y-2 md:space-y-3">
+        <div className="p-4 md:p-6 space-y-2 md:space-y-2.5 flex-1 overflow-hidden">
           {stats.map((stat) => (
-            <div key={stat.label} className="space-y-1">
+            <div key={stat.label} className="space-y-0.5">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-white/60 uppercase tracking-widest">{stat.label}</span>
                 <span className="text-xs font-bold text-red-400">{stat.value}%</span>
