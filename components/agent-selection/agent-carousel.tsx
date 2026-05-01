@@ -68,7 +68,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
                 className="absolute transition-all duration-500"
                 style={{
                   transform: `translateX(${position * 280}px) scale(${getScale(position)})`,
-                  zIndex: isSelected === agent.id ? 50 : Math.max(0, 20 - Math.abs(position) * 5),
+                  zIndex: position === 0 ? 50 : Math.max(0, 20 - Math.abs(position) * 5),
                 }}
               >
                 <AgentCard
@@ -113,3 +113,4 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
       </div>
     </div>
   )
+}
