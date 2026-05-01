@@ -45,17 +45,17 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
   return (
     <div className="relative w-full">
       {/* Carousel Container */}
-      <div className="relative h-96 flex items-center justify-center">
+      <div className="relative h-96 flex items-center justify-center px-12 md:px-16">
         {/* Left Arrow */}
         <button
           onClick={handlePrev}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+          className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
 
         {/* Cards */}
-        <div className="relative w-full h-full flex items-center justify-center">
+        <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
           {agents.map((agent, index) => {
             const position = getCardPosition(index)
             const isVisible = Math.abs(position) <= 2
@@ -65,9 +65,10 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
             return (
               <div
                 key={agent.id}
-                className="absolute"
+                className="absolute transition-all duration-500"
                 style={{
-                  transform: `translateX(${position * 200}px) translateZ(${Math.abs(position) * -50}px)`,
+                  transform: `translateX(${position * 280}px) scale(${getScale(position)})`,
+                  zIndex: isSelected === agent.id ? 50 : Math.max(0, 20 - Math.abs(position) * 5),
                 }}
               >
                 <AgentCard
@@ -83,7 +84,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
 
           {/* Glow Ring Platform */}
           {selectedIndex >= 0 && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-24 border-2 border-red-500/30 rounded-full pointer-events-none">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-24 border-2 border-red-500/30 rounded-full pointer-events-none hidden md:block">
               <div className="absolute inset-0 bg-gradient-to-b from-red-500/20 to-transparent rounded-full animate-pulse" />
             </div>
           )}
@@ -92,7 +93,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
         {/* Right Arrow */}
         <button
           onClick={handleNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+          className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
@@ -112,4 +113,3 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
       </div>
     </div>
   )
-}
