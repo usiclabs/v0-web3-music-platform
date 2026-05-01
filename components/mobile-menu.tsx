@@ -50,24 +50,20 @@ export function MobileMenu() {
     },
   ]
 
-  // Return empty placeholder on server to prevent hydration mismatch
-  if (!isHydrated) {
-    return <div className="md:hidden w-10 h-10" />
-  }
-
   return (
     <>
       {/* Hamburger Menu Button - Mobile Only */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => isHydrated && setIsOpen(true)}
         className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
         aria-label="Open menu"
+        disabled={!isHydrated}
       >
         <Menu className="h-5 w-5 text-foreground" />
       </button>
 
       {/* Full Screen Overlay Menu */}
-      {isOpen && (
+      {isOpen && isHydrated && (
         <div
           className={`md:hidden fixed inset-0 z-[100] h-screen flex flex-col transition-all duration-300 ${
             isClosing ? "animate-out fade-out slide-out-to-right" : "animate-in fade-in slide-in-from-right"

@@ -175,17 +175,17 @@ export function NotificationCenter() {
     setUnreadCount(0)
   }
 
-  // Return empty placeholder on server to prevent hydration mismatch
-  if (!isHydrated || !address) {
-    return <div className="h-8 w-8 sm:h-10 sm:w-10" />
-  }
-
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen && isHydrated} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative h-8 w-8 sm:h-10 sm:w-10 hover:bg-accent/10">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="relative h-8 w-8 sm:h-10 sm:w-10 hover:bg-accent/10"
+          disabled={!isHydrated}
+        >
           <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-          {unreadCount > 0 && (
+          {isHydrated && unreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
@@ -195,77 +195,79 @@ export function NotificationCenter() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-80 sm:w-96 bg-card/95 backdrop-blur-2xl border border-border/70 p-0"
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-          <h3 className="font-semibold">Notifications</h3>
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-7 text-xs hover:bg-accent/10">
-                <Check className="h-3 w-3 mr-1" />
-                Mark all read
-              </Button>
-            )}
-            {notifications.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearNotifications}
-                className="h-7 text-xs hover:bg-destructive/10 text-destructive"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Clear
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <ScrollArea className="h-[400px]">
-          {notifications.length === 0 ? (
-            <div className="p-4">
-              <Empty className="border-0">
-                <EmptyHeader>
-                  <EmptyMedia>
-                    <Bell className="h-12 w-12 text-muted-foreground" />
-                  </EmptyMedia>
-                  <EmptyTitle>No Notifications</EmptyTitle>
-                  <EmptyDescription>You&apos;re all caught up! New notifications will appear here.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/30">
-              {notifications.map((notif) => (
-                <DropdownMenuItem
-                  key={notif.id}
-                  className={`px-4 py-3 cursor-pointer focus:bg-accent/10 ${!notif.is_read ? "bg-accent/5" : ""}`}
-                  onClick={() => handleNotificationClick(notif)}
+      {isHydrated && (
+        <DropdownMenuContent
+          align="end"
+          className="w-80 sm:w-96 bg-card/95 backdrop-blur-2xl border border-border/70 p-0"
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+            <h3 className="font-semibold">Notifications</h3>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-7 text-xs hover:bg-accent/10">
+                  <Check className="h-3 w-3 mr-1" />
+                  Mark all read
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearNotifications}
+                  className="h-7 text-xs hover:bg-destructive/10 text-destructive"
                 >
-                  <div className="flex gap-3 w-full">
-                    <div className="flex-shrink-0 mt-1">{getNotificationIcon(notif.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notif.is_read ? "font-medium" : ""}`}>{getNotificationText(notif)}</p>
-                      {notif.content && notif.type !== "follow" && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notif.content}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
-                      </p>
-                    </div>
-                    {!notif.is_read && (
-                      <div className="flex-shrink-0">
-                        <div className="h-2 w-2 rounded-full bg-accent" />
-                      </div>
-                    )}
-                  </div>
-                </DropdownMenuItem>
-              ))}
+                  <X className="h-3 w-3 mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
-          )}
-        </ScrollArea>
-      </DropdownMenuContent>
+          </div>
+
+          <ScrollArea className="h-[400px]">
+            {notifications.length === 0 ? (
+              <div className="p-4">
+                <Empty className="border-0">
+                  <EmptyHeader>
+                    <EmptyMedia>
+                      <Bell className="h-12 w-12 text-muted-foreground" />
+                    </EmptyMedia>
+                    <EmptyTitle>No Notifications</EmptyTitle>
+                    <EmptyDescription>You&apos;re all caught up! New notifications will appear here.</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/30">
+                {notifications.map((notif) => (
+                  <DropdownMenuItem
+                    key={notif.id}
+                    className={`px-4 py-3 cursor-pointer focus:bg-accent/10 ${!notif.is_read ? "bg-accent/5" : ""}`}
+                    onClick={() => handleNotificationClick(notif)}
+                  >
+                    <div className="flex gap-3 w-full">
+                      <div className="flex-shrink-0 mt-1">{getNotificationIcon(notif.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${!notif.is_read ? "font-medium" : ""}`}>{getNotificationText(notif)}</p>
+                        {notif.content && notif.type !== "follow" && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notif.content}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      {!notif.is_read && (
+                        <div className="flex-shrink-0">
+                          <div className="h-2 w-2 rounded-full bg-accent" />
+                        </div>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DropdownMenuContent>
+      )}
     </DropdownMenu>
   )
 }
