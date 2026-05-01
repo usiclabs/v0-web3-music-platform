@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAccount, useSwitchChain } from "wagmi"
 import { base, baseSepolia, mainnet, arbitrum } from "wagmi/chains"
 import { monad, unichain } from "@/lib/web3/config"
@@ -61,9 +61,19 @@ export function ChainSwitcher() {
   const { chain } = useAccount()
   const { switchChain, isPending } = useSwitchChain()
   const [isOpen, setIsOpen] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   const allChains = [...MAINNET_CHAINS, ...TESTNET_CHAINS]
   const currentChain = allChains.find((c) => c.chain.id === chain?.id) || MAINNET_CHAINS[0]
+
+  // Return placeholder during SSR to prevent hydration mismatch
+  if (!isHydrated) {
+    return <div className="h-8 sm:h-10 w-20 sm:w-32" />
+  }
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

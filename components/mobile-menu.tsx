@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,15 @@ import Image from "next/image"
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { address, isConnected, connect } = useWallet()
+
+  // Mark component as hydrated after first mount
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + "/")
 
@@ -43,6 +49,11 @@ export function MobileMenu() {
       pulseColor: "bg-emerald-400",
     },
   ]
+
+  // Return empty placeholder on server to prevent hydration mismatch
+  if (!isHydrated) {
+    return <div className="md:hidden w-10 h-10" />
+  }
 
   return (
     <>
