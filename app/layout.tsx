@@ -39,11 +39,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "MyUSIC - Web3 Music Streaming",
     description: "Blockchain-powered music streaming with micropayments and NFTs",
-    url: "https://myusic.xyz",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://myusic.xyz",
     siteName: "MyUSIC",
     images: [
       {
-        url: "https://myusic.xyz/og-image.png",
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://myusic.xyz"}/og-image.png`,
         width: 1200,
         height: 630,
         alt: "MyUSIC - Web3 Music Platform",
@@ -56,14 +56,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "MyUSIC - Web3 Music Streaming",
     description: "Blockchain-powered music streaming with micropayments and NFTs",
-    images: ["https://myusic.xyz/og-image.png"],
+    images: [`${process.env.NEXT_PUBLIC_APP_URL || "https://myusic.xyz"}/og-image.png`],
   },
   other: {
     "fc:frame": "vNext",
-    "fc:frame:image": "https://myusic.xyz/og-image.png",
+    "fc:frame:image": `${process.env.NEXT_PUBLIC_APP_URL || "https://myusic.xyz"}/og-image.png`,
     "fc:frame:button:1": "Open MyUSIC",
     "fc:frame:button:1:action": "link",
-    "fc:frame:button:1:target": "https://myusic.xyz",
+    "fc:frame:button:1:target": process.env.NEXT_PUBLIC_APP_URL || "https://myusic.xyz",
   },
 }
 
