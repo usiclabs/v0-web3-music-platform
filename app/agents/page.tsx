@@ -114,6 +114,22 @@ export default function AgentsPage() {
               Connect your wallet to access agent dashboards
             </p>
           )}
+
+          {/* Quick Links to Skills & Docs */}
+          <div className="mt-6 flex justify-center gap-4 flex-wrap animate-slide-up animation-delay-6000">
+            <Link href="/agents/skills">
+              <Button variant="outline" size="sm" className="border-white/20 hover:border-white/40 text-white/60 hover:text-white">
+                <Zap className="w-4 h-4 mr-2" />
+                Explore All Skills
+              </Button>
+            </Link>
+            <Link href="/agents/documentation">
+              <Button variant="outline" size="sm" className="border-white/20 hover:border-white/40 text-white/60 hover:text-white">
+                <ArrowRight className="w-4 h-4 mr-2" />
+                View Specifications
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Cards Grid */}
@@ -198,18 +214,75 @@ export default function AgentsPage() {
 
           {/* Info Section */}
           <div className="mt-16 pt-12 border-t border-white/10">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-4 gap-8">
               <div className="text-center animate-slide-up animation-delay-2000">
                 <div className="text-4xl font-bold text-accent mb-2">4</div>
-                <p className="text-white/60">Autonomous Agents</p>
+                <p className="text-white/60">Pre-built Agents</p>
               </div>
               <div className="text-center animate-slide-up animation-delay-4000">
+                <div className="text-4xl font-bold text-accent mb-2">6</div>
+                <p className="text-white/60">Core Skills</p>
+              </div>
+              <div className="text-center animate-slide-up animation-delay-6000">
                 <div className="text-4xl font-bold text-accent mb-2">24/7</div>
                 <p className="text-white/60">Always Working</p>
               </div>
-              <div className="text-center animate-slide-up animation-delay-4000">
+              <div className="text-center animate-slide-up animation-delay-8000">
                 <div className="text-4xl font-bold text-accent mb-2">∞</div>
                 <p className="text-white/60">Earning Potential</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Agent Skills Highlight */}
+          <div className="mt-16 pt-12 border-t border-white/10">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-white mb-6 text-center">Agent Skills Framework</h2>
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                  <h3 className="font-semibold text-white mb-2">Discovery Skills</h3>
+                  <p className="text-sm text-white/60 mb-3">Autonomously identify emerging artists and investment opportunities</p>
+                  <ul className="text-xs text-white/50 space-y-1">
+                    <li>✓ Artist Discovery Engine</li>
+                    <li>✓ Token Sniper</li>
+                    <li>✓ Social Amplifier</li>
+                  </ul>
+                </div>
+                <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                  <h3 className="font-semibold text-white mb-2">Portfolio Skills</h3>
+                  <p className="text-sm text-white/60 mb-3">Manage and optimize your token holdings automatically</p>
+                  <ul className="text-xs text-white/50 space-y-1">
+                    <li>✓ Portfolio Rebalancer</li>
+                    <li>✓ Risk Management</li>
+                    <li>✓ Performance Tracking</li>
+                  </ul>
+                </div>
+                <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                  <h3 className="font-semibold text-white mb-2">Trading Skills</h3>
+                  <p className="text-sm text-white/60 mb-3">Execute trades and provide autonomous market making</p>
+                  <ul className="text-xs text-white/50 space-y-1">
+                    <li>✓ Market Maker Bot</li>
+                    <li>✓ Liquidity Management</li>
+                    <li>✓ Spread Optimization</li>
+                  </ul>
+                </div>
+                <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+                  <h3 className="font-semibold text-white mb-2">Streaming Skills</h3>
+                  <p className="text-sm text-white/60 mb-3">Maximize artist revenue through intelligent optimization</p>
+                  <ul className="text-xs text-white/50 space-y-1">
+                    <li>✓ Streaming Optimizer</li>
+                    <li>✓ Revenue Forecasting</li>
+                    <li>✓ Split Configuration</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="text-center">
+                <Link href="/agents/skills">
+                  <Button className="bg-accent hover:bg-accent/90">
+                    Explore All Skills & Workflows
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
