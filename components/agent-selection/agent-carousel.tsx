@@ -45,17 +45,17 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
   return (
     <div className="relative w-full">
       {/* Carousel Container */}
-      <div className="relative h-96 flex items-center justify-center px-12 md:px-16">
-        {/* Left Arrow */}
+      <div className="relative h-80 md:h-96 flex items-center justify-center px-4 md:px-12 lg:px-16">
+        {/* Left Arrow - Hidden on mobile, visible on desktop */}
         <button
           onClick={handlePrev}
-          className="absolute left-2 md:left-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
 
         {/* Cards */}
-        <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-full flex items-center justify-center overflow-visible">
           {agents.map((agent, index) => {
             const position = getCardPosition(index)
             const isVisible = Math.abs(position) <= 2
@@ -67,7 +67,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
                 key={agent.id}
                 className="absolute transition-all duration-500"
                 style={{
-                  transform: `translateX(${position * 280}px) scale(${getScale(position)})`,
+                  transform: `translateX(${position * 300}px) scale(${getScale(position)})`,
                   zIndex: position === 0 ? 50 : Math.max(0, 20 - Math.abs(position) * 5),
                 }}
               >
@@ -77,36 +77,37 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
                   onClick={() => onSelectAgent(agent.id)}
                   rotation={getRotation(position)}
                   scale={getScale(position)}
+                  isMobile={Math.abs(position) !== 0}
                 />
               </div>
             )
           })}
 
-          {/* Glow Ring Platform */}
+          {/* Glow Ring Platform - Desktop only */}
           {selectedIndex >= 0 && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-24 border-2 border-red-500/30 rounded-full pointer-events-none hidden md:block">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-24 border-2 border-red-500/30 rounded-full pointer-events-none hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-b from-red-500/20 to-transparent rounded-full animate-pulse" />
             </div>
           )}
         </div>
 
-        {/* Right Arrow */}
+        {/* Right Arrow - Hidden on mobile, visible on desktop */}
         <button
           onClick={handleNext}
-          className="absolute right-2 md:right-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
+          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-40 p-2 rounded-full border border-red-500/40 text-red-400 hover:border-red-500 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300"
         >
           <ChevronRight className="w-6 h-6" />
         </button>
       </div>
 
       {/* Mobile Pagination Dots */}
-      <div className="flex justify-center gap-2 mt-8 md:hidden">
+      <div className="flex justify-center gap-2 mt-6 md:mt-8">
         {agents.map((agent, index) => (
           <button
             key={agent.id}
             onClick={() => onSelectAgent(agent.id)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              selectedIndex === index ? "w-8 bg-red-500" : "bg-red-500/30 hover:bg-red-500/60"
+            className={`rounded-full transition-all duration-300 ${
+              selectedIndex === index ? "w-8 h-2.5 bg-red-500" : "w-2.5 h-2.5 bg-red-500/40 hover:bg-red-500/60"
             }`}
           />
         ))}
