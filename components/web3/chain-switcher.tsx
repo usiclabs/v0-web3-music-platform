@@ -70,72 +70,69 @@ export function ChainSwitcher() {
   const allChains = [...MAINNET_CHAINS, ...TESTNET_CHAINS]
   const currentChain = allChains.find((c) => c.chain.id === chain?.id) || MAINNET_CHAINS[0]
 
-  // Return placeholder during SSR to prevent hydration mismatch
-  if (!isHydrated) {
-    return <div className="h-8 sm:h-10 w-20 sm:w-32" />
-  }
-
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen && isHydrated} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           size="sm"
           className="gap-2 bg-background/50 backdrop-blur-sm border-border/50"
-          disabled={isPending}
+          disabled={isPending || !isHydrated}
         >
-          <span>{currentChain.icon}</span>
-          <span className="hidden sm:inline">{currentChain.chain.name}</span>
+          <span>{isHydrated ? currentChain.icon : "..."}</span>
+          <span className="hidden sm:inline">{isHydrated ? currentChain.chain.name : ""}</span>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Mainnets</DropdownMenuLabel>
-        {MAINNET_CHAINS.map(({ chain: c, icon, color, description }) => (
-          <DropdownMenuItem
-            key={c.id}
-            onClick={() => {
-              switchChain?.({ chainId: c.id })
-              setIsOpen(false)
-            }}
-            className="flex items-center justify-between cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <span>{icon}</span>
-              <div className="flex flex-col">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  {c.id === monad.id && <Zap className="h-3 w-3 text-purple-500" />}
-                  {description}
-                </span>
+      {isHydrated && (
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Mainnets</DropdownMenuLabel>
+          {MAINNET_CHAINS.map(({ chain: c, icon, color, description }) => (
+            <DropdownMenuItem
+              key={c.id}
+              onClick={() => {
+                switchChain?.({ chainId: c.id })
+                setIsOpen(false)
+              }}
+              className="flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span>{icon}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    {c.id === monad.id && <Zap className="h-3 w-3 text-purple-500" />}
+                    {description}
+                  </span>
+                </div>
               </div>
-            </div>
-            {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
-          </DropdownMenuItem>
-        ))}
+              {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
+            </DropdownMenuItem>
+          ))}
 
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs text-muted-foreground">Testnets</DropdownMenuLabel>
-        {TESTNET_CHAINS.map(({ chain: c, icon, color, description }) => (
-          <DropdownMenuItem
-            key={c.id}
-            onClick={() => {
-              switchChain?.({ chainId: c.id })
-              setIsOpen(false)
-            }}
-            className="flex items-center justify-between cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <span>{icon}</span>
-              <div className="flex flex-col">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-xs text-muted-foreground">{description}</span>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Testnets</DropdownMenuLabel>
+          {TESTNET_CHAINS.map(({ chain: c, icon, color, description }) => (
+            <DropdownMenuItem
+              key={c.id}
+              onClick={() => {
+                switchChain?.({ chainId: c.id })
+                setIsOpen(false)
+              }}
+              className="flex items-center justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <span>{icon}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">{description}</span>
+                </div>
               </div>
-            </div>
-            {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
+              {chain?.id === c.id && <Check className={`h-4 w-4 ${color}`} />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      )}
     </DropdownMenu>
   )
 }
