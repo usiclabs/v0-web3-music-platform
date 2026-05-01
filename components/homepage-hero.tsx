@@ -109,7 +109,7 @@ export function HomepageHero() {
           </div>
 
           <h1
-            className={`font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 ${
+            className={`font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 uppercase tracking-tight ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >

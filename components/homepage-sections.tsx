@@ -69,7 +69,7 @@ export function HomepageSections() {
               isVisible("how-it-works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="font-serif text-5xl md:text-6xl font-bold mb-6 text-balance">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">
               How It Works
             </h2>
             <p className="text-lg md:text-xl text-foreground/70 font-medium">Simple streaming. Instant payments.</p>
@@ -120,7 +120,7 @@ export function HomepageSections() {
                     {step.number}
                   </div>
                 </div>
-                <h3 className="font-serif text-2xl font-bold mb-4 group-hover:text-accent transition-colors">{step.title}</h3>
+                <h3 className="font-display text-2xl font-bold mb-4 group-hover:text-accent transition-colors uppercase tracking-wide">{step.title}</h3>
                 <p className="text-foreground/70 leading-relaxed text-lg">{step.description}</p>
               </div>
             ))}
@@ -158,7 +158,7 @@ export function HomepageSections() {
               <Sparkles className="w-4 h-4 text-accent" />
               <span className="text-sm font-medium text-accent">Powered by ERC-8004 Trustless Agents</span>
             </div>
-            <h2 className="font-serif text-5xl md:text-6xl font-bold mb-8 text-balance">
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-8 text-balance uppercase tracking-wider">
               AI Playlist Curator
             </h2>
             <p className="text-lg md:text-xl text-foreground/70 mb-4 font-medium">
@@ -265,8 +265,8 @@ export function HomepageSections() {
                 isVisible("for-artists") ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
               }`}
             >
-              <h2 className="text-5xl md:text-7xl font-bold mb-8 text-balance leading-tight">
-                Keep 100% of your earnings.
+              <h2 className="font-display text-5xl md:text-6xl font-bold mb-8 text-balance leading-tight uppercase tracking-wider">
+                Keep 100% of your earnings
               </h2>
 
               <div className="space-y-8">
@@ -359,7 +359,7 @@ export function HomepageSections() {
               isVisible("for-fans") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="font-serif text-5xl md:text-6xl font-bold mb-6 text-balance">Stream music. Pay artists.</h2>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">Stream Music. Pay Artists.</h2>
             <p className="text-xl md:text-2xl text-foreground/80 mb-4 font-medium">Pennies per play. 100% to creators.</p>
             <p className="text-base md:text-lg text-foreground/60 leading-relaxed">
               No subscriptions. No ads. Just direct support for the music you love.
@@ -441,7 +441,7 @@ export function HomepageSections() {
               isVisible("trust") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-5xl md:text-7xl font-bold mb-6 text-balance">Built for the Open Internet</h2>
+            <h2 className="font-display text-5xl md:text-6xl font-bold mb-6 text-balance uppercase tracking-wider">Built for the Open Internet</h2>
             <p className="text-2xl text-foreground/70 italic">"Where every creator can earn instantly and globally."</p>
           </div>
 
