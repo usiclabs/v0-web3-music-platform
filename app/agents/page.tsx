@@ -48,7 +48,7 @@ export default function AgentsPage() {
       <div className="min-h-screen flex flex-col">
         {/* Content Area */}
         <div className="flex-1 overflow-auto w-full">
-          <div className="w-full max-w-6xl mx-auto px-3 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12 pb-32 md:pb-40">
+          <div className="w-full max-w-6xl mx-auto px-3 md:px-6 lg:px-8 py-8 md:py-8 lg:py-12 pb-32 md:pb-40">
             {/* Title Section */}
             <div className="mb-6 md:mb-8 lg:mb-12 text-center">
               <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">AI AGENT NETWORK</p>

@@ -24,7 +24,7 @@ export function AgentCard({ agent, isSelected, onClick, rotation, scale, isMobil
   return (
     <motion.div
       onClick={onClick}
-      className={`relative cursor-pointer ${isMobile ? "h-80" : "h-96"}`}
+      className={`relative cursor-pointer ${isMobile ? "h-96" : "h-96"}`}
       style={{
         perspective: "1000px",
       }}

@@ -112,13 +112,6 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
               </div>
             )
           })}
-
-          {/* Glow Ring Platform - Desktop only */}
-          {selectedIndex >= 0 && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-24 border-2 border-red-500/30 rounded-full pointer-events-none hidden lg:block">
-              <div className="absolute inset-0 bg-gradient-to-b from-red-500/20 to-transparent rounded-full animate-pulse" />
-            </div>
-          )}
         </div>
 
         {/* Right Arrow - Hidden on mobile, visible on desktop */}
