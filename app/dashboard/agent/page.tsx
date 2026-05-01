@@ -647,7 +647,6 @@ export default function AgentDashboardPage() {
                   {config.is_active ? "Active" : "Paused"}
                 </div>
               </div>
-              </div>
             </div>
           </div>
         </div>
