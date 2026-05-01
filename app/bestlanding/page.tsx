@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Music, Zap, Shield, Users, TrendingUp, Github, Twitter, Linkedin, Mail } from 'lucide-react'
 import { useState } from 'react'
+import { FeaturedArtistsCarousel } from '@/components/featured-artists-carousel'
+import { TrendingWidget } from '@/components/trending-widget'
 
 // Stat Counter Component
 function StatCounter({ value, suffix, delay }: { value: number; suffix: string; delay: number }) {
@@ -1305,6 +1307,52 @@ function HowItWorksSection() {
   )
 }
 
+// Music Showcase Section - Featuring real tracks from artists
+function MusicShowcaseSection() {
+  return (
+    <section className="py-24 md:py-40 border-t border-[rgba(255,255,255,0.05)]">
+      <div className="container mx-auto px-4">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 text-balance">
+            Discover Artists & Tracks
+          </h2>
+          <p className="text-lg text-[#9ca3af] max-w-3xl mx-auto leading-relaxed">
+            Explore the next generation of independent artists creating on the platform. Listen to trending tracks and discover emerging talent.
+          </p>
+        </motion.div>
+
+        {/* Featured Artists Carousel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          viewport={{ once: true }}
+          className="mb-12"
+        >
+          <FeaturedArtistsCarousel />
+        </motion.div>
+
+        {/* Trending Widget */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          viewport={{ once: true }}
+        >
+          <TrendingWidget />
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 // FAQ Section
 function FAQSection() {
   const faqs = [
@@ -1604,6 +1652,7 @@ export default function BestLandingPage() {
       <ComparisonSection />
       <MarketOpportunitySection />
       <TestimonialsSection />
+      <MusicShowcaseSection />
       <FAQSection />
       <CTASection />
       <Footer />

@@ -97,8 +97,8 @@ function LivePulse({ active }: { active: boolean }) {
   if (!active) return null
   return (
     <span className="relative flex h-2 w-2">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
     </span>
   )
 }
@@ -433,7 +433,7 @@ export default function AgentDashboardPage() {
           {Array.from({ length: 48 }).map((_, i) => (
             <div
               key={i}
-              className="w-2 bg-gradient-to-t from-red-500 to-red-500/50 rounded-t"
+              className="w-2 bg-gradient-to-t from-cyan-500 to-cyan-500/50 rounded-t"
               style={{
                 height: `${Math.random() * 100 + 20}%`,
                 animation: `pulse ${0.5 + Math.random() * 1}s ease-in-out infinite`,
@@ -446,7 +446,7 @@ export default function AgentDashboardPage() {
         {/* Floating vinyl records */}
         <div className="fixed top-20 left-10 w-32 h-32 opacity-10 animate-spin" style={{ animationDuration: "20s" }}>
           <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-red-500/30" />
+            <div className="w-8 h-8 rounded-full bg-cyan-500/30" />
           </div>
         </div>
         <div
@@ -454,32 +454,32 @@ export default function AgentDashboardPage() {
           style={{ animationDuration: "15s", animationDirection: "reverse" }}
         >
           <div className="w-full h-full rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full bg-red-500/30" />
+            <div className="w-6 h-6 rounded-full bg-cyan-500/30" />
           </div>
         </div>
 
-        {/* Red glow orbs */}
-        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
+        {/* Teal glow orbs */}
+        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
         <div
-          className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-red-600/10 rounded-full blur-3xl animate-pulse"
+          className="fixed bottom-1/4 right-1/4 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
 
         <div className="relative max-w-2xl w-full z-10">
           {/* Ambient glow effect */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-red-500/20 via-red-600/30 to-red-500/20 rounded-3xl blur-2xl opacity-50" />
+          <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-emerald-600/30 to-cyan-500/20 rounded-3xl blur-2xl opacity-50" />
 
           <Card className="relative border-0 bg-card/90 backdrop-blur-2xl shadow-2xl overflow-hidden">
             {/* Top gradient border */}
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
             <CardContent className="pt-16 pb-12 px-8 md:px-12 text-center">
               {/* Animated icon with vinyl/music theme */}
               <div className="relative w-28 h-28 mx-auto mb-8">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/30 to-red-600/30 blur-xl animate-pulse" />
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/30 to-emerald-600/30 blur-xl animate-pulse" />
                 {/* Spinning vinyl disc */}
                 <div
-                  className="relative w-28 h-28 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-red-500/30 shadow-lg animate-spin"
+                  className="relative w-28 h-28 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-cyan-500/30 shadow-lg animate-spin"
                   style={{ animationDuration: "8s" }}
                 >
                   {/* Vinyl grooves */}
@@ -487,13 +487,13 @@ export default function AgentDashboardPage() {
                   <div className="absolute inset-4 rounded-full border border-zinc-700/30" />
                   <div className="absolute inset-6 rounded-full border border-zinc-700/20" />
                   {/* Center label */}
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center">
                     <Bot className="w-5 h-5 text-white" />
                   </div>
                 </div>
                 {/* Pulsing status dot */}
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 animate-ping" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-500 animate-ping" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
                   <Zap className="w-3 h-3 text-white" />
                 </span>
               </div>
@@ -508,25 +508,25 @@ export default function AgentDashboardPage() {
 
               {/* Feature grid with music theme */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Headphones className="w-6 h-6 text-red-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Headphones className="w-6 h-6 text-cyan-500" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Always Listening</h3>
                   <p className="text-sm text-muted-foreground">24/7 market monitoring for artist tokens</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-600/10 to-red-600/5 border border-red-600/10 hover:border-red-600/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Shield className="w-6 h-6 text-red-400" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-emerald-600/10 to-emerald-600/5 border border-emerald-600/10 hover:border-emerald-600/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Shield className="w-6 h-6 text-emerald-400" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Protected Drops</h3>
                   <p className="text-sm text-muted-foreground">Built-in stop-loss & risk management</p>
                 </div>
 
-                <div className="group p-5 rounded-2xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/10 hover:border-red-500/30 transition-all duration-300">
-                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <TrendingUp className="w-6 h-6 text-red-500" />
+                <div className="group p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/10 hover:border-cyan-500/30 transition-all duration-300">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <TrendingUp className="w-6 h-6 text-cyan-500" />
                   </div>
                   <h3 className="font-semibold mb-1 text-foreground">Hit Detector</h3>
                   <p className="text-sm text-muted-foreground">Multi-signal analysis for rising artists</p>
@@ -537,7 +537,7 @@ export default function AgentDashboardPage() {
               <div className="flex items-center justify-center gap-6 md:gap-8 mb-10 py-4 border-y border-border/50">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Music className="w-4 h-4 text-red-500" />
+                    <Music className="w-4 h-4 text-cyan-500" />
                     <p className="text-2xl font-bold font-mono text-foreground">4</p>
                   </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Strategies</p>
@@ -545,7 +545,7 @@ export default function AgentDashboardPage() {
                 <div className="w-px h-8 bg-border/50" />
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Radio className="w-4 h-4 text-red-500" />
+                    <Radio className="w-4 h-4 text-cyan-500" />
                     <p className="text-2xl font-bold font-mono text-foreground">24/7</p>
                   </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">On Air</p>
@@ -553,7 +553,7 @@ export default function AgentDashboardPage() {
                 <div className="w-px h-8 bg-border/50" />
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <Disc3 className="w-4 h-4 text-red-500" />
+                    <Disc3 className="w-4 h-4 text-cyan-500" />
                     <p className="text-2xl font-bold font-mono text-foreground">x402</p>
                   </div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Protocol</p>
@@ -567,8 +567,8 @@ export default function AgentDashboardPage() {
 
           {/* Bottom badge */}
           <div className="flex justify-center mt-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur border border-red-500/20 text-sm text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 backdrop-blur border border-cyan-500/20 text-sm text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
               Powered by ERC-8004 Agent Protocol
             </div>
           </div>
@@ -590,13 +590,13 @@ export default function AgentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-red-500/10 bg-gradient-to-r from-card/80 via-red-500/5 to-card/80 backdrop-blur-sm sticky top-0 z-40">
+            <div className="border-b border-cyan-500/10 bg-gradient-to-r from-card/80 via-cyan-500/5 to-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30 animate-pulse"
+                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 animate-pulse"
                   style={{ animationDuration: "3s" }}
                 >
                   <Disc3 className="w-7 h-7 text-white" />
@@ -611,9 +611,9 @@ export default function AgentDashboardPage() {
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold">{config.name || "Beat Scout Agent"}</h1>
                   {config.is_active && (
-                    <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20">
-                      <Radio className="w-3 h-3 mr-1" />
-                      On Air
+                    <Badge variant="outline" className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+                      <Radio className="w-3 h-3 mr-1 text-cyan-500" />
+                      Scouting...
                     </Badge>
                   )}
                 </div>
@@ -626,26 +626,25 @@ export default function AgentDashboardPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleRunCycle}
-                disabled={isRunning || !config.is_active}
-                className="gap-2 bg-transparent border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30"
+                disabled={isRunning}
+                className="gap-2 bg-transparent border-cyan-500/20 hover:bg-cyan-500/10 hover:border-cyan-500/30"
               >
                 {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
                 Drop Scout
               </Button>
 
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-red-500/10 shadow-sm">
+                <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-card border border-cyan-500/10 shadow-sm">
                 <span className="text-sm font-medium text-muted-foreground">Agent</span>
                 <Switch
                   checked={config.is_active}
                   onCheckedChange={toggleAgent}
-                  className="data-[state=checked]:bg-red-500"
+                  disabled={isSaving}
+                  className="data-[state=checked]:bg-cyan-500"
                 />
                 <div
-                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                    config.is_active ? "bg-red-500/10 text-red-400" : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${config.is_active ? "bg-cyan-500/10 text-cyan-400" : "bg-muted text-muted-foreground"}`}
                 >
-                  {config.is_active ? "Live" : "Off Air"}
+                  {config.is_active ? "Active" : "Paused"}
                 </div>
               </div>
             </div>
@@ -656,8 +655,8 @@ export default function AgentDashboardPage() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {/* Portfolio Value Card */}
-          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-red-500/50">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-cyan-500/50">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <CardContent className="pt-6 relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -670,23 +669,23 @@ export default function AgentDashboardPage() {
                     })}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                  <Music className="w-6 h-6 text-red-500" />
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                  <Music className="w-6 h-6 text-cyan-500" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div
                     className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
-                      isPositive ? "bg-emerald-500/10" : "bg-red-500/10"
+                      isPositive ? "bg-emerald-500/10" : "bg-rose-500/10"
                     }`}
                   >
                     {isPositive ? (
                       <TrendingUp className="w-3 h-3 text-emerald-500" />
                     ) : (
-                      <TrendingDown className="w-3 h-3 text-red-500" />
+                      <TrendingDown className="w-3 h-3 text-rose-500" />
                     )}
-                    <span className={`text-sm font-semibold ${isPositive ? "text-emerald-500" : "text-red-500"}`}>
+                    <span className={`text-sm font-semibold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}>
                       {isPositive ? "+" : ""}
                       {totalReturn.toFixed(2)}%
                     </span>
@@ -699,8 +698,8 @@ export default function AgentDashboardPage() {
           </Card>
 
           {/* Budget Card */}
-          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-red-400/50">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-400/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-emerald-400/50">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <CardContent className="pt-6 relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -709,8 +708,8 @@ export default function AgentDashboardPage() {
                     ${remainingBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-red-400/10 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-red-400" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-400/10 flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-emerald-400" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -720,7 +719,7 @@ export default function AgentDashboardPage() {
                 </div>
                 <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-500"
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, budgetUsedPercent)}%` }}
                   />
                 </div>
@@ -729,16 +728,16 @@ export default function AgentDashboardPage() {
           </Card>
 
           {/* Trades Card */}
-          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-red-300/50">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-300/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/50 shadow-xl border-l-2 border-l-teal-400/50">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-400/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <CardContent className="pt-6 relative">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-1">Total Drops</p>
                   <p className="text-3xl font-bold tracking-tight">{stats.totalTrades}</p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-red-300/10 flex items-center justify-center">
-                  <Mic2 className="w-6 h-6 text-red-300" />
+                <div className="w-12 h-12 rounded-2xl bg-teal-400/10 flex items-center justify-center">
+                  <Mic2 className="w-6 h-6 text-teal-400" />
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -790,31 +789,31 @@ export default function AgentDashboardPage() {
 
         <Tabs defaultValue="portfolio" className="space-y-4 md:space-y-6">
           <div className="flex items-center justify-between">
-            <TabsList className="bg-card/50 border border-red-500/10 p-1 h-auto w-full md:w-auto overflow-x-auto scrollbar-hide">
+            <TabsList className="bg-card/50 border border-cyan-500/10 p-1 h-auto w-full md:w-auto overflow-x-auto scrollbar-hide">
               <TabsTrigger
                 value="portfolio"
-                className="gap-1.5 md:gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Music className="w-4 h-4" />
                 <span className="hidden sm:inline">Catalog</span>
               </TabsTrigger>
               <TabsTrigger
                 value="trades"
-                className="gap-1.5 md:gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Activity className="w-4 h-4" />
                 <span className="hidden sm:inline">Drops</span>
               </TabsTrigger>
               <TabsTrigger
                 value="activity"
-                className="gap-1.5 md:gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Radio className="w-4 h-4" />
                 <span className="hidden sm:inline">Feed</span>
               </TabsTrigger>
               <TabsTrigger
                 value="settings"
-                className="gap-1.5 md:gap-2 data-[state=active]:bg-red-500/10 data-[state=active]:text-red-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
+                className="gap-1.5 md:gap-2 data-[state=active]:bg-cyan-500/10 data-[state=active]:text-cyan-400 data-[state=active]:shadow-sm px-2.5 md:px-4 py-2 min-w-fit"
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Mix</span>
@@ -824,12 +823,12 @@ export default function AgentDashboardPage() {
 
           {/* Portfolio Tab */}
           <TabsContent value="portfolio" className="mt-4 md:mt-6">
-            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
-              <CardHeader className="border-b border-red-500/10 p-4 md:p-6">
+            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
+              <CardHeader className="border-b border-cyan-500/10 p-4 md:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                      <Disc3 className="w-5 h-5 text-red-500" />
+                      <Disc3 className="w-5 h-5 text-cyan-500" />
                       Artist Token Catalog
                     </CardTitle>
                     <CardDescription className="text-xs md:text-sm">
@@ -841,7 +840,7 @@ export default function AgentDashboardPage() {
                       variant="outline"
                       size="sm"
                       asChild
-                      className="w-full sm:w-auto bg-transparent border-red-500/20 hover:bg-red-500/10"
+                      className="w-full sm:w-auto bg-transparent border-cyan-500/20 hover:bg-cyan-500/10"
                     >
                       <Link href="/tokens">
                         Browse All Artists
@@ -854,8 +853,8 @@ export default function AgentDashboardPage() {
               <CardContent className="p-0">
                 {portfolio.length === 0 ? (
                   <div className="text-center py-12 md:py-16 px-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                      <Headphones className="w-7 h-7 md:w-8 md:h-8 text-red-500/50" />
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                      <Headphones className="w-7 h-7 md:w-8 md:h-8 text-cyan-500/50" />
                     </div>
                     <h3 className="font-semibold mb-2 text-sm md:text-base">No tracks in rotation</h3>
                     <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
@@ -864,20 +863,20 @@ export default function AgentDashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-red-500/10">
+                  <div className="divide-y divide-cyan-500/10">
                     {portfolio.map((item: PortfolioItem, index: number) => (
                       <div
                         key={item.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-red-500/5 transition-colors gap-3"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-cyan-500/5 transition-colors gap-3"
                       >
                         <div className="flex items-center gap-3 md:gap-4">
                           <div className="relative">
-                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-red-500/20">
-                              <span className="text-xs md:text-sm font-bold text-red-400">
+                            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center ring-2 ring-cyan-500/20">
+                              <span className="text-xs md:text-sm font-bold text-cyan-400">
                                 {item.token_symbol?.slice(0, 2) || "??"}
                               </span>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-red-500 border-2 border-background flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white">
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-cyan-500 border-2 border-background flex items-center justify-center text-[9px] md:text-[10px] font-bold text-white">
                               {index + 1}
                             </div>
                           </div>
@@ -900,7 +899,7 @@ export default function AgentDashboardPage() {
                               ${item.current_value.toFixed(2)}
                             </p>
                             <p
-                              className={`text-xs md:text-sm ${item.unrealized_pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}
+                              className={`text-xs md:text-sm ${item.unrealized_pnl >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                             >
                               {item.unrealized_pnl >= 0 ? "+" : ""}
                               {item.unrealized_pnl.toFixed(2)} P&L
@@ -917,12 +916,12 @@ export default function AgentDashboardPage() {
 
           {/* Trades Tab */}
           <TabsContent value="trades" className="mt-4 md:mt-6">
-            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
-              <CardHeader className="border-b border-red-500/10 p-4 md:p-6">
+            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
+              <CardHeader className="border-b border-cyan-500/10 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                      <Mic2 className="w-5 h-5 text-red-500" />
+                      <Mic2 className="w-5 h-5 text-cyan-500" />
                       Recent Drops
                     </CardTitle>
                     <CardDescription className="text-xs md:text-sm">
@@ -934,8 +933,8 @@ export default function AgentDashboardPage() {
               <CardContent className="p-0">
                 {trades.length === 0 ? (
                   <div className="text-center py-12 md:py-16 px-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                      <Radio className="w-7 h-7 md:w-8 md:h-8 text-red-500/50" />
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                      <Radio className="w-7 h-7 md:w-8 md:h-8 text-cyan-500/50" />
                     </div>
                     <h3 className="font-semibold mb-2 text-sm md:text-base">No drops yet</h3>
                     <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
@@ -944,21 +943,21 @@ export default function AgentDashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-red-500/10">
+                  <div className="divide-y divide-cyan-500/10">
                     {trades.map((trade: Trade) => (
                       <div
                         key={trade.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-red-500/5 transition-colors gap-3"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 hover:bg-cyan-500/5 transition-colors gap-3"
                       >
                         <div className="flex items-center gap-3 md:gap-4">
                           <div className="relative">
                             <div
-                              className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ring-1 ring-border ${trade.trade_type === "buy" ? "bg-emerald-500/20" : "bg-red-500/20"}`}
+                              className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ring-1 ring-border ${trade.trade_type === "buy" ? "bg-emerald-500/20" : "bg-rose-500/20"}`}
                             >
                               {trade.trade_type === "buy" ? (
                                 <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" />
                               ) : (
-                                <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-red-500" />
+                                <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-rose-500" />
                               )}
                             </div>
                           </div>
@@ -1006,12 +1005,12 @@ export default function AgentDashboardPage() {
 
           {/* Activity Tab */}
           <TabsContent value="activity" className="mt-4 md:mt-6">
-            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
-              <CardHeader className="border-b border-red-500/10 p-4 md:p-6">
+            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
+              <CardHeader className="border-b border-cyan-500/10 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                      <Radio className="w-5 h-5 text-red-500" />
+                      <Radio className="w-5 h-5 text-cyan-500" />
                       Live Feed
                     </CardTitle>
                     <CardDescription className="text-xs md:text-sm">
@@ -1023,8 +1022,8 @@ export default function AgentDashboardPage() {
               <CardContent className="p-0">
                 {activity.length === 0 ? (
                   <div className="text-center py-12 md:py-16 px-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                      <Volume2 className="w-7 h-7 md:w-8 md:h-8 text-red-500/50" />
+                    <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-cyan-500/10 flex items-center justify-center">
+                      <Volume2 className="w-7 h-7 md:w-8 md:h-8 text-cyan-500/50" />
                     </div>
                     <h3 className="font-semibold mb-2 text-sm md:text-base">Radio silence</h3>
                     <p className="text-xs md:text-sm text-muted-foreground max-w-sm mx-auto">
@@ -1033,12 +1032,12 @@ export default function AgentDashboardPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-red-500/10">
+                  <div className="divide-y divide-cyan-500/10">
                     {activity.map((log: ActivityLog) => (
-                      <div key={log.id} className="p-3 md:p-4 hover:bg-red-500/5 transition-colors">
+                      <div key={log.id} className="p-3 md:p-4 hover:bg-cyan-500/5 transition-colors">
                         <div className="flex items-start gap-3 md:gap-4">
-                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
-                            <Activity className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
+                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0">
+                            <Activity className="w-4 h-4 md:w-5 md:h-5 text-cyan-500" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -1064,10 +1063,10 @@ export default function AgentDashboardPage() {
           <TabsContent value="settings" className="mt-4 md:mt-6">
             <div className="grid gap-4 md:gap-6">
               {/* Access Status Card */}
-              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
                 <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
                   <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                    <Disc3 className="w-5 h-5 text-red-500" />
+                    <Disc3 className="w-5 h-5 text-cyan-500" />
                     VIP Access Status
                   </CardTitle>
                   <CardDescription className="text-xs md:text-sm">
@@ -1077,7 +1076,7 @@ export default function AgentDashboardPage() {
                 <CardContent className="p-4 md:p-6 pt-2 md:pt-3">
                   {tokenGateStatus && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                      <div className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20">
                         <div className="flex items-center gap-3">
                           {tokenGateStatus.hasAccess ? (
                             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -1109,10 +1108,10 @@ export default function AgentDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
                 <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
                   <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-red-500" />
+                    <DollarSign className="w-5 h-5 text-cyan-500" />
                     Agent Wallet
                   </CardTitle>
                   <CardDescription className="text-xs md:text-sm">
@@ -1123,7 +1122,7 @@ export default function AgentDashboardPage() {
                   {agentWallet ? (
                     <>
                       {/* Wallet Address */}
-                      <div className="p-3 md:p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
+                      <div className="p-3 md:p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-500/20">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs text-muted-foreground">Wallet Address</span>
                         </div>
@@ -1160,7 +1159,7 @@ export default function AgentDashboardPage() {
                             placeholder="Amount in USDC"
                             value={fundAmount}
                             onChange={(e) => setFundAmount(e.target.value)}
-                            className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                            className="bg-background/50 border-cyan-500/20 focus:border-cyan-500/40"
                           />
                           <Button
                             onClick={handleFundWallet}
@@ -1187,7 +1186,7 @@ export default function AgentDashboardPage() {
                             placeholder="Amount in USDC"
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
-                            className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                            className="bg-background/50 border-cyan-500/20 focus:border-cyan-500/40"
                           />
                           <Button
                             onClick={handleWithdrawFromWallet}
@@ -1198,7 +1197,7 @@ export default function AgentDashboardPage() {
                               Number.parseFloat(withdrawAmount) > (agentWallet?.usdcBalance ?? 0)
                             }
                             variant="outline"
-                            className="border-red-500/20"
+                            className="border-cyan-500/20"
                           >
                             {isWithdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Withdraw"}
                           </Button>
@@ -1208,7 +1207,7 @@ export default function AgentDashboardPage() {
                     </>
                   ) : (
                     <div className="text-center py-8">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-red-500" />
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-cyan-500" />
                       <p className="text-sm text-muted-foreground">Creating your agent wallet...</p>
                     </div>
                   )}
@@ -1216,10 +1215,10 @@ export default function AgentDashboardPage() {
               </Card>
 
               {/* Budget & Limits */}
-              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
                 <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
                   <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-red-500" />
+                    <DollarSign className="w-5 h-5 text-cyan-500" />
                     Studio Budget
                   </CardTitle>
                   <CardDescription className="text-xs md:text-sm">Control your agent's spending limits</CardDescription>
@@ -1235,7 +1234,7 @@ export default function AgentDashboardPage() {
                         type="number"
                         value={config.total_budget || 0}
                         onChange={(e) => setConfig({ ...config, total_budget: Number.parseFloat(e.target.value) })}
-                        className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                        className="bg-background/50 border-cyan-500/20 focus:border-cyan-500/40"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1247,7 +1246,7 @@ export default function AgentDashboardPage() {
                         type="number"
                         value={config.daily_limit || 0}
                         onChange={(e) => setConfig({ ...config, daily_limit: Number.parseFloat(e.target.value) })}
-                        className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                        className="bg-background/50 border-cyan-500/20 focus:border-cyan-500/40"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1259,7 +1258,7 @@ export default function AgentDashboardPage() {
                         type="number"
                         value={config.per_trade_limit || 0}
                         onChange={(e) => setConfig({ ...config, per_trade_limit: Number.parseFloat(e.target.value) })}
-                        className="bg-background/50 border-red-500/20 focus:border-red-500/40"
+                        className="bg-background/50 border-cyan-500/20 focus:border-cyan-500/40"
                       />
                     </div>
                   </div>
@@ -1267,10 +1266,10 @@ export default function AgentDashboardPage() {
               </Card>
 
               {/* Strategy */}
-              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-red-500/10">
+              <Card className="border-0 shadow-xl bg-card/50 backdrop-blur border-t border-cyan-500/10">
                 <CardHeader className="p-4 md:p-6 pb-2 md:pb-3">
                   <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                    <Target className="w-5 h-5 text-red-500" />
+                    <Target className="w-5 h-5 text-cyan-500" />
                     Mixing Strategy
                   </CardTitle>
                   <CardDescription className="text-xs md:text-sm">
@@ -1290,13 +1289,13 @@ export default function AgentDashboardPage() {
                         onClick={() => setConfig({ ...config, strategy_type: strategy.value })}
                         className={`p-3 md:p-4 rounded-xl border transition-all text-left ${
                           config.strategy_type === strategy.value
-                            ? "border-red-500 bg-red-500/10"
-                            : "border-border/50 hover:border-red-500/30 hover:bg-red-500/5"
+                            ? "border-cyan-500 bg-cyan-500/10"
+                            : "border-border/50 hover:border-cyan-500/30 hover:bg-cyan-500/5"
                         }`}
                       >
                         <strategy.icon
                           className={`w-5 h-5 mb-2 ${
-                            config.strategy_type === strategy.value ? "text-red-500" : "text-muted-foreground"
+                            config.strategy_type === strategy.value ? "text-cyan-500" : "text-muted-foreground"
                           }`}
                         />
                         <p className="font-medium text-xs md:text-sm">{strategy.label}</p>

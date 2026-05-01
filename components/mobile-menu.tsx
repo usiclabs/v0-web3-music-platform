@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,15 @@ import Image from "next/image"
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { address, isConnected, connect } = useWallet()
+
+  // Mark component as hydrated after first mount
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path + "/")
 
@@ -48,15 +54,16 @@ export function MobileMenu() {
     <>
       {/* Hamburger Menu Button - Mobile Only */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => isHydrated && setIsOpen(true)}
         className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-all hover:scale-110 active:scale-95"
         aria-label="Open menu"
+        disabled={!isHydrated}
       >
         <Menu className="h-5 w-5 text-foreground" />
       </button>
 
       {/* Full Screen Overlay Menu */}
-      {isOpen && (
+      {isOpen && isHydrated && (
         <div
           className={`md:hidden fixed inset-0 z-[100] h-screen flex flex-col transition-all duration-300 ${
             isClosing ? "animate-out fade-out slide-out-to-right" : "animate-in fade-in slide-in-from-right"

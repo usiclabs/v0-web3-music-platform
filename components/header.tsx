@@ -13,11 +13,17 @@ import { useConnect } from "wagmi"
 import { connectViaWalletConnect } from "@/lib/web3/wallet-utils"
 import { NotificationCenter } from "@/components/notification-center"
 import { ChainSwitcher } from "@/components/web3/chain-switcher"
+import { useEffect, useState } from "react"
 
 export function Header() {
   const { address, isConnected, disconnect, showMobileWalletModal, setShowMobileWalletModal } = useWallet()
   const pathname = usePathname()
   const { connectAsync, connectors } = useConnect()
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
@@ -34,8 +40,10 @@ export function Header() {
   }
 
   const handleConnectClick = () => {
-    const isMobile = typeof window !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
-    const hasInjectedWallet = typeof window !== "undefined" && window.ethereum
+    if (!isHydrated) return
+
+    const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)
+    const hasInjectedWallet = window.ethereum
 
     // On desktop with browser wallet, connect directly via injected provider
     if (!isMobile && hasInjectedWallet) {
@@ -148,7 +156,7 @@ export function Header() {
           <div className="flex items-center gap-2 sm:gap-3">
             <NotificationCenter />
 
-            {isConnected && <ChainSwitcher />}
+            {isConnected && isHydrated && <ChainSwitcher />}
 
             {isConnected && address ? (
               <DropdownMenu>
@@ -182,6 +190,7 @@ export function Header() {
                 size="sm"
                 className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
                 onClick={handleConnectClick}
+                disabled={!isHydrated}
               >
                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Connect</span>
