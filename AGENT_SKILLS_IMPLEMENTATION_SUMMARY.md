@@ -131,7 +131,7 @@ A complete **OpenClaw-style agent skills framework** that teaches AI agents (and
 
 ### Files Created
 
-```
+\`\`\`
 /lib/agents/
 ├── skill-registry.ts          # Complete skill specifications + registry
 
@@ -147,11 +147,11 @@ A complete **OpenClaw-style agent skills framework** that teaches AI agents (and
     └── route.ts              # API endpoints for skill execution
 
 /AGENT_SKILLS_FRAMEWORK.md     # Complete framework guide
-```
+\`\`\`
 
 ### Key Exports
 
-```typescript
+\`\`\`typescript
 // Use in your app
 import { 
   AGENT_SKILLS,
@@ -162,7 +162,7 @@ import {
   SkillParameter,
   SkillMetrics
 } from '@/lib/agents/skill-registry'
-```
+\`\`\`
 
 ---
 

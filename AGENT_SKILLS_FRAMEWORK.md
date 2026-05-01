@@ -149,7 +149,7 @@ Combine skills to create sophisticated multi-step workflows:
 
 Each skill is highly configurable. Example parameters:
 
-```typescript
+\`\`\`typescript
 // Artist Discovery
 {
   minStreamingVelocity: 10000,      // minimum streams/day
@@ -165,7 +165,7 @@ Each skill is highly configurable. Example parameters:
   maxSlippage: 0.5,                  // max slippage (%)
   checkFrequency: 60                 // check interval (minutes)
 }
-```
+\`\`\`
 
 ---
 
@@ -185,7 +185,7 @@ Live metrics available on `/agents/skills` dashboard.
 ## Integration Paths
 
 ### 1. TypeScript SDK
-```typescript
+\`\`\`typescript
 import { AgentSkills } from '@usic/agents'
 
 const agent = new AgentSkills()
@@ -193,10 +193,10 @@ await agent.executeSkill('artist-discovery', {
   minStreamingVelocity: 10000,
   sentimentThreshold: 65
 })
-```
+\`\`\`
 
 ### 2. REST API
-```bash
+\`\`\`bash
 POST /api/agents/skills/artist-discovery/execute
 {
   "parameters": {
@@ -204,22 +204,22 @@ POST /api/agents/skills/artist-discovery/execute
     "sentimentThreshold": 65
   }
 }
-```
+\`\`\`
 
 ### 3. Webhooks
 Subscribe to real-time events when agents execute skills:
-```
+\`\`\`
 skill.executed
 skill.failed
 portfolio.rebalanced
 trade.executed
-```
+\`\`\`
 
 ---
 
 ## Architecture
 
-```
+\`\`\`
 USIC Platform
 ├── Agent Framework
 │   ├── Skill Registry (/lib/agents/skill-registry.ts)
@@ -236,7 +236,7 @@ USIC Platform
     ├── Portfolio (1 skill)
     ├── Trading (1 skill)
     └── Streaming (1 skill)
-```
+\`\`\`
 
 ---
 

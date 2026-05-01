@@ -60,7 +60,7 @@ export function Header() {
     }
   }
 
-  const displayName = address ? formatAddress(address) : ""
+  const displayName = isHydrated && address ? formatAddress(address) : ""
 
   return (
     <>
@@ -158,39 +158,50 @@ export function Header() {
 
             {isConnected && isHydrated && <ChainSwitcher />}
 
-            {isConnected && address ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 sm:gap-2 bg-primary/10 border-primary/20 hover:bg-primary/20 hover:scale-105 transition-all text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
+            {isHydrated ? (
+              isConnected && address ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 sm:gap-2 bg-primary/10 border-primary/20 hover:bg-primary/20 hover:scale-105 transition-all text-xs sm:text-sm h-8 sm:h-10 px-2 sm:px-3"
+                    >
+                      <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                      <span className="font-mono">{displayName}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="bg-card/95 backdrop-blur-2xl border border-border/70 animate-scale-in"
                   >
-                    <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                    <span className="font-mono">{displayName}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-card/95 backdrop-blur-2xl border border-border/70 animate-scale-in"
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-destructive">
+                      Disconnect
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  size="sm"
+                  className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
+                  onClick={handleConnectClick}
                 >
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="cursor-pointer">
-                    <Link href="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={disconnect} className="cursor-pointer text-destructive">
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Connect</span>
+                  <span className="xs:hidden">Connect</span>
+                </Button>
+              )
             ) : (
               <Button
                 size="sm"
                 className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 hover:scale-105 transition-all shadow-lg shadow-accent/25 text-xs sm:text-sm h-8 sm:h-10 px-3 sm:px-4 text-white"
-                onClick={handleConnectClick}
-                disabled={!isHydrated}
+                disabled
               >
                 <Wallet className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden xs:inline">Connect</span>
