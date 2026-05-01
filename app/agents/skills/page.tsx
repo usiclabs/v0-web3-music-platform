@@ -139,7 +139,7 @@ export default function AgentSkillsPage() {
                     }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         skill.color === "cyan" ? "bg-cyan-500/10" : skill.color === "emerald" ? "bg-emerald-500/10" : "bg-teal-500/10"
                       }`}>
                         {IconComponent && <IconComponent className={`w-5 h-5 ${
@@ -166,7 +166,12 @@ export default function AgentSkillsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        {ICON_MAP[selectedSkill.icon] && ICON_MAP[selectedSkill.icon]({ className: "w-5 h-5 text-cyan-500" })}
+                        {ICON_MAP[selectedSkill.icon] && 
+                          (() => {
+                            const Icon = ICON_MAP[selectedSkill.icon]
+                            return <Icon className="w-5 h-5 text-cyan-500" />
+                          })()
+                        }
                         {selectedSkill.name}
                       </CardTitle>
                       <CardDescription className="mt-2">{selectedSkill.longDescription}</CardDescription>
