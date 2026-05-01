@@ -87,10 +87,12 @@ export default function AgentsPage() {
               ))}
             </div>
           </div>
+        </div>
 
-        {/* Detail Panel - Sticky at Bottom */}
-        <div className="border-t border-red-500/20 bg-black/60 backdrop-blur">
-          <AgentDetailPanel agent={selectedAgent} onDeploy={handleDeploy} />
+          {/* Detail Panel - Sticky at Bottom */}
+          <div className="border-t border-red-500/20 bg-black/60 backdrop-blur">
+            <AgentDetailPanel agent={selectedAgent} onDeploy={handleDeploy} />
+          </div>
         </div>
       </div>
     </div>
