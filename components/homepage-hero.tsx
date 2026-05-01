@@ -94,10 +94,10 @@ export function HomepageHero() {
         style={{ animationDelay: "2s", animationDuration: "8s" }}
       />
 
-      <div className="container relative py-24 md:py-32 z-10">
+      <div className="container relative py-24 md:py-40 z-10">
         <div className="mx-auto max-w-5xl text-center">
           <div
-            className={`mb-8 inline-flex items-center gap-2 rounded-full bg-card/20 backdrop-blur-md border border-accent/40 px-6 py-3 text-sm shadow-lg shadow-accent/20 transition-all duration-700 hover:shadow-accent/40 hover:scale-105 hover:border-accent/60 ${
+            className={`mb-12 inline-flex items-center gap-2 rounded-full bg-card/20 backdrop-blur-md border border-accent/40 px-6 py-3 text-sm shadow-lg shadow-accent/20 transition-all duration-700 hover:shadow-accent/40 hover:scale-105 hover:border-accent/60 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -109,7 +109,7 @@ export function HomepageHero() {
           </div>
 
           <h1
-            className={`md:text-8xl lg:text-9xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 text-5xl ${
+            className={`font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-8 text-balance leading-[0.95] transition-all duration-700 delay-100 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -143,11 +143,11 @@ export function HomepageHero() {
             <Button
               size="lg"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 hover:scale-105 transition-all duration-300 group relative overflow-hidden text-white shadow-2xl shadow-white/10"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-accent text-white hover:bg-accent/90 hover:scale-105 hover:shadow-xl hover:shadow-accent/40 transition-all duration-300 group relative overflow-hidden shadow-lg shadow-accent/30"
             >
               <Link href="/explore">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-none stroke-2" />
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Play className="h-5 w-5 group-hover:scale-110 transition-transform relative z-10 fill-current" />
                 <span className="relative z-10 font-semibold">Listen Now</span>
               </Link>
             </Button>
@@ -155,18 +155,18 @@ export function HomepageHero() {
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-card/20 hover:bg-card/40 backdrop-blur-2xl border-2 border-border hover:scale-105 hover:border-accent/50 transition-all duration-300 group relative overflow-hidden"
+              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-background border-2 border-accent/40 text-accent hover:bg-accent/5 hover:border-accent/70 hover:scale-105 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300 group relative overflow-hidden"
             >
               <Link href="/dashboard">
-                <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <Music className="h-5 w-5 group-hover:rotate-12 transition-transform relative z-10" />
-                <span className="relative z-10">Upload Your Music</span>
+                <span className="relative z-10 font-semibold">Upload Your Music</span>
               </Link>
             </Button>
           </div>
 
           <div
-            className={`grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto transition-all duration-700 delay-500 ${
+            className={`grid grid-cols-3 gap-6 sm:gap-8 max-w-3xl mx-auto transition-all duration-700 delay-500 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
@@ -192,7 +192,7 @@ export function HomepageHero() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center group cursor-default bg-card/20 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-border/50 hover:border-accent/30 hover:shadow-xl hover:shadow-accent/10 transition-all duration-300"
+                className="text-center group cursor-default bg-background border border-accent/20 rounded-2xl p-6 sm:p-8 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/15 transition-all duration-300 hover:scale-105"
               >
                 <stat.icon
                   className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}

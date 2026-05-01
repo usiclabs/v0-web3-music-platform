@@ -78,6 +78,7 @@
 
 @theme inline {
   --font-sans: "Geist", "Geist Fallback";
+  --font-serif: "Playfair Display", "Playfair Display Fallback", serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
 
   /* Updated design tokens from coral/salmon pink to bright red theme */
