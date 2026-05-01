@@ -29,11 +29,10 @@ export function CategoryFilters({ categories, selectedCategory, onSelectCategory
               layoutId="underline"
               className="absolute inset-0 border-2 border-red-500 rounded-lg pointer-events-none"
               animate={{
-                boxShadow: ["0 0 20px rgba(255,30,30,0.4)", "0 0 10px rgba(255,30,30,0.2)", "0 0 20px rgba(255,30,30,0.4)"],
+                boxShadow: "0 0 15px rgba(255,30,30,0.4)",
               }}
               transition={{
-                duration: 2,
-                repeat: Infinity,
+                duration: 0.3,
               }}
             />
           )}

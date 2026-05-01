@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { AgentCard } from "./agent-card"
 import type { Agent } from "./agent-data"
@@ -14,6 +14,8 @@ interface AgentCarouselProps {
 export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentCarouselProps) {
   const selectedIndex = agents.findIndex((a) => a.id === selectedAgentId)
   const [autoPlay, setAutoPlay] = useState(true)
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
 
   const getCardPosition = (index: number) => {
     const diff = index - selectedIndex
@@ -42,10 +44,38 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
     onSelectAgent(agents[newIndex].id)
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.changedTouches[0].screenX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].screenX
+    handleSwipe()
+  }
+
+  const handleSwipe = () => {
+    const swipeThreshold = 50
+    const diff = touchStartX.current - touchEndX.current
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // Swiped left, go to next
+        handleNext()
+      } else {
+        // Swiped right, go to previous
+        handlePrev()
+      }
+    }
+  }
+
   return (
     <div className="relative w-full">
       {/* Carousel Container */}
-      <div className="relative h-80 md:h-96 flex items-center justify-center px-4 md:px-12 lg:px-16">
+      <div
+        className="relative h-80 md:h-96 flex items-center justify-center px-4 md:px-12 lg:px-16 pb-16 md:pb-20"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Left Arrow - Hidden on mobile, visible on desktop */}
         <button
           onClick={handlePrev}
@@ -101,7 +131,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
       </div>
 
       {/* Mobile Pagination Dots */}
-      <div className="flex justify-center gap-2 mt-6 md:mt-8">
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-2 pb-4 md:pb-6 z-20">
         {agents.map((agent, index) => (
           <button
             key={agent.id}
@@ -109,6 +139,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
             className={`rounded-full transition-all duration-300 ${
               selectedIndex === index ? "w-8 h-2.5 bg-red-500" : "w-2.5 h-2.5 bg-red-500/40 hover:bg-red-500/60"
             }`}
+            aria-label={`Go to agent ${index + 1}`}
           />
         ))}
       </div>
