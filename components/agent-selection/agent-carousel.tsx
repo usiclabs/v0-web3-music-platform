@@ -72,7 +72,7 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
     <div className="relative w-full">
       {/* Carousel Container */}
       <div
-        className="relative h-80 md:h-96 flex items-center justify-center px-4 md:px-12 lg:px-16 pb-16 md:pb-20"
+        className="relative h-80 md:h-96 flex items-center justify-center px-4 md:px-12 lg:px-16"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -130,8 +130,8 @@ export function AgentCarousel({ agents, selectedAgentId, onSelectAgent }: AgentC
         </button>
       </div>
 
-      {/* Mobile Pagination Dots */}
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-2 pb-4 md:pb-6 z-20">
+      {/* Mobile Pagination Dots - Positioned below carousel with proper spacing */}
+      <div className="relative w-full flex justify-center gap-2 pt-6 md:pt-8 pb-2">
         {agents.map((agent, index) => (
           <button
             key={agent.id}

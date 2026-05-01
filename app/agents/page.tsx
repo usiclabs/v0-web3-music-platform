@@ -45,10 +45,10 @@ export default function AgentsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen flex flex-col pt-4 md:pt-6">
+      <div className="min-h-screen flex flex-col">
         {/* Content Area */}
         <div className="flex-1 overflow-auto w-full">
-          <div className="w-full max-w-6xl mx-auto px-3 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+          <div className="w-full max-w-6xl mx-auto px-3 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12 pb-32 md:pb-40">
             {/* Title Section */}
             <div className="mb-6 md:mb-8 lg:mb-12 text-center">
               <p className="text-xs font-bold text-red-400 uppercase tracking-widest mb-2">AI AGENT NETWORK</p>
@@ -58,8 +58,8 @@ export default function AgentsPage() {
               <p className="text-xs md:text-sm text-white/60 leading-relaxed">Specialized AI agents. Infinite possibilities.</p>
             </div>
 
-            {/* Carousel */}
-            <div className="mb-6 md:mb-8 lg:mb-12">
+            {/* Carousel - with extra bottom margin for pagination visibility */}
+            <div className="mb-8 md:mb-12 lg:mb-16">
               <AgentCarousel
                 agents={filteredAgents}
                 selectedAgentId={selectedAgent?.id || ""}
