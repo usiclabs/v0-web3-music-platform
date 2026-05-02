@@ -198,7 +198,7 @@ export function HomepageHero() {
                   className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
                 />
                 <div
-                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
+                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
                     isLoading ? "animate-pulse" : ""
                   }`}
                 >
