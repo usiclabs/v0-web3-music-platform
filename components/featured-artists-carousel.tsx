@@ -83,8 +83,8 @@ export function FeaturedArtistsCarousel() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
-            <Users className="h-6 w-6 text-white" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 shadow-lg shadow-primary/10">
+            <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h2 className="text-3xl font-bold">Featured Artists</h2>
