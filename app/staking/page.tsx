@@ -19,7 +19,10 @@ import {
   CheckCircle2,
   Clock,
   Wallet,
+  Shield,
+  Zap,
 } from "lucide-react"
+import { EmptyStateWalletConnect } from "@/components/empty-state-wallet-connect"
 import { useToast } from "@/hooks/use-toast"
 import { USI_TOKEN_ADDRESS, ERC20_ABI } from "@/lib/web3/contracts"
 import { useReadContract, useWriteContract } from "wagmi"
@@ -316,22 +319,29 @@ export default function StakingPage() {
 
   if (!isConnected) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-          <div className="rounded-full bg-primary/10 p-6">
-            <Wallet className="h-12 w-12 text-primary" />
-          </div>
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">Connect Your Wallet</h1>
-            <p className="text-muted-foreground max-w-md">
-              Connect your wallet to start staking $USI tokens and earn rewards from platform fees.
-            </p>
-          </div>
-          <Button onClick={connect} size="lg" className="gap-2">
-            <Wallet className="h-5 w-5" />
-            Connect Wallet
-          </Button>
-        </div>
+      <div className="min-h-screen pb-32">
+        <EmptyStateWalletConnect
+          title="Connect Your Wallet"
+          description="Connect your wallet to start staking $USI tokens and earn rewards from platform fees."
+          ctaText="Connect Wallet"
+          features={[
+            {
+              icon: <Shield className="h-5 w-5 text-accent" />,
+              title: "Secure",
+              description: "Your assets stay protected",
+            },
+            {
+              icon: <Zap className="h-5 w-5 text-accent" />,
+              title: "Fast",
+              description: "Quick connection in seconds",
+            },
+            {
+              icon: <Gift className="h-5 w-5 text-accent" />,
+              title: "Rewards",
+              description: "Earn $USI and exclusive perks",
+            },
+          ]}
+        />
       </div>
     )
   }
