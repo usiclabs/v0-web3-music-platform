@@ -238,21 +238,25 @@ export function X402PaymentModal() {
   return (
     <Dialog open={showPaymentModal} onOpenChange={closePaymentModal}>
       <DialogContent 
-        className="sm:max-w-md max-h-[85vh] overflow-y-auto bg-background border border-white/10 shadow-2xl relative"
-        style={{
-          backgroundImage: currentTrack?.cover_url 
-            ? `url(${currentTrack.cover_url})`
-            : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
+        className="sm:max-w-md max-h-[85vh] overflow-hidden border border-white/10 shadow-2xl relative p-0"
       >
-        {/* Blurred background overlay */}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-3xl pointer-events-none" />
+        {/* Blurred background image */}
+        {currentTrack?.cover_url && (
+          <div 
+            className="absolute inset-0 opacity-40 blur-3xl"
+            style={{
+              backgroundImage: `url(${currentTrack.cover_url})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        )}
+        
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-md" />
         
         {/* Content */}
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 overflow-y-auto max-h-[85vh] p-6 space-y-6">
           <DialogHeader className="space-y-3 pb-2">
             <DialogTitle className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 border border-primary/30">
@@ -277,7 +281,7 @@ export function X402PaymentModal() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5 py-2">
+          <div className="space-y-5">
           {/* Track Info */}
           <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-white/5 backdrop-blur-sm">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 border border-primary/30 flex-shrink-0">
@@ -475,7 +479,6 @@ export function X402PaymentModal() {
             </Button>
           </div>
         </div>
-      </div>
       </DialogContent>
     </Dialog>
   )
