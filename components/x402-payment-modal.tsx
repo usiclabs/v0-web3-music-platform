@@ -237,41 +237,67 @@ export function X402PaymentModal() {
 
   return (
     <Dialog open={showPaymentModal} onOpenChange={closePaymentModal}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Coins className="h-5 w-5 text-primary" />
-            {isAfterFreePreview ? "Continue Listening" : "X402 Micropayment Required"}
-          </DialogTitle>
-          <DialogDescription className="text-base">
-            {isAfterFreePreview ? (
-              <>
-                {isFullUnlock
-                  ? "Enjoyed the preview? Pay once to unlock the entire track."
-                  : "Enjoyed the preview? Pay to continue streaming using the X402 protocol."}
-              </>
-            ) : (
-              <>
-                {isFullUnlock
-                  ? "Pay once to unlock and stream the entire track using the X402 protocol"
-                  : "Pay to unlock and stream this track using the X402 protocol"}
-              </>
-            )}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent 
+        className="sm:max-w-md max-h-[85vh] overflow-hidden border border-white/10 shadow-2xl relative p-0"
+      >
+        {/* Blurred background image */}
+        {currentTrack?.cover_url && (
+          <div 
+            className="absolute inset-0 opacity-40 blur-3xl"
+            style={{
+              backgroundImage: `url(${currentTrack.cover_url})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        )}
+        
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-background/95 backdrop-blur-md" />
+        
+        {/* Content */}
+        <div className="relative z-10 overflow-y-auto max-h-[85vh] p-6 space-y-6">
+          <DialogHeader className="space-y-3 pb-2">
+            <DialogTitle className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 border border-primary/30">
+                <Coins className="h-5 w-5 text-primary" />
+              </div>
+              {isAfterFreePreview ? "Continue Listening" : "X402 Payment Required"}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-foreground/70">
+              {isAfterFreePreview ? (
+                <>
+                  {isFullUnlock
+                    ? "Enjoyed the preview? Pay once to unlock the entire track."
+                    : "Enjoyed the preview? Pay to continue streaming."}
+                </>
+              ) : (
+                <>
+                  {isFullUnlock
+                    ? "Pay once to unlock and stream the entire track"
+                    : "Pay to unlock and stream this track"}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-            <div className="flex-1">
-              <p className="font-semibold text-sm">{currentTrack.title}</p>
-              <p className="text-xs text-muted-foreground">
+          <div className="space-y-5">
+          {/* Track Info */}
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-white/5 backdrop-blur-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 border border-primary/30 flex-shrink-0">
+              <Music className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm leading-snug truncate">{currentTrack.title}</p>
+              <p className="text-xs text-foreground/60 mt-1">
                 {currentTrack.artist?.artist_name || formatAddress(currentTrack.artist_id)}
               </p>
             </div>
           </div>
 
+          {/* Token Gated Section */}
           {currentTrack?.token_gated_streaming && currentTrack?.coin_address && (
-            <div className="bg-gradient-to-br from-accent/10 to-primary/10 border border-accent/20 rounded-lg p-4 space-y-3">
+            <div className="bg-gradient-to-br from-accent/5 to-primary/5 border border-accent/20 rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 text-accent" />
                 <h3 className="font-semibold text-sm">Token-Gated Track</h3>
@@ -279,105 +305,98 @@ export function X402PaymentModal() {
 
               {isLoadingTokenBalance ? (
                 <div className="flex items-center justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                  <span className="ml-2 text-sm text-muted-foreground">Checking token balance...</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                  <span className="ml-2 text-xs text-foreground/60">Checking token balance...</span>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Your Balance:</span>
-                      <span className="font-mono font-semibold">
+                      <span className="text-foreground/60">Your Balance</span>
+                      <span className="font-mono font-semibold text-foreground/90">
                         {Number.parseFloat(formattedTokenBalance).toLocaleString()} {tokenSymbol || "tokens"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Required:</span>
-                      <span className="font-mono font-semibold">
+                      <span className="text-foreground/60">Required</span>
+                      <span className="font-mono font-semibold text-foreground/90">
                         {currentTrack.required_token_balance?.toLocaleString()} {tokenSymbol || "tokens"}
                       </span>
                     </div>
                   </div>
 
                   {hasEnoughTokens ? (
-                    <div className="bg-green-500/20 border border-green-500/30 rounded-md p-3 space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span className="font-semibold">You have enough tokens to stream for free!</span>
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-semibold">You have enough tokens to stream free!</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Refresh the page or restart the track to activate free streaming.
-                      </p>
+                      <p className="text-xs text-foreground/60">Refresh to activate free streaming.</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="bg-muted/30 rounded-md p-3 text-xs text-muted-foreground">
-                        Hold {currentTrack.required_token_balance?.toLocaleString()} {tokenSymbol || "tokens"} to stream
-                        for free
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-transparent"
-                        onClick={() => window.open(`/tokens?address=${currentTrack.coin_address}`, "_blank")}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-2" />
-                        Buy {tokenSymbol || "Tokens"}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-transparent border-white/10 hover:bg-white/5 text-foreground h-9 text-xs"
+                      onClick={() => window.open(`/tokens?address=${currentTrack.coin_address}`, "_blank")}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                      Buy {tokenSymbol || "Tokens"}
+                    </Button>
                   )}
                 </>
               )}
             </div>
           )}
 
+          {/* Free Preview */}
           {isAfterFreePreview && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-              <p className="text-xs text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 You've listened to the first 30 seconds for free!
               </p>
             </div>
           )}
 
+          {/* Gas Subsidy */}
           <div
-            className={`flex items-center gap-2 p-3 rounded-lg border ${
-              gasSubsidyAvailable ? "bg-primary/10 border-primary/20" : "bg-amber-500/10 border-amber-500/20"
+            className={`flex items-center gap-3 p-3 rounded-xl border ${
+              gasSubsidyAvailable
+                ? "bg-primary/10 border-primary/20"
+                : "bg-amber-500/10 border-amber-500/20"
             }`}
           >
             <Sparkles className={`h-4 w-4 flex-shrink-0 ${gasSubsidyAvailable ? "text-primary" : "text-amber-500"}`} />
-            <p className={`text-xs ${gasSubsidyAvailable ? "text-primary" : "text-amber-600 dark:text-amber-400"}`}>
+            <p className={`text-xs font-medium ${gasSubsidyAvailable ? "text-primary" : "text-amber-600 dark:text-amber-400"}`}>
               {gasSubsidyAvailable ? (
                 <>
-                  <span className="font-semibold">Gasless Payment:</span> No ETH needed! We cover the gas fees for you.
+                  <span className="font-semibold">Gasless Payment:</span> No ETH needed! We cover the fees for you.
                 </>
               ) : (
                 <>
-                  <span className="font-semibold">Gas Required:</span> You'll need a small amount of ETH for gas fees
-                  (~$0.01).
+                  <span className="font-semibold">Gas Required:</span> Small ETH amount needed (~$0.01).
                 </>
               )}
             </p>
           </div>
 
           {isSmartWallet && !supportsGaslessPayments && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mt-3">
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Base App Payment Notice</p>
-                <p className="text-xs text-muted-foreground">
-                  Your Base App wallet will use the standard payment flow. Gas fees may apply (~$0.01).
-                </p>
+                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Base App Payment</p>
+                <p className="text-xs text-foreground/60">Gas fees may apply (~$0.01).</p>
               </div>
             </div>
           )}
 
           {isConnected && hasInsufficientBalance && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
               <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1 space-y-2">
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  Insufficient USDC balance. You need {requiredAmount} USDC but only have {formattedBalance} USDC.
+                <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  Need {requiredAmount} USDC • You have {formattedBalance} USDC
                 </p>
                 <Link href="/swap">
                   <Button
@@ -392,43 +411,58 @@ export function X402PaymentModal() {
             </div>
           )}
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="flex items-center gap-2">
-                <Music className="h-4 w-4 text-primary" />
+          {/* Track Details */}
+          <div className="space-y-2.5 p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
+                  <Music className="h-4 w-4 text-primary" />
+                </div>
                 <span className="text-sm font-medium">Full Track Unlock</span>
               </div>
-              <span className="text-sm font-bold">{isValidPrice ? currentTrack.price_per_chunk : "0"} USDC</span>
+              <span className="text-sm font-semibold text-primary">
+                {isValidPrice ? currentTrack.price_per_chunk : "0"} USDC
+              </span>
             </div>
 
             {isConnected && address && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <Coins className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Your Balance</span>
+              <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/10">
+                    <Coins className="h-4 w-4 text-foreground/60" />
+                  </div>
+                  <span className="text-sm text-foreground/70">Your Balance</span>
                 </div>
-                <span className={`text-sm font-medium ${hasInsufficientBalance ? "text-red-500" : ""}`}>
+                <span className={`text-sm font-semibold ${hasInsufficientBalance ? "text-red-500" : "text-foreground/90"}`}>
                   {formattedBalance} USDC
                 </span>
               </div>
             )}
 
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Full Duration</span>
+            <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground/10">
+                  <Clock className="h-4 w-4 text-foreground/60" />
+                </div>
+                <span className="text-sm text-foreground/70">Full Duration</span>
               </div>
-              <span className="text-sm font-medium">{displayDuration}</span>
+              <span className="text-sm font-semibold text-foreground/90">{displayDuration}</span>
             </div>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={skipTrack} className="flex-1 bg-transparent" disabled={isProcessing}>
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={skipTrack}
+              className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 text-foreground h-10 font-medium"
+              disabled={isProcessing}
+            >
               Skip Track
             </Button>
             <Button
               onClick={handlePayment}
-              className="flex-1"
+              className="flex-1 h-10 font-medium"
               disabled={isProcessing || (isConnected && hasInsufficientBalance)}
             >
               {isProcessing ? (
@@ -444,6 +478,7 @@ export function X402PaymentModal() {
               )}
             </Button>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>

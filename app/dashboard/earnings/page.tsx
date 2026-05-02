@@ -255,7 +255,7 @@ export default function EarningsPage() {
               </div>
               <p className="text-sm text-muted-foreground">Period Earnings</p>
             </div>
-            <p className="text-3xl font-bold mb-2">{recentEarnings.toFixed(2)} USDC</p>
+            <p className="text-3xl font-bold mb-2 text-white">{recentEarnings.toFixed(2)} USDC</p>
             <div className="flex items-center gap-2 text-xs">
               {growthPercentage !== 0 && (
                 <span className={`flex items-center gap-1 ${growthPercentage > 0 ? "text-green-500" : "text-red-500"}`}>
@@ -274,7 +274,7 @@ export default function EarningsPage() {
               </div>
               <p className="text-sm text-muted-foreground">Lifetime Total</p>
             </div>
-            <p className="text-3xl font-bold mb-2">{totalEarnings.toFixed(2)} USDC</p>
+            <p className="text-3xl font-bold mb-2 text-white">{totalEarnings.toFixed(2)} USDC</p>
             <p className="text-xs text-muted-foreground">From {totalStreams.toLocaleString()} streams</p>
           </Card>
 
@@ -285,7 +285,7 @@ export default function EarningsPage() {
               </div>
               <p className="text-sm text-muted-foreground">Wallet Balance</p>
             </div>
-            <p className="text-3xl font-bold mb-2">{formattedWalletBalance.toFixed(2)} USDC</p>
+            <p className="text-3xl font-bold mb-2 text-white">{formattedWalletBalance.toFixed(2)} USDC</p>
             <p className="text-xs text-muted-foreground">Available now</p>
           </Card>
 
@@ -296,7 +296,7 @@ export default function EarningsPage() {
               </div>
               <p className="text-sm text-muted-foreground">Avg per Stream</p>
             </div>
-            <p className="text-3xl font-bold mb-2">{avgPerStream.toFixed(4)} USDC</p>
+            <p className="text-3xl font-bold mb-2 text-white">{avgPerStream.toFixed(4)} USDC</p>
             <p className="text-xs text-muted-foreground">Average earnings</p>
           </Card>
         </div>

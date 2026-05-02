@@ -796,6 +796,10 @@ export default function TokensPage() {
   const handleViewDetails = (track: TokenizedTrack) => {
     setDetailToken(track)
     setDetailDrawerOpen(true)
+    // Fetch metrics for this token when viewing details
+    if (track.coin_address && !tokenMetrics[track.coin_address]) {
+      fetchTokenMetrics(track.coin_address)
+    }
   }
 
   useEffect(() => {
@@ -1209,7 +1213,7 @@ export default function TokensPage() {
                             <Skeleton className="h-4 w-12" />
                           ) : (
                             <p className="text-sm font-bold truncate">
-                              {metrics?.price ? `$${metrics.price.toFixed(6)}` : "N/A"}
+                              {metrics?.price && metrics.price > 0 ? `$${metrics.price.toFixed(6)}` : <span className="text-xs text-muted-foreground">No data</span>}
                             </p>
                           )}
                         </div>
@@ -1226,7 +1230,7 @@ export default function TokensPage() {
                             <Skeleton className="h-4 w-12" />
                           ) : (
                             <p className="text-sm font-bold truncate">
-                              {metrics?.marketCap ? `$${formatNumber(metrics.marketCap)}` : "N/A"}
+                              {metrics?.marketCap && metrics.marketCap > 0 ? `$${formatNumber(metrics.marketCap)}` : <span className="text-xs text-muted-foreground">No data</span>}
                             </p>
                           )}
                         </div>
@@ -1243,13 +1247,13 @@ export default function TokensPage() {
                             <Skeleton className="h-4 w-12" />
                           ) : (
                             <p className="text-sm font-bold truncate">
-                              {metrics?.volume24h ? `$${formatNumber(metrics.volume24h)}` : "N/A"}
+                              {metrics?.volume24h && metrics.volume24h > 0 ? `$${formatNumber(metrics.volume24h)}` : <span className="text-xs text-muted-foreground">No data</span>}
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* Holders */}
+                      {/* Transactions 24h */}
                       <div className="flex items-center gap-2">
                         <div className="bg-orange-500/10 p-1.5 rounded">
                           <Activity className="h-3.5 w-3.5 text-orange-500" />
@@ -1260,12 +1264,22 @@ export default function TokensPage() {
                             <Skeleton className="h-4 w-12" />
                           ) : (
                             <p className="text-sm font-bold truncate">
-                              {metrics?.txns24h ? formatNumber(metrics.txns24h) : "N/A"}
+                              {metrics?.txns24h && metrics.txns24h > 0 ? formatNumber(metrics.txns24h) : <span className="text-xs text-muted-foreground">No data</span>}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
+
+                    {!isLoadingMetrics && (!metrics?.price || metrics.price === 0) && (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-400">No Active Liquidity Pool</p>
+                          <p className="text-xs text-blue-400/70 mt-0.5">This token doesn&apos;t have an active trading pool yet. You can add liquidity to enable trading.</p>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-2.5">
                       <span className="text-muted-foreground">Token Address</span>

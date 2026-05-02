@@ -192,19 +192,20 @@ export function HomepageHero() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="text-center group cursor-default bg-background border border-accent/20 rounded-2xl p-6 sm:p-8 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/15 transition-all duration-300 hover:scale-105"
+                className="text-center group cursor-default bg-background border border-accent/20 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/15 transition-all duration-300 hover:scale-105"
               >
                 <stat.icon
-                  className={`h-5 w-5 sm:h-6 sm:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
+                  className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-${stat.color} mx-auto mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}
                 />
                 <div
-                  className={`text-2xl sm:text-3xl md:text-5xl font-bold text-${stat.color} mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 truncate ${
+                  className={`text-xl sm:text-2xl md:text-3xl lg:text-5xl font-bold text-white mb-1 sm:mb-2 group-hover:scale-110 transition-transform duration-300 ${
                     isLoading ? "animate-pulse" : ""
                   }`}
+                  style={{ wordBreak: "break-word" }}
                 >
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-foreground/60 font-medium">{stat.label}</div>
+                <div className="text-xs sm:text-sm text-foreground/60 font-medium line-clamp-2">{stat.label}</div>
               </div>
             ))}
           </div>
