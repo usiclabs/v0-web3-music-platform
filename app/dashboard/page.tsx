@@ -314,7 +314,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mb-1">Total Tracks</p>
-              <p className="text-4xl font-bold">{stats.trackCount}</p>
+              <p className="text-4xl font-bold text-white">{stats.trackCount}</p>
             </div>
           </Card>
 
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mb-1">Total Plays</p>
-              <p className="text-4xl font-bold">{stats.totalPlays.toLocaleString()}</p>
+              <p className="text-4xl font-bold text-white">{stats.totalPlays.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-2">Last 7 days</p>
             </div>
           </Card>
@@ -359,7 +359,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mb-1">Total Earnings</p>
-              <p className="text-4xl font-bold">${stats.totalEarnings.toFixed(2)}</p>
+              <p className="text-4xl font-bold text-white">${stats.totalEarnings.toFixed(2)}</p>
               <p className="text-xs text-muted-foreground mt-2">USDC</p>
             </div>
           </Card>
