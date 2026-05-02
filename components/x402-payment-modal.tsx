@@ -479,6 +479,7 @@ export function X402PaymentModal() {
             </Button>
           </div>
         </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
