@@ -237,32 +237,47 @@ export function X402PaymentModal() {
 
   return (
     <Dialog open={showPaymentModal} onOpenChange={closePaymentModal}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto bg-background border border-white/10 shadow-2xl">
-        <DialogHeader className="space-y-3 pb-2">
-          <DialogTitle className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 border border-primary/30">
-              <Coins className="h-5 w-5 text-primary" />
-            </div>
-            {isAfterFreePreview ? "Continue Listening" : "X402 Payment Required"}
-          </DialogTitle>
-          <DialogDescription className="text-sm leading-relaxed text-foreground/70">
-            {isAfterFreePreview ? (
-              <>
-                {isFullUnlock
-                  ? "Enjoyed the preview? Pay once to unlock the entire track."
-                  : "Enjoyed the preview? Pay to continue streaming."}
-              </>
-            ) : (
-              <>
-                {isFullUnlock
-                  ? "Pay once to unlock and stream the entire track"
-                  : "Pay to unlock and stream this track"}
-              </>
-            )}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent 
+        className="sm:max-w-md max-h-[85vh] overflow-y-auto bg-background border border-white/10 shadow-2xl relative"
+        style={{
+          backgroundImage: currentTrack?.cover_url 
+            ? `url(${currentTrack.cover_url})`
+            : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      >
+        {/* Blurred background overlay */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-3xl pointer-events-none" />
+        
+        {/* Content */}
+        <div className="relative z-10 space-y-6">
+          <DialogHeader className="space-y-3 pb-2">
+            <DialogTitle className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 border border-primary/30">
+                <Coins className="h-5 w-5 text-primary" />
+              </div>
+              {isAfterFreePreview ? "Continue Listening" : "X402 Payment Required"}
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-foreground/70">
+              {isAfterFreePreview ? (
+                <>
+                  {isFullUnlock
+                    ? "Enjoyed the preview? Pay once to unlock the entire track."
+                    : "Enjoyed the preview? Pay to continue streaming."}
+                </>
+              ) : (
+                <>
+                  {isFullUnlock
+                    ? "Pay once to unlock and stream the entire track"
+                    : "Pay to unlock and stream this track"}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-5 py-6">
+          <div className="space-y-5 py-2">
           {/* Track Info */}
           <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-white/5 backdrop-blur-sm">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 border border-primary/30 flex-shrink-0">
