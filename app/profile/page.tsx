@@ -13,11 +13,14 @@ import {
   TrendingUp,
   Upload,
   DollarSign,
+  Shield,
+  Zap,
+  Gift,
 } from "lucide-react"
 import { useWallet } from "@/lib/web3/wallet-context"
 import { useEffect, useState } from "react"
 import { ensureProfile } from "@/lib/supabase/helpers"
-import { WalletConnectPrompt } from "@/components/wallet-connect-prompt"
+import { EmptyStateWalletConnect } from "@/components/empty-state-wallet-connect"
 import { createBrowserClient } from "@/lib/supabase/client"
 import { ListeningHistory } from "@/components/listening-history"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -219,13 +222,28 @@ export default function ProfilePage() {
   if (!isConnected) {
     return (
       <div className="min-h-screen pb-32">
-        <main className="container py-8 sm:py-12 px-4 sm:px-6">
-          <WalletConnectPrompt
-            title="Connect Your Wallet"
-            description="Please connect your wallet to manage your profile"
-            icon={<User className="h-10 w-10 md:h-12 md:w-12 text-primary" />}
-          />
-        </main>
+        <EmptyStateWalletConnect
+          title="Connect Your Wallet"
+          description="Connect your wallet to manage your profile and view your artist dashboard"
+          ctaText="Connect Wallet"
+          features={[
+            {
+              icon: <Shield className="h-5 w-5 text-accent" />,
+              title: "Secure",
+              description: "Your assets stay protected",
+            },
+            {
+              icon: <Zap className="h-5 w-5 text-accent" />,
+              title: "Fast",
+              description: "Quick connection in seconds",
+            },
+            {
+              icon: <Gift className="h-5 w-5 text-accent" />,
+              title: "Rewards",
+              description: "Earn $USI and exclusive perks",
+            },
+          ]}
+        />
       </div>
     )
   }
