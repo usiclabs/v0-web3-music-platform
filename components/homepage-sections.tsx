@@ -225,7 +225,7 @@ export function HomepageSections() {
               <Button
                 size="lg"
                 asChild
-                className="gap-2 rounded-full px-10 py-7 h-auto text-lg shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-accent hover:bg-accent/90 text-white"
+                className="gap-2 rounded-full px-8 py-2.5 h-auto text-base shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-accent hover:bg-accent/90 text-white"
               >
                 <Link href="/ai-curator">
                   <Sparkles className="h-5 w-5" />
@@ -236,7 +236,7 @@ export function HomepageSections() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="gap-2 rounded-full px-10 py-7 h-auto text-lg hover:scale-105 transition-all duration-300 border-accent/30 hover:border-accent/50 backdrop-blur-xl bg-transparent"
+                className="gap-2 rounded-full px-8 py-2.5 h-auto text-base hover:scale-105 transition-all duration-300 border-accent/30 hover:border-accent/50 backdrop-blur-xl bg-transparent"
               >
                 <Link href="/agents">
                   Learn About ERC-8004
@@ -312,17 +312,17 @@ export function HomepageSections() {
                 ))}
               </div>
 
-              <Button
-                size="lg"
-                asChild
-                className="mt-10 gap-2 rounded-full px-8 py-6 h-auto text-lg shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-transparent text-[rgba(255,255,255,1)] group relative overflow-hidden"
-              >
-                <Link href="/dashboard">
-                  <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <Music className="h-5 w-5 relative z-10 group-hover:rotate-12 transition-transform" />
-                  <span className="relative z-10">Become a USIC Artist</span>
-                </Link>
-              </Button>
+            <Button
+              size="lg"
+              asChild
+              className="mt-10 gap-2 rounded-full px-8 py-2.5 h-auto text-base shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-transparent text-[rgba(255,255,255,1)] group relative overflow-hidden"
+            >
+              <Link href="/dashboard">
+                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <Music className="h-5 w-5 relative z-10 group-hover:rotate-12 transition-transform" />
+                <span className="relative z-10">Become a USIC Artist</span>
+              </Link>
+            </Button>
             </div>
 
             <div
@@ -416,7 +416,7 @@ export function HomepageSections() {
             <Button
               size="lg"
               asChild
-              className="gap-2 rounded-full px-10 py-7 h-auto text-lg shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-105 transition-all duration-300"
+              className="gap-2 rounded-full px-8 py-2.5 h-auto text-base shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:scale-105 transition-all duration-300"
             >
               <Link href="/explore">
                 <Play className="h-5 w-5" />

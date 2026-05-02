@@ -143,7 +143,7 @@ export function HomepageHero() {
             <Button
               size="lg"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-accent text-white hover:bg-accent/90 hover:scale-105 hover:shadow-xl hover:shadow-accent/40 transition-all duration-300 group relative overflow-hidden shadow-lg shadow-accent/30"
+              className="gap-2 text-base px-8 py-2.5 h-auto rounded-full bg-accent text-white hover:bg-accent/90 hover:scale-105 hover:shadow-xl hover:shadow-accent/40 transition-all duration-300 group relative overflow-hidden shadow-lg shadow-accent/30"
             >
               <Link href="/explore">
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -155,7 +155,7 @@ export function HomepageHero() {
               size="lg"
               variant="outline"
               asChild
-              className="gap-2 text-lg px-10 py-7 h-auto rounded-full bg-background border-2 border-accent/40 text-accent hover:bg-accent/5 hover:border-accent/70 hover:scale-105 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300 group relative overflow-hidden"
+              className="gap-2 text-base px-8 py-2.5 h-auto rounded-full bg-background border-2 border-accent/40 text-accent hover:bg-accent/5 hover:border-accent/70 hover:scale-105 hover:shadow-lg hover:shadow-accent/20 transition-all duration-300 group relative overflow-hidden"
             >
               <Link href="/dashboard">
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
