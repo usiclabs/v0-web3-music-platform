@@ -251,40 +251,7 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                     </div>
                   </div>
 
-                  {artist.profile_token_address && profileTokenMetrics[artist.wallet_address] && (
-                    <div
-                      className="flex items-center gap-3 p-4 md:p-6 rounded-2xl bg-green-500/10 backdrop-blur-xl border border-green-500/20 max-w-2xl animate-fade-in-up"
-                      style={{ animationDelay: "250ms" }}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <TrendingUp className="h-4 w-4 text-green-500" />
-                          <span className="text-xs md:text-sm text-white/70">Market Cap</span>
-                        </div>
-                        <span className="font-bold text-xl md:text-2xl text-white">
-                          {profileTokenMetrics[artist.wallet_address].marketCap >= 1000000
-                            ? `$${(profileTokenMetrics[artist.wallet_address].marketCap / 1000000).toFixed(2)}M`
-                            : profileTokenMetrics[artist.wallet_address].marketCap >= 1000
-                              ? `$${(profileTokenMetrics[artist.wallet_address].marketCap / 1000).toFixed(2)}K`
-                              : `$${profileTokenMetrics[artist.wallet_address].marketCap.toFixed(2)}`}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setSwapModalToken({
-                            address: artist.profile_token_address as Address,
-                            name: artist.artist_name || "Profile Token",
-                            symbol: artist.artist_name?.toUpperCase().slice(0, 4),
-                          })
-                        }}
-                        className="px-4 md:px-6 py-2 md:py-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold text-sm md:text-base flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg"
-                      >
-                        Swap
-                      </button>
-                    </div>
-                  )}
+
 
                   <Link
                     href={`/artist/${artist.wallet_address}`}
