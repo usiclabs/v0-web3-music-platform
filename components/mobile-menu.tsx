@@ -36,7 +36,6 @@ export function MobileMenu() {
   const menuItems = [
     { href: "/discover", icon: BarChart3, label: "Discover", color: "text-blue-400", pulseColor: "bg-blue-400" },
     { href: "/live", icon: Radio, label: "Live", color: "text-red-400", pulseColor: "bg-red-400" },
-    { href: "/tokens", icon: Coins, label: "Tokens", color: "text-amber-400", pulseColor: "bg-amber-400" },
     { href: "/analytics", icon: BarChart3, label: "Analytics", color: "text-purple-400", pulseColor: "bg-purple-400" },
     { href: "/staking", icon: Coins, label: "Staking", color: "text-yellow-400", pulseColor: "bg-yellow-400" },
     { href: "/swap", icon: ArrowLeftRight, label: "Swap", color: "text-cyan-400", pulseColor: "bg-cyan-400" },
