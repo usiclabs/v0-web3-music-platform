@@ -183,93 +183,93 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                   <span className="text-sm font-medium">#{index + 1} Artist</span>
                 </div>
 
-                <div className="space-y-6 pb-20 md:pb-8">
+                <div className="space-y-5 md:space-y-8 pb-12 md:pb-8">
                   <Link href={`/artist/${artist.wallet_address}`} className="block group">
-                    <div className="flex items-center gap-4 mb-4 animate-fade-in-up">
-                      <Avatar className="h-20 w-20 md:h-32 md:w-32 border-4 border-white/30 shadow-2xl group-hover:border-primary group-hover:scale-110 transition-all duration-300 relative">
+                    <div className="flex items-center gap-4 md:gap-6 animate-fade-in-up">
+                      <Avatar className="h-20 w-20 md:h-24 md:w-24 border-4 border-primary/40 shadow-[0_0_40px_rgba(0,0,0,0.8)] group-hover:border-primary group-hover:shadow-[0_0_60px_rgba(0,0,0,0.9)] group-hover:scale-110 transition-all duration-300 relative flex-shrink-0">
                         <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         <AvatarImage src={artist.avatar_url || undefined} className="relative z-10" />
-                        <AvatarFallback className="bg-primary/20 text-primary text-3xl md:text-4xl relative z-10">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/40 to-primary/20 text-primary text-2xl md:text-3xl relative z-10 font-bold">
                           {artist.artist_name?.[0]?.toUpperCase() || "A"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
                           <FriendActivityBadge userAddress={artist.wallet_address} />
                         </div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h1 className="text-3xl md:text-6xl font-bold text-white text-balance leading-tight group-hover:text-primary transition-all duration-300">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h1 className="text-2xl md:text-5xl font-bold text-white text-balance leading-tight group-hover:text-primary transition-all duration-300 line-clamp-2">
                             {artist.artist_name || "Unknown Artist"}
                           </h1>
                           {artist.verified && <VerifiedBadge size="lg" />}
                         </div>
-                        <p className="text-base md:text-lg text-white/70">{formatAddress(artist.wallet_address)}</p>
+                        <p className="text-sm md:text-base text-white/60">{formatAddress(artist.wallet_address)}</p>
                       </div>
                     </div>
                   </Link>
 
                   {artist.bio && (
                     <p
-                      className="text-base md:text-xl text-white/90 leading-relaxed max-w-3xl text-balance animate-fade-in-up"
+                      className="text-base md:text-lg text-white/80 leading-relaxed max-w-3xl text-balance animate-fade-in-up"
                       style={{ animationDelay: "100ms" }}
                     >
                       {artist.bio}
                     </p>
                   )}
 
+                  {/* Unified Stats Card */}
                   <div
-                    className="grid grid-cols-3 gap-4 sm:gap-5 md:gap-8 max-w-4xl w-full animate-fade-in-up"
+                    className="w-full max-w-2xl rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl overflow-hidden animate-fade-in-up"
                     style={{ animationDelay: "200ms" }}
                   >
-                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
-                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
-                        <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <DollarSign className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
+                    {/* Main Earnings Section */}
+                    <div className="p-6 md:p-8 border-b border-white/10">
+                      <p className="text-xs md:text-sm font-semibold text-white/60 mb-2 tracking-wider">USDC EARNED</p>
+                      <div className="flex items-end gap-3 mb-1">
+                        <span className="font-bold text-3xl md:text-5xl text-white leading-none">{artist.totalEarned.toFixed(4)}</span>
+                        <DollarSign className="h-6 w-6 md:h-8 md:w-8 text-primary/70 mb-1" />
                       </div>
-                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white animate-green-glow leading-tight">
-                        {artist.totalEarned.toFixed(4)}
-                      </span>
-                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">USDC Earned</span>
+                      <p className="text-xs md:text-sm text-white/60">All time earnings</p>
                     </div>
 
-                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
-                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
-                        <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Music className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
+                    {/* Secondary Metrics - 2 Column Grid */}
+                    <div className="grid grid-cols-2 divide-x divide-white/10">
+                      <div className="p-5 md:p-6 flex flex-col items-center text-center hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/20 mb-3 group-hover:scale-110 transition-transform">
+                          <Music className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                        </div>
+                        <span className="font-bold text-2xl md:text-3xl text-white">{artist.trackCount}</span>
+                        <span className="text-xs md:text-sm text-white/60 mt-1">Tracks</span>
                       </div>
-                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white leading-tight">{artist.trackCount}</span>
-                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">Tracks</span>
-                    </div>
 
-                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
-                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
-                        <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Users className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
+                      <div className="p-5 md:p-6 flex flex-col items-center text-center hover:bg-white/5 transition-colors">
+                        <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/20 mb-3 group-hover:scale-110 transition-transform">
+                          <Users className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                        </div>
+                        <span className="font-bold text-2xl md:text-3xl text-white">{artist.followerCount}</span>
+                        <span className="text-xs md:text-sm text-white/60 mt-1">Followers</span>
                       </div>
-                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white leading-tight">{artist.followerCount}</span>
-                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">Followers</span>
                     </div>
                   </div>
 
-
-
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto mt-2 md:mt-4 animate-fade-in-up" style={{ animationDelay: "300ms" }}>
+                  <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-2xl animate-fade-in-up" style={{ animationDelay: "300ms" }}>
                     <Link
                       href={`/artist/${artist.wallet_address}`}
-                      className="flex-1 sm:flex-none"
+                      className="flex-1"
                     >
                       <Button
                         size="lg"
-                        className="w-full h-13 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-full bg-gradient-to-r from-primary/80 to-primary/60 hover:from-primary hover:to-primary/80 hover:scale-105 active:scale-95 backdrop-blur-xl border border-primary/50 hover:border-primary transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] text-base sm:text-lg md:text-xl font-semibold text-white relative group"
+                        className="w-full h-12 md:h-14 px-6 md:px-8 rounded-full bg-gradient-to-r from-primary/80 to-primary/60 hover:from-primary hover:to-primary/80 hover:scale-[1.02] active:scale-95 backdrop-blur-xl border border-primary/50 hover:border-primary transition-all duration-300 shadow-lg hover:shadow-xl text-base md:text-lg font-semibold text-white relative group"
                       >
+                        <TrendingUp className="h-5 w-5 md:h-6 md:w-6 mr-2" />
                         <span className="relative z-10">View Profile</span>
                       </Button>
                     </Link>
                     <Button
-                      variant="outline"
                       size="lg"
-                      className="w-full sm:w-auto h-13 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-full bg-white/5 hover:bg-white/15 hover:scale-105 active:scale-95 backdrop-blur-xl border border-white/30 hover:border-white/50 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-base sm:text-lg md:text-xl font-semibold text-white relative group"
+                      className="flex-1 md:flex-none h-12 md:h-14 px-6 md:px-8 rounded-full bg-white/5 hover:bg-white/15 hover:scale-[1.02] active:scale-95 backdrop-blur-xl border border-white/30 hover:border-white/50 transition-all duration-300 shadow-lg hover:shadow-md text-base md:text-lg font-semibold text-white relative group"
                     >
+                      <Users className="h-5 w-5 md:h-6 md:w-6 mr-2" />
                       <span className="relative z-10">Follow</span>
                     </Button>
                   </div>
