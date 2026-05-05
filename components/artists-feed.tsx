@@ -210,7 +210,7 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
 
                   {artist.bio && (
                     <p
-                      className="text-base md:text-lg text-white/80 leading-relaxed max-w-3xl text-balance animate-fade-in-up"
+                      className="text-base md:text-lg text-white/80 leading-relaxed max-w-3xl text-balance animate-fade-in-up line-clamp-3"
                       style={{ animationDelay: "100ms" }}
                     >
                       {artist.bio}
