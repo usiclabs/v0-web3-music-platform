@@ -1,0 +1,360 @@
+═══════════════════════════════════════════════════════════════════════════════
+USI - WEB3 MUSIC STREAMING PLATFORM: QUICK REFERENCE FOR AI AGENTS
+═══════════════════════════════════════════════════════════════════════════════
+
+PLATFORM VISION
+───────────────
+Web3 music streaming with micropayments (USDC/Base), AI agents for autonomous trading/streaming/music generation, 
+NFT integration, prediction markets, token-gating, and real-time artist analytics. Artists earn per-stream; 
+listeners own artist tokens; agents autonomously execute strategies.
+
+───────────────────────────────────────────────────────────────────────────────
+1. TECH STACK
+───────────────────────────────────────────────────────────────────────────────
+Frontend: Next.js 16, React 19, Tailwind CSS v4, Framer Motion
+Backend: Next.js API Routes + Server Actions
+Database: Supabase PostgreSQL (62 tables with RLS)
+Blockchain: Base (mainnet/Sepolia), viem v2, wagmi v2
+Storage: Vercel Blob (audio/images/video)
+Web3: @coinbase/coinbase-sdk (CDP), @walletconnect/universal-provider
+Data: SWR (fetching), Recharts (charts)
+Other: Livepeer (streaming), Suno AI (music generation), Uniswap V3 (trading)
+
+───────────────────────────────────────────────────────────────────────────────
+2. CORE FEATURES (6 Main Pillars)
+───────────────────────────────────────────────────────────────────────────────
+
+A) X402 MICROPAYMENTS (Core Revenue)
+   - Pay-per-30-second-chunk in USDC on Base
+   - Listeners pay before chunk unlocks
+   - Automatic royalty distribution per splits
+   - On-chain verification → next chunk released
+
+B) ARTISTS & CONTENT
+   - Upload tracks with cover art, title, duration, pricing
+   - Dashboard: manage content, real-time earnings, analytics
+   - Profile tokenization (create ERC-20 artist token)
+   - Token-gating (require token balance to stream)
+   - Royalty split configuration
+   - NFT minting per track (ERC-1155 with immutable royalties)
+
+C) LISTENERS & DISCOVERY
+   - /discover (curated) → /explore (search) → /trending (real-time)
+   - Follow artists, like/comment/create playlists
+   - Token-gated content access
+   - Activity feed, search history
+   - Listen tracking for personalization
+
+D) AI AGENTS (Autonomous System)
+   → 1) Autonomous Artist Agent: Auto-generates music via Suno AI, auto-publishes
+   → 2) Auto-Stream Agent: Bot wallet streams music autonomously, pays for streams
+   → 3) Market-Maker Agent: DEX trading bot (Burst/Pro/Fomo/Max modes)
+   → 4) Investment Agent: Auto-buys artist tokens based on strategy
+   → 5) Token Sniper Agent: Auto-buys tokens matching criteria
+   → 6) Custom Eliza Agents: Extensible framework for custom behaviors
+   All agents have encrypted wallets, activity logging, portfolio tracking
+
+E) PREDICTION MARKETS
+   - Create markets on artist/track metrics
+   - Binary YES/NO betting with odds
+   - Real-time resolution on target dates
+   - PnL tracking per position
+   - Database tracks all trades/positions/payouts
+
+F) ADDITIONAL FEATURES
+   - Live streaming (Livepeer integration)
+   - Staking (lock tokens for rewards)
+   - Token swaps (Uniswap V3 integration)
+   - NFT marketplace (mint, list, trade, bid)
+   - Stories (24-hour ephemeral content, token-gated optional)
+   - Referral system with leaderboard
+   - Builder program codes for marketing
+   - Airdrop claims
+
+───────────────────────────────────────────────────────────────────────────────
+3. KEY DATABASE TABLES (62 Total)
+───────────────────────────────────────────────────────────────────────────────
+
+User & Profile: profiles, follows, user_presence
+Content: tracks, royalty_splits, comments, likes, playlists, playlist_tracks
+Payments: streams, earnings_events, generation_payments, x402_* (protocol tables)
+Agents: agents, agent_signals, agent_trades, agent_portfolio, agent_activity_log, agent_feedback
+        auto_stream_agents, autonomous_artist_agents, mm_agents, investment_agents, token_sniper_agents
+        auto_stream_agent_wallets, autonomous_artist_wallets, mm_agent_wallets, investment_agent_wallets
+Predictions: prediction_markets, prediction_trades, prediction_positions, prediction_payouts
+NFTs: music_nfts, nft_collections, nft_listings, nft_sales, nft_bids, nft_favorites
+Live: live_streams, livestream_comments
+Social: notifications, stories, story_views
+History: swap_history, staking_history, auto_investment_transactions, relayed_transactions
+Config: auto_investment_settings, session_keys, search_history
+Platform: reports, careers, boost_activity, boosts, referrals, builder_codes
+
+ALL TABLES: Row-Level Security (RLS) enabled for data access control
+
+───────────────────────────────────────────────────────────────────────────────
+4. API ENDPOINTS (200+ Routes) - KEY CATEGORIES
+───────────────────────────────────────────────────────────────────────────────
+
+AUTH: POST /api/users/[address]/verify (wallet ownership)
+
+TRACKS: 
+  - POST /api/tracks/create (upload)
+  - GET /api/tracks/[id], /api/tracks/trending, /api/tracks/[id]/similar
+  - GET /api/tracks/[id]/comments (thread)
+
+STREAMING & PAYMENTS (X402):
+  - POST /api/streams/log (log play event)
+  - GET /api/x402/stream/[trackId] (payment status)
+  - POST /api/x402/generate (create payment tx)
+  - POST /api/x402/verify (verify on-chain)
+  - POST /api/x402/settle (distribute royalties)
+
+AGENTS:
+  - POST /api/agents/register (new agent)
+  - GET /api/agents/[address], /api/agents/route (details/list)
+  - POST /api/agents/run-cycle (manual execution)
+  - POST /api/agents/invest (trigger investment)
+  - GET /api/agents/portfolio/route (holdings)
+  - Auto-Stream: POST /api/agents/auto-stream/create, /run, GET /stats
+  - Autonomous Artist: POST /api/agents/autonomous-artist/create
+  - Market-Maker: POST /api/agents/mm/create, /burst, /pro-mode, /max-mode
+              GET /stats, POST /wallets/fund, /wallets/withdraw
+              POST /v4-support/pools (detect Uniswap V3), /v4-support/swap
+
+SUNO AI (Music Generation):
+  - POST /api/suno/generate (create track)
+  - GET /api/suno/status (check status)
+  - POST /api/suno/callback (webhook)
+  - POST /api/suno/upload-audio, /generate-video, /add-instrumental, /add-vocals, /extend, /cover
+
+LIVE STREAMING:
+  - POST /api/live/create (start stream)
+  - GET /api/live/[id], /api/live/streams, /api/live/[id]/livepeer-status
+  - GET /api/live/check-eligibility
+
+PREDICTIONS:
+  - POST /api/predictions/markets/create (new market)
+  - POST /api/predictions/trade (place bet)
+  - GET /api/predictions/markets/[id] (details)
+  - POST /api/predictions/resolve (finalize)
+
+NFTs:
+  - POST /api/nft/upload-banner, /api/profile/tokenize
+  - /api/nft-marketplace/* (full operations)
+
+TOKENS:
+  - GET /api/token/metrics/[address] (token info)
+  - GET /api/token/price-history/[address]
+  - POST /api/tokens/deploy-clanker (deploy token)
+
+SOCIAL:
+  - POST /api/likes/[trackId], /api/comments/[id]
+  - POST /api/following/route, /api/stories/route
+  - GET /api/stories/[id]/view
+
+SEARCH:
+  - POST /api/search/route (full-text)
+  - GET /api/search/suggestions, /api/search/history
+
+UPLOADS:
+  - POST /api/upload/audio, /upload/image, /upload/video
+  - POST /api/storage/signed-upload-url
+
+PLAYLISTS:
+  - POST /api/playlists/route (create)
+  - GET /api/playlists/[id], /api/playlists/[id]/tracks
+
+───────────────────────────────────────────────────────────────────────────────
+5. PAGE ROUTES (80+)
+───────────────────────────────────────────────────────────────────────────────
+
+PUBLIC PAGES:
+  / (home) | /landing | /discover | /explore | /trending | /search | /artists | /live | /tokens | /predictions
+  /about | /docs | /changelog | /careers | /press | /terms | /privacy | /whitepaper
+
+CONTENT PAGES:
+  /track/[id] | /artist/[address] | /playlist/[id] | /live/[id] | /predictions/[id]
+
+USER PAGES (Authenticated):
+  /profile | /dashboard | /dashboard/upload | /dashboard/edit/[id] | /dashboard/earnings
+  /dashboard/analytics | /wallet | /following | /stories | /playlist
+
+AGENT PAGES:
+  /agents | /agents/[address] | /agents/register
+  /agents/autonomous-artist | /agents/auto-stream | /agents/market-maker | /agents/beat-scout | /agents/producer
+  /agents/activity | /dashboard/agent/autonomous-artist | /dashboard/agent/auto-stream | /dashboard/agent/mm
+
+FEATURE PAGES:
+  /nft-marketplace | /nft-marketplace/mint | /swap | /staking | /lp-manager
+  /live/start | /live/studio/[id] | /airdrop | /referrals | /rewards | /predictions/create
+
+DOCS:
+  /docs/getting-started | /docs/artist-guide | /docs/wallet-setup | /docs/api-reference
+  /docs/smart-contracts | /docs/x402-protocol | /docs/live-streaming | /docs/auto-investment
+  /docs/staking | /docs/ai-music-generation | /docs/erc-8004-agents | /docs/cdp-integration
+
+ADMIN/DEV:
+  /admin | /admin/gasless | /developers | /builder-codes | /skills | /simulator
+
+───────────────────────────────────────────────────────────────────────────────
+6. AUTHENTICATION & SECURITY
+───────────────────────────────────────────────────────────────────────────────
+
+Wallet-based: viem + wagmi for Web3 wallet connection
+Session Management: Supabase Auth JWT with RLS
+Gasless Transactions: Session keys (gasless client) for auto-investment
+RLS Policies: Row-level security on all tables prevents unauthorized access
+Encrypted Storage: Agent private keys stored encrypted in database
+Wallet Verification: POST /api/users/[address]/verify verifies wallet ownership
+
+───────────────────────────────────────────────────────────────────────────────
+7. SMART CONTRACTS & WEB3 INTEGRATION
+───────────────────────────────────────────────────────────────────────────────
+
+X402 Protocol: Custom payment verification (per 30-sec chunk)
+ERC-1155: Music NFTs with immutable royalty splits (mint on demand)
+ERC-20: Artist profile tokens
+Uniswap V3: Token swaps, liquidity pool management
+Base Chain: All transactions on Base (low-cost, EVM-compatible)
+CDP Integration: Wallet creation, fund management, smart contract operations
+Session Keys: Gasless transaction sponsorship for auto-investment
+
+───────────────────────────────────────────────────────────────────────────────
+8. EXTERNAL INTEGRATIONS
+───────────────────────────────────────────────────────────────────────────────
+
+Suno AI: Music generation (prompt-based track creation)
+Livepeer: Video streaming infrastructure (live broadcast)
+Vercel Blob: File storage (audio, images, videos, signed URLs)
+Coinbase CDP: Wallet management, contract deployment
+Uniswap V3: Trading pairs, liquidity positions
+Alchemy API: RPC, enhanced APIs for blockchain data
+WalletConnect: Multi-wallet connection support
+Farcaster (optional): Social integration
+Zora: NFT protocol layer
+
+───────────────────────────────────────────────────────────────────────────────
+9. ENVIRONMENT VARIABLES (Required)
+───────────────────────────────────────────────────────────────────────────────
+
+DATABASE: POSTGRES_URL, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET
+          SUPABASE_SERVICE_ROLE_KEY, NEON_POSTGRES_URL (optional)
+
+BLOCKCHAIN: NEXT_PUBLIC_CHAIN_ID (8453 for Base), NEXT_PUBLIC_RELAYER_ADDRESS
+
+WEB3 KEYS: SERVER_WALLET_PRIVATE_KEY, CDP_API_KEY_PRIVATE_KEY, CDP_API_KEY_NAME
+          CDP_SERVER_WALLET_DATA, NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+
+APIS: SUNO_API_KEY, LIVEPEER_API_KEY, NEXT_PUBLIC_LIVEPEER_API_KEY, ZORA_API_KEY, ALCHEMY_API_KEY
+
+ADMIN: NEXT_PUBLIC_ADMIN_ADDRESSES (comma-separated)
+
+STORAGE: BLOB_READ_WRITE_TOKEN (Vercel Blob), NEXT_PUBLIC_APP_URL
+
+───────────────────────────────────────────────────────────────────────────────
+10. KEY WORKFLOWS & DATA FLOWS
+───────────────────────────────────────────────────────────────────────────────
+
+ARTIST PUBLISHING:
+  1. Artist uploads track via /dashboard/upload (audio + metadata)
+  2. File stored in Vercel Blob, metadata in DB (tracks table)
+  3. Set price, royalty splits, token-gating (if applicable)
+  4. Track appears on /discover after admin approval (optional)
+  5. Artist sees real-time earnings in /dashboard/earnings
+
+LISTENER STREAMING:
+  1. Listener discovers track on /discover or /explore
+  2. Initiates play via audio player
+  3. Every 30 seconds: X402 payment prompt
+  4. User approves USDC transaction in wallet
+  5. Smart contract verifies payment on Base
+  6. Next 30-sec chunk unlocked & streamed
+  7. Royalties auto-distributed to splits
+  8. Stream event logged in streams table
+
+AUTONOMOUS ARTIST AGENT:
+  1. Artist creates agent via /dashboard/agent/autonomous-artist
+  2. Configure: daily budget, generation frequency, genre/style
+  3. Agent wakes daily/hourly, calls Suno AI API
+  4. Suno generates track (5-30 minutes)
+  5. Webhook returns audio URL + metadata
+  6. Agent uploads to platform automatically
+  7. Track published under artist name
+  8. Earnings tracked in autonomous_artist_activity table
+
+AUTO-STREAM AGENT:
+  1. User creates agent with budget & target genres/artists
+  2. Agent autonomously streams music (plays 30-sec chunks)
+  3. Pays USDC for each chunk (via agent wallet)
+  4. Streams logged in streams table
+  5. Artists receive royalties in real-time
+  6. Agent tracks total spend & stream count
+
+MARKET-MAKER AGENT:
+  1. User deploys MM agent with wallet funding
+  2. Detects liquidity pools via /api/agents/mm/v4-support/pools
+  3. Executes buy/sell pairs based on mode (Burst, Pro, Fomo, Max)
+  4. Tracks portfolio in agent_portfolio table
+  5. Calculates PnL continuously
+  6. User monitors via /agents/[address]
+
+PREDICTION MARKET:
+  1. Create market on /predictions/create (e.g., "Will artist XYZ reach 1M streams?")
+  2. Set resolution date & criteria
+  3. Users place YES/NO bets
+  4. Real-time odds calculated from order flow
+  5. On resolution date, market resolved (admin/oracle)
+  6. Winners receive payout, losers lose bet amount
+  7. History in prediction_payouts table
+
+───────────────────────────────────────────────────────────────────────────────
+11. PERFORMANCE & SCALING
+───────────────────────────────────────────────────────────────────────────────
+
+Caching: SWR client-side + Supabase query caching
+Image Optimization: Next.js Image component with auto-format
+Code Splitting: Route-based chunks via Next.js automatic splitting
+Database: Supabase connection pooling, indexed queries on key tables
+Real-time: Supabase Realtime for live metrics, activity feeds
+CDN: Vercel CDN for static assets
+Blob Storage: Vercel Blob for efficient audio/image delivery
+
+───────────────────────────────────────────────────────────────────────────────
+12. MONETIZATION MODEL
+───────────────────────────────────────────────────────────────────────────────
+
+Artist Revenue:
+  → Per-stream USDC payments (X402 micropayments)
+  → Premium/token-gated content
+  → NFT sales (fixed + marketplace trading)
+  → Profile token trading (artist token sales)
+  → Referral rewards (if listener uses artist's code)
+
+Platform Revenue:
+  → Take from X402 transactions (% fee, currently unclear from code)
+  → Agent-generated activity fees (trading fees, AI generation costs)
+  → Premium features (future)
+  → Sponsored content/featured listings (future)
+
+───────────────────────────────────────────────────────────────────────────────
+13. WHAT YOUR AGENT SHOULD KNOW
+───────────────────────────────────────────────────────────────────────────────
+
+✓ This is a PRODUCTION platform with 62 tables, 200+ endpoints, 80+ pages
+✓ Real Web3 integration (Base blockchain, USDC payments, smart contracts)
+✓ Autonomous agent system built-in (no agents = no special handling needed)
+✓ Full artist/listener two-sided marketplace
+✓ Real-time earnings, payments, and notifications
+✓ NFT + token marketplace fully operational
+✓ Prediction markets for engagement & additional revenue
+✓ Live streaming capability (Livepeer)
+✓ AI-powered content generation (Suno AI)
+✓ Multi-chain ready (Base primary, Sepolia testnet)
+✓ Session keys for gasless transactions
+✓ Search, discovery, and recommendation systems
+✓ Referral/builder program for growth
+✓ Admin panel for moderation & platform management
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF SUMMARY - Ready for Agent Deployment
+═══════════════════════════════════════════════════════════════════════════════
