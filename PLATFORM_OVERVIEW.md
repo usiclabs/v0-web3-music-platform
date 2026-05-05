@@ -49,14 +49,14 @@ USI is a blockchain-powered music streaming platform combining Web3 micropayment
 - Listeners must hold specified token to access content
 
 **Micropayment Flow**
-```
+\`\`\`
 1. Listener initiates play
 2. Every 30 seconds: payment prompt
 3. User approves USDC transaction
 4. Smart contract verifies payment
 5. Next audio chunk unlocked
 6. Royalties auto-distributed
-```
+\`\`\`
 
 ### 2.2 Artist Tools
 
@@ -801,7 +801,7 @@ All tables have **Row-Level Security (RLS)** enabled for data protection.
 ## 11. DATA FLOW EXAMPLES
 
 ### Track Upload Flow
-```
+\`\`\`
 1. Artist navigates to /dashboard/upload
 2. Uploads audio file → Vercel Blob
 3. Uploads cover image → Vercel Blob
@@ -809,10 +809,10 @@ All tables have **Row-Level Security (RLS)** enabled for data protection.
 5. Creates track record in Supabase
 6. Creates royalty_split records
 7. Track appears in catalog
-```
+\`\`\`
 
 ### Streaming Payment Flow
-```
+\`\`\`
 1. Listener clicks play on track
 2. Audio player initiates playback
 3. Every 30 seconds:
@@ -825,10 +825,10 @@ All tables have **Row-Level Security (RLS)** enabled for data protection.
    g. Unlock next audio chunk
    h. Log stream event
    i. Queue royalty distribution
-```
+\`\`\`
 
 ### Agent Trading Cycle Flow (Market-Maker Example)
-```
+\`\`\`
 1. Agent cycle triggered (cron, manual, or API)
 2. Fetch current pool price & liquidity
 3. Execute buy transaction (configurable amount/interval)
@@ -838,10 +838,10 @@ All tables have **Row-Level Security (RLS)** enabled for data protection.
 7. Execute sell transaction
 8. Calculate PnL and log
 9. Repeat on schedule
-```
+\`\`\`
 
 ### Prediction Market Resolution
-```
+\`\`\`
 1. Market resolution date reached
 2. Fetch outcome data from verification_source
 3. Compare against outcome_threshold
@@ -850,7 +850,7 @@ All tables have **Row-Level Security (RLS)** enabled for data protection.
 6. Generate prediction_payouts records
 7. Create earnings notifications
 8. Mark market as resolved
-```
+\`\`\`
 
 ---
 
