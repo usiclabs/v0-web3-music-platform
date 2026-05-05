@@ -218,53 +218,61 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                   )}
 
                   <div
-                    className="grid grid-cols-3 gap-3 md:gap-6 max-w-2xl animate-fade-in-up"
+                    className="grid grid-cols-3 gap-4 sm:gap-5 md:gap-8 max-w-4xl w-full animate-fade-in-up"
                     style={{ animationDelay: "200ms" }}
                   >
-                    <div className="flex flex-col items-center text-center p-4 md:p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:scale-110 transition-all duration-300 group">
-                      <div className="flex items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-full bg-primary/20 mb-2 md:mb-3 group-hover:scale-110 transition-transform relative">
+                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
+                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
                         <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <DollarSign className="h-5 w-5 md:h-7 md:w-7 text-primary relative z-10" />
+                        <DollarSign className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
                       </div>
-                      <span className="font-bold text-lg md:text-3xl text-white animate-green-glow">
+                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white animate-green-glow leading-tight">
                         {artist.totalEarned.toFixed(4)}
                       </span>
-                      <span className="text-xs md:text-sm text-white/70 mt-1">USDC Earned</span>
+                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">USDC Earned</span>
                     </div>
 
-                    <div className="flex flex-col items-center text-center p-4 md:p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:scale-110 transition-all duration-300 group">
-                      <div className="flex items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-full bg-primary/20 mb-2 md:mb-3 group-hover:scale-110 transition-transform relative">
+                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
+                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
                         <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Music className="h-5 w-5 md:h-7 md:w-7 text-primary relative z-10" />
+                        <Music className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
                       </div>
-                      <span className="font-bold text-lg md:text-3xl text-white">{artist.trackCount}</span>
-                      <span className="text-xs md:text-sm text-white/70 mt-1">Tracks</span>
+                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white leading-tight">{artist.trackCount}</span>
+                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">Tracks</span>
                     </div>
 
-                    <div className="flex flex-col items-center text-center p-4 md:p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:scale-110 transition-all duration-300 group">
-                      <div className="flex items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-full bg-primary/20 mb-2 md:mb-3 group-hover:scale-110 transition-transform relative">
+                    <div className="flex flex-col items-center text-center p-5 sm:p-6 md:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 hover:border-white/40 hover:scale-105 transition-all duration-300 group shadow-lg hover:shadow-xl">
+                      <div className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-primary/20 mb-3 md:mb-4 group-hover:scale-125 transition-transform relative">
                         <div className="absolute inset-0 rounded-full bg-primary/30 blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Users className="h-5 w-5 md:h-7 md:w-7 text-primary relative z-10" />
+                        <Users className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary relative z-10" />
                       </div>
-                      <span className="font-bold text-lg md:text-3xl text-white">{artist.followerCount}</span>
-                      <span className="text-xs md:text-sm text-white/70 mt-1">Followers</span>
+                      <span className="font-bold text-xl sm:text-2xl md:text-4xl text-white leading-tight">{artist.followerCount}</span>
+                      <span className="text-xs sm:text-sm md:text-base text-white/70 mt-2 font-medium">Followers</span>
                     </div>
                   </div>
 
 
 
-                  <Link
-                    href={`/artist/${artist.wallet_address}`}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: "300ms" }}
-                  >
-                    <Button
-                      size="lg"
-                      className="h-12 md:h-14 px-6 md:px-8 rounded-full bg-black/40 hover:bg-black/60 hover:scale-110 active:scale-95 backdrop-blur-xl border border-white/10 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] text-base md:text-lg font-semibold text-white w-full md:w-auto relative group"
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto mt-2 md:mt-4 animate-fade-in-up" style={{ animationDelay: "300ms" }}>
+                    <Link
+                      href={`/artist/${artist.wallet_address}`}
+                      className="flex-1 sm:flex-none"
                     >
-                      <span className="relative z-10">View Profile</span>
+                      <Button
+                        size="lg"
+                        className="w-full h-13 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-full bg-gradient-to-r from-primary/80 to-primary/60 hover:from-primary hover:to-primary/80 hover:scale-105 active:scale-95 backdrop-blur-xl border border-primary/50 hover:border-primary transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.8)] text-base sm:text-lg md:text-xl font-semibold text-white relative group"
+                      >
+                        <span className="relative z-10">View Profile</span>
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto h-13 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-full bg-white/5 hover:bg-white/15 hover:scale-105 active:scale-95 backdrop-blur-xl border border-white/30 hover:border-white/50 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4)] text-base sm:text-lg md:text-xl font-semibold text-white relative group"
+                    >
+                      <span className="relative z-10">Follow</span>
                     </Button>
-                  </Link>
+                  </div>
                 </div>
               </div>
 

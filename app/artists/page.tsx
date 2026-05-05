@@ -255,10 +255,10 @@ export default function ArtistsPage() {
     <div className="min-h-screen bg-background">
       <Button
         onClick={() => setShowFilters(!showFilters)}
-        className="fixed top-20 right-4 z-50 h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 hover:scale-110 active:scale-95 backdrop-blur-xl border border-primary/20 shadow-2xl transition-all duration-300 md:hidden"
+        className="fixed top-20 right-5 z-50 h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 hover:scale-110 active:scale-95 backdrop-blur-xl border border-primary/20 shadow-2xl transition-all duration-300 md:hidden"
         aria-label={showFilters ? "Close filters" : "Open filters"}
       >
-        {showFilters ? <X className="h-5 w-5 text-white" /> : <SlidersHorizontal className="h-5 w-5 text-white" />}
+        {showFilters ? <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" /> : <SlidersHorizontal className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
       </Button>
 
       {showFilters && (
