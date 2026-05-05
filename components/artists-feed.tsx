@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Music, DollarSign, Users, TrendingUp } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { FriendActivityBadge } from "@/components/friend-activity-badge"
 import Link from "next/link"
 import { ProfileTokenSwapModal } from "@/components/profile-token-swap-modal"
@@ -250,28 +249,6 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                         <span className="text-xs md:text-sm text-white/60 mt-1">Followers</span>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-2xl animate-fade-in-up" style={{ animationDelay: "300ms" }}>
-                    <Link
-                      href={`/artist/${artist.wallet_address}`}
-                      className="flex-1"
-                    >
-                      <Button
-                        size="lg"
-                        className="w-full h-12 md:h-14 px-6 md:px-8 rounded-full bg-gradient-to-r from-primary/80 to-primary/60 hover:from-primary hover:to-primary/80 hover:scale-[1.02] active:scale-95 backdrop-blur-xl border border-primary/50 hover:border-primary transition-all duration-300 shadow-lg hover:shadow-xl text-base md:text-lg font-semibold text-white relative group"
-                      >
-                        <TrendingUp className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-                        <span className="relative z-10">View Profile</span>
-                      </Button>
-                    </Link>
-                    <Button
-                      size="lg"
-                      className="flex-1 md:flex-none h-12 md:h-14 px-6 md:px-8 rounded-full bg-white/5 hover:bg-white/15 hover:scale-[1.02] active:scale-95 backdrop-blur-xl border border-white/30 hover:border-white/50 transition-all duration-300 shadow-lg hover:shadow-md text-base md:text-lg font-semibold text-white relative group"
-                    >
-                      <Users className="h-5 w-5 md:h-6 md:w-6 mr-2" />
-                      <span className="relative z-10">Follow</span>
-                    </Button>
                   </div>
                 </div>
               </div>
