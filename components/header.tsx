@@ -139,6 +139,19 @@ export function Header() {
               />
             </Link>
             <Link
+              href="/managr"
+              className={`text-sm font-medium transition-all relative group ${
+                isActive("/managr") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              MANAGR
+              <span
+                className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
+                  isActive("/managr") ? "w-full" : "w-0 group-hover:w-full"
+                }`}
+              />
+            </Link>
+            <Link
               href="/dashboard"
               className={`text-sm font-medium transition-all relative group ${
                 isActive("/dashboard") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
