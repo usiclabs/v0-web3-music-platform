@@ -12,16 +12,6 @@ import { ArtistOwnedComparison } from "@/components/managr/artist-owned-comparis
 import { FieldGuide } from "@/components/managr/field-guide"
 import { Manifesto } from "@/components/managr/manifesto"
 
-export const metadata = {
-  title: "MANAGR - Artist-Owned Label Stack | MyUSIC",
-  description: "MANAGR coordinates autonomous music agents that help artists create, release, promote, and earn without giving up ownership. The next label is yours.",
-  openGraph: {
-    title: "MANAGR - The Artist-Owned Label Stack",
-    description: "Autonomous music agents for artists. Create. Own. Earn.",
-    type: "website",
-  },
-}
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
