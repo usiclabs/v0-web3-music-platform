@@ -12,6 +12,16 @@ import { ArtistOwnedComparison } from "@/components/managr/artist-owned-comparis
 import { FieldGuide } from "@/components/managr/field-guide"
 import { Manifesto } from "@/components/managr/manifesto"
 
+export const metadata = {
+  title: "MANAGR - Artist-Owned Label Stack | MyUSIC",
+  description: "MANAGR coordinates autonomous music agents that help artists create, release, promote, and earn without giving up ownership. The next label is yours.",
+  openGraph: {
+    title: "MANAGR - The Artist-Owned Label Stack",
+    description: "Autonomous music agents for artists. Create. Own. Earn.",
+    type: "website",
+  },
+}
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -37,58 +47,7 @@ export default function ManagRPage() {
         <ManagRHero />
 
         {/* What is MANAGR Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            className="max-w-6xl mx-auto"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={containerVariants}
-          >
-            <div className="mb-16">
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight text-balance mb-8">
-                NOT A MANAGER.
-                <br />
-                A <span className="text-red-500">MUSIC OPERATING SYSTEM.</span>
-              </h2>
-              <p className="text-lg text-gray-300 max-w-3xl leading-relaxed">
-                MANAGR is the coordination layer for an artist-owned label stack. It helps artists direct autonomous
-                sub-agents across the operational, promotional, financial, and analytical layers of their music career.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  title: "Coordinates Agent Teams",
-                  description: "Direct specialized AI agents across creation, release, marketing, and analytics.",
-                  icon: "🎯",
-                },
-                {
-                  title: "Protects Creator Ownership",
-                  description: "Stay in full control of your music, data, audience, and earnings.",
-                  icon: "🔐",
-                },
-                {
-                  title: "Repeatable Release Systems",
-                  description: "Turn every release into an optimized, scalable, data-driven system.",
-                  icon: "⚡",
-                },
-              ].map((card, index) => (
-                <motion.div
-                  key={index}
-                  className="group glass-card border border-red-500/20 hover:border-red-500/50 p-8 rounded-xl transition-all duration-300 hover-lift"
-                  whileHover={{ y: -8 }}
-                >
-                  <div className="text-4xl mb-4">{card.icon}</div>
-                  <h3 className="text-xl font-bold mb-3 text-white">{card.title}</h3>
-                  <p className="text-gray-400">{card.description}</p>
-                  <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/5 group-hover:to-red-500/5 rounded-xl transition-all duration-300 pointer-events-none" />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </section>
+        <ManagROperatingSystem />
 
         {/* Agent Stack Section */}
         <AgentStack />
@@ -109,9 +68,12 @@ export default function ManagRPage() {
         <Manifesto />
 
         {/* Final CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-red-500/20">
+        <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-red-500/20 relative overflow-hidden">
+          {/* Background accent */}
+          <div className="absolute inset-0 bg-gradient-to-b from-red-900/5 to-transparent" />
+
           <motion.div
-            className="max-w-6xl mx-auto text-center"
+            className="max-w-6xl mx-auto text-center relative z-10"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}

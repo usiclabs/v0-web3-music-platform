@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
+import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
 import Image from "next/image"
@@ -35,6 +35,7 @@ export function MobileMenu() {
 
   const menuItems = [
     { href: "/discover", icon: BarChart3, label: "Discover", color: "text-blue-400", pulseColor: "bg-blue-400" },
+    { href: "/managr", icon: Sparkles, label: "MANAGR", color: "text-red-400", pulseColor: "bg-red-400" },
     { href: "/live", icon: Radio, label: "Live", color: "text-red-400", pulseColor: "bg-red-400" },
     { href: "/analytics", icon: BarChart3, label: "Analytics", color: "text-purple-400", pulseColor: "bg-purple-400" },
     { href: "/staking", icon: Coins, label: "Staking", color: "text-yellow-400", pulseColor: "bg-yellow-400" },

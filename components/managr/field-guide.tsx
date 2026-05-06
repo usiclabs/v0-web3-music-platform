@@ -36,6 +36,11 @@ export function FieldGuide() {
             <Button
               size="lg"
               className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 h-12 text-base hover-glow shadow-lg shadow-red-500/25 hover:scale-105 transition-all"
+              onClick={() => {
+                // Scroll to CTA or trigger download
+                const ctaElement = document.querySelector('a[href="/dashboard"]');
+                ctaElement?.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
               <BookOpen className="mr-2 h-5 w-5" />
               Download the Field Guide
