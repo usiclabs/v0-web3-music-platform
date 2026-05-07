@@ -113,15 +113,15 @@ export function Header() {
               />
             </Link>
             <Link
-              href="/swap"
+              href="/videos"
               className={`text-sm font-medium transition-all relative group ${
-                isActive("/swap") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                isActive("/videos") ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Swap
+              Videos
               <span
                 className={`absolute -bottom-1 left-0 h-0.5 bg-primary transition-all ${
-                  isActive("/swap") ? "w-full" : "w-0 group-hover:w-full"
+                  isActive("/videos") ? "w-full" : "w-0 group-hover:w-full"
                 }`}
               />
             </Link>
