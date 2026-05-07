@@ -27,7 +27,7 @@ import { createBrowserClient } from "@/lib/supabase/client"
 import { ensureProfile } from "@/lib/supabase/helpers"
 import type { Database } from "@/types/database"
 import { SkeletonCard, SkeletonStats } from "@/components/skeleton-loader"
-import { WalletConnectPrompt } from "@/components/wallet-connect-prompt"
+import { EmptyStateWalletConnect } from "@/components/empty-state-wallet-connect"
 import { TokenizeProfileModal } from "@/components/tokenize-profile-modal"
 
 type Track = Database["public"]["Tables"]["tracks"]["Row"] & {
@@ -203,14 +203,29 @@ export default function DashboardPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen pb-32 bg-black">
-        <main className="container py-12 px-4 sm:px-6">
-          <WalletConnectPrompt
-            title="Connect Your Wallet"
-            description="Please connect your wallet to access the dashboard"
-            icon={<Music className="h-10 w-10 md:h-12 md:w-12 text-primary" />}
-          />
-        </main>
+      <div className="min-h-screen pb-32">
+        <EmptyStateWalletConnect
+          title="Access Your Artist Dashboard"
+          description="Connect your wallet to manage your tracks, view analytics, and earn from your music on our platform."
+          ctaText="Connect Wallet"
+          features={[
+            {
+              icon: <Music className="h-5 w-5 text-accent" />,
+              title: "Manage Tracks",
+              description: "Upload and organize your music",
+            },
+            {
+              icon: <BarChart3 className="h-5 w-5 text-accent" />,
+              title: "Track Analytics",
+              description: "Monitor plays and performance",
+            },
+            {
+              icon: <DollarSign className="h-5 w-5 text-accent" />,
+              title: "Earn Rewards",
+              description: "Get paid every stream",
+            },
+          ]}
+        />
       </div>
     )
   }
