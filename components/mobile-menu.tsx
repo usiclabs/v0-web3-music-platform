@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { X, Menu, BarChart3, Coins, ArrowLeftRight, Upload, DollarSign, Settings, Radio } from "lucide-react"
+import { X, Menu, BarChart3, Coins, Video, Upload, DollarSign, Settings, Radio, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/lib/web3/wallet-context"
 import Image from "next/image"
@@ -35,10 +35,11 @@ export function MobileMenu() {
 
   const menuItems = [
     { href: "/discover", icon: BarChart3, label: "Discover", color: "text-blue-400", pulseColor: "bg-blue-400" },
+    { href: "/managr", icon: Sparkles, label: "MANAGR", color: "text-red-400", pulseColor: "bg-red-400" },
     { href: "/live", icon: Radio, label: "Live", color: "text-red-400", pulseColor: "bg-red-400" },
     { href: "/analytics", icon: BarChart3, label: "Analytics", color: "text-purple-400", pulseColor: "bg-purple-400" },
     { href: "/staking", icon: Coins, label: "Staking", color: "text-yellow-400", pulseColor: "bg-yellow-400" },
-    { href: "/swap", icon: ArrowLeftRight, label: "Swap", color: "text-cyan-400", pulseColor: "bg-cyan-400" },
+    { href: "/videos", icon: Video, label: "Videos", color: "text-cyan-400", pulseColor: "bg-cyan-400" },
     { href: "/dashboard/upload", icon: Upload, label: "Upload", color: "text-green-400", pulseColor: "bg-green-400" },
     {
       href: "/dashboard/earnings",
