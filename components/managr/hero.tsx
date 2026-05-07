@@ -26,7 +26,7 @@ export function ManagRHero() {
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(239, 68, 68, 0.1)" strokeWidth="0.5" />
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="hsl(var(--accent)/0.1)" strokeWidth="0.5" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -44,9 +44,9 @@ export function ManagRHero() {
           className="mb-6 flex items-center justify-center gap-2"
           variants={itemVariants}
         >
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/30 bg-red-500/5 backdrop-blur-sm">
-            <Sparkles className="h-4 w-4 text-red-500" />
-            <span className="text-xs font-medium text-red-400">The Artist-Owned Label Stack</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-accent/30 bg-accent/5 backdrop-blur-sm">
+            <Sparkles className="h-4 w-4 text-accent" />
+            <span className="text-xs font-medium text-accent/80">The Artist-Owned Label Stack</span>
           </div>
         </motion.div>
 
@@ -55,7 +55,7 @@ export function ManagRHero() {
           variants={itemVariants}
         >
           YOUR MUSIC HAS A{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-400 to-red-600 animate-pulse">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-accent/70 to-accent/90 animate-pulse">
             TEAM NOW.
           </span>
         </motion.h1>
@@ -72,7 +72,7 @@ export function ManagRHero() {
           <Button
             asChild
             size="lg"
-            className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 h-12 text-base hover-glow shadow-lg shadow-red-500/25 hover:scale-105 transition-all"
+            className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
           >
             <Link href="/dashboard" className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
@@ -82,7 +82,7 @@ export function ManagRHero() {
           <Button
             variant="outline"
             size="lg"
-            className="border-red-500/50 hover:border-red-500 text-white font-bold px-8 h-12 text-base hover:bg-red-500/10 hover:scale-105 transition-all"
+            className="border-accent/50 hover:border-accent text-white font-bold px-8 h-12 text-base hover:bg-accent/10 hover:scale-105 transition-all"
           >
             Explore the Agent Stack
           </Button>
@@ -100,22 +100,22 @@ export function ManagRHero() {
           initial={{ scale: 0.95, opacity: 0 }}
         >
           {/* Ambient light effect */}
-          <div className="absolute -inset-32 bg-gradient-to-r from-red-900/20 via-transparent to-red-900/20 blur-3xl" />
+          <div className="absolute -inset-32 bg-gradient-to-r from-accent/20 via-transparent to-accent/20 blur-3xl" />
 
-          <div className="bg-gradient-to-b from-red-900/20 via-transparent to-transparent rounded-2xl p-8 border border-red-500/20 relative z-10">
+          <div className="bg-gradient-to-b from-accent/20 via-transparent to-transparent rounded-2xl p-8 border border-accent/20 relative z-10">
             <div className="flex flex-col lg:flex-row items-center justify-center gap-6">
               {/* Central Module */}
               <motion.div
-                className="glass-card border border-red-500/40 p-6 rounded-lg w-full lg:w-auto lg:order-2 relative group overflow-hidden"
+                className="glass-card border border-accent/40 p-6 rounded-lg w-full lg:w-auto lg:order-2 relative group overflow-hidden"
                 whileHover={{ scale: 1.05 }}
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
               >
                 {/* Inner glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+                <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
 
                 <div className="text-center relative z-10">
-                  <div className="text-3xl font-bold font-display text-red-500 mb-2 flex items-center justify-center gap-2">
+                  <div className="text-3xl font-bold font-display text-accent mb-2 flex items-center justify-center gap-2">
                     <Sparkles className="h-6 w-6" />
                     MANAGR
                     <Sparkles className="h-6 w-6" />
@@ -129,8 +129,8 @@ export function ManagRHero() {
                 {["Producer", "Release", "Marketing"].map((agent, i) => (
                   <motion.div
                     key={agent}
-                    className="glass-card border border-red-500/20 p-4 rounded-lg hover:border-red-500/50 transition-all"
-                    whileHover={{ x: -4, borderColor: "rgba(239, 68, 68, 0.5)" }}
+                    className="glass-card border border-accent/20 p-4 rounded-lg hover:border-accent/50 transition-all"
+                    whileHover={{ x: -4 }}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + i * 0.1 }}
@@ -146,8 +146,8 @@ export function ManagRHero() {
                 {["Distribution", "Royalty", "Analytics"].map((agent, i) => (
                   <motion.div
                     key={agent}
-                    className="glass-card border border-red-500/20 p-4 rounded-lg hover:border-red-500/50 transition-all"
-                    whileHover={{ x: 4, borderColor: "rgba(239, 68, 68, 0.5)" }}
+                    className="glass-card border border-accent/20 p-4 rounded-lg hover:border-accent/50 transition-all"
+                    whileHover={{ x: 4 }}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + i * 0.1 }}

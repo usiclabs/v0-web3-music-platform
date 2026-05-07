@@ -63,7 +63,7 @@ const itemVariants = {
 
 export function AgentStack() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-red-500/20">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-accent/20">
       <motion.div
         className="max-w-6xl mx-auto"
         initial="hidden"

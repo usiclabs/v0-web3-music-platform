@@ -50,7 +50,7 @@ export function ManagROperatingSystem() {
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight text-balance mb-8">
             NOT A MANAGER.
             <br />
-            A <span className="text-red-500">MUSIC OPERATING SYSTEM.</span>
+            A <span className="text-accent">MUSIC OPERATING SYSTEM.</span>
           </h2>
           <p className="text-lg text-gray-300 max-w-3xl leading-relaxed">
             MANAGR is the coordination layer for an artist-owned label stack. It helps artists direct autonomous
@@ -62,11 +62,11 @@ export function ManagROperatingSystem() {
           {benefits.map((card, index) => (
             <motion.div
               key={index}
-              className="group glass-card border border-red-500/20 hover:border-red-500/50 p-8 rounded-xl transition-all duration-300 hover-lift relative overflow-hidden"
+              className="group glass-card border border-accent/20 hover:border-accent/50 p-8 rounded-xl transition-all duration-300 hover-lift relative overflow-hidden"
               variants={itemVariants}
               whileHover={{
                 y: -8,
-                boxShadow: "0 20px 40px rgba(239, 68, 68, 0.15)",
+                boxShadow: "0 20px 40px hsl(var(--accent)/0.15)",
               }}
             >
               <div className="relative z-10">
@@ -76,7 +76,7 @@ export function ManagROperatingSystem() {
               </div>
 
               {/* Hover glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
             </motion.div>
           ))}
         </div>
@@ -84,11 +84,11 @@ export function ManagROperatingSystem() {
         {/* Core systems explanation */}
         <motion.div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8" variants={containerVariants}>
           <motion.div
-            className="glass-card border border-red-500/20 p-8 rounded-xl hover:border-red-500/50 transition-all"
+            className="glass-card border border-accent/20 p-8 rounded-xl hover:border-accent/50 transition-all"
             variants={itemVariants}
           >
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-red-500">●</span> Creative Layer
+              <span className="text-accent">●</span> Creative Layer
             </h3>
             <p className="text-gray-400 leading-relaxed">
               Producer Agent assists with concepts, lyrics, production direction, and creative iteration to help refine your unique sound.
@@ -96,11 +96,11 @@ export function ManagROperatingSystem() {
           </motion.div>
 
           <motion.div
-            className="glass-card border border-red-500/20 p-8 rounded-xl hover:border-red-500/50 transition-all"
+            className="glass-card border border-accent/20 p-8 rounded-xl hover:border-accent/50 transition-all"
             variants={itemVariants}
           >
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-red-500">●</span> Release Layer
+              <span className="text-accent">●</span> Release Layer
             </h3>
             <p className="text-gray-400 leading-relaxed">
               Release Agent prepares tracks, metadata, release plans, and launch workflows to execute professional releases.
@@ -108,11 +108,11 @@ export function ManagROperatingSystem() {
           </motion.div>
 
           <motion.div
-            className="glass-card border border-red-500/20 p-8 rounded-xl hover:border-red-500/50 transition-all"
+            className="glass-card border border-accent/20 p-8 rounded-xl hover:border-accent/50 transition-all"
             variants={itemVariants}
           >
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-red-500">●</span> Promotion Layer
+              <span className="text-accent">●</span> Promotion Layer
             </h3>
             <p className="text-gray-400 leading-relaxed">
               Marketing and Distribution Agents create campaigns, handle packaging, and connect music across platforms and audiences.
@@ -120,11 +120,11 @@ export function ManagROperatingSystem() {
           </motion.div>
 
           <motion.div
-            className="glass-card border border-red-500/20 p-8 rounded-xl hover:border-red-500/50 transition-all"
+            className="glass-card border border-accent/20 p-8 rounded-xl hover:border-accent/50 transition-all"
             variants={itemVariants}
           >
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span className="text-red-500">●</span> Analytics Layer
+              <span className="text-accent">●</span> Analytics Layer
             </h3>
             <p className="text-gray-400 leading-relaxed">
               Royalty and Analytics Agents track performance, payouts, earnings transparency, and audience behavior to drive decisions.
