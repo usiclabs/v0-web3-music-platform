@@ -72,7 +72,7 @@ export default function ManagRPage() {
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight mb-6 text-balance">
               DEPLOY YOUR
               <br />
-              <span className="text-red-500">FIRST MUSIC AGENT TEAM.</span>
+              <span className="text-accent">FIRST MUSIC AGENT TEAM.</span>
             </h2>
 
             <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-12">
@@ -84,14 +84,15 @@ export default function ManagRPage() {
               <Button
                 asChild
                 size="lg"
-                className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 h-12 text-base hover-glow shadow-lg shadow-red-500/25 hover:scale-105 transition-all"
+                variant="default"
+                className="gap-1.5 sm:gap-2 !bg-accent hover:!bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
               >
                 <Link href="/dashboard">Deploy MANAGR</Link>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="border-red-500/50 hover:border-red-500 text-white font-bold px-8 h-12 text-base hover:bg-red-500/10 hover:scale-105 transition-all"
+                className="border-accent/50 hover:border-accent text-white font-bold px-8 h-12 text-base hover:bg-accent/10 hover:scale-105 transition-all"
               >
                 Download the Field Guide
               </Button>
@@ -104,7 +105,7 @@ export default function ManagRPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-red-500/20 py-12 px-4 sm:px-6 lg:px-8">
+        <footer className="border-t border-accent/20 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
               <div>

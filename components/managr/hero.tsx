@@ -72,7 +72,8 @@ export function ManagRHero() {
           <Button
             asChild
             size="lg"
-            className="gap-1.5 sm:gap-2 bg-accent hover:bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
+            variant="default"
+            className="gap-1.5 sm:gap-2 !bg-accent hover:!bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
           >
             <Link href="/dashboard" className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
