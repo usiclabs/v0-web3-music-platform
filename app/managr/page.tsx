@@ -87,7 +87,7 @@ export default function ManagRPage() {
                 variant="default"
                 className="gap-1.5 sm:gap-2 !bg-accent hover:!bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
               >
-                <Link href="/dashboard">Deploy MANAGR</Link>
+                <Link href="/managr/dashboard">Deploy MANAGR</Link>
               </Button>
               <Button
                 variant="outline"
