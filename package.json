@@ -14,6 +14,7 @@
     "@coinbase/wallet-sdk": "^4.0.0",
     "@emotion/is-prop-valid": "latest",
     "@expo/dom-webview": "latest",
+    "@expo/log-box": "latest",
     "@expo/metro-runtime": "latest",
     "@farcaster/miniapp-sdk": "0.2.1",
     "@hookform/resolvers": "^3.10.0",
