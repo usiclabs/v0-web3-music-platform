@@ -1196,16 +1196,36 @@ export class MarketMakerAgentService {
     try {
       const quoterAddress = UNISWAP_V3_QUOTER[base.id as keyof typeof UNISWAP_V3_QUOTER] as Address
 
+      if (!quoterAddress) {
+        throw new Error(`Quoter contract not available for chain ${base.id}`)
+      }
+
       const feeTiers = [3000, 10000, 500]
+      const errors: Record<number, string> = {}
+
+      // First check if pool exists for any fee tier
+      const rpcUrl = getRpcUrl()
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(rpcUrl),
+      })
+
+      let poolExists = false
+      for (const fee of feeTiers) {
+        const poolCheck = await this.checkPoolExists(publicClient, tokenIn, base.id)
+        if (poolCheck.exists) {
+          poolExists = true
+          break
+        }
+      }
+
+      if (!poolExists) {
+        throw new Error(`No Uniswap V3 pool found for token pair ${tokenIn}/${tokenOut}`)
+      }
 
       for (const fee of feeTiers) {
         try {
-          const rpcUrl = getRpcUrl()
-
-          const publicClient = createPublicClient({
-            chain: base,
-            transport: http(rpcUrl),
-          })
+          console.log(`[MM Agent] Attempting quote with fee tier: ${fee}`)
 
           const result = await publicClient.readContract({
             address: quoterAddress,
@@ -1225,14 +1245,21 @@ export class MarketMakerAgentService {
           const amountOut = (result as [bigint, bigint, number, bigint])[0]
 
           if (amountOut > 0n) {
+            console.log(`[MM Agent] Got quote with fee tier ${fee}: ${amountOut.toString()}`)
             return amountOut
           }
-        } catch {
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          errors[fee] = errorMsg
+          console.warn(`[MM Agent] Quote failed for fee tier ${fee}: ${errorMsg}`)
           continue
         }
       }
 
-      throw new Error("Failed to get quote")
+      const errorDetails = Object.entries(errors)
+        .map(([fee, err]) => `Fee ${fee}: ${err}`)
+        .join("; ")
+      throw new Error(`Failed to get quote from all fee tiers. Details: ${errorDetails}`)
     } catch (error) {
       console.error("[MM Agent] Failed to get quote:", error)
       throw error
