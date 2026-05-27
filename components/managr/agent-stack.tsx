@@ -4,44 +4,29 @@ import { motion } from "framer-motion"
 
 const agents = [
   {
-    name: "Producer Agent",
-    description: "Assists with song concepts, lyrics, production direction, and creative iteration.",
+    name: "Auto-Stream Agent",
+    description: "Autonomously streams your music across blockchain networks and platforms, maximizing reach and earnings.",
+    icon: "🎵",
+  },
+  {
+    name: "Market Maker Agent",
+    description: "Provides liquidity and market-making for your music tokens, enabling efficient trading and price discovery.",
+    icon: "📈",
+  },
+  {
+    name: "Autonomous Artist Agent",
+    description: "Handles creative coordination, release scheduling, and artist operations automatically.",
     icon: "🎼",
   },
   {
-    name: "Release Agent",
-    description: "Prepares tracks, metadata, release plans, and launch workflows.",
+    name: "Investment Agent",
+    description: "Manages portfolio investments, yield optimization, and strategic asset allocation for your music IP.",
+    icon: "💎",
+  },
+  {
+    name: "Boost Agent",
+    description: "Amplifies reach and engagement through automated promotion, advertising, and visibility strategies.",
     icon: "🚀",
-  },
-  {
-    name: "Marketing Agent",
-    description: "Creates campaigns, social posts, visuals, content calendars, and fan-facing messaging.",
-    icon: "📢",
-  },
-  {
-    name: "Distribution Agent",
-    description: "Helps package music for platforms, channels, and audience touchpoints.",
-    icon: "🌍",
-  },
-  {
-    name: "Royalty Agent",
-    description: "Tracks payouts, revenue flow, transparent earnings, and creator-side reporting.",
-    icon: "💰",
-  },
-  {
-    name: "Analytics Agent",
-    description: "Studies audience behavior, release performance, engagement, and growth signals.",
-    icon: "📊",
-  },
-  {
-    name: "Fan Agent",
-    description: "Supports fan communication, community updates, access drops, and retention loops.",
-    icon: "👥",
-  },
-  {
-    name: "Treasury Agent",
-    description: "Helps organize budgets, reinvestment logic, campaign spend, and agent operating capital.",
-    icon: "🏦",
   },
 ]
 
@@ -73,13 +58,13 @@ export function AgentStack() {
       >
         <div className="mb-16">
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight text-balance mb-8">
-            ONE ARTIST.
+            YOUR AGENT TEAM.
             <br />
-            <span className="text-red-500">MULTIPLE AGENTS.</span>
+            <span className="text-red-500">DEPLOY & EARN.</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {agents.map((agent, index) => (
             <motion.div
               key={index}
@@ -122,8 +107,7 @@ export function AgentStack() {
           variants={itemVariants}
         >
           <p className="text-gray-300">
-            Each agent is designed to be autonomous yet coordinated. They work together to handle every aspect of your
-            music career, from creation to monetization.
+            Deploy MANAGR agents to handle streaming, trading, investing, and promotion autonomously. Each agent works independently yet coordinates with your team to maximize earnings and reach.
           </p>
         </motion.div>
       </motion.div>

@@ -44,7 +44,7 @@ import confetti from "canvas-confetti"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { MMV4PoolDetector } from "@/components/mm-v4-pool-detector"
-import { MMV4SwapPanel } from "@/components/mm-v4-swap-panel"
+import { MMUnifiedSwapPanel } from "@/components/mm-unified-swap-panel"
 import { MMV4SwapHistory } from "@/components/mm-v4-swap-history"
 
 // Mock ABI and Address for ERC20 interactions
@@ -284,6 +284,7 @@ export default function MarketMakerAgentPage() {
   const [customTokenAddress, setCustomTokenAddress] = useState("")
   const [userUSIBalance, setUserUSIBalance] = useState(0n)
   const [exportingWalletIndex, setExportingWalletIndex] = useState<number | null>(null)
+  const [uniswapVersion, setUniswapVersion] = useState<"v3" | "v4">("v3")
 
   const isMobile = useIsMobile()
 
@@ -301,14 +302,7 @@ export default function MarketMakerAgentPage() {
   useEffect(() => {
     if (configData?.config) {
       setConfig(configData.config)
-      // Initialize custom token state based on fetched config
-      if (configData.config.token_address && configData.config.token_address !== USI_TOKEN_ADDRESS) {
-        setUseCustomToken(true)
-        setCustomTokenAddress(configData.config.token_address)
-      } else {
-        setUseCustomToken(false)
-        setCustomTokenAddress("")
-      }
+      setUniswapVersion((configData.config as any).uniswap_version || "v3")
     }
   }, [configData])
 
@@ -348,28 +342,42 @@ export default function MarketMakerAgentPage() {
   }, [config?.id])
 
   useEffect(() => {
-    if (showWalletsModal && config?.id) {
+    if (config?.id) {
+      // Always load wallets when config changes
       const fetchWallets = () => {
-        console.log("[v0] Fetching agent wallets:", config.id)
+        console.log("[v0] Fetching agent wallets for config:", config.id)
         fetch(`/api/agents/mm/wallets?agentId=${config.id}`)
-          .then((res) => res.json())
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`)
+            }
+            return res.json()
+          })
           .then((data) => {
-            console.log("[v0] Wallets data received:", data.wallets)
-            if (data.wallets) {
+            console.log("[v0] Wallets data received:", data)
+            if (data.wallets && Array.isArray(data.wallets)) {
+              console.log(`[v0] Loaded ${data.wallets.length} wallets`)
               setWallets(data.wallets)
+            } else {
+              console.log("[v0] No wallets array in response")
+              setWallets([])
             }
           })
-          .catch((error) => console.error("Failed to load wallets:", error))
+          .catch((error) => {
+            console.error("[v0] Failed to load wallets:", error)
+            setWallets([])
+          })
       }
 
-      // Initial fetch
+      // Load wallets immediately when config is available
       fetchWallets()
 
-      const interval = setInterval(fetchWallets, 30000)
-
-      return () => clearInterval(interval)
+      // Also load when modal opens
+      if (showWalletsModal) {
+        fetchWallets()
+      }
     }
-  }, [showWalletsModal, config?.id])
+  }, [config?.id, showWalletsModal])
 
   useEffect(() => {
     if (fundingWallet && wagmiAddress && publicClient) {
@@ -807,6 +815,8 @@ export default function MarketMakerAgentPage() {
     }
   }
 
+  const tokenSymbol = config?.token_symbol || "TOKEN"
+
   if (isLoadingConfig) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1024,7 +1034,6 @@ export default function MarketMakerAgentPage() {
   }
 
   const tokenAddress = config?.token_address || USI_TOKEN_ADDRESS
-  const tokenSymbol = config?.token_symbol || "USI"
 
   const stats = statsData?.stats || {
     totalBuys: 0,
@@ -1129,22 +1138,27 @@ export default function MarketMakerAgentPage() {
           />
         </div>
 
-        {/* Uniswap V4 Pool Support Section */}
+        {/* Uniswap Pool Support Section */}
         <div className="border-t border-border/50 pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="h-5 w-5 text-blue-400" />
-            <h2 className="text-lg font-semibold">Uniswap V4 Pool Support</h2>
-            <Badge className="bg-blue-500/20 text-blue-300">Beta</Badge>
+            <h2 className="text-lg font-semibold">
+              Uniswap Pools
+              <Badge className={`ml-2 ${uniswapVersion === "v3" ? "bg-emerald-500/20 text-emerald-300" : "bg-blue-500/20 text-blue-300"}`}>
+                {uniswapVersion.toUpperCase()} Active
+              </Badge>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MMV4PoolDetector />
             {config?.token_address && (
-              <MMV4SwapPanel
+              <MMUnifiedSwapPanel
                 agentId={config.id}
                 ownerAddress={config.owner_address || address || ""}
                 tokenAddress={config.token_address}
                 walletIndex={1}
+                defaultVersion={uniswapVersion}
               />
             )}
           </div>
@@ -1646,7 +1660,68 @@ export default function MarketMakerAgentPage() {
               )}
             </div>
 
-            {/* Trading Settings */}
+            {/* Uniswap Pool Version Selection */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">Uniswap Pool Version</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={async () => {
+                    setUniswapVersion("v3")
+                    setConfig({ ...config, uniswap_version: "v3" } as any)
+                    try {
+                      await fetch("/api/agents/mm/config", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          agentId: config.id,
+                          uniswap_version: "v3",
+                        }),
+                      })
+                      toast.success("Uniswap V3 selected")
+                      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                    } catch (error) {
+                      toast.error("Failed to update Uniswap version")
+                    }
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    uniswapVersion === "v3"
+                      ? "border-emerald-500 bg-emerald-500/10"
+                      : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-semibold text-sm">Uniswap V3</p>
+                  <p className="text-xs text-muted-foreground mt-1">Concentrated liquidity pools</p>
+                </button>
+                <button
+                  onClick={async () => {
+                    setUniswapVersion("v4")
+                    setConfig({ ...config, uniswap_version: "v4" } as any)
+                    try {
+                      await fetch("/api/agents/mm/config", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          agentId: config.id,
+                          uniswap_version: "v4",
+                        }),
+                      })
+                      toast.success("Uniswap V4 selected")
+                      mutate(`/api/agents/mm/config?ownerAddress=${address}`)
+                    } catch (error) {
+                      toast.error("Failed to update Uniswap version")
+                    }
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    uniswapVersion === "v4"
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <p className="font-semibold text-sm">Uniswap V4</p>
+                  <p className="text-xs text-muted-foreground mt-1">PoolManager with hooks support</p>
+                </button>
+              </div>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Buy Amount (ETH)</label>
