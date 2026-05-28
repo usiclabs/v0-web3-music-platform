@@ -203,13 +203,13 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <FriendActivityBadge userAddress={artist.wallet_address} />
                         </div>
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <h1 className="text-2xl md:text-4xl font-black text-white text-balance leading-tight group-hover:text-red-400 transition-colors duration-300 line-clamp-2">
+                        <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+                          <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold text-white text-balance leading-tight group-hover:text-red-400 transition-colors duration-300 line-clamp-2">
                             {artist.artist_name || "Unknown Artist"}
                           </h1>
                           {artist.verified && <VerifiedBadge size="lg" />}
                         </div>
-                        <p className="text-xs md:text-sm text-white/70 font-mono">{formatAddress(artist.wallet_address)}</p>
+                        <p className="text-xs md:text-sm text-white/60 font-mono tracking-wider">{formatAddress(artist.wallet_address)}</p>
                       </div>
                     </div>
                   </Link>
@@ -217,7 +217,7 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                   {/* Bio Section */}
                   {artist.bio && (
                     <p
-                      className="text-sm md:text-base text-white/80 leading-relaxed max-w-2xl text-pretty animate-fade-in"
+                      className="text-base md:text-lg text-white/80 leading-relaxed max-w-3xl text-pretty animate-fade-in font-light"
                       style={{ animationDelay: "100ms" }}
                     >
                       {artist.bio}
@@ -230,35 +230,35 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                     style={{ animationDelay: "200ms" }}
                   >
                     {/* Primary Stat - Earnings */}
-                    <div className="p-4 md:p-6 border-b border-red-500/10 bg-gradient-to-r from-red-500/10 to-transparent">
-                      <p className="text-xs md:text-sm font-bold text-white/70 mb-2 tracking-widest uppercase">Total Earnings</p>
-                      <div className="flex items-baseline gap-2 md:gap-3">
-                        <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600 leading-none">
+                    <div className="p-6 md:p-8 border-b border-red-500/10 bg-gradient-to-r from-red-500/10 to-transparent">
+                      <p className="text-xs md:text-sm font-bold text-white/70 mb-3 md:mb-4 tracking-widest uppercase letter-spacing">Total Earnings</p>
+                      <div className="flex items-baseline gap-3 md:gap-4">
+                        <span className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600 leading-none">
                           ${artist.totalEarned.toFixed(4)}
                         </span>
                         <span className="text-xs md:text-sm text-white/60">USDC</span>
                       </div>
-                      <p className="text-xs text-white/50 mt-2">All-time earnings</p>
+                      <p className="text-xs text-white/50 mt-3">All-time earnings</p>
                     </div>
 
                     {/* Secondary Metrics Grid - 2 Column */}
                     <div className="grid grid-cols-2 divide-x divide-red-500/10">
                       {/* Tracks */}
-                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
-                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
-                          <Music className="h-5 w-5 md:h-6 md:w-6 text-red-400" />
+                      <div className="p-6 md:p-8 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
+                        <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-4 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+                          <Music className="h-6 w-6 md:h-7 md:w-7 text-red-400" />
                         </div>
-                        <span className="font-black text-2xl md:text-3xl text-white">{artist.trackCount}</span>
-                        <span className="text-xs md:text-sm text-white/60 mt-1 font-medium">TRACKS</span>
+                        <span className="font-serif font-bold text-3xl md:text-4xl text-white">{artist.trackCount}</span>
+                        <span className="text-xs md:text-sm text-white/60 mt-2 font-medium tracking-wider uppercase">Tracks</span>
                       </div>
 
                       {/* Followers */}
-                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
-                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
-                          <Users className="h-5 w-5 md:h-6 md:w-6 text-red-400" />
+                      <div className="p-6 md:p-8 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
+                        <div className="flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-4 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+                          <Users className="h-6 w-6 md:h-7 md:w-7 text-red-400" />
                         </div>
-                        <span className="font-black text-2xl md:text-3xl text-white">{artist.followerCount}</span>
-                        <span className="text-xs md:text-sm text-white/60 mt-1 font-medium">FOLLOWERS</span>
+                        <span className="font-serif font-bold text-3xl md:text-4xl text-white">{artist.followerCount}</span>
+                        <span className="text-xs md:text-sm text-white/60 mt-2 font-medium tracking-wider uppercase">Followers</span>
                       </div>
                     </div>
                   </div>

@@ -48,79 +48,69 @@ const itemVariants = {
 
 export function AgentStack() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-accent/20">
-      <motion.div
-        className="max-w-6xl mx-auto"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-100px" }}
-        variants={containerVariants}
-      >
-        <div className="mb-16">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight text-balance mb-8">
-            YOUR AGENT TEAM.
-            <br />
-            <span className="text-red-500">DEPLOY & EARN.</span>
+    <motion.section
+      className="py-20 md:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-red-950/5 to-transparent"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      variants={containerVariants}
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-16 md:mb-24">
+          <h2 className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold leading-tight text-balance mb-4">
+            Your Agent Team.
           </h2>
+          <p className="text-lg md:text-xl text-white/70 font-light tracking-wide">
+            Five specialized agents working in concert to maximize your creative potential.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           {agents.map((agent, index) => (
             <motion.div
               key={index}
               variants={itemVariants}
-              whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgba(255, 0, 0, 0.15)" }}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/50 via-slate-900 to-slate-950 border border-slate-700/50 hover:border-red-500/40 p-6 transition-all duration-300"
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900/50 to-black border border-red-500/20 hover:border-red-500/40 p-6 md:p-8 transition-all duration-500 backdrop-blur-sm"
             >
-              {/* Animated gradient background on hover */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-red-500/5 via-transparent to-blue-500/5 transition-opacity duration-300" />
+              {/* Hover glow */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-red-500/10 via-transparent to-transparent blur-2xl transition-opacity duration-500" />
 
-              {/* Glow effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 blur-xl bg-gradient-to-br from-red-500/20 to-transparent -z-10 transition-opacity duration-300" />
+              <div className="relative z-10 space-y-4">
+                <div className="text-5xl md:text-6xl transform group-hover:scale-125 transition-transform duration-500">
+                  {agent.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-2 group-hover:text-red-400 transition-colors duration-300">
+                    {agent.name}
+                  </h3>
+                  <p className="text-sm text-white/60 leading-relaxed font-light">
+                    {agent.description}
+                  </p>
+                </div>
 
-              <div className="relative z-10">
-                <div className="text-5xl mb-4 transform group-hover:scale-110 transition-transform duration-300">{agent.icon}</div>
-                <h3 className="text-base font-bold text-white mb-3 leading-tight">{agent.name}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed mb-4">{agent.description}</p>
-
-                {/* Agent status indicator */}
-                <div className="pt-4 border-t border-slate-700/50 flex items-center gap-2">
-                  <motion.div
-                    className="w-2 h-2 rounded-full bg-emerald-400"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                  <span className="text-xs font-medium text-slate-400">Ready to Deploy</span>
+                {/* Status indicator */}
+                <div className="pt-4 border-t border-red-500/10 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs text-white/50 uppercase tracking-wider font-light">
+                    Ready to Deploy
+                  </span>
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
-              </div>
-
-              {/* Hover glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
-
-              {/* Border glow on hover */}
-              <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  boxShadow: "inset 0 0 20px rgba(239, 68, 68, 0.1)",
-                }}
-              />
             </motion.div>
           ))}
         </div>
 
         {/* Bottom description */}
         <motion.div
-          className="mt-12 p-6 glass-card border border-red-500/20 rounded-lg text-center"
+          className="mt-16 md:mt-24 p-6 md:p-8 border border-red-500/20 rounded-2xl bg-gradient-to-r from-red-500/5 via-transparent to-transparent backdrop-blur-sm"
           variants={itemVariants}
         >
-          <p className="text-gray-300">
-            Deploy MANAGR agents to handle streaming, trading, investing, and promotion autonomously. Each agent works independently yet coordinates with your team to maximize earnings and reach.
+          <p className="text-center text-white/70 font-light text-lg leading-relaxed">
+            Deploy individually or as an ensemble. Each agent operates autonomously yet coordinates seamlessly with your music team to maximize earnings and creative impact.
           </p>
         </motion.div>
-      </motion.div>
-    </section>
+      </div>
+    </motion.section>
   )
 }

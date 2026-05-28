@@ -62,9 +62,9 @@ export default function ManagRPage() {
         <Manifesto />
 
         {/* Final CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-red-500/20 relative overflow-hidden">
+        <section className="py-32 md:py-48 px-4 sm:px-6 lg:px-8 border-t border-red-500/20 relative overflow-hidden bg-gradient-to-b from-red-950/10 via-black to-black">
           {/* Background accent */}
-          <div className="absolute inset-0 bg-gradient-to-b from-red-900/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-red-900/10 via-transparent to-transparent" />
 
           <motion.div
             className="max-w-6xl mx-auto text-center relative z-10"
@@ -73,32 +73,30 @@ export default function ManagRPage() {
             viewport={{ once: true }}
             variants={containerVariants}
           >
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold font-display leading-tight mb-6 text-balance">
-              DEPLOY YOUR
+            <h2 className="text-6xl sm:text-7xl lg:text-8xl font-serif font-bold leading-tight mb-8 md:mb-12 text-balance">
+              Deploy Your
               <br />
-              <span className="text-accent">FIRST MUSIC AGENT TEAM.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">First Music Agent Team.</span>
             </h2>
 
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-12">
-              MANAGR gives artists the coordination layer to create, release, promote, analyze, and earn with
-              autonomous music agents.
+            <p className="text-lg md:text-xl text-white/70 max-w-3xl mx-auto mb-16 md:mb-24 font-light leading-relaxed">
+              MANAGR gives artists the coordination layer to create, release, promote, analyze, and earn with autonomous music agents working on your behalf.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-12">
               <Button
                 asChild
                 size="lg"
-                variant="default"
-                className="gap-1.5 sm:gap-2 !bg-accent hover:!bg-accent/90 text-white font-bold px-8 h-12 text-base shadow-lg shadow-accent/25 hover:scale-105 transition-all"
+                className="gap-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-bold px-10 md:px-12 h-14 md:h-16 text-base md:text-lg shadow-lg shadow-red-500/30 hover:shadow-red-500/60 hover:scale-105 transition-all duration-300"
               >
-                <Link href="/managr/dashboard">Deploy MANAGR</Link>
+                <Link href="/managr/dashboard">Deploy Now</Link>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="border-accent/50 hover:border-accent text-white font-bold px-8 h-12 text-base hover:bg-accent/10 hover:scale-105 transition-all"
+                className="border-red-500/50 hover:border-red-400 text-white font-bold px-10 md:px-12 h-14 md:h-16 text-base md:text-lg hover:bg-red-500/10 hover:scale-105 transition-all duration-300"
               >
-                Download the Field Guide
+                Learn More
               </Button>
             </div>
 
