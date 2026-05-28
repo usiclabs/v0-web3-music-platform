@@ -176,12 +176,12 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
               <div className="relative z-10 w-full h-full flex flex-col justify-between p-4 md:p-8 lg:p-12">
                 {/* Top Badge */}
                 <div className="flex items-center justify-between animate-fade-in">
-                  <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/30 backdrop-blur-sm">
+                  <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-gradient-to-r from-red-500/20 to-red-500/10 border border-red-500/30 backdrop-blur-sm">
                     <div className="relative">
-                      <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-                      <div className="absolute inset-0 bg-primary/50 blur-xl" />
+                      <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-red-400" />
+                      <div className="absolute inset-0 bg-red-500/50 blur-xl" />
                     </div>
-                    <span className="text-xs md:text-sm font-bold text-primary">#{index + 1} ARTIST</span>
+                    <span className="text-xs md:text-sm font-bold text-red-400">#{index + 1} ARTIST</span>
                   </div>
                 </div>
 
@@ -190,10 +190,10 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                   <Link href={`/artist/${artist.wallet_address}`} className="block group">
                     <div className="flex items-start gap-4 md:gap-5 animate-fade-in">
                       {/* Avatar */}
-                      <Avatar className="h-16 w-16 md:h-20 md:w-20 border-3 md:border-4 border-primary/40 shadow-[0_0_30px_rgba(220,38,38,0.4)] group-hover:border-primary group-hover:shadow-[0_0_60px_rgba(220,38,38,0.6)] group-hover:scale-110 transition-all duration-500 relative flex-shrink-0">
-                        <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <Avatar className="h-16 w-16 md:h-20 md:w-20 border-3 md:border-4 border-red-500/40 shadow-[0_0_30px_rgba(239,68,68,0.4)] group-hover:border-red-400 group-hover:shadow-[0_0_60px_rgba(239,68,68,0.6)] group-hover:scale-110 transition-all duration-500 relative flex-shrink-0">
+                        <div className="absolute inset-0 rounded-full bg-red-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <AvatarImage src={artist.avatar_url || undefined} className="relative z-10" />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/40 to-primary/20 text-primary text-xl md:text-2xl relative z-10 font-bold">
+                        <AvatarFallback className="bg-gradient-to-br from-red-500/40 to-red-500/20 text-red-300 text-xl md:text-2xl relative z-10 font-bold">
                           {artist.artist_name?.[0]?.toUpperCase() || "A"}
                         </AvatarFallback>
                       </Avatar>
@@ -204,7 +204,7 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                           <FriendActivityBadge userAddress={artist.wallet_address} />
                         </div>
                         <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                          <h1 className="text-2xl md:text-4xl font-black text-white text-balance leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                          <h1 className="text-2xl md:text-4xl font-black text-white text-balance leading-tight group-hover:text-red-400 transition-colors duration-300 line-clamp-2">
                             {artist.artist_name || "Unknown Artist"}
                           </h1>
                           {artist.verified && <VerifiedBadge size="lg" />}
@@ -226,14 +226,14 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
 
                   {/* Premium Stats Card */}
                   <div
-                    className="w-full rounded-2xl md:rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background/50 to-primary/5 backdrop-blur-xl overflow-hidden animate-fade-in hover:border-primary/40 transition-all duration-300"
+                    className="w-full rounded-2xl md:rounded-3xl border border-red-500/20 bg-gradient-to-br from-red-500/10 via-background/50 to-red-500/5 backdrop-blur-xl overflow-hidden animate-fade-in hover:border-red-500/40 transition-all duration-300"
                     style={{ animationDelay: "200ms" }}
                   >
                     {/* Primary Stat - Earnings */}
-                    <div className="p-4 md:p-6 border-b border-primary/10 bg-gradient-to-r from-primary/10 to-transparent">
+                    <div className="p-4 md:p-6 border-b border-red-500/10 bg-gradient-to-r from-red-500/10 to-transparent">
                       <p className="text-xs md:text-sm font-bold text-white/70 mb-2 tracking-widest uppercase">Total Earnings</p>
                       <div className="flex items-baseline gap-2 md:gap-3">
-                        <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary to-primary/80 leading-none">
+                        <span className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600 leading-none">
                           ${artist.totalEarned.toFixed(4)}
                         </span>
                         <span className="text-xs md:text-sm text-white/60">USDC</span>
@@ -242,20 +242,20 @@ export function ArtistsFeed({ artists }: ArtistsFeedProps) {
                     </div>
 
                     {/* Secondary Metrics Grid - 2 Column */}
-                    <div className="grid grid-cols-2 divide-x divide-primary/10">
+                    <div className="grid grid-cols-2 divide-x divide-red-500/10">
                       {/* Tracks */}
-                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-primary/5 transition-colors duration-300 group/stat">
-                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-primary/20">
-                          <Music className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
+                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+                          <Music className="h-5 w-5 md:h-6 md:w-6 text-red-400" />
                         </div>
                         <span className="font-black text-2xl md:text-3xl text-white">{artist.trackCount}</span>
                         <span className="text-xs md:text-sm text-white/60 mt-1 font-medium">TRACKS</span>
                       </div>
 
                       {/* Followers */}
-                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-primary/5 transition-colors duration-300 group/stat">
-                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-primary/20">
-                          <Users className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                      <div className="p-4 md:p-6 flex flex-col items-center justify-center text-center hover:bg-red-500/5 transition-colors duration-300 group/stat">
+                        <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-red-500/30 to-red-500/10 mb-3 group-hover/stat:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+                          <Users className="h-5 w-5 md:h-6 md:w-6 text-red-400" />
                         </div>
                         <span className="font-black text-2xl md:text-3xl text-white">{artist.followerCount}</span>
                         <span className="text-xs md:text-sm text-white/60 mt-1 font-medium">FOLLOWERS</span>
