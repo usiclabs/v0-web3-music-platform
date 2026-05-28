@@ -96,6 +96,20 @@ export function AgentStack() {
             </motion.div>
           ))}
         </div>
+              </div>
+
+              {/* Hover glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
+
+              {/* Border glow on hover */}
+              <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  boxShadow: "inset 0 0 20px rgba(239, 68, 68, 0.1)",
+                }}
+              />
+            </motion.div>
+          ))}
+        </div>
 
         {/* Bottom description */}
         <motion.div

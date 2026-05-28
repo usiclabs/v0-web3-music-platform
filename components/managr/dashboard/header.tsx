@@ -66,32 +66,6 @@ export function DashboardHeader({ musician, stats }: DashboardHeaderProps) {
     </div>
   )
 }
-            <p className="text-xs text-gray-500 mt-1">Earnings</p>
-          </div>
-
-          <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-4">
-            <p className="text-xs text-gray-400 mb-1">THIS WEEK</p>
-            <p className="text-xl font-bold text-white">${stats.totalEarningsWeek.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Earnings</p>
-          </div>
-
-          <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-4">
-            <p className="text-xs text-gray-400 mb-1">THIS MONTH</p>
-            <p className="text-xl font-bold text-white">${stats.totalEarningsMonth.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Earnings</p>
-          </div>
-
-          <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-4">
-            <p className="text-xs text-gray-400 mb-1">ACTIVE</p>
-            <p className="text-xl font-bold text-green-400">{stats.activeAgentsCount}</p>
-            <p className="text-xs text-gray-500 mt-1">of {stats.totalAgentsDeployed}</p>
-          </div>
-
-          <div className="bg-gray-900/40 border border-gray-700/50 rounded-lg p-4">
-            <p className="text-xs text-gray-400 mb-1">DEPLOYED</p>
-            <p className="text-xl font-bold text-accent">{stats.totalAgentsDeployed}</p>
-            <p className="text-xs text-gray-500 mt-1">Agents</p>
-          </div>
         </div>
       </div>
     </div>
