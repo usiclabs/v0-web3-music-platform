@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ManagRHero } from "@/components/managr/hero"
 import { ManagROperatingSystem } from "@/components/managr/operating-system"
 import { AgentStack } from "@/components/managr/agent-stack"
+import { AgentReasoningSimulation } from "@/components/managr/agent-reasoning-simulation"
 import { ManagRWorkflow } from "@/components/managr/workflow"
 import { EcosystemDiagram } from "@/components/managr/ecosystem-diagram"
 import { ArtistOwnedComparison } from "@/components/managr/artist-owned-comparison"
@@ -41,6 +42,9 @@ export default function ManagRPage() {
 
         {/* Agent Stack Section */}
         <AgentStack />
+
+        {/* Agent Chain of Thought Simulation */}
+        <AgentReasoningSimulation />
 
         {/* How MANAGR Works Section */}
         <ManagRWorkflow />

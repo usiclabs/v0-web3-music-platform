@@ -93,13 +93,14 @@ export interface MMAgentConfig {
   owner_address?: string
   token_address?: string
   token_symbol?: string
-  profitable_mode?: boolean // New field for profitable mode
-  burst_mode?: boolean // New field for burst mode
-  burst_trades_count?: number // New field for burst trades count
-  burst_delay_seconds?: number // New field for burst delay seconds
-  pro_mode?: boolean // Added pro_mode
-  max_mode?: boolean // Added max_mode for 20 wallets
-  volume_generated?: bigint // Changed to bigint to match Supabase type
+  profitable_mode?: boolean
+  burst_mode?: boolean
+  burst_trades_count?: number
+  burst_delay_seconds?: number
+  pro_mode?: boolean
+  max_mode?: boolean
+  volume_generated?: bigint
+  uniswap_version?: "v3" | "v4"
 }
 
 export interface MMAgentStats {
@@ -262,7 +263,7 @@ export class MarketMakerAgentService {
 
   /**
    * Execute a buy operation - swap ETH/WETH for USI
-   * Enhanced to support buying with both ETH and WETH
+   * Enhanced to support buying with both ETH and WETH, with V3/V4 support
    */
   async executeBuy(wallet: any): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
@@ -273,14 +274,15 @@ export class MarketMakerAgentService {
       const { publicClient, walletClient, rpcUrl } = await this.createClients(wallet)
       const chainId = base.id
 
-      const routerAddress = UNISWAP_V3_ROUTER[chainId as keyof typeof UNISWAP_V3_ROUTER] as Address
-
       const supabase = await createClient()
       const { data: agent } = await supabase.from("mm_agents").select("*").eq("id", this.agentId).single()
 
       if (!agent) {
         throw new Error("Agent not found")
       }
+
+      const uniswapVersion = agent.uniswap_version || "v3"
+      console.log(`[MM Agent] Using Uniswap ${uniswapVersion.toUpperCase()} for buy`)
 
       const TOKEN_ADDRESS = (agent.token_address || "0x987603A52d8B966E10FBD29DcB1A574049E25B07") as Address
       const TOKEN_SYMBOL = agent.token_symbol || "USI"
@@ -289,6 +291,18 @@ export class MarketMakerAgentService {
         `[v0] [MM Agent] Agent config - token_address: ${agent.token_address}, token_symbol: ${agent.token_symbol}`,
       )
       console.log(`[MM Agent] Trading token: ${TOKEN_SYMBOL} (${TOKEN_ADDRESS})`)
+
+      // Set router address based on Uniswap version
+      let routerAddress: Address
+      if (uniswapVersion === "v4") {
+        // V4 uses PoolManager instead of Router
+        const v4PoolManager = "0x0000000000000000000000000000000000000000" as Address // Placeholder, will be updated
+        routerAddress = v4PoolManager
+        console.log(`[MM Agent] V4 PoolManager: ${routerAddress}`)
+      } else {
+        routerAddress = UNISWAP_V3_ROUTER[chainId as keyof typeof UNISWAP_V3_ROUTER] as Address
+        console.log(`[MM Agent] V3 Router: ${routerAddress}`)
+      }
 
       const baseBuyAmount = parseEther(agent.buy_amount_eth)
       const randomMultiplier = 0.75 + Math.random() * 0.5 // Random between 0.75 and 1.25 (±5-25%)
@@ -336,7 +350,7 @@ export class MarketMakerAgentService {
       }
 
       // Get quote for expected output with 5% slippage
-      const expectedTokens = await this.getQuote(useWETH ? WETH_ADDRESS : WETH_ADDRESS, TOKEN_ADDRESS, buyAmount)
+      const expectedTokens = await this.getQuote(useWETH ? WETH_ADDRESS : WETH_ADDRESS, TOKEN_ADDRESS, buyAmount, uniswapVersion)
       const minTokensOut = (expectedTokens * 95n) / 100n
       console.log(
         `[MM Agent] Expected ${TOKEN_SYMBOL} output: ${formatUnits(expectedTokens, 18)} (min: ${formatUnits(minTokensOut, 18)})`,
