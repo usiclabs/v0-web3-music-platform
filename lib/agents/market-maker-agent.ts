@@ -1165,20 +1165,22 @@ export class MarketMakerAgentService {
 
   private async checkPoolExists(
     publicClient: any,
-    tokenAddress: Address,
+    tokenIn: Address,
+    tokenOut: Address,
     chainId: number,
   ): Promise<{ exists: boolean; fee?: number }> {
     try {
       const factoryAddress = UNISWAP_V3_FACTORY[chainId as keyof typeof UNISWAP_V3_FACTORY] as Address
-      const WETH_ADDRESS =
-        chainId === 8453
-          ? ("0x4200000000000000000000000000000000000006" as Address)
-          : ("0x4200000000000000000000000000000000000006" as Address)
+      
+      if (!factoryAddress) {
+        throw new Error(`Uniswap V3 Factory not available for chain ${chainId}`)
+      }
 
+      // Order tokens for factory lookup
       const [token0, token1] =
-        tokenAddress.toLowerCase() < WETH_ADDRESS.toLowerCase()
-          ? [tokenAddress, WETH_ADDRESS]
-          : [WETH_ADDRESS, tokenAddress]
+        tokenIn.toLowerCase() < tokenOut.toLowerCase()
+          ? [tokenIn, tokenOut]
+          : [tokenOut, tokenIn]
 
       const feeTiers = [3000, 10000, 500]
 
@@ -1192,16 +1194,18 @@ export class MarketMakerAgentService {
           })) as Address
 
           if (poolAddress && poolAddress !== "0x0000000000000000000000000000000000000000") {
+            console.log(`[MM Agent] Found pool for ${tokenIn}/${tokenOut} at fee tier ${fee}`)
             return { exists: true, fee }
           }
-        } catch {
+        } catch (error) {
+          console.warn(`[MM Agent] Error checking fee tier ${fee}:`, error instanceof Error ? error.message : String(error))
           continue
         }
       }
 
       return { exists: false }
     } catch (error) {
-      console.error("[MM Agent] Error checking pool:", error)
+      console.error("[MM Agent] Error checking pool existence:", error)
       return { exists: false }
     }
   }
@@ -1217,29 +1221,46 @@ export class MarketMakerAgentService {
       const feeTiers = [3000, 10000, 500]
       const errors: Record<number, string> = {}
 
-      // First check if pool exists for any fee tier
       const rpcUrl = getRpcUrl()
       const publicClient = createPublicClient({
         chain: base,
         transport: http(rpcUrl),
       })
 
+      // Check if pool exists for tokenIn/tokenOut pair
       let poolExists = false
+      let foundFee: number | null = null
+
       for (const fee of feeTiers) {
-        const poolCheck = await this.checkPoolExists(publicClient, tokenIn, base.id)
-        if (poolCheck.exists) {
-          poolExists = true
-          break
+        try {
+          const poolCheck = await this.checkPoolExists(publicClient, tokenIn, tokenOut, base.id)
+          if (poolCheck.exists) {
+            poolExists = true
+            foundFee = poolCheck.fee
+            console.log(`[MM Agent] Pool found for ${tokenIn}/${tokenOut} with fee tier: ${fee}`)
+            break
+          }
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          errors[fee] = errorMsg
+          console.warn(`[MM Agent] Pool check failed for fee tier ${fee}: ${errorMsg}`)
+          continue
         }
       }
 
       if (!poolExists) {
-        throw new Error(`No Uniswap V3 pool found for token pair ${tokenIn}/${tokenOut}`)
+        const errorDetails = Object.entries(errors)
+          .map(([fee, err]) => `Fee ${fee}: ${err}`)
+          .join("; ")
+        throw new Error(`No Uniswap V3 pool found for token pair ${tokenIn}/${tokenOut}. Attempted fees: ${feeTiers.join(", ")}. Details: ${errorDetails}`)
       }
 
-      for (const fee of feeTiers) {
+      // Try to get quote from the found fee tier first, then others
+      const feeOrder = foundFee ? [foundFee, ...feeTiers.filter(f => f !== foundFee)] : feeTiers
+
+      for (const fee of feeOrder) {
         try {
-          console.log(`[MM Agent] Attempting quote with fee tier: ${fee}`)
+          console.log(`[MM Agent] Attempting quote with fee tier: ${fee}bps (${fee / 10000}%)`)
 
           const result = await publicClient.readContract({
             address: quoterAddress,
@@ -1259,7 +1280,7 @@ export class MarketMakerAgentService {
           const amountOut = (result as [bigint, bigint, number, bigint])[0]
 
           if (amountOut > 0n) {
-            console.log(`[MM Agent] Got quote with fee tier ${fee}: ${amountOut.toString()}`)
+            console.log(`[MM Agent] Got quote with fee tier ${fee}: ${amountOut.toString()} (input: ${amountIn.toString()})`)
             return amountOut
           }
         } catch (error) {
@@ -1273,7 +1294,7 @@ export class MarketMakerAgentService {
       const errorDetails = Object.entries(errors)
         .map(([fee, err]) => `Fee ${fee}: ${err}`)
         .join("; ")
-      throw new Error(`Failed to get quote from all fee tiers. Details: ${errorDetails}`)
+      throw new Error(`Failed to get quote from all fee tiers for pair ${tokenIn}/${tokenOut}. Details: ${errorDetails}`)
     } catch (error) {
       console.error("[MM Agent] Failed to get quote:", error)
       throw error
