@@ -248,12 +248,14 @@ export default function DiscoverPage() {
   }, [loading])
 
   const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <Music className="h-16 w-16 text-muted-foreground mb-4" />
-      <h3 className="text-2xl font-bold mb-2">No tracks yet</h3>
-      <p className="text-foreground/70 mb-6">Be the first to upload a track!</p>
+    <div className="flex flex-col items-center justify-center py-24 md:py-32 text-center">
+      <div className="mb-6 p-4 rounded-full bg-cyan-500/10">
+        <Music className="h-12 w-12 text-cyan-400" />
+      </div>
+      <h3 className="font-serif text-3xl md:text-4xl font-bold mb-3">No tracks yet</h3>
+      <p className="text-foreground/70 text-lg mb-8 max-w-md">Be the first to upload a track and start building your music empire.</p>
       <Link href="/dashboard">
-        <Button size="lg" className="rounded-full">
+        <Button size="lg" className="rounded-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700">
           Upload Track
         </Button>
       </Link>
@@ -261,11 +263,13 @@ export default function DiscoverPage() {
   )
 
   const ErrorState = () => (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h3 className="text-2xl font-bold mb-2">Something went wrong</h3>
-      <p className="text-foreground/70 mb-6">{error}</p>
-      <Button size="lg" className="rounded-full" onClick={loadAllContent}>
+    <div className="flex flex-col items-center justify-center py-24 md:py-32 text-center">
+      <div className="mb-6 p-4 rounded-full bg-red-500/10">
+        <AlertCircle className="h-12 w-12 text-red-400" />
+      </div>
+      <h3 className="font-serif text-3xl md:text-4xl font-bold mb-3">Something went wrong</h3>
+      <p className="text-foreground/70 text-lg mb-8 max-w-md">{error}</p>
+      <Button size="lg" className="rounded-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700" onClick={loadAllContent}>
         Try Again
       </Button>
     </div>
@@ -295,11 +299,11 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black pb-24 md:pb-32">
+    <div className="min-h-screen bg-black pb-32 md:pb-40">
       {!loading && !error && featuredTracks.length > 0 && <WallpaperCarousel tracks={featuredTracks} />}
 
-      <div className="flex gap-6 container px-4 md:px-6">
-        <main className="flex-1 py-6 md:py-8 space-y-8 md:space-y-12 min-w-0">
+      <div className="flex gap-8 container px-4 md:px-6 lg:px-8">
+        <main className="flex-1 py-12 md:py-16 space-y-16 md:space-y-24 min-w-0">
           {!loading && !error && <section className="animate-fade-in">{/* <StoriesCarousel /> */}</section>}
 
           {error && <ErrorState />}
@@ -307,30 +311,33 @@ export default function DiscoverPage() {
           {!loading && !error && newReleases.length === 0 && <EmptyState />}
 
           {!loading && !error && newReleases.length > 0 && (
-            <section ref={categoriesRef} data-section="categories" className="space-y-4 md:space-y-6 animate-fade-in">
+            <section ref={categoriesRef} data-section="categories" className="space-y-6 md:space-y-8 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl md:text-3xl font-bold">Browse All</h2>
+                <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Browse All</h2>
+                <Link href="/explore" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium">
+                  See all →
+                </Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {categories.map((category, index) => (
                   <Link key={category.id} href={category.href}>
                     <Card
-                      className={`relative overflow-hidden bg-gradient-to-br ${category.gradient} border-0 cursor-pointer group transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 active:scale-95`}
+                      className={`relative overflow-hidden bg-gradient-to-br ${category.gradient} border-0 cursor-pointer group transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/20 active:scale-95`}
                       style={{
                         animation: `fade-in 0.5s ease-out ${index * 0.1}s both`,
                       }}
                     >
-                      <div className="p-4 md:p-6 h-32 md:h-40 flex flex-col justify-between">
-                        <div className="space-y-1 md:space-y-2">
-                          <div className="text-white transform group-hover:scale-110 transition-transform">
+                      <div className="p-6 md:p-8 h-40 md:h-48 flex flex-col justify-between">
+                        <div className="space-y-2 md:space-y-3">
+                          <div className="text-white transform group-hover:scale-105 transition-transform duration-300">
                             {category.icon}
                           </div>
-                          <h3 className="text-base md:text-xl font-bold text-white">{category.name}</h3>
-                          <p className="text-xs md:text-sm text-white/80 line-clamp-2">{category.description}</p>
+                          <h3 className="font-serif text-lg md:text-2xl font-bold text-white leading-tight">{category.name}</h3>
+                          <p className="text-sm md:text-base text-white/80 line-clamp-2 leading-relaxed">{category.description}</p>
                         </div>
                       </div>
-                      <div className="absolute -bottom-4 -right-4 opacity-20 group-hover:opacity-30 transition-opacity">
-                        <Music className="h-24 w-24 md:h-32 md:w-32 text-white" />
+                      <div className="absolute -bottom-6 -right-6 opacity-15 group-hover:opacity-25 transition-opacity duration-300">
+                        <Music className="h-28 w-28 md:h-36 md:w-36 text-white" />
                       </div>
                     </Card>
                   </Link>
@@ -343,16 +350,16 @@ export default function DiscoverPage() {
             <section
               ref={newReleasesSectionRef}
               data-section="newReleases"
-              className="space-y-4 md:space-y-6 animate-fade-in"
+              className="space-y-6 md:space-y-8 animate-fade-in"
               style={{ animationDelay: "0.2s" }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold">New Releases</h2>
-                  <p className="text-sm md:text-base text-foreground/70 mt-1">Fresh tracks just dropped</p>
+                  <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">New Releases</h2>
+                  <p className="text-base md:text-lg text-foreground/70 mt-2 font-light">Fresh tracks just dropped</p>
                 </div>
                 <Link href="/explore?sort=newest">
-                  <Button variant="ghost" className="gap-2 hover:text-primary text-sm md:text-base">
+                  <Button variant="ghost" className="gap-2 hover:text-cyan-400 text-sm md:text-base font-medium transition-colors">
                     See all
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -362,14 +369,14 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(newReleasesRef, "left")}
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-6 w-6 text-cyan-400" />
                 </Button>
                 <div
                   ref={newReleasesRef}
-                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                  className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
                 >
                   {newReleases.map((track) => (
                     <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
@@ -380,10 +387,10 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(newReleasesRef, "right")}
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-6 w-6 text-cyan-400" />
                 </Button>
               </div>
             </section>
@@ -393,17 +400,17 @@ export default function DiscoverPage() {
             <section
               ref={trendingSectionRef}
               data-section="trending"
-              className={`space-y-4 md:space-y-6 transition-all duration-700 ${
+              className={`space-y-6 md:space-y-8 transition-all duration-700 ${
                 sectionsVisible.trending ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold">Trending Now</h2>
-                  <p className="text-sm md:text-base text-foreground/70 mt-1">What everyone's listening to</p>
+                  <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Trending Now</h2>
+                  <p className="text-base md:text-lg text-foreground/70 mt-2 font-light">What everyone's listening to</p>
                 </div>
                 <Link href="/trending">
-                  <Button variant="ghost" className="gap-2 hover:text-primary text-sm md:text-base">
+                  <Button variant="ghost" className="gap-2 hover:text-cyan-400 text-sm md:text-base font-medium transition-colors">
                     See all
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -413,14 +420,14 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(trendingRef, "left")}
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-6 w-6 text-cyan-400" />
                 </Button>
                 <div
                   ref={trendingRef}
-                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                  className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
                 >
                   {trending.map((track) => (
                     <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
@@ -431,10 +438,10 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(trendingRef, "right")}
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-6 w-6 text-cyan-400" />
                 </Button>
               </div>
             </section>
@@ -444,28 +451,28 @@ export default function DiscoverPage() {
             <section
               ref={forYouSectionRef}
               data-section="forYou"
-              className={`space-y-4 md:space-y-6 transition-all duration-700 ${
+              className={`space-y-6 md:space-y-8 transition-all duration-700 ${
                 sectionsVisible.forYou ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold">Made For You</h2>
-                  <p className="text-sm md:text-base text-foreground/70 mt-1">Personalized picks just for you</p>
+                  <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Made For You</h2>
+                  <p className="text-base md:text-lg text-foreground/70 mt-2 font-light">Personalized picks just for you</p>
                 </div>
               </div>
               <div className="relative">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(forYouRef, "left")}
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-6 w-6 text-cyan-400" />
                 </Button>
                 <div
                   ref={forYouRef}
-                  className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
+                  className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4 -mx-4 px-4 md:mx-0 md:px-0"
                 >
                   {forYou.map((track) => (
                     <div key={track.id} className="flex-none w-[140px] sm:w-[160px] md:w-[200px]">
@@ -476,10 +483,10 @@ export default function DiscoverPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 opacity-0 hover:opacity-100 transition-opacity hover:bg-black/90 hover:scale-110"
+                  className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-black/50 hover:bg-black/70 border border-cyan-500/30 hover:border-cyan-400/50 opacity-0 hover:opacity-100 transition-all hover:scale-105 duration-300"
                   onClick={() => scroll(forYouRef, "right")}
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-6 w-6 text-cyan-400" />
                 </Button>
               </div>
             </section>

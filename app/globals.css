@@ -90,6 +90,7 @@
 
 @theme inline {
   --font-sans: "Geist", "Geist Fallback";
+  --font-serif: "Playfair Display", "Playfair Display Fallback", serif;
   --font-display: "Space Grotesk", "Space Grotesk Fallback", sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
 
