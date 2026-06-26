@@ -124,34 +124,3 @@ export function HeroCard({ name, avatar, walletAddress, bio, verified }: HeroCar
     </div>
   )
 }
-                <h2 className="text-2xl font-bold text-white">{name || "Artist"}</h2>
-                {verified && <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">✓</Badge>}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-                <span className="font-mono">{shortAddress}</span>
-                <Copy className="h-3 w-3 cursor-pointer hover:text-gray-300" />
-              </div>
-              <p className="text-sm text-gray-300 leading-relaxed">{bio}</p>
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="flex gap-2 pt-4 border-t border-white/10">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10">
-              <Instagram className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10">
-              <Twitter className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10">
-              <Youtube className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10">
-              <Music2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}

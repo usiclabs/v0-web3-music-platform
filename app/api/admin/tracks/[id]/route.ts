@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 
 const ADMIN_ADDRESSES = process.env.NEXT_PUBLIC_ADMIN_ADDRESSES?.toLowerCase().split(",") || []
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const walletAddress = request.headers.get("x-wallet-address")
 
@@ -23,7 +23,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     console.log("[v0] [Admin] Admin authenticated:", walletAddress)
 
     const supabase = await createServerClient()
-    const trackId = params.id
+    const { id: trackId } = await params
     const body = await request.json()
 
     console.log("[v0] [Admin] Updating track:", trackId)

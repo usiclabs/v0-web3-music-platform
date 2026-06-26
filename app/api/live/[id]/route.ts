@@ -7,10 +7,10 @@ function isValidUUID(id: string): boolean {
   return uuidRegex.test(id)
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient()
-    const { id } = params
+    const { id } = await params
 
     if (!isValidUUID(id)) {
       return NextResponse.json({ error: "Invalid stream ID format" }, { status: 400 })
