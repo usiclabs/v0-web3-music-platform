@@ -312,17 +312,16 @@ export function HomepageSections() {
                 ))}
               </div>
 
-            <Button
-              size="lg"
-              asChild
-              className="mt-10 gap-2 rounded-full px-8 py-2.5 h-auto text-base shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-transparent text-[rgba(255,255,255,1)] group relative overflow-hidden"
-            >
-              <Link href="/dashboard">
-                <div className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <Music className="h-5 w-5 relative z-10 group-hover:rotate-12 transition-transform" />
-                <span className="relative z-10">Become a USIC Artist</span>
-              </Link>
-            </Button>
+              <Button
+                size="lg"
+                asChild
+                className="mt-10 gap-2 rounded-full px-8 py-2.5 h-auto text-base shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:scale-105 transition-all duration-300 bg-accent text-white hover:bg-accent/90"
+              >
+                <Link href="/dashboard">
+                  <Music className="h-5 w-5" />
+                  Become a USIC Artist
+                </Link>
+              </Button>
             </div>
 
             <div

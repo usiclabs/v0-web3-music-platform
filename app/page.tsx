@@ -1,5 +1,3 @@
-"use client"
-
 import { HomepageHero } from "@/components/homepage-hero"
 import { HomepageSections } from "@/components/homepage-sections"
 import { TrendingWidget } from "@/components/trending-widget"
