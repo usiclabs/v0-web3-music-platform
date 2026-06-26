@@ -7,9 +7,9 @@ import Image from "next/image"
 interface Track {
   id: string
   title: string
-  cover_url: string
-  duration: number
-  price_per_chunk: number
+  cover_url?: string | null
+  duration?: number | null
+  price_per_chunk?: number | null
 }
 
 interface TracksGridProps {
@@ -59,13 +59,17 @@ export function TracksGrid({ tracks, isLoading }: TracksGridProps) {
           >
             {/* Cover Image */}
             <div className="relative aspect-square overflow-hidden bg-black">
-              {track.cover_url && (
+              {track.cover_url ? (
                 <Image
                   src={track.cover_url}
                   alt={track.title}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-300"
                 />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                  <Play className="h-8 w-8 text-gray-600" />
+                </div>
               )}
 
               {/* Overlay */}
@@ -101,11 +105,15 @@ export function TracksGrid({ tracks, isLoading }: TracksGridProps) {
             </div>
 
             {/* Track Info */}
-            <div className="p-3">
-              <h4 className="text-xs font-bold text-white truncate">{track.title}</h4>
-              <p className="text-xs text-gray-400 mt-1">{track.duration}s</p>
-              <p className="text-xs font-semibold text-red-400 mt-2">${track.price_per_chunk}</p>
-            </div>
+              <div className="p-3">
+                <h4 className="text-xs font-bold text-white truncate">{track.title}</h4>
+                {track.duration ? (
+                  <p className="text-xs text-gray-400 mt-1">{Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</p>
+                ) : null}
+                {track.price_per_chunk ? (
+                  <p className="text-xs font-semibold text-red-400 mt-1">${Number(track.price_per_chunk).toFixed(4)}/chunk</p>
+                ) : null}
+              </div>
           </div>
         ))}
       </div>

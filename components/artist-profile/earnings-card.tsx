@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, TrendingUp } from "lucide-react"
+import { TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
