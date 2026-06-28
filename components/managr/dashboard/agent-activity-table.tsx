@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { Music, TrendingUp, Zap, Activity, Rocket } from "lucide-react"
+import { Music, TrendingUp, Zap, Activity, ArrowUpRight } from "lucide-react"
 
 interface Activity {
   id: string
@@ -21,7 +21,7 @@ const AGENT_TYPE_CONFIG = {
   "market-maker": { icon: TrendingUp, color: "text-green-400", label: "Market Maker" },
   "autonomous-artist": { icon: Music, color: "text-purple-400", label: "Artist AI" },
   investment: { icon: Zap, color: "text-yellow-400", label: "Investment" },
-  boost: { icon: Rocket, color: "text-red-400", label: "Boost" },
+  boost: { icon: ArrowUpRight, color: "text-red-400", label: "Boost" },
 }
 
 export function AgentActivityTable({ activities }: AgentActivityTableProps) {

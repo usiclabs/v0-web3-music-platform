@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
-import { Heart, UserPlus, Radio, Coins, Play, Clock, ActivityIcon, Sparkles, Zap } from "lucide-react"
+import { Heart, UserPlus, Radio, Coins, Play, Clock, Activity as ActivityIcon, Sparkles, Zap } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Image from "next/image"
 

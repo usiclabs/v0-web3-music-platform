@@ -43,20 +43,6 @@ export function TrackCard({ track, queue }: TrackCardProps) {
   })
 
   useEffect(() => {
-    console.log("[v0] Track card rendered:", {
-      title: track.title,
-      token_address: track.token_address,
-      hasTokenAddress: !!track.token_address,
-    })
-  }, [track.id, track.token_address])
-
-  useEffect(() => {
-    if (tokenAddress) {
-      console.log("[v0] Token metrics for", track.title, ":", tokenMetrics)
-    }
-  }, [tokenMetrics, tokenAddress])
-
-  useEffect(() => {
     if (address) {
       checkIfLiked()
     }

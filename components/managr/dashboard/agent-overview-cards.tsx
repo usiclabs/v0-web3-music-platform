@@ -1,6 +1,6 @@
 "use client"
 
-import { Activity, TrendingUp, Music, Zap, Rocket } from "lucide-react"
+import { Activity, TrendingUp, Music, Zap, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
 
 interface Agent {
@@ -48,7 +48,7 @@ const AGENT_CONFIG = {
     href: "/dashboard/agent/investment",
   },
   boost: {
-    icon: Rocket,
+    icon: ArrowUpRight,
     color: "from-red-500/20 to-red-900/20",
     label: "Boost",
     description: "Trading boost campaign",

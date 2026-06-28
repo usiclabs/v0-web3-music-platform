@@ -1,6 +1,6 @@
 "use client"
 
-import { Compass, Users, TrendingUp, Activity, User, Leaf } from "lucide-react"
+import { Compass, Users, TrendingUp, Activity, User } from "lucide-react"
 import Link from "next/link"
 
 interface BottomNavProps {
