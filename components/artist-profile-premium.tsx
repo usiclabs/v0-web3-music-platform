@@ -1,6 +1,5 @@
 "use client"
 
-import { TopNav } from "@/components/artist-profile/top-nav"
 import { TokenBanner } from "@/components/artist-profile/token-banner"
 import { HeroCard } from "@/components/artist-profile/hero-card"
 import { EarningsCard } from "@/components/artist-profile/earnings-card"
@@ -54,11 +53,8 @@ const itemVariants = {
 export function ArtistProfilePremium({ artist, stats, tracks = [] }: ArtistProfilePremiumProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-slate-950 to-black">
-      {/* Top Nav */}
-      <TopNav walletAddress={artist.wallet_address} />
-
       {/* Scrollable Content */}
-      <div className="pt-16 pb-32">
+      <div className="pb-32">
         {/* Token Banner */}
         <TokenBanner />
 
